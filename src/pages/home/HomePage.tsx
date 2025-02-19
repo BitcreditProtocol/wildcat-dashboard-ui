@@ -1,7 +1,9 @@
+import { PageTitle } from "@/components/PageTitle";
+
 export default function HomePage() {
   return (
     <>
-      <h2>Home</h2>
+      <PageTitle>Home</PageTitle>
     </>
   )
 }

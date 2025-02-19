@@ -1,7 +1,11 @@
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+
 export default function QuotesPage() {
   return (
     <>
-      <h2>Quotes</h2>
+      <Breadcrumbs>Quotes</Breadcrumbs>
+      <PageTitle>Quotes</PageTitle>
     </>
   )
 }

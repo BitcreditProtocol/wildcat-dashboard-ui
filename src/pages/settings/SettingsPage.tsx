@@ -1,7 +1,11 @@
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+
 export default function SettingsPage() {
   return (
     <>
-      <h2>Settings</h2>
+      <Breadcrumbs>Settings</Breadcrumbs>
+      <PageTitle>Settings</PageTitle>
     </>
   )
 }
