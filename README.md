@@ -48,3 +48,8 @@ export default tseslint.config({
   },
 })
 ```
+
+https://ui.shadcn.com/docs/tailwind-v4
+```shell
+npx shadcn@canary add button
+```
