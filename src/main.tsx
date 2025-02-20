@@ -8,7 +8,9 @@ import BalancesPage from './pages/balances/BalancesPage'
 import QuotesPage from './pages/quotes/QuotesPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import meta from './constants/meta';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+const queryClient = new QueryClient();
 
 const prepare = async () => {
   if (meta.apiMocksEnabled) {
@@ -20,16 +22,18 @@ const prepare = async () => {
 void prepare().then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <BrowserRouter>
-        <Routes>
-          <Route  element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="balances" element={<BalancesPage />} />
-            <Route path="quotes" element={<QuotesPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route  element={<Layout />}>
+              <Route index element={<HomePage />} />
+              <Route path="balances" element={<BalancesPage />} />
+              <Route path="quotes" element={<QuotesPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
     </StrictMode>,
   )
 })
