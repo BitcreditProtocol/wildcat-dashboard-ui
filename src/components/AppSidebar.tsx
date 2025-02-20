@@ -1,4 +1,4 @@
-import { Bitcoin, Home, Inbox, Settings } from "lucide-react"
+import { Bitcoin, Home, Inbox, Settings, InfoIcon } from "lucide-react"
 import { NavLink } from "react-router";
 
 import {
@@ -33,6 +33,11 @@ const items = [
     title: "Settings",
     url: "/settings",
     icon: Settings,
+  },
+  {
+    title: "Info",
+    url: "/info",
+    icon: InfoIcon,
   },
 ]
 

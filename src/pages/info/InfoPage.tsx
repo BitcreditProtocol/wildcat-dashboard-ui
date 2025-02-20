@@ -1,3 +1,4 @@
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchInfo } from "@/lib/api";
@@ -8,7 +9,7 @@ import { Suspense } from "react";
 function Loader() {
   return (
     <div className="flex flex-col gap-1.5 py-2">
-      <Skeleton className="h-12 rounded-lg" />
+      <Skeleton className="h-48 rounded-lg" />
     </div>
   )
 }
@@ -21,19 +22,18 @@ function PageBody() {
 
   return (
     <>
-      <div className="flex flex-col gap-0.5 bg-accent text-accent-foreground rounded-lg p-2 my-2">
-        <span className="font-bold">{data.name}</span>
-        <span className="text-sm font-mono text-accent-foreground/50">{data.version}</span>
-        <span className="text-sm font-mono">{data.pubkey}</span>
-      </div>
+      <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
+        {JSON.stringify(data, null, 2)}
+      </pre>
     </>
   )
 }
 
-export default function HomePage() {
+export default function InfoPage() {
   return (
     <>
-      <PageTitle>Home</PageTitle>
+      <Breadcrumbs>Info</Breadcrumbs>
+      <PageTitle>Info</PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody />
       </Suspense>
