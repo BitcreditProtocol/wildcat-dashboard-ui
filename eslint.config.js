@@ -14,9 +14,13 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-  },
-  { ignores: ['dist'] },
-  {
+  }, {
+    ignores: [
+      'dist',
+      '.storybook',
+      'public/mockServiceWorker.js',
+    ]
+  }, {
     extends: [
       js.configs.recommended, 
       ...tseslint.configs.recommendedTypeChecked,
