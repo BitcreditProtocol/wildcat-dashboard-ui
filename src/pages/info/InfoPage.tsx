@@ -5,7 +5,6 @@ import { fetchInfo } from "@/lib/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 
-
 function Loader() {
   return (
     <div className="flex flex-col gap-1.5 py-2">

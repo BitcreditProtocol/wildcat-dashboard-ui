@@ -4,10 +4,10 @@ import type { InfoResponse } from "@/lib/api"
 import { INFO } from "@/constants/endpoints"
 
 export const fetchInfo = http.get<never, never, InfoResponse>(`${API_URL}${INFO}`, async () => {
-  await delay(1000)
+  await delay(1_000)
 
   return HttpResponse.json({
-    "name": "Bob's Cashu mint",
+    "name": "Bob's Wildcat mint",
     "pubkey": "0283bf290884eed3a7ca2663fc0260de2e2064d6b355ea13f98dec004b7a7ead99",
     "version": "Nutshell/0.15.0",
     "description": "The short mint description",
