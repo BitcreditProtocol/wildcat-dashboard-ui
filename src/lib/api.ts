@@ -7,9 +7,9 @@ export interface InfoResponse {
   version?: string
   description?: string
   description_long?: string
-  "contact": {
-    "method": string
-    "info": string
+  contact?: {
+    method?: string
+    info?: string
   }[],
   motd?: string
   icon_url?: string

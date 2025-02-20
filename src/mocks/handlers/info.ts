@@ -1,8 +1,9 @@
 import { http, delay, HttpResponse } from "msw"
-import { INFO } from "@/constants/endpoints"
+import { API_URL } from "@/constants/api"
 import type { InfoResponse } from "@/lib/api"
+import { INFO } from "@/constants/endpoints"
 
-export const fetchInfo = http.get<never, never, InfoResponse>(INFO, async () => {
+export const fetchInfo = http.get<never, never, InfoResponse>(`${API_URL}${INFO}`, async () => {
   await delay(1000)
 
   return HttpResponse.json({
