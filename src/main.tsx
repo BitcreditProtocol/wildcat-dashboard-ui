@@ -1,17 +1,17 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Route, Routes } from "react-router";
-import './index.css'
-import Layout from './layout';
-import HomePage from './pages/home/HomePage'
-import BalancesPage from './pages/balances/BalancesPage'
-import QuotesPage from './pages/quotes/QuotesPage';
-import SettingsPage from './pages/settings/SettingsPage';
-import meta from './constants/meta';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import InfoPage from './pages/info/InfoPage';
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
+import { BrowserRouter, Route, Routes } from "react-router"
+import "./index.css"
+import Layout from "./layout"
+import HomePage from "./pages/home/HomePage"
+import BalancesPage from "./pages/balances/BalancesPage"
+import QuotesPage from "./pages/quotes/QuotesPage"
+import SettingsPage from "./pages/settings/SettingsPage"
+import meta from "./constants/meta"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import InfoPage from "./pages/info/InfoPage"
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 const prepare = async () => {
   if (meta.apiMocksEnabled) {
@@ -21,12 +21,12 @@ const prepare = async () => {
 }
 
 void prepare().then(() => {
-  createRoot(document.getElementById('root')!).render(
+  createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
-            <Route  element={<Layout />}>
+            <Route element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="balances" element={<BalancesPage />} />
               <Route path="quotes" element={<QuotesPage />} />

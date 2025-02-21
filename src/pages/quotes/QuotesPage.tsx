@@ -1,13 +1,12 @@
-import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { H3 } from "@/components/Headings";
-import { PageTitle } from "@/components/PageTitle";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { fetchAdminQuotePending } from "@/lib/api";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { ViewIcon } from "lucide-react";
-import { Suspense } from "react";
-
+import { Breadcrumbs } from "@/components/Breadcrumbs"
+import { H3 } from "@/components/Headings"
+import { PageTitle } from "@/components/PageTitle"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { fetchAdminQuotePending } from "@/lib/api"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { ViewIcon } from "lucide-react"
+import { Suspense } from "react"
 
 function Loader() {
   return (
@@ -21,7 +20,7 @@ function QuoteListPendingRaw() {
   const { data } = useSuspenseQuery({
     queryKey: ["quotes-pending"],
     queryFn: fetchAdminQuotePending,
-  });
+  })
 
   return (
     <>
@@ -36,18 +35,20 @@ function QuoteListPending() {
   const { data } = useSuspenseQuery({
     queryKey: ["quotes-pending"],
     queryFn: fetchAdminQuotePending,
-  });
+  })
 
   return (
     <>
       <div className="flex flex-col gap-1">
         {data.quotes.map((it, index) => {
-          return (<div key={index} className="flex gap-1 items-center text-sm">
-            <span>{it}</span>
-            <Button size="sm">
-              <ViewIcon />
-            </Button>
-          </div>)
+          return (
+            <div key={index} className="flex gap-1 items-center text-sm">
+              <span>{it}</span>
+              <Button size="sm">
+                <ViewIcon />
+              </Button>
+            </div>
+          )
         })}
       </div>
     </>
@@ -75,4 +76,3 @@ export default function QuotesPage() {
     </>
   )
 }
-

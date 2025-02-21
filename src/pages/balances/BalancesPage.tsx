@@ -1,6 +1,6 @@
-import { BalanceChart } from "@/components/BalanceChart";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
+import { BalanceChart } from "@/components/BalanceChart"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
+import { PageTitle } from "@/components/PageTitle"
 
 export default function BalancesPage() {
   return (
@@ -14,4 +14,3 @@ export default function BalancesPage() {
     </>
   )
 }
-

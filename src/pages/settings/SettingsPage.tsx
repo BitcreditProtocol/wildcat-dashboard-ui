@@ -1,5 +1,5 @@
-import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
+import { Breadcrumbs } from "@/components/Breadcrumbs"
+import { PageTitle } from "@/components/PageTitle"
 
 export default function SettingsPage() {
   return (
@@ -9,4 +9,3 @@ export default function SettingsPage() {
     </>
   )
 }
-

@@ -1,5 +1,5 @@
-import { ADMIN_QUOTE_ACCEPTED, ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING, INFO } from "@/constants/endpoints";
-import { apiFetch } from "@/utils/api";
+import { ADMIN_QUOTE_ACCEPTED, ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING, INFO } from "@/constants/endpoints"
+import { apiFetch } from "@/utils/api"
 
 export interface InfoResponse {
   name?: string
@@ -10,16 +10,19 @@ export interface InfoResponse {
   contact?: {
     method?: string
     info?: string
-  }[],
+  }[]
   motd?: string
   icon_url?: string
-  urls?: string[],
-  time?: number,
-  nuts?: Record<string, {
-      methods?: Record<string, unknown>[],
+  urls?: string[]
+  time?: number
+  nuts?: Record<
+    string,
+    {
+      methods?: Record<string, unknown>[]
       disabled?: boolean
       supported?: boolean
-  }>
+    }
+  >
 }
 
 export async function fetchInfo(): Promise<InfoResponse> {
@@ -29,7 +32,6 @@ export async function fetchInfo(): Promise<InfoResponse> {
     },
   })
 }
-
 
 interface QuotePending {
   id: string

@@ -1,6 +1,13 @@
-import { PropsWithChildren } from "react";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Link } from "react-router";
+import { PropsWithChildren } from "react"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Link } from "react-router"
 
 export function Breadcrumbs({ children }: PropsWithChildren<unknown>) {
   return (

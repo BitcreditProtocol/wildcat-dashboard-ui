@@ -1,9 +1,8 @@
-import { PageTitle } from "@/components/PageTitle";
-import { Skeleton } from "@/components/ui/skeleton";
-import { fetchInfo } from "@/lib/api";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense } from "react";
-
+import { PageTitle } from "@/components/PageTitle"
+import { Skeleton } from "@/components/ui/skeleton"
+import { fetchInfo } from "@/lib/api"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { Suspense } from "react"
 
 function Loader() {
   return (
@@ -17,7 +16,7 @@ function PageBody() {
   const { data } = useSuspenseQuery({
     queryKey: ["info"],
     queryFn: fetchInfo,
-  });
+  })
 
   return (
     <>
@@ -40,4 +39,3 @@ export default function HomePage() {
     </>
   )
 }
-

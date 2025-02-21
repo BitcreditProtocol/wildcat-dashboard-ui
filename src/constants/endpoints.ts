@@ -11,7 +11,6 @@ const CREDIT_QUOTES_BY_ID = "/v1/credit/mint/quote/:id"
 export {
   INFO,
   BALANCES,
-
   ADMIN_QUOTE_PENDING,
   ADMIN_QUOTE_ACCEPTED,
   ADMIN_QUOTE_BY_ID,

@@ -1,5 +1,5 @@
 import { Bitcoin, Home, Inbox, Settings, InfoIcon } from "lucide-react"
-import { NavLink } from "react-router";
+import { NavLink } from "react-router"
 
 import {
   Sidebar,
