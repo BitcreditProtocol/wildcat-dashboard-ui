@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write --no-error-on-unmatched-pattern 'src/**/*.{ts,tsx,json,css,md}'",
-    "docker:build": "docker build --tag wildcat-dashboard-ui ."
+    "docker:build": "docker build --tag wildcat-dashboard-ui .",
+    "docker:up": "docker compose up"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.1.4",

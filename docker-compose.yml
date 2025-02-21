@@ -1,0 +1,7 @@
+
+
+services:
+  wildcat-dashboard-ui:
+    build: .
+    ports:
+      - "8080:80"
