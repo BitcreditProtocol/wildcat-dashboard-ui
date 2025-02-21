@@ -15,6 +15,12 @@ FROM nginx:1.27.4-alpine@sha256:4ff102c5d78d254a6f0da062b3cf39eaf07f01eec0927fd2
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+COPY docker/nginx/snippets/proxy-params.conf /etc/nginx/snippets/proxy-params.conf
+# each time nginx is started it will perform variable substition in all template
+# files found in `/etc/nginx/templates/*.template`, and copy the results (without
+# the `.template` suffix) into `/etc/nginx/conf.d/`.
+COPY docker/nginx/templates/default.conf.template /etc/nginx/templates/default.conf.template
+
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

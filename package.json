@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "format": "prettier --write --no-error-on-unmatched-pattern 'src/**/*.{ts,tsx,json,css,md}'",
     "docker:build": "docker build --tag wildcat-dashboard-ui .",
+    "docker:rebuild": "npm run docker:build -- --no-cache",
     "docker:up": "docker compose up"
   },
   "dependencies": {
