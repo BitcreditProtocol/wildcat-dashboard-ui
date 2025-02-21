@@ -16,13 +16,18 @@ server {
         add_header Cache-Control "no-store";
     }
 
-    location ~* \.(?:css|js|jpg|svg|png)$ {
-        expires 30d;
+    location ~* \.(?:json)$ {
+        expires 1d;
         add_header Cache-Control "public";
     }
 
-    location ~* \.(?:json)$ {
-        expires 1d;
+    location ~* \.(?:css|js|jpg|svg|png)$ {
+        expires 90d;
+        add_header Cache-Control "public";
+    }
+
+    location ~* \.(?:woff2)$ {
+        expires 180d;
         add_header Cache-Control "public";
     }
 }

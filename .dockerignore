@@ -3,4 +3,4 @@ dist/
 .github/
 Dockerfile
 .dockerignore
-README.md
+/*.md
