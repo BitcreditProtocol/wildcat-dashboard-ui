@@ -4,7 +4,7 @@ import type { QuoteListResponse } from "@/lib/api"
 import { ADMIN_QUOTE_PENDING } from "@/constants/endpoints"
 
 export const fetchAdminQuotePending = http.get<never, never, QuoteListResponse>(`${API_URL}${ADMIN_QUOTE_PENDING}`, async () => {
-  await delay(1000)
+  await delay(1_000)
 
   return HttpResponse.json({
     quotes: [

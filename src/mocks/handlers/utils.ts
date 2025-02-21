@@ -5,11 +5,11 @@ export const matchesSearchTerm = (it: Record<string, unknown>, search_term: stri
         (innerValue) =>
           typeof innerValue === "string" &&
           innerValue.toLowerCase().includes(search_term.toLowerCase())
-      );
+      )
     }
     return (
       typeof value === "string" &&
       value.toLowerCase().includes(search_term.toLowerCase())
-    );
-  });
-};
+    )
+  })
+}
