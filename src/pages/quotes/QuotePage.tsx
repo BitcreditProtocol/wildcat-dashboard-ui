@@ -1,12 +1,13 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { InfoReply } from "@/generated/client"
 import useApiClient from "@/hooks/use-api-client"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
-import { useParams } from "react-router"
+import { Link, useParams } from "react-router"
 
 function Loader() {
   return (
@@ -20,7 +21,26 @@ function Quote({ value }: { value: InfoReply }) {
   return (
     <>
       <div className="flex flex-col gap-1">
-        <div className="flex-1">{value.id}</div>
+        <Table>
+          <TableBody>
+            <TableRow>
+              <TableCell>id: </TableCell>
+              <TableCell>{value.id}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>status: </TableCell>
+              <TableCell>{value.status}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>endorser: </TableCell>
+              <TableCell>{value.endorser || "(empty)"}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>bill: </TableCell>
+              <TableCell>{value.bill || "(empty)"}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
     </>
   )
@@ -87,7 +107,15 @@ export default function QuotePage() {
 
   return (
     <>
-      <Breadcrumbs>Quote {id}</Breadcrumbs>
+      <Breadcrumbs
+        parents={[
+          <>
+            <Link to="/quotes">Quotes</Link>
+          </>,
+        ]}
+      >
+        {id}
+      </Breadcrumbs>
       <PageTitle>Quote {id}</PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody id={id} />

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Link } from "react-router"
 
-export function Breadcrumbs({ children }: PropsWithChildren<unknown>) {
+export function Breadcrumbs({ parents, children }: PropsWithChildren<{ parents?: React.ReactNode[] }>) {
   return (
     <Breadcrumb>
       <BreadcrumbList>
@@ -19,6 +19,20 @@ export function Breadcrumbs({ children }: PropsWithChildren<unknown>) {
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
+        {parents && (
+          <>
+            {parents.map((it, index) => (
+              <>
+                <BreadcrumbItem key={index}>
+                  <BreadcrumbLink asChild>
+                    <Link to="/">{it}</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+              </>
+            ))}
+          </>
+        )}
         <BreadcrumbItem>
           <BreadcrumbPage>{children}</BreadcrumbPage>
         </BreadcrumbItem>

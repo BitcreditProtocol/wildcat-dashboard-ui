@@ -8,6 +8,7 @@ import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { ViewIcon } from "lucide-react"
 import { Suspense } from "react"
+import { Link, useNavigate } from "react-router"
 
 function Loader() {
   return (
@@ -35,6 +36,7 @@ function QuoteListPendingRaw() {
 }
 
 function QuoteListPending() {
+  const navigate = useNavigate()
   const client = useApiClient()
 
   const { data } = useSuspenseQuery({
@@ -49,8 +51,13 @@ function QuoteListPending() {
           data.data.quotes.map((it, index) => {
             return (
               <div key={index} className="flex gap-1 items-center text-sm">
-                <span>{it}</span>
-                <Button size="sm">
+                <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    void navigate("/quotes/:id".replace(":id", it))
+                  }}
+                >
                   <ViewIcon />
                 </Button>
               </div>
