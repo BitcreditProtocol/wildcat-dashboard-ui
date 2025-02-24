@@ -12,7 +12,8 @@
     "format": "prettier --write --no-error-on-unmatched-pattern 'src/**/*.{ts,tsx,json,css,md}'",
     "docker:build": "docker build --tag wildcat-dashboard-ui .",
     "docker:rebuild": "npm run docker:build -- --no-cache",
-    "docker:up": "docker compose up"
+    "docker:up": "docker compose up",
+    "client:generate": "npx @hey-api/openapi-ts --input opt/wildcat/openapi.json --output src/generated/client --client @hey-api/client-fetch"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.8.1",
