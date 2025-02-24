@@ -29,6 +29,7 @@
   },
   "include": [
     "src",
-    "vitest-setup.ts"
+    "vitest-setup.ts",
+    "openapi-ts.config.ts"
   ]
 }

@@ -3,10 +3,12 @@ import { H3 } from "@/components/Headings"
 import { PageTitle } from "@/components/PageTitle"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { fetchAdminQuotePending } from "@/lib/api"
+import { listPendingQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
+import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { ViewIcon } from "lucide-react"
 import { Suspense } from "react"
+import { Link, useNavigate } from "react-router"
 
 function Loader() {
   return (
@@ -18,8 +20,7 @@ function Loader() {
 
 function QuoteListPendingRaw() {
   const { data } = useSuspenseQuery({
-    queryKey: ["quotes-pending"],
-    queryFn: fetchAdminQuotePending,
+    ...listPendingQuotesOptions({}),
   })
 
   return (
@@ -32,9 +33,10 @@ function QuoteListPendingRaw() {
 }
 
 function QuoteListPending() {
+  const navigate = useNavigate()
+
   const { data } = useSuspenseQuery({
-    queryKey: ["quotes-pending"],
-    queryFn: fetchAdminQuotePending,
+    ...listPendingQuotesOptions({}),
   })
 
   return (
@@ -43,8 +45,13 @@ function QuoteListPending() {
         {data.quotes.map((it, index) => {
           return (
             <div key={index} className="flex gap-1 items-center text-sm">
-              <span>{it}</span>
-              <Button size="sm">
+              <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
+              <Button
+                size="sm"
+                onClick={() => {
+                  void navigate("/quotes/:id".replace(":id", it))
+                }}
+              >
                 <ViewIcon />
               </Button>
             </div>
@@ -55,13 +62,18 @@ function QuoteListPending() {
   )
 }
 
+function DevSection() {
+  const [devMode] = useLocalStorage("devMode", false)
+
+  return <>{devMode && <QuoteListPendingRaw />}</>
+}
+
 function PageBody() {
   return (
     <>
       <H3>Pending</H3>
       <Suspense fallback={<Loader />}>
         <QuoteListPending />
-        <QuoteListPendingRaw />
       </Suspense>
     </>
   )
@@ -73,6 +85,9 @@ export default function QuotesPage() {
       <Breadcrumbs>Quotes</Breadcrumbs>
       <PageTitle>Quotes</PageTitle>
       <PageBody />
+      <Suspense>
+        <DevSection />
+      </Suspense>
     </>
   )
 }
