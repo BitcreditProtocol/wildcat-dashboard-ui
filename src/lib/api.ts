@@ -60,27 +60,31 @@ export async function fetchBalances(): Promise<BalancesResponse> {
   })
 }
 
-interface QuotePending {
-  id: string
-  bill: string
-  endorser: string
-  submitted: number
-  suggested_expiration: number
-}
-interface QuoteAccepted {
-  id: string
-  bill: string
-  endorser: string
-  ttl: number
-  signatures: unknown[]
-}
-interface QuoteDeclined {
+interface QuoteBase {
   id: string
   bill: string
   endorser: string
 }
 
-export type QuoteInfoReply = QuotePending | QuoteAccepted | QuoteDeclined
+interface QuotePending extends QuoteBase {
+  submitted: number
+  suggested_expiration: number
+}
+interface QuoteOffered extends QuoteBase {
+  ttl: number,
+  signatures: unknown[]
+}
+interface QuoteDenied extends QuoteBase {
+  tstamp: number
+}
+interface QuoteAccepted extends QuoteBase {
+  signatures: unknown[]
+}
+interface QuoteRejected extends QuoteBase  {
+  tstamp: number
+}
+
+export type QuoteInfoReply = QuotePending | QuoteOffered | QuoteDenied | QuoteAccepted | QuoteRejected
 
 export interface QuoteListResponse {
   quotes: string[]
