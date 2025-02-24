@@ -8,7 +8,7 @@ export default function Layout() {
       <AppSidebar />
       <main className="flex-1 flex flex-col px-2 py-2">
         <div>
-          <SidebarTrigger />
+          <SidebarTrigger className="cursor-pointer" />
         </div>
         <div className="flex flex-col py-2">
           <Outlet />
