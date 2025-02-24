@@ -164,7 +164,7 @@ export type AdminLookupQuoteData = {
         id: string;
     };
     query?: never;
-    url: '/v1/admin/credit/quote/:id';
+    url: '/v1/admin/credit/quote/{id}';
 };
 
 export type AdminLookupQuoteErrors = {
@@ -192,7 +192,7 @@ export type ResolveQuoteData = {
         id: string;
     };
     query?: never;
-    url: '/v1/admin/credit/quote/:id';
+    url: '/v1/admin/credit/quote/{id}';
 };
 
 export type ResolveQuoteResponses = {
@@ -276,7 +276,7 @@ export type LookupQuoteData = {
         id: string;
     };
     query?: never;
-    url: '/v1/credit/mint/quote/:id';
+    url: '/v1/credit/mint/quote/{id}';
 };
 
 export type LookupQuoteErrors = {
@@ -304,7 +304,7 @@ export type ResolveOfferData = {
         id: string;
     };
     query?: never;
-    url: '/v1/credit/quote/:id';
+    url: '/v1/credit/quote/{id}';
 };
 
 export type ResolveOfferErrors = {

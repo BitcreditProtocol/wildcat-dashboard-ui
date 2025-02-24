@@ -9,7 +9,7 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/v1/admin/credit/quote/:id": {
+    "/v1/admin/credit/quote/{id}": {
       "get": {
         "tags": [
           "crate::credit::admin"
@@ -176,7 +176,7 @@
         }
       }
     },
-    "/v1/credit/mint/quote/:id": {
+    "/v1/credit/mint/quote/{id}": {
       "get": {
         "tags": [
           "crate::credit::web"
@@ -210,7 +210,7 @@
         }
       }
     },
-    "/v1/credit/quote/:id": {
+    "/v1/credit/quote/{id}": {
       "post": {
         "tags": [
           "crate::credit::web"

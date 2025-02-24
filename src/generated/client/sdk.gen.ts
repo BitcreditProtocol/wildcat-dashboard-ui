@@ -20,14 +20,14 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 
 export const adminLookupQuote = <ThrowOnError extends boolean = false>(options: Options<AdminLookupQuoteData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<AdminLookupQuoteResponse, unknown, ThrowOnError>({
-        url: '/v1/admin/credit/quote/:id',
+        url: '/v1/admin/credit/quote/{id}',
         ...options
     });
 };
 
 export const resolveQuote = <ThrowOnError extends boolean = false>(options: Options<ResolveQuoteData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<unknown, unknown, ThrowOnError>({
-        url: '/v1/admin/credit/quote/:id',
+        url: '/v1/admin/credit/quote/{id}',
         ...options,
         headers: {
             'Content-Type': 'application/json',
@@ -69,14 +69,14 @@ export const enquireQuote = <ThrowOnError extends boolean = false>(options: Opti
 
 export const lookupQuote = <ThrowOnError extends boolean = false>(options: Options<LookupQuoteData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<LookupQuoteResponse, unknown, ThrowOnError>({
-        url: '/v1/credit/mint/quote/:id',
+        url: '/v1/credit/mint/quote/{id}',
         ...options
     });
 };
 
 export const resolveOffer = <ThrowOnError extends boolean = false>(options: Options<ResolveOfferData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<unknown, unknown, ThrowOnError>({
-        url: '/v1/credit/quote/:id',
+        url: '/v1/credit/quote/{id}',
         ...options,
         headers: {
             'Content-Type': 'application/json',
