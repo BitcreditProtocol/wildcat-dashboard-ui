@@ -180,7 +180,6 @@ function PageBody() {
   )
 }
 
-
 function DevSection() {
   const [devMode] = useLocalStorage("devMode", false)
   const { data } = useSuspenseQuery({
@@ -191,10 +190,9 @@ function DevSection() {
   return (
     <>
       {devMode && (
-        
-      <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+        <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
+          {JSON.stringify(data, null, 2)}
+        </pre>
       )}
     </>
   )

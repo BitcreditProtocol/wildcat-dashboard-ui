@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import useApiClient from "@/hooks/use-api-client"
 import useLocalStorage from "@/hooks/use-local-storage"
-import { fetchAdminQuotePending } from "@/lib/api"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { ViewIcon } from "lucide-react"
 import { Suspense } from "react"
@@ -19,22 +18,26 @@ function Loader() {
 }
 
 function QuoteListPendingRaw() {
+  const client = useApiClient()
+
   const { data } = useSuspenseQuery({
     queryKey: ["quotes-pending"],
-    queryFn: fetchAdminQuotePending,
+    queryFn: () => client.listPendingQuotes(),
   })
 
   return (
     <>
-      <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+      {data.data && (
+        <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
+          {JSON.stringify(data.data, null, 2)}
+        </pre>
+      )}
     </>
   )
 }
 
 function QuoteListPending() {
-  const client = useApiClient();
+  const client = useApiClient()
 
   const { data } = useSuspenseQuery({
     queryKey: ["quotes-pending"],
@@ -44,16 +47,20 @@ function QuoteListPending() {
   return (
     <>
       <div className="flex flex-col gap-1">
-        {data.data ? data.data.quotes.map((it, index) => {
-          return (
-            <div key={index} className="flex gap-1 items-center text-sm">
-              <span>{it}</span>
-              <Button size="sm">
-                <ViewIcon />
-              </Button>
-            </div>
-          )
-        }) : (<></>)}
+        {data.data ? (
+          data.data.quotes.map((it, index) => {
+            return (
+              <div key={index} className="flex gap-1 items-center text-sm">
+                <span>{it}</span>
+                <Button size="sm">
+                  <ViewIcon />
+                </Button>
+              </div>
+            )
+          })
+        ) : (
+          <></>
+        )}
       </div>
     </>
   )
@@ -62,13 +69,7 @@ function QuoteListPending() {
 function DevSection() {
   const [devMode] = useLocalStorage("devMode", false)
 
-  return (
-    <>
-      {devMode && (
-        <QuoteListPendingRaw />
-      )}
-    </>
-  )
+  return <>{devMode && <QuoteListPendingRaw />}</>
 }
 
 function PageBody() {

@@ -1,9 +1,9 @@
 import { http, delay, HttpResponse } from "msw"
 import { API_URL } from "@/constants/api"
-import type { QuoteListResponse } from "@/lib/api"
 import { ADMIN_QUOTE_PENDING } from "@/constants/endpoints"
+import { ListPendingQuotesResponse } from "@/generated/client"
 
-export const fetchAdminQuotePending = http.get<never, never, QuoteListResponse>(
+export const fetchAdminQuotePending = http.get<never, never, ListPendingQuotesResponse>(
   `${API_URL}${ADMIN_QUOTE_PENDING}`,
   async () => {
     await delay(1_000)
