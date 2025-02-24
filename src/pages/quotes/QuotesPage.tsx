@@ -3,7 +3,7 @@ import { H3 } from "@/components/Headings"
 import { PageTitle } from "@/components/PageTitle"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import useApiClient from "@/hooks/use-api-client"
+import { listPendingQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { ViewIcon } from "lucide-react"
@@ -19,11 +19,8 @@ function Loader() {
 }
 
 function QuoteListPendingRaw() {
-  const client = useApiClient()
-
   const { data } = useSuspenseQuery({
-    queryKey: ["quotes-pending"],
-    queryFn: () => client.listPendingQuotes(),
+    ...listPendingQuotesOptions({}),
   })
 
   return (
@@ -37,35 +34,29 @@ function QuoteListPendingRaw() {
 
 function QuoteListPending() {
   const navigate = useNavigate()
-  const client = useApiClient()
 
   const { data } = useSuspenseQuery({
-    queryKey: ["quotes-pending"],
-    queryFn: () => client.listPendingQuotes(),
+    ...listPendingQuotesOptions({}),
   })
 
   return (
     <>
       <div className="flex flex-col gap-1">
-        {data.data ? (
-          data.data.quotes.map((it, index) => {
-            return (
-              <div key={index} className="flex gap-1 items-center text-sm">
-                <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    void navigate("/quotes/:id".replace(":id", it))
-                  }}
-                >
-                  <ViewIcon />
-                </Button>
-              </div>
-            )
-          })
-        ) : (
-          <></>
-        )}
+        {data.quotes.map((it, index) => {
+          return (
+            <div key={index} className="flex gap-1 items-center text-sm">
+              <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
+              <Button
+                size="sm"
+                onClick={() => {
+                  void navigate("/quotes/:id".replace(":id", it))
+                }}
+              >
+                <ViewIcon />
+              </Button>
+            </div>
+          )
+        })}
       </div>
     </>
   )

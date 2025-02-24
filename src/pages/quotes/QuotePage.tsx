@@ -3,7 +3,7 @@ import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { InfoReply } from "@/generated/client"
-import useApiClient from "@/hooks/use-api-client"
+import { adminLookupQuoteOptions } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
@@ -49,16 +49,12 @@ function Quote({ value }: { value: InfoReply }) {
 function DevSection({ id }: { id: InfoReply["id"] }) {
   const [devMode] = useLocalStorage("devMode", false)
 
-  const client = useApiClient()
-
   const { data } = useSuspenseQuery({
-    queryKey: ["quote", id],
-    queryFn: () =>
-      client.adminLookupQuote({
-        path: {
-          id,
-        },
-      }),
+    ...adminLookupQuoteOptions({
+      path: {
+        id,
+      },
+    }),
   })
 
   return (
@@ -75,25 +71,17 @@ function DevSection({ id }: { id: InfoReply["id"] }) {
 }
 
 function PageBody({ id }: { id: InfoReply["id"] }) {
-  const client = useApiClient()
-
   const { data } = useSuspenseQuery({
-    queryKey: ["quote", id],
-    queryFn: () =>
-      client.adminLookupQuote({
-        path: {
-          id,
-        },
-      }),
+    ...adminLookupQuoteOptions({
+      path: {
+        id,
+      },
+    }),
   })
 
   return (
     <>
-      {data.data && (
-        <>
-          <Quote value={data.data} />
-        </>
-      )}
+      <Quote value={data} />
     </>
   )
 }
