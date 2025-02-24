@@ -20,6 +20,7 @@ export default tseslint.config(
       'dist',
       '.storybook',
       'public/mockServiceWorker.js',
+      'src/generated',
     ]
   }, {
     extends: [
