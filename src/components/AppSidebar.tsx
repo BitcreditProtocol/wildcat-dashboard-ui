@@ -20,7 +20,7 @@ const items = [
     icon: Home,
   },
   {
-    title: "Balance",
+    title: "Balances",
     url: "/balances",
     icon: Bitcoin,
   },

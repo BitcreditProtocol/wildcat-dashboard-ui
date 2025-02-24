@@ -1,4 +1,4 @@
-import { ADMIN_QUOTE_ACCEPTED, ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING, INFO } from "@/constants/endpoints"
+import { ADMIN_QUOTE_ACCEPTED, ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING, BALANCES, INFO } from "@/constants/endpoints"
 import { apiFetch } from "@/utils/api"
 
 export interface InfoResponse {
@@ -27,6 +27,33 @@ export interface InfoResponse {
 
 export async function fetchInfo(): Promise<InfoResponse> {
   return apiFetch<InfoResponse>(INFO, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+}
+
+export interface BalancesResponse {
+  bitcoin: {
+    value: string
+    currency: string
+  }
+  eiou: {
+    value: string
+    currency: string
+  }
+  debit: {
+    value: string
+    currency: string
+  }
+  credit: {
+    value: string
+    currency: string
+  }
+}
+
+export async function fetchBalances(): Promise<BalancesResponse> {
+  return apiFetch<BalancesResponse>(BALANCES, {
     headers: {
       "Content-Type": "application/json",
     },
