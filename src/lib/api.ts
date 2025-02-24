@@ -71,7 +71,7 @@ interface QuotePending extends QuoteBase {
   suggested_expiration: number
 }
 interface QuoteOffered extends QuoteBase {
-  ttl: number,
+  ttl: number
   signatures: unknown[]
 }
 interface QuoteDenied extends QuoteBase {
@@ -80,7 +80,7 @@ interface QuoteDenied extends QuoteBase {
 interface QuoteAccepted extends QuoteBase {
   signatures: unknown[]
 }
-interface QuoteRejected extends QuoteBase  {
+interface QuoteRejected extends QuoteBase {
   tstamp: number
 }
 
