@@ -3,6 +3,7 @@ import { H3 } from "@/components/Headings"
 import { PageTitle } from "@/components/PageTitle"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import useLocalStorage from "@/hooks/use-local-storage"
 import { fetchAdminQuotePending } from "@/lib/api"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { ViewIcon } from "lucide-react"
@@ -55,13 +56,24 @@ function QuoteListPending() {
   )
 }
 
+function DevSection() {
+  const [devMode] = useLocalStorage("devMode", false)
+
+  return (
+    <>
+      {devMode && (
+        <QuoteListPendingRaw />
+      )}
+    </>
+  )
+}
+
 function PageBody() {
   return (
     <>
       <H3>Pending</H3>
       <Suspense fallback={<Loader />}>
         <QuoteListPending />
-        <QuoteListPendingRaw />
       </Suspense>
     </>
   )
@@ -73,6 +85,9 @@ export default function QuotesPage() {
       <Breadcrumbs>Quotes</Breadcrumbs>
       <PageTitle>Quotes</PageTitle>
       <PageBody />
+      <Suspense>
+        <DevSection />
+      </Suspense>
     </>
   )
 }

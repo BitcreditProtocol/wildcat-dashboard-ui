@@ -7,6 +7,7 @@ import { PropsWithChildren, Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BalancesResponse, fetchBalances } from "@/lib/api"
 import { useSuspenseQuery } from "@tanstack/react-query"
+import useLocalStorage from "@/hooks/use-local-storage"
 
 function Loader() {
   return (
@@ -175,10 +176,26 @@ function PageBody() {
           <OtherBalanceChart />
         </Card>
       </div>
+    </>
+  )
+}
 
+
+function DevSection() {
+  const [devMode] = useLocalStorage("devMode", false)
+  const { data } = useSuspenseQuery({
+    queryKey: ["balances"],
+    queryFn: fetchBalances,
+  })
+
+  return (
+    <>
+      {devMode && (
+        
       <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
         {JSON.stringify(data, null, 2)}
       </pre>
+      )}
     </>
   )
 }
@@ -191,6 +208,7 @@ export default function BalancesPage() {
 
       <Suspense fallback={<Loader />}>
         <PageBody />
+        <DevSection />
       </Suspense>
     </>
   )
