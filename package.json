@@ -13,7 +13,7 @@
     "docker:build": "docker build --tag wildcat-dashboard-ui .",
     "docker:rebuild": "npm run docker:build -- --no-cache",
     "docker:up": "docker compose up",
-    "client:generate": "npx @hey-api/openapi-ts --input opt/wildcat/__dev_openapi.json --output src/generated/client --client @hey-api/client-fetch"
+    "openapi-ts": "openapi-ts"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.8.1",
