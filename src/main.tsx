@@ -10,6 +10,7 @@ import SettingsPage from "./pages/settings/SettingsPage"
 import meta from "./constants/meta"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import InfoPage from "./pages/info/InfoPage"
+import QuotePage from "./pages/quotes/QuotePage"
 
 const queryClient = new QueryClient()
 
@@ -30,6 +31,7 @@ void prepare().then(() => {
               <Route index element={<HomePage />} />
               <Route path="balances" element={<BalancesPage />} />
               <Route path="quotes" element={<QuotesPage />} />
+              <Route path="quotes/:id" element={<QuotePage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="info" element={<InfoPage />} />
             </Route>

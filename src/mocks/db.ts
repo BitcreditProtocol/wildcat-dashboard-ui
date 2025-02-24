@@ -16,8 +16,8 @@ export const db = factory({
     suggested_expiration: nullable(String), // pending
     ttl: nullable(String), // offered
     signatures: Array<string>, // accepted
-    tstamp: nullable(String) // rejected
-  }
+    tstamp: nullable(String), // rejected
+  },
 })
 
 db.info.create({

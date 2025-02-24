@@ -27,11 +27,9 @@ function QuoteListPendingRaw() {
 
   return (
     <>
-      {data.data && (
-        <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-          {JSON.stringify(data.data, null, 2)}
-        </pre>
-      )}
+      <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
+        {JSON.stringify(data, null, 2)}
+      </pre>
     </>
   )
 }
