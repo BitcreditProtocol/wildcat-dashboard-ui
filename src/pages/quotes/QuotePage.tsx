@@ -11,6 +11,7 @@ import {
 } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
+import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
 import { Link, useParams } from "react-router"
 
@@ -22,16 +23,30 @@ function Loader() {
   )
 }
 
-function QuoteActions({ value }: { value: InfoReply }) {
+function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
   const queryClient = useQueryClient()
 
-  const resolveQuote = useMutation({
+  const denyQuote = useMutation({
     ...resolveQuoteMutation(),
     onError: (error) => {
       console.log(error)
     },
-    onSuccess: (data) => {
-      console.log(data)
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: adminLookupQuoteQueryKey({
+          path: {
+            id: value.id,
+          },
+        }),
+      })
+    },
+  })
+  const offerQuote = useMutation({
+    ...resolveQuoteMutation(),
+    onError: (error) => {
+      console.log(error)
+    },
+    onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: adminLookupQuoteQueryKey({
           path: {
@@ -43,7 +58,7 @@ function QuoteActions({ value }: { value: InfoReply }) {
   })
 
   const onDenyQuote = () => {
-    resolveQuote.mutate({
+    denyQuote.mutate({
       path: {
         id: value.id,
       },
@@ -54,7 +69,7 @@ function QuoteActions({ value }: { value: InfoReply }) {
   }
 
   const onOfferQuote = () => {
-    resolveQuote.mutate({
+    offerQuote.mutate({
       path: {
         id: value.id,
       },
@@ -69,18 +84,26 @@ function QuoteActions({ value }: { value: InfoReply }) {
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button className="flex-1" onClick={onDenyQuote} disabled={value.status === "denied"}>
-          Deny
+        <Button
+          className="flex-1"
+          onClick={onDenyQuote}
+          disabled={isFetching || denyQuote.isPending || value.status === "denied"}
+        >
+          Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
         </Button>
-        <Button className="flex-1" onClick={onOfferQuote} disabled={value.status === "offered"}>
-          Offer
+        <Button
+          className="flex-1"
+          onClick={onOfferQuote}
+          disabled={isFetching || offerQuote.isPending || value.status === "offered"}
+        >
+          Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
         </Button>
       </div>
     </>
   )
 }
 
-function Quote({ value }: { value: InfoReply }) {
+function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -101,7 +124,7 @@ function Quote({ value }: { value: InfoReply }) {
           </TableBody>
         </Table>
 
-        <QuoteActions value={value} />
+        <QuoteActions value={value} isFetching={isFetching} />
       </div>
     </>
   )
@@ -132,7 +155,7 @@ function DevSection({ id }: { id: InfoReply["id"] }) {
 }
 
 function PageBody({ id }: { id: InfoReply["id"] }) {
-  const { data } = useSuspenseQuery({
+  const { data, isFetching } = useSuspenseQuery({
     ...adminLookupQuoteOptions({
       path: {
         id,
@@ -142,7 +165,10 @@ function PageBody({ id }: { id: InfoReply["id"] }) {
 
   return (
     <>
-      <Quote value={data} />
+      <div className="flex items-center gap-1">
+        <span>{isFetching && <LoaderIcon className="stroke-1 animate-spin" />}</span>
+      </div>
+      <Quote value={data} isFetching={isFetching} />
     </>
   )
 }
