@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { listPendingQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { ViewIcon } from "lucide-react"
+import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
 import { Link, useNavigate } from "react-router"
 
@@ -35,24 +35,39 @@ function QuoteListPendingRaw() {
 function QuoteListPending() {
   const navigate = useNavigate()
 
-  const { data } = useSuspenseQuery({
+  const { data, isFetching } = useSuspenseQuery({
     ...listPendingQuotesOptions({}),
   })
 
   return (
     <>
+      <H3>
+        <span className="flex items-center gap-1">
+          <span>Pending</span>
+          <span>{isFetching && <LoaderIcon className="stroke-1 animate-spin" />}</span>
+        </span>
+      </H3>
+
       <div className="flex flex-col gap-1">
         {data.quotes.map((it, index) => {
           return (
             <div key={index} className="flex gap-1 items-center text-sm">
-              <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
+              {isFetching ? (
+                <>{it}</>
+              ) : (
+                <>
+                  <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
+                </>
+              )}
+
               <Button
                 size="sm"
+                disabled={isFetching}
                 onClick={() => {
                   void navigate("/quotes/:id".replace(":id", it))
                 }}
               >
-                <ViewIcon />
+                View
               </Button>
             </div>
           )
@@ -71,7 +86,6 @@ function DevSection() {
 function PageBody() {
   return (
     <>
-      <H3>Pending</H3>
       <Suspense fallback={<Loader />}>
         <QuoteListPending />
       </Suspense>
