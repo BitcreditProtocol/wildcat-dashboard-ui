@@ -1,4 +1,4 @@
-import { factory, nullable, oneOf, primaryKey } from "@mswjs/data"
+import { factory, nullable, primaryKey } from "@mswjs/data"
 
 export const db = factory({
   info: {
@@ -24,7 +24,7 @@ export const db = factory({
     ttl: nullable(String), // offered
     signatures: Array<string>, // accepted
     tstamp: nullable(String), // rejected
-  }
+  },
 })
 
 db.info.create({
@@ -40,8 +40,8 @@ db.quotes.create({
   bill: {
     id: "5bd3f9b8-85bd-488e-a7ca-2b35bd343e7c",
     sum: 42,
-    maturity_date: "2025-01-01"
-  }
+    maturity_date: "2025-01-01",
+  },
 })
 
 db.quotes.create({
