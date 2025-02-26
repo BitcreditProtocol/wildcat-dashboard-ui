@@ -88,14 +88,14 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
         <Button
           className="flex-1"
           onClick={onDenyQuote}
-          disabled={isFetching || denyQuote.isPending || value.status === "denied"}
+          disabled={isFetching || denyQuote.isPending || value.status !== "pending"}
         >
           Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
         </Button>
         <Button
           className="flex-1"
           onClick={onOfferQuote}
-          disabled={isFetching || offerQuote.isPending || value.status === "offered"}
+          disabled={isFetching || offerQuote.isPending || value.status !== "pending"}
         >
           Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
         </Button>
