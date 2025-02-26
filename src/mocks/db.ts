@@ -9,8 +9,15 @@ export const db = factory({
   },
   quotes: {
     id: primaryKey(String),
-    bill: nullable(String),
-    endorser: nullable(String),
+    bill: {
+      id: nullable(String),
+      drawee: nullable(String),
+      drawer: nullable(String),
+      holder: nullable(String),
+      payee: nullable(String),
+      sum: Number,
+      maturity_date: String,
+    },
     status: nullable(String),
     submitted: nullable(String), // pending
     suggested_expiration: nullable(String), // pending
@@ -30,6 +37,11 @@ db.info.create({
 db.quotes.create({
   id: "63777d15-ce53-4cca-94bf-7726c7930aab",
   status: "pending",
+  bill: {
+    id: "5bd3f9b8-85bd-488e-a7ca-2b35bd343e7c",
+    sum: 42,
+    maturity_date: "2025-01-01",
+  },
 })
 
 db.quotes.create({

@@ -1,11 +1,18 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { InfoReply } from "@/generated/client"
-import { adminLookupQuoteOptions } from "@/generated/client/@tanstack/react-query.gen"
+import {
+  adminLookupQuoteOptions,
+  adminLookupQuoteQueryKey,
+  resolveQuoteMutation,
+} from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
+import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
 import { Link, useParams } from "react-router"
 
@@ -17,11 +24,91 @@ function Loader() {
   )
 }
 
-function Quote({ value }: { value: InfoReply }) {
+function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
+  const queryClient = useQueryClient()
+
+  const denyQuote = useMutation({
+    ...resolveQuoteMutation(),
+    onError: (error) => {
+      console.log(error)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: adminLookupQuoteQueryKey({
+          path: {
+            id: value.id,
+          },
+        }),
+      })
+    },
+  })
+  const offerQuote = useMutation({
+    ...resolveQuoteMutation(),
+    onError: (error) => {
+      console.log(error)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: adminLookupQuoteQueryKey({
+          path: {
+            id: value.id,
+          },
+        }),
+      })
+    },
+  })
+
+  const onDenyQuote = () => {
+    denyQuote.mutate({
+      path: {
+        id: value.id,
+      },
+      body: {
+        action: "deny",
+      },
+    })
+  }
+
+  const onOfferQuote = () => {
+    offerQuote.mutate({
+      path: {
+        id: value.id,
+      },
+      body: {
+        action: "offer",
+        discount: "1",
+        ttl: "1",
+      },
+    })
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <Button
+          className="flex-1"
+          onClick={onDenyQuote}
+          disabled={isFetching || denyQuote.isPending || value.status !== "pending"}
+        >
+          Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={onOfferQuote}
+          disabled={isFetching || offerQuote.isPending || value.status !== "pending"}
+        >
+          Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+        </Button>
+      </div>
+    </>
+  )
+}
+
+function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
   return (
     <>
       <div className="flex flex-col gap-1">
-        <Table>
+        <Table className="my-2">
           <TableBody>
             <TableRow>
               <TableCell>id: </TableCell>
@@ -29,18 +116,20 @@ function Quote({ value }: { value: InfoReply }) {
             </TableRow>
             <TableRow>
               <TableCell>status: </TableCell>
-              <TableCell>{value.status}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>endorser: </TableCell>
-              <TableCell>{value.endorser || "(empty)"}</TableCell>
+              <TableCell>
+                <Badge variant={["rejected", "denied"].includes(value.status) ? "destructive" : "default"}>
+                  {value.status}
+                </Badge>
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell>bill: </TableCell>
-              <TableCell>{value.bill || "(empty)"}</TableCell>
+              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill, null, 2)}</pre> : "(empty)"}</TableCell>
             </TableRow>
           </TableBody>
         </Table>
+
+        <QuoteActions value={value} isFetching={isFetching} />
       </div>
     </>
   )
@@ -71,7 +160,7 @@ function DevSection({ id }: { id: InfoReply["id"] }) {
 }
 
 function PageBody({ id }: { id: InfoReply["id"] }) {
-  const { data } = useSuspenseQuery({
+  const { data, isFetching } = useSuspenseQuery({
     ...adminLookupQuoteOptions({
       path: {
         id,
@@ -81,7 +170,10 @@ function PageBody({ id }: { id: InfoReply["id"] }) {
 
   return (
     <>
-      <Quote value={data} />
+      <div className="flex items-center gap-1">
+        <span>{isFetching && <LoaderIcon className="stroke-1 animate-spin" />}</span>
+      </div>
+      <Quote value={data} isFetching={isFetching} />
     </>
   )
 }

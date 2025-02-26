@@ -22,14 +22,12 @@ export function Breadcrumbs({ parents, children }: PropsWithChildren<{ parents?:
         {parents && (
           <>
             {parents.map((it, index) => (
-              <>
-                <BreadcrumbItem key={index}>
-                  <BreadcrumbLink asChild>
-                    <Link to="/">{it}</Link>
-                  </BreadcrumbLink>
+              <div className="flex items-center gap-2" key={index}>
+                <BreadcrumbItem>
+                  <>{it}</>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
-              </>
+              </div>
             ))}
           </>
         )}
