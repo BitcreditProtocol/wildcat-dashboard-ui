@@ -1,7 +1,13 @@
 import { http, delay, HttpResponse, StrictResponse } from "msw"
 import { API_URL } from "@/constants/api"
-import { ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING } from "@/constants/endpoints"
-import { AdminLookupQuoteResponse, InfoReply, ListPendingQuotesResponse, ResolveRequest } from "@/generated/client"
+import { ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING, ADMIN_QUOTE_ACCEPTED } from "@/constants/endpoints"
+import {
+  AdminLookupQuoteResponse,
+  InfoReply,
+  ListAcceptedQuotesResponse,
+  ListPendingQuotesResponse,
+  ResolveRequest,
+} from "@/generated/client"
 import { db } from "../db"
 
 export const fetchAdminQuotePending = http.get<never, never, ListPendingQuotesResponse>(
@@ -10,6 +16,19 @@ export const fetchAdminQuotePending = http.get<never, never, ListPendingQuotesRe
     await delay(1_000)
 
     const data = db.quotes.getAll().filter((it) => it.status === "pending")
+
+    return HttpResponse.json({
+      quotes: data.map((it) => it.id),
+    })
+  },
+)
+
+export const fetchAdminQuoteAccepted = http.get<never, never, ListAcceptedQuotesResponse>(
+  `${API_URL}${ADMIN_QUOTE_ACCEPTED}`,
+  async () => {
+    await delay(1_000)
+
+    const data = db.quotes.getAll().filter((it) => it.status === "accepted")
 
     return HttpResponse.json({
       quotes: data.map((it) => it.id),
