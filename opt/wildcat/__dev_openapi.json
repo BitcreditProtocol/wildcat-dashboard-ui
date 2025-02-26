@@ -259,23 +259,23 @@
       "Id": {
         "type": "string",
         "format": "uuid",
-        "description": "Manuall added - should be replaced with generated one."
+        "description": "Manually added - should be replaced with generated one."
       },
       "P2PKWitness": {
         "type": "string",
-        "description": "Manuall added - should be replaced with generated one."
+        "description": "Manually added - should be replaced with generated one."
       },
       "HTLCWitness": {
         "type": "string",
-        "description": "Manuall added - should be replaced with generated one."
+        "description": "Manually added - should be replaced with generated one."
       },
       "Resolve": {
         "type": "string",
-        "description": "Manuall added - should be replaced with generated one."
+        "description": "Manually added - should be replaced with generated one."
       },
       "IdentityPublicData": {
         "type": "string",
-        "description": "Manuall added - should be replaced with generated one."
+        "description": "Manually added - should be replaced with generated one."
       },
       "Amount": {
         "type": "integer",
