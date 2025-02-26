@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "wildcat",
+    "title": "bcr-wdc-quote-service",
     "description": "",
     "license": {
       "name": ""
@@ -10,38 +10,6 @@
   },
   "paths": {
     "/v1/admin/credit/quote/{id}": {
-      "get": {
-        "tags": [
-          "crate::credit::admin"
-        ],
-        "operationId": "admin_lookup_quote",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The quote id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succesful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InfoReply"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Quote id not  found"
-          }
-        }
-      },
       "post": {
         "tags": [
           "crate::credit::admin"
@@ -71,6 +39,39 @@
         "responses": {
           "200": {
             "description": "Succesful response"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "crate::credit::admin"
+        ],
+        "operationId": "admin_lookup_quote",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfoReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quote id not  found"
           }
         }
       }
@@ -189,7 +190,8 @@
             "description": "The quote id",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -223,7 +225,8 @@
             "description": "The quote id",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -256,33 +259,67 @@
       "Id": {
         "type": "string",
         "format": "uuid",
-        "description": "Manually added - should be replaced with generated one"
+        "description": "Manuall added - should be replaced with generated one."
       },
-      "BlindSignatureDleq": {
+      "P2PKWitness": {
         "type": "string",
-        "description": "Manually added - should be replaced with generated one"
+        "description": "Manuall added - should be replaced with generated one."
       },
-      "Witness": {
+      "HTLCWitness": {
         "type": "string",
-        "description": "Manually added - should be replaced with generated one"
-      },
-      "TStamp": {
-        "type": "integer",
-        "format": "int64",
-        "description": "Manually added - should be replaced with generated one",
-        "minimum": 0
+        "description": "Manuall added - should be replaced with generated one."
       },
       "Resolve": {
-        "type": "integer",
-        "format": "int64",
-        "description": "Manually added - should be replaced with generated one",
-        "minimum": 0
+        "type": "string",
+        "description": "Manuall added - should be replaced with generated one."
+      },
+      "IdentityPublicData": {
+        "type": "string",
+        "description": "Manuall added - should be replaced with generated one."
       },
       "Amount": {
         "type": "integer",
         "format": "int64",
         "description": "Amount can be any unit",
         "minimum": 0
+      },
+      "BillInfo": {
+        "type": "object",
+        "description": "--------------------------- Enquire mint quote",
+        "required": [
+          "id",
+          "drawee",
+          "drawer",
+          "payee",
+          "holder",
+          "sum",
+          "maturity_date"
+        ],
+        "properties": {
+          "drawee": {
+            "$ref": "#/components/schemas/IdentityPublicData"
+          },
+          "drawer": {
+            "$ref": "#/components/schemas/IdentityPublicData"
+          },
+          "holder": {
+            "$ref": "#/components/schemas/IdentityPublicData"
+          },
+          "id": {
+            "type": "string"
+          },
+          "maturity_date": {
+            "type": "string"
+          },
+          "payee": {
+            "$ref": "#/components/schemas/IdentityPublicData"
+          },
+          "sum": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
       },
       "BlindSignature": {
         "type": "object",
@@ -310,6 +347,24 @@
           },
           "id": {
             "$ref": "#/components/schemas/Id"
+          }
+        }
+      },
+      "BlindSignatureDleq": {
+        "type": "object",
+        "description": "Blinded Signature on Dleq\n\nDefined in [NUT12](https://github.com/cashubtc/nuts/blob/main/12.md)",
+        "required": [
+          "e",
+          "s"
+        ],
+        "properties": {
+          "e": {
+            "type": "string",
+            "description": "e"
+          },
+          "s": {
+            "type": "string",
+            "description": "s"
           }
         }
       },
@@ -358,22 +413,22 @@
         "type": "object",
         "description": "--------------------------- Enquire mint quote",
         "required": [
-          "bill",
-          "node",
+          "content",
+          "signature",
           "outputs"
         ],
         "properties": {
-          "bill": {
-            "type": "string"
-          },
-          "node": {
-            "type": "string"
+          "content": {
+            "$ref": "#/components/schemas/BillInfo"
           },
           "outputs": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BlindedMessage"
             }
+          },
+          "signature": {
+            "type": "string"
           }
         }
       },
@@ -384,17 +439,13 @@
             "required": [
               "id",
               "bill",
-              "endorser",
               "submitted",
               "suggested_expiration",
               "status"
             ],
             "properties": {
               "bill": {
-                "type": "string"
-              },
-              "endorser": {
-                "type": "string"
+                "$ref": "#/components/schemas/BillInfo"
               },
               "id": {
                 "type": "string",
@@ -421,17 +472,13 @@
             "required": [
               "id",
               "bill",
-              "endorser",
               "ttl",
               "signatures",
               "status"
             ],
             "properties": {
               "bill": {
-                "type": "string"
-              },
-              "endorser": {
-                "type": "string"
+                "$ref": "#/components/schemas/BillInfo"
               },
               "id": {
                 "type": "string",
@@ -460,15 +507,11 @@
             "required": [
               "id",
               "bill",
-              "endorser",
               "status"
             ],
             "properties": {
               "bill": {
-                "type": "string"
-              },
-              "endorser": {
-                "type": "string"
+                "$ref": "#/components/schemas/BillInfo"
               },
               "id": {
                 "type": "string",
@@ -487,16 +530,12 @@
             "required": [
               "id",
               "bill",
-              "endorser",
               "signatures",
               "status"
             ],
             "properties": {
               "bill": {
-                "type": "string"
-              },
-              "endorser": {
-                "type": "string"
+                "$ref": "#/components/schemas/BillInfo"
               },
               "id": {
                 "type": "string",
@@ -521,16 +560,12 @@
             "required": [
               "id",
               "bill",
-              "endorser",
               "tstamp",
               "status"
             ],
             "properties": {
               "bill": {
-                "type": "string"
-              },
-              "endorser": {
-                "type": "string"
+                "$ref": "#/components/schemas/BillInfo"
               },
               "id": {
                 "type": "string",
@@ -543,7 +578,8 @@
                 ]
               },
               "tstamp": {
-                "$ref": "#/components/schemas/TStamp"
+                "type": "string",
+                "format": "date-time"
               }
             }
           }
@@ -686,7 +722,8 @@
             ],
             "properties": {
               "expiration_date": {
-                "$ref": "#/components/schemas/TStamp"
+                "type": "string",
+                "format": "date-time"
               },
               "signatures": {
                 "type": "array",
@@ -737,7 +774,8 @@
                 ]
               },
               "tstamp": {
-                "$ref": "#/components/schemas/TStamp"
+                "type": "string",
+                "format": "date-time"
               }
             }
           }
@@ -746,6 +784,17 @@
         "discriminator": {
           "propertyName": "status"
         }
+      },
+      "Witness": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/P2PKWitness"
+          },
+          {
+            "$ref": "#/components/schemas/HTLCWitness"
+          }
+        ],
+        "description": "Witness"
       }
     }
   }

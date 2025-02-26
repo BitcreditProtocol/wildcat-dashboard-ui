@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
@@ -107,7 +108,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
   return (
     <>
       <div className="flex flex-col gap-1">
-        <Table>
+        <Table className="my-2">
           <TableBody>
             <TableRow>
               <TableCell>id: </TableCell>
@@ -115,11 +116,11 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
             </TableRow>
             <TableRow>
               <TableCell>status: </TableCell>
-              <TableCell>{value.status}</TableCell>
+              <TableCell><Badge variant={['rejected', 'denied'].includes(value.status) ? 'destructive' : 'default'}>{value.status}</Badge></TableCell>
             </TableRow>
             <TableRow>
               <TableCell>bill: </TableCell>
-              <TableCell>{value.bill || "(empty)"}</TableCell>
+              <TableCell>{value.bill ? (<pre>{JSON.stringify(value.bill, null, 2)}</pre>) : "(empty)"}</TableCell>
             </TableRow>
           </TableBody>
         </Table>
