@@ -116,11 +116,15 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
             </TableRow>
             <TableRow>
               <TableCell>status: </TableCell>
-              <TableCell><Badge variant={['rejected', 'denied'].includes(value.status) ? 'destructive' : 'default'}>{value.status}</Badge></TableCell>
+              <TableCell>
+                <Badge variant={["rejected", "denied"].includes(value.status) ? "destructive" : "default"}>
+                  {value.status}
+                </Badge>
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell>bill: </TableCell>
-              <TableCell>{value.bill ? (<pre>{JSON.stringify(value.bill, null, 2)}</pre>) : "(empty)"}</TableCell>
+              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill, null, 2)}</pre> : "(empty)"}</TableCell>
             </TableRow>
           </TableBody>
         </Table>
