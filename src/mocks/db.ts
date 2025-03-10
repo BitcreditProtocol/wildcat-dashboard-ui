@@ -83,7 +83,7 @@ const CHARLIE = db.identity_public_data.create({
   zip: faker.location.zipCode()
 })
 
-const AMOUNT_OF_BILLS = 12
+const AMOUNT_OF_BILLS = 100
 const BILLS = Array.from(Array(AMOUNT_OF_BILLS).keys()).map(() => db.bill.create({
   id: faker.string.uuid(),
   sum: faker.number.int({ min: 21, max: 21 * 1_000}),
@@ -94,34 +94,32 @@ const BILLS = Array.from(Array(AMOUNT_OF_BILLS).keys()).map(() => db.bill.create
   holder: CHARLIE
 }))
 
-BILLS.slice(0, 3).forEach((bill) => {
-  db.quotes.create({
-    id: faker.string.uuid(),
-    status: "pending",
-    bill,
-  })
-})
+const PENDING_BILLS = BILLS.slice(0, 3)
+PENDING_BILLS.forEach((bill) => db.quotes.create({
+  id: faker.string.uuid(),
+  status: "pending",
+  bill,
+}))
 
-BILLS.slice(3, 6).forEach((bill) => {
-  db.quotes.create({
-    id: faker.string.uuid(),
-    status: "offered",
-    bill,
-  })
-})
+const OFFERED_BILLS = BILLS.slice(3, 6)
+OFFERED_BILLS.forEach((bill) => db.quotes.create({
+  id: faker.string.uuid(),
+  status: "offered",
+  bill,
+}))
 
-BILLS.slice(6, 9).forEach((bill) => {
+const REJECTED_BILLS = BILLS.slice(6, 9)
+REJECTED_BILLS.forEach((bill) => db.quotes.create({
+  id: faker.string.uuid(),
+  status: "rejected",
+  bill,
+}))
+
+const ACCEPTED_BILLS = BILLS.slice(9, 32)
+ACCEPTED_BILLS.forEach((bill) => {
   db.quotes.create({
     id: faker.string.uuid(),
     status: "accepted",
-    bill,
-  })
-})
-
-BILLS.slice(9, 12).forEach((bill) => {
-  db.quotes.create({
-    id: faker.string.uuid(),
-    status: "rejected",
     bill,
   })
 })
