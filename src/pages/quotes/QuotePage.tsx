@@ -15,6 +15,7 @@ import {
 import useLocalStorage from "@/hooks/use-local-storage"
 import { formatDate, humanReadableDurationDays } from "@/utils/dates"
 import { randomAvatar } from "@/utils/dev"
+import { truncateString } from "@/utils/strings"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
@@ -189,7 +190,9 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
           <TableBody>
             <TableRow>
               <TableCell className="font-bold">ID: </TableCell>
-              <TableCell>{value.id}</TableCell>
+              <TableCell>
+                <span className="font-mono">{value.id}</span>
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-bold">Status: </TableCell>
@@ -321,7 +324,9 @@ export default function QuotePage() {
       >
         {id}
       </Breadcrumbs>
-      <PageTitle>Quote {id}</PageTitle>
+      <PageTitle>
+        Quote <span className="font-mono">{truncateString(id, 16)}</span>
+      </PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody id={id} />
         <DevSection id={id} />

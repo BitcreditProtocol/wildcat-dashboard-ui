@@ -35,16 +35,23 @@ function QuoteListPending() {
       </H3>
 
       <div className="flex flex-col gap-1">
+        {data.quotes.length === 0 && (
+          <>
+            <div className="py-2 font-bold">💪 No pending quotes.</div>
+          </>
+        )}
         {data.quotes.map((it, index) => {
           return (
             <div key={index} className="flex gap-1 items-center text-sm">
-              {isFetching ? (
-                <>{it}</>
-              ) : (
-                <>
-                  <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
-                </>
-              )}
+              <span className="font-mono">
+                {isFetching ? (
+                  <>{it}</>
+                ) : (
+                  <>
+                    <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
+                  </>
+                )}
+              </span>
 
               <Button
                 size="sm"
@@ -80,16 +87,23 @@ function QuoteListAccepted() {
       </H3>
 
       <div className="flex flex-col gap-1">
+        {data.quotes.length === 0 && (
+          <>
+            <div className="py-2 font-bold">No accepted quotes.</div>
+          </>
+        )}
         {data.quotes.map((it, index) => {
           return (
             <div key={index} className="flex gap-1 items-center text-sm">
-              {isFetching ? (
-                <>{it}</>
-              ) : (
-                <>
-                  <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
-                </>
-              )}
+              <span className="font-mono">
+                {isFetching ? (
+                  <>{it}</>
+                ) : (
+                  <>
+                    <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
+                  </>
+                )}
+              </span>
 
               <Button
                 size="sm"
