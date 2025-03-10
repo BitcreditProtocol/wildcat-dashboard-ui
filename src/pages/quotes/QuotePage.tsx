@@ -11,6 +11,7 @@ import {
   resolveQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
+import { formatDate, humanReadableDurationDays } from "@/utils/dates"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
@@ -104,15 +105,21 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   )
 }
 
-function IdentityPublicDataCard({ value } : { value?: IdentityPublicData}) {
-  return (<>
-    <div className="flex flex-col">
-      <div>{value?.name}</div>
-      <div>{value?.email}</div>
-      <div>{value?.address}, {value?.zip}, {value?.city}, {value?.country}</div>
-      <div><pre>{value?.node_id}</pre></div>
-    </div>
-  </>)
+function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
+  return (
+    <>
+      <div className="flex flex-col">
+        <div>{value?.name}</div>
+        <div>{value?.email}</div>
+        <div>
+          {value?.address}, {value?.zip}, {value?.city}, {value?.country}
+        </div>
+        <div>
+          <pre>{value?.node_id}</pre>
+        </div>
+      </div>
+    </>
+  )
 }
 
 function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
@@ -139,23 +146,40 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
             </TableRow>
             <TableRow>
               <TableCell>maturity date: </TableCell>
-              <TableCell>{value.bill?.maturity_date}</TableCell>
+              <TableCell>
+                {!value.bill?.maturity_date ? (
+                  <>(empty)</>
+                ) : (
+                  <div className="flex gap-0.5">
+                    <span>{formatDate("en", new Date(Date.parse(value.bill.maturity_date)))}</span>
+                    <span>({humanReadableDurationDays("en", new Date(Date.parse(value.bill.maturity_date)))})</span>
+                  </div>
+                )}
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell>drawee: </TableCell>
-              <TableCell><IdentityPublicDataCard value={value.bill?.drawee} /></TableCell>
+              <TableCell>
+                <IdentityPublicDataCard value={value.bill?.drawee} />
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell>drawer: </TableCell>
-              <TableCell><IdentityPublicDataCard value={value.bill?.drawer} /></TableCell>
+              <TableCell>
+                <IdentityPublicDataCard value={value.bill?.drawer} />
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell>payee: </TableCell>
-              <TableCell><IdentityPublicDataCard value={value.bill?.payee} /></TableCell>
+              <TableCell>
+                <IdentityPublicDataCard value={value.bill?.payee} />
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell>holder: </TableCell>
-              <TableCell><IdentityPublicDataCard value={value.bill?.holder} /></TableCell>
+              <TableCell>
+                <IdentityPublicDataCard value={value.bill?.holder} />
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>
