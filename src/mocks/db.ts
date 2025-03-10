@@ -43,11 +43,22 @@ export const db = factory({
   },
 })
 
-db.info.create({
+const MINT_INFO = db.info.create({
   id: "0283bf290884eed3a7ca2663fc0260de2e2064d6b355ea13f98dec004b7a7ead99",
   name: "Bob's Wildcat mint",
   pubkey: "0283bf290884eed3a7ca2663fc0260de2e2064d6b355ea13f98dec004b7a7ead99",
   version: "Nutshell/0.15.0",
+})
+
+const MINT = db.identity_public_data.create({
+  node_id: MINT_INFO.id,
+  name: MINT_INFO.name ?? undefined,
+  email: faker.internet.exampleEmail({ firstName: MINT_INFO.name ?? undefined }),
+  type: "Company",
+  address: faker.location.streetAddress(),
+  city: faker.location.city(),
+  country: faker.location.country(),
+  zip: faker.location.zipCode(),
 })
 
 const ALICE = db.identity_public_data.create({
@@ -124,6 +135,16 @@ REJECTED_BILLS.forEach((bill) =>
 )
 
 const ACCEPTED_BILLS = BILLS.slice(9, 32)
+ACCEPTED_BILLS.forEach((bill) => {
+  return db.bill.update({
+    where: { id: { equals: bill.id } },
+    data: {
+      ...bill,
+      holder: MINT,
+    },
+  })
+})
+
 ACCEPTED_BILLS.forEach((bill) => {
   db.quotes.create({
     id: faker.string.uuid(),
