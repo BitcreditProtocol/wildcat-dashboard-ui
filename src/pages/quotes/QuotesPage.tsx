@@ -2,7 +2,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { H3 } from "@/components/Headings"
 import { PageTitle } from "@/components/PageTitle"
 import { Button } from "@/components/ui/button"
-import { Card, CardFooter, CardTitle } from "@/components/ui/card"
+import { Card, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { InfoReply } from "@/generated/client"
 import {
@@ -44,10 +44,10 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
   return (
     <>
       <Card className="text-sm">
-        <div className="flex items-center gap-4 px-6 pt-6">
-          <CardTitle className="flex flex-1 text-xl">
-            <div className="flex flex-1 items-center gap-1">
-              <span className="font-mono">
+        <div className="flex justify-between items-center gap-4 px-4 pt-4">
+          <CardTitle className="text-xl">
+            <div className="items-center flex gap-1">
+              <span className="font-mono pt-2">
                 {isFetching || isLoading ? (
                   <>{truncateString(id, 16)}</>
                 ) : (
@@ -59,11 +59,25 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
               <span>{isFetching && <LoaderIcon className="stroke-1 animate-spin" />}</span>
             </div>
           </CardTitle>
-          <div className="leading-none font-semibold tracking-tight text-3xl">
-            {formatNumber("en", data.bill?.sum)} sat
+          <div className="flex gap-2">
+            <div className="leading-none font-semibold tracking-tight text-3xl">
+              {formatNumber("en", data.bill?.sum)} sat
+            </div>
+            <Badge>{humanReadableDurationDays("en", new Date(Date.parse(data.bill.maturity_date)))}</Badge>
           </div>
-          <Badge>{humanReadableDurationDays("en", new Date(Date.parse(data.bill.maturity_date)))}</Badge>
-
+        </div>
+        <div className="flex justify-between items-center gap-4 px-4 py-2">
+          <div>
+            <Button
+              size="sm"
+              disabled={isFetching || isLoading}
+              onClick={() => {
+                void navigate("/quotes/:id".replace(":id", id))
+              }}
+            >
+              View
+            </Button>
+          </div>
           <ParticipantsOverviewCard
             drawee={data.bill?.drawee}
             drawer={data.bill?.drawer}
@@ -72,17 +86,6 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
             className="gap-1.5"
           />
         </div>
-        <CardFooter>
-          <Button
-            size="sm"
-            disabled={isFetching || isLoading}
-            onClick={() => {
-              void navigate("/quotes/:id".replace(":id", id))
-            }}
-          >
-            View
-          </Button>
-        </CardFooter>
       </Card>
     </>
   )
