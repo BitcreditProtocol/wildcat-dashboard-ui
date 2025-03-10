@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { IdentityPublicData, InfoReply } from "@/generated/client"
 import {
   adminLookupQuoteOptions,
@@ -118,32 +119,43 @@ function ParticipantsOverviewCard({
   holder?: IdentityPublicData
   payee?: IdentityPublicData
 }) {
+  ;<Tooltip />
   return (
     <>
       <div className="flex gap-0.5 items-center py-1">
         <div className="px-1">
-          <IdentityPublicDataAvatar value={drawee} />
+          <IdentityPublicDataAvatar value={drawee} tooltip="Drawee" />
         </div>
         <div className="px-1">
-          <IdentityPublicDataAvatar value={drawer} />
+          <IdentityPublicDataAvatar value={drawer} tooltip="Drawer" />
         </div>
         <div className="px-1">
-          <IdentityPublicDataAvatar value={holder} />
+          <IdentityPublicDataAvatar value={payee} tooltip="Payee" />
         </div>
         <div className="px-1">
-          <IdentityPublicDataAvatar value={payee} />
+          <IdentityPublicDataAvatar value={holder} tooltip="Holder" />
         </div>
       </div>
     </>
   )
 }
 
-function IdentityPublicDataAvatar({ value }: { value?: IdentityPublicData }) {
-  return (
+function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
+  const avatar = (
     <Avatar>
       <AvatarImage src={randomAvatar(value?.node_id.startsWith("03") ? "men" : "women", value?.node_id)} />
       <AvatarFallback>{value?.name}</AvatarFallback>
     </Avatar>
+  )
+  return !tooltip ? (
+    avatar
+  ) : (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>{avatar}</TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
@@ -176,11 +188,11 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
         <Table className="my-2">
           <TableBody>
             <TableRow>
-              <TableCell>id: </TableCell>
+              <TableCell className="font-bold">ID: </TableCell>
               <TableCell>{value.id}</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>status: </TableCell>
+              <TableCell className="font-bold">Status: </TableCell>
               <TableCell>
                 <Badge variant={["rejected", "denied"].includes(value.status) ? "destructive" : "default"}>
                   {value.status}
@@ -188,11 +200,11 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>sum: </TableCell>
+              <TableCell className="font-bold">Sum: </TableCell>
               <TableCell>{value.bill?.sum} sat</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>maturity date: </TableCell>
+              <TableCell className="font-bold">Maturity date: </TableCell>
               <TableCell>
                 {!value.bill?.maturity_date ? (
                   <>(empty)</>
@@ -205,7 +217,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>participants: </TableCell>
+              <TableCell className="font-bold">Participants: </TableCell>
               <TableCell>
                 <ParticipantsOverviewCard
                   drawee={value.bill?.drawee}
@@ -216,25 +228,25 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>drawee: </TableCell>
+              <TableCell className="font-bold">Drawee: </TableCell>
               <TableCell>
                 <IdentityPublicDataCard value={value.bill?.drawee} />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>drawer: </TableCell>
+              <TableCell className="font-bold">Drawer: </TableCell>
               <TableCell>
                 <IdentityPublicDataCard value={value.bill?.drawer} />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>payee: </TableCell>
+              <TableCell className="font-bold">Payee: </TableCell>
               <TableCell>
                 <IdentityPublicDataCard value={value.bill?.payee} />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>holder: </TableCell>
+              <TableCell className="font-bold">Holder: </TableCell>
               <TableCell>
                 <IdentityPublicDataCard value={value.bill?.holder} />
               </TableCell>
