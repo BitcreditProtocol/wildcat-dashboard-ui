@@ -26,10 +26,9 @@ export const db = factory({
     tstamp: nullable(String), // rejected
   },
   identity_public_data: {
-    id: primaryKey(String),
-    email: nullable(String),
+    node_id: primaryKey(String),
     name: String,
-    node_id: String,
+    email: nullable(String),
     nostr_relay: nullable(String),
     type: String,
     address: String,
@@ -38,6 +37,33 @@ export const db = factory({
     zip: nullable(String),
   },
 
+})
+
+const ALICE = db.identity_public_data.create({
+  node_id: "02544d32dee119cd518cec548abeb2e8c3bcc8bd2dd5b9f1200794746d2cf8d8da",
+  name: "Alice",
+  type: "Person",
+  address: "Street 1",
+  city: "London",
+  country: "UK",
+})
+
+const BOB = db.identity_public_data.create({
+  node_id: "03ebc85dd13b60a850a3274b367acd25a8c12e7c348428a1981212a5d556a746de",
+  name: "Bob",
+  type: "Person",
+  address: "Street 2",
+  city: "London",
+  country: "UK",
+})
+
+const CHARLIE = db.identity_public_data.create({
+  node_id: "035547a7c0c8638b2fe708eefa3fe6b51612d926ac209e009f49da37b25d558a36",
+  name: "Charlie",
+  type: "Person",
+  address: "Street 3",
+  city: "London",
+  country: "UK",
 })
 
 db.info.create({
@@ -54,6 +80,10 @@ db.quotes.create({
     id: "5bd3f9b8-85bd-488e-a7ca-2b35bd343e7c",
     sum: 42,
     maturity_date: "2025-01-01",
+    drawee: ALICE,
+    drawer: BOB,
+    payee: ALICE,
+    holder: CHARLIE
   },
 })
 
