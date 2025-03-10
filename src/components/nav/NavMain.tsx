@@ -12,6 +12,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { NavLink } from "react-router"
 
@@ -29,16 +30,18 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const { state } = useSidebar()
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <>
-            {(item.items ?? []).length === 0 ? (
+            {(item.items ?? []).length === 0 || state === "collapsed" ? (
               <>
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink to={item.url}>
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
