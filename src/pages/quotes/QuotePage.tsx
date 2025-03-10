@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -12,6 +13,7 @@ import {
 } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { formatDate, humanReadableDurationDays } from "@/utils/dates"
+import { randomAvatar } from "@/utils/dev"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
@@ -108,14 +110,22 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
 function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
   return (
     <>
-      <div className="flex flex-col">
-        <div>{value?.name}</div>
-        <div>{value?.email}</div>
-        <div>
-          {value?.address}, {value?.zip}, {value?.city}, {value?.country}
+      <div className="flex gap-0.5 items-center">
+        <div className="m-4">
+          <Avatar>
+            <AvatarImage src={randomAvatar(value?.node_id.startsWith("03") ? "men" : "women", value?.node_id)} />
+            <AvatarFallback>{value?.name}</AvatarFallback>
+          </Avatar>
         </div>
-        <div>
-          <pre>{value?.node_id}</pre>
+        <div className="flex flex-col">
+          <div>{value?.name}</div>
+          <div>{value?.email}</div>
+          <div>
+            {value?.address}, {value?.zip}, {value?.city}, {value?.country}
+          </div>
+          <div>
+            <pre>{value?.node_id}</pre>
+          </div>
         </div>
       </div>
     </>
