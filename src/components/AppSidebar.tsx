@@ -1,18 +1,9 @@
 import { Bitcoin, Home, Inbox, Settings, InfoIcon } from "lucide-react"
-import { NavLink } from "react-router"
+import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
+import { NavUser } from "./nav/NavUser"
+import { randomAvatar } from "@/utils/dev"
+import { NavMain } from "./nav/NavMain"
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
-
-// Menu items.
 const items = [
   {
     title: "Home",
@@ -31,8 +22,14 @@ const items = [
   },
   {
     title: "Settings",
-    url: "/settings",
+    url: "#",
     icon: Settings,
+    items: [
+      {
+        title: "General",
+        url: "/settings",
+      },
+    ],
   },
   {
     title: "Info",
@@ -45,24 +42,18 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavMain items={items} />
       </SidebarContent>
+      <SidebarFooter>
+        <NavUser
+          user={{
+            name: "Account",
+            email: "",
+            avatar: randomAvatar("men", ""),
+          }}
+        />
+      </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }
