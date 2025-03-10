@@ -1,4 +1,4 @@
-import { factory, nullable, primaryKey } from "@mswjs/data"
+import { factory, nullable, oneOf, primaryKey } from "@mswjs/data"
 
 export const db = factory({
   info: {
@@ -11,10 +11,10 @@ export const db = factory({
     id: primaryKey(String),
     bill: {
       id: nullable(String),
-      drawee: nullable(String),
-      drawer: nullable(String),
-      holder: nullable(String),
-      payee: nullable(String),
+      drawee: nullable(oneOf('identity_public_data')),
+      drawer: nullable(oneOf('identity_public_data')),
+      holder: nullable(oneOf('identity_public_data')),
+      payee: nullable(oneOf('identity_public_data')),
       sum: Number,
       maturity_date: String,
     },
@@ -25,6 +25,19 @@ export const db = factory({
     signatures: Array<string>, // accepted
     tstamp: nullable(String), // rejected
   },
+  identity_public_data: {
+    id: primaryKey(String),
+    email: nullable(String),
+    name: String,
+    node_id: String,
+    nostr_relay: nullable(String),
+    type: String,
+    address: String,
+    city: String,
+    country: String,
+    zip: nullable(String),
+  },
+
 })
 
 db.info.create({

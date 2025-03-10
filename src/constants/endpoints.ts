@@ -3,7 +3,7 @@ const BALANCES = "/v1/balances"
 
 const ADMIN_QUOTE_PENDING = "/v1/admin/credit/quote/pending"
 const ADMIN_QUOTE_ACCEPTED = "/v1/admin/credit/quote/accepted"
-const ADMIN_QUOTE_BY_ID = "/v1/admin/credit/quote/:id"
+const ADMIN_QUOTE_BY_ID = "/v1/admin/credit/quote/:id" // TODO: unused?
 
 const CREDIT_QUOTE = "/v1/credit/mint/quote"
 const CREDIT_QUOTES_BY_ID = "/v1/credit/mint/quote/:id"

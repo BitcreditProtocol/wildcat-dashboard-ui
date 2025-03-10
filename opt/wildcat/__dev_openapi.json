@@ -10,9 +10,42 @@
   },
   "paths": {
     "/v1/admin/credit/quote/{id}": {
+      "get": {
+        "tags": [
+          "crate::admin"
+        ],
+        "operationId": "admin_lookup_quote",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfoReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quote id not  found"
+          }
+        }
+      },
       "post": {
         "tags": [
-          "crate::credit::admin"
+          "crate::admin"
         ],
         "operationId": "resolve_quote",
         "parameters": [
@@ -38,40 +71,7 @@
         },
         "responses": {
           "200": {
-            "description": "Succesful response"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "crate::credit::admin"
-        ],
-        "operationId": "admin_lookup_quote",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The quote id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succesful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InfoReply"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Quote id not  found"
+            "description": "Successful response"
           }
         }
       }
@@ -79,7 +79,7 @@
     "/v1/admin/credit/quote/accepted": {
       "get": {
         "tags": [
-          "crate::credit::admin"
+          "crate::admin"
         ],
         "operationId": "list_accepted_quotes",
         "parameters": [
@@ -97,7 +97,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Succesful response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -112,7 +112,7 @@
     "/v1/admin/credit/quote/pending": {
       "get": {
         "tags": [
-          "crate::credit::admin"
+          "crate::admin"
         ],
         "summary": "--------------------------- List quotes",
         "operationId": "list_pending_quotes",
@@ -131,7 +131,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Succesful response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -143,10 +143,51 @@
         }
       }
     },
-    "/v1/credit/mint/quote": {
+    "/v1/credit/quote/{id}": {
       "post": {
         "tags": [
-          "crate::credit::web"
+          "crate::web"
+        ],
+        "operationId": "resolve_offer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Resolve"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "404": {
+            "description": "Quote not found"
+          },
+          "409": {
+            "description": "Quote already resolved"
+          }
+        }
+      }
+    },
+    "/v1/mint/credit/quote": {
+      "post": {
+        "tags": [
+          "crate::web"
         ],
         "summary": "--------------------------- Enquire mint quote",
         "operationId": "enquire_quote",
@@ -177,10 +218,10 @@
         }
       }
     },
-    "/v1/credit/mint/quote/{id}": {
+    "/v1/mint/credit/quote/{id}": {
       "get": {
         "tags": [
-          "crate::credit::web"
+          "crate::web"
         ],
         "operationId": "lookup_quote",
         "parameters": [
@@ -197,7 +238,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Succesful response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -208,47 +249,6 @@
           },
           "404": {
             "description": "Quote id not  found"
-          }
-        }
-      }
-    },
-    "/v1/credit/quote/{id}": {
-      "post": {
-        "tags": [
-          "crate::credit::web"
-        ],
-        "operationId": "resolve_offer",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The quote id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Resolve"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Succesful response"
-          },
-          "404": {
-            "description": "Quote not found"
-          },
-          "409": {
-            "description": "Quote already resolved"
           }
         }
       }
@@ -270,10 +270,6 @@
         "description": "Manually added - should be replaced with generated one."
       },
       "Resolve": {
-        "type": "string",
-        "description": "Manually added - should be replaced with generated one."
-      },
-      "IdentityPublicData": {
         "type": "string",
         "description": "Manually added - should be replaced with generated one."
       },
@@ -397,6 +393,13 @@
           }
         }
       },
+      "ContactType": {
+        "type": "string",
+        "enum": [
+          "Person",
+          "Company"
+        ]
+      },
       "EnquireReply": {
         "type": "object",
         "required": [
@@ -431,6 +434,40 @@
             "type": "string"
           }
         }
+      },
+      "IdentityPublicData": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PostalAddress"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type",
+              "node_id",
+              "name"
+            ],
+            "properties": {
+              "email": {
+                "type": "string",
+                "nullable": true
+              },
+              "name": {
+                "type": "string"
+              },
+              "node_id": {
+                "type": "string"
+              },
+              "nostr_relay": {
+                "type": "string",
+                "nullable": true
+              },
+              "type": {
+                "$ref": "#/components/schemas/ContactType"
+              }
+            }
+          }
+        ]
       },
       "InfoReply": {
         "oneOf": [
@@ -602,6 +639,29 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "PostalAddress": {
+        "type": "object",
+        "required": [
+          "country",
+          "city",
+          "address"
+        ],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "zip": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

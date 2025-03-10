@@ -21,11 +21,6 @@ export type HtlcWitness = string;
 export type Resolve = string;
 
 /**
- * Manually added - should be replaced with generated one.
- */
-export type IdentityPublicData = string;
-
-/**
  * Amount can be any unit
  */
 export type Amount = number;
@@ -89,6 +84,8 @@ export type BlindedMessage = {
     witness?: Witness | null;
 };
 
+export type ContactType = 'Person' | 'Company';
+
 export type EnquireReply = {
     id: string;
 };
@@ -100,6 +97,14 @@ export type EnquireRequest = {
     content: BillInfo;
     outputs: Array<BlindedMessage>;
     signature: string;
+};
+
+export type IdentityPublicData = PostalAddress & {
+    email?: string | null;
+    name: string;
+    node_id: string;
+    nostr_relay?: string | null;
+    type: ContactType;
 };
 
 /**
@@ -138,6 +143,13 @@ export type InfoReply = {
  */
 export type ListReply = {
     quotes: Array<string>;
+};
+
+export type PostalAddress = {
+    address: string;
+    city: string;
+    country: string;
+    zip?: string | null;
 };
 
 /**
@@ -205,7 +217,7 @@ export type AdminLookupQuoteErrors = {
 
 export type AdminLookupQuoteResponses = {
     /**
-     * Succesful response
+     * Successful response
      */
     200: InfoReply;
 };
@@ -226,7 +238,7 @@ export type ResolveQuoteData = {
 
 export type ResolveQuoteResponses = {
     /**
-     * Succesful response
+     * Successful response
      */
     200: unknown;
 };
@@ -245,7 +257,7 @@ export type ListAcceptedQuotesData = {
 
 export type ListAcceptedQuotesResponses = {
     /**
-     * Succesful response
+     * Successful response
      */
     200: ListReply;
 };
@@ -266,18 +278,48 @@ export type ListPendingQuotesData = {
 
 export type ListPendingQuotesResponses = {
     /**
-     * Succesful response
+     * Successful response
      */
     200: ListReply;
 };
 
 export type ListPendingQuotesResponse = ListPendingQuotesResponses[keyof ListPendingQuotesResponses];
 
+export type ResolveOfferData = {
+    body: Resolve;
+    path: {
+        /**
+         * The quote id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/credit/quote/{id}';
+};
+
+export type ResolveOfferErrors = {
+    /**
+     * Quote not found
+     */
+    404: unknown;
+    /**
+     * Quote already resolved
+     */
+    409: unknown;
+};
+
+export type ResolveOfferResponses = {
+    /**
+     * Successful response
+     */
+    200: unknown;
+};
+
 export type EnquireQuoteData = {
     body: EnquireRequest;
     path?: never;
     query?: never;
-    url: '/v1/credit/mint/quote';
+    url: '/v1/mint/credit/quote';
 };
 
 export type EnquireQuoteErrors = {
@@ -305,7 +347,7 @@ export type LookupQuoteData = {
         id: string;
     };
     query?: never;
-    url: '/v1/credit/mint/quote/{id}';
+    url: '/v1/mint/credit/quote/{id}';
 };
 
 export type LookupQuoteErrors = {
@@ -317,42 +359,12 @@ export type LookupQuoteErrors = {
 
 export type LookupQuoteResponses = {
     /**
-     * Succesful response
+     * Successful response
      */
     200: StatusReply;
 };
 
 export type LookupQuoteResponse = LookupQuoteResponses[keyof LookupQuoteResponses];
-
-export type ResolveOfferData = {
-    body: Resolve;
-    path: {
-        /**
-         * The quote id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/v1/credit/quote/{id}';
-};
-
-export type ResolveOfferErrors = {
-    /**
-     * Quote not found
-     */
-    404: unknown;
-    /**
-     * Quote already resolved
-     */
-    409: unknown;
-};
-
-export type ResolveOfferResponses = {
-    /**
-     * Succesful response
-     */
-    200: unknown;
-};
 
 export type ClientOptions = {
     baseUrl: `${string}://opt` | (string & {});
