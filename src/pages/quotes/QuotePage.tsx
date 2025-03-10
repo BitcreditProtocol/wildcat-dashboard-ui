@@ -94,6 +94,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
           className="flex-1"
           onClick={onDenyQuote}
           disabled={isFetching || denyQuote.isPending || value.status !== "pending"}
+          variant={value.status !== "pending" ? "outline" : "destructive"}
         >
           Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
         </Button>
@@ -109,7 +110,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   )
 }
 
-function ParticipantsOverviewCard({
+export function ParticipantsOverviewCard({
   drawee,
   drawer,
   holder,

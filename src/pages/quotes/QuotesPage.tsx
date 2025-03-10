@@ -2,13 +2,24 @@ import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { H3 } from "@/components/Headings"
 import { PageTitle } from "@/components/PageTitle"
 import { Button } from "@/components/ui/button"
+import { Card, CardFooter, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { listAcceptedQuotesOptions, listPendingQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { InfoReply } from "@/generated/client"
+import {
+  adminLookupQuoteOptions,
+  listAcceptedQuotesOptions,
+  listPendingQuotesOptions,
+} from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
 import { Link, useNavigate } from "react-router"
+import { ParticipantsOverviewCard } from "./QuotePage"
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import { formatDate, humanReadableDurationDays } from "@/utils/dates"
+import { truncateString } from "@/utils/strings"
+import { Badge } from "@/components/ui/badge"
 
 function Loader() {
   return (
@@ -18,9 +29,85 @@ function Loader() {
   )
 }
 
-function QuoteListPending() {
+function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: boolean }) {
   const navigate = useNavigate()
 
+  const { data, isFetching } = useSuspenseQuery({
+    enabled: false,
+    staleTime: 60 * 1_000,
+    ...adminLookupQuoteOptions({
+      path: {
+        id,
+      },
+    }),
+  })
+
+  return (
+    <>
+      <Card className="text-sm">
+        <div className="flex items-center gap-4 px-2 pt-6">
+          <CardTitle className="flex flex-1 text-xl">
+            <div className="flex flex-1 items-center gap-1">
+              <span className="font-mono">
+                {isFetching || isLoading ? (
+                  <>{truncateString(id, 16)}</>
+                ) : (
+                  <>
+                    <Link to={"/quotes/:id".replace(":id", id)}>{truncateString(id, 16)}</Link>
+                  </>
+                )}
+              </span>
+              <span>{isFetching && <LoaderIcon className="stroke-1 animate-spin" />}</span>
+            </div>
+          </CardTitle>
+          <div className="leading-none font-semibold tracking-tight text-3xl">{data.bill?.sum} sat</div>
+          <Badge>{humanReadableDurationDays("en", new Date(Date.parse(data.bill.maturity_date)))}</Badge>
+        </div>
+        <Table className="my-2">
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-bold">Maturity date: </TableCell>
+              <TableCell>
+                {!data.bill?.maturity_date ? (
+                  <>(empty)</>
+                ) : (
+                  <div className="flex gap-0.5">
+                    <span>{formatDate("en", new Date(Date.parse(data.bill.maturity_date)))}</span>
+                    <span>({humanReadableDurationDays("en", new Date(Date.parse(data.bill.maturity_date)))})</span>
+                  </div>
+                )}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-bold">Participants: </TableCell>
+              <TableCell>
+                <ParticipantsOverviewCard
+                  drawee={data.bill?.drawee}
+                  drawer={data.bill?.drawer}
+                  payee={data.bill?.payee}
+                  holder={data.bill?.holder}
+                />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+        <CardFooter>
+          <Button
+            size="sm"
+            disabled={isFetching || isLoading}
+            onClick={() => {
+              void navigate("/quotes/:id".replace(":id", id))
+            }}
+          >
+            View
+          </Button>
+        </CardFooter>
+      </Card>
+    </>
+  )
+}
+
+function QuoteListPending() {
   const { data, isFetching } = useSuspenseQuery({
     ...listPendingQuotesOptions(),
   })
@@ -34,34 +121,12 @@ function QuoteListPending() {
         </span>
       </H3>
 
-      <div className="flex flex-col gap-1">
-        {data.quotes.length === 0 && (
-          <>
-            <div className="py-2 font-bold">💪 No pending quotes.</div>
-          </>
-        )}
+      <div className="flex flex-col gap-1 my-2">
+        {data.quotes.length === 0 && <div className="py-2 font-bold">💪 No pending quotes.</div>}
         {data.quotes.map((it, index) => {
           return (
-            <div key={index} className="flex gap-1 items-center text-sm">
-              <span className="font-mono">
-                {isFetching ? (
-                  <>{it}</>
-                ) : (
-                  <>
-                    <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
-                  </>
-                )}
-              </span>
-
-              <Button
-                size="sm"
-                disabled={isFetching}
-                onClick={() => {
-                  void navigate("/quotes/:id".replace(":id", it))
-                }}
-              >
-                View
-              </Button>
+            <div key={index}>
+              <QuoteItemCard id={it} isLoading={isFetching} />
             </div>
           )
         })}
@@ -86,12 +151,8 @@ function QuoteListAccepted() {
         </span>
       </H3>
 
-      <div className="flex flex-col gap-1">
-        {data.quotes.length === 0 && (
-          <>
-            <div className="py-2 font-bold">No accepted quotes.</div>
-          </>
-        )}
+      <div className="flex flex-col gap-1 my-2">
+        {data.quotes.length === 0 && <div className="py-2 font-bold">No accepted quotes.</div>}
         {data.quotes.map((it, index) => {
           return (
             <div key={index} className="flex gap-1 items-center text-sm">
