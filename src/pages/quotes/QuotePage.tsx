@@ -123,8 +123,28 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>bill: </TableCell>
-              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill, null, 2)}</pre> : "(empty)"}</TableCell>
+              <TableCell>sum: </TableCell>
+              <TableCell>{value.bill?.sum} sat</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>maturiy date: </TableCell>
+              <TableCell>{value.bill?.maturity_date}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>drawee: </TableCell>
+              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill?.drawee, null, 2)}</pre> : "(empty)"}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>drawer: </TableCell>
+              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill?.drawer, null, 2)}</pre> : "(empty)"}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>payee: </TableCell>
+              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill?.payee, null, 2)}</pre> : "(empty)"}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>holder: </TableCell>
+              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill?.holder, null, 2)}</pre> : "(empty)"}</TableCell>
             </TableRow>
           </TableBody>
         </Table>

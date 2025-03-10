@@ -73,6 +73,7 @@ export const updateAdminQuote = http.post<never, ResolveRequest>(
     if (body.action === "offer") {
       quote.status = "offered"
       quote.ttl = body.ttl ?? null
+      // TODO: not yet impelemnted: quote.discount = body.discount ?? null
     }
 
     const updated = db.quotes.update({

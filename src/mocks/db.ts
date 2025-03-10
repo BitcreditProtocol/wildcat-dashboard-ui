@@ -1,5 +1,5 @@
 import { factory, nullable, oneOf, primaryKey } from "@mswjs/data"
-import { faker } from '@faker-js/faker'
+import { faker } from "@faker-js/faker"
 
 // Seed `faker` to ensure reproducible random values of model properties.
 faker.seed(21_000_000)
@@ -13,7 +13,7 @@ export const db = factory({
   },
   quotes: {
     id: primaryKey(String),
-    bill: oneOf('bill'),
+    bill: oneOf("bill"),
     status: nullable(String),
     submitted: nullable(String), // pending
     suggested_expiration: nullable(String), // pending
@@ -23,10 +23,10 @@ export const db = factory({
   },
   bill: {
     id: primaryKey(String),
-    drawee: nullable(oneOf('identity_public_data')),
-    drawer: nullable(oneOf('identity_public_data')),
-    holder: nullable(oneOf('identity_public_data')),
-    payee: nullable(oneOf('identity_public_data')),
+    drawee: nullable(oneOf("identity_public_data")),
+    drawer: nullable(oneOf("identity_public_data")),
+    holder: nullable(oneOf("identity_public_data")),
+    payee: nullable(oneOf("identity_public_data")),
     sum: Number,
     maturity_date: String,
   },
@@ -58,7 +58,7 @@ const ALICE = db.identity_public_data.create({
   address: faker.location.streetAddress(),
   city: faker.location.city(),
   country: faker.location.country(),
-  zip: faker.location.zipCode()
+  zip: faker.location.zipCode(),
 })
 
 const BOB = db.identity_public_data.create({
@@ -69,7 +69,7 @@ const BOB = db.identity_public_data.create({
   address: faker.location.streetAddress(),
   city: faker.location.city(),
   country: faker.location.country(),
-  zip: faker.location.zipCode()
+  zip: faker.location.zipCode(),
 })
 
 const CHARLIE = db.identity_public_data.create({
@@ -80,40 +80,48 @@ const CHARLIE = db.identity_public_data.create({
   address: faker.location.streetAddress(),
   city: faker.location.city(),
   country: faker.location.country(),
-  zip: faker.location.zipCode()
+  zip: faker.location.zipCode(),
 })
 
 const AMOUNT_OF_BILLS = 100
-const BILLS = Array.from(Array(AMOUNT_OF_BILLS).keys()).map(() => db.bill.create({
-  id: faker.string.uuid(),
-  sum: faker.number.int({ min: 21, max: 21 * 1_000}),
-  maturity_date: faker.date.future({ years: 1 }).toUTCString(),
-  drawee: ALICE,
-  drawer: BOB,
-  payee: ALICE,
-  holder: CHARLIE
-}))
+const BILLS = Array.from(Array(AMOUNT_OF_BILLS).keys()).map(() =>
+  db.bill.create({
+    id: faker.string.uuid(),
+    sum: faker.number.int({ min: 21, max: 21 * 1_000 }),
+    maturity_date: faker.date.future({ years: 1 }).toUTCString(),
+    drawee: ALICE,
+    drawer: BOB,
+    payee: ALICE,
+    holder: CHARLIE,
+  }),
+)
 
 const PENDING_BILLS = BILLS.slice(0, 3)
-PENDING_BILLS.forEach((bill) => db.quotes.create({
-  id: faker.string.uuid(),
-  status: "pending",
-  bill,
-}))
+PENDING_BILLS.forEach((bill) =>
+  db.quotes.create({
+    id: faker.string.uuid(),
+    status: "pending",
+    bill,
+  }),
+)
 
 const OFFERED_BILLS = BILLS.slice(3, 6)
-OFFERED_BILLS.forEach((bill) => db.quotes.create({
-  id: faker.string.uuid(),
-  status: "offered",
-  bill,
-}))
+OFFERED_BILLS.forEach((bill) =>
+  db.quotes.create({
+    id: faker.string.uuid(),
+    status: "offered",
+    bill,
+  }),
+)
 
 const REJECTED_BILLS = BILLS.slice(6, 9)
-REJECTED_BILLS.forEach((bill) => db.quotes.create({
-  id: faker.string.uuid(),
-  status: "rejected",
-  bill,
-}))
+REJECTED_BILLS.forEach((bill) =>
+  db.quotes.create({
+    id: faker.string.uuid(),
+    status: "rejected",
+    bill,
+  }),
+)
 
 const ACCEPTED_BILLS = BILLS.slice(9, 32)
 ACCEPTED_BILLS.forEach((bill) => {
