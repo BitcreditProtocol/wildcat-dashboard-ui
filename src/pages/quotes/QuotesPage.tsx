@@ -16,9 +16,8 @@ import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
 import { Link, useNavigate } from "react-router"
 import { ParticipantsOverviewCard } from "./QuotePage"
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
-import { formatDate, humanReadableDurationDays } from "@/utils/dates"
-import { truncateString } from "@/utils/strings"
+import { humanReadableDurationDays } from "@/utils/dates"
+import { formatNumber, truncateString } from "@/utils/strings"
 import { Badge } from "@/components/ui/badge"
 
 function Loader() {
@@ -45,7 +44,7 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
   return (
     <>
       <Card className="text-sm">
-        <div className="flex items-center gap-4 px-2 pt-6">
+        <div className="flex items-center gap-4 px-6 pt-6">
           <CardTitle className="flex flex-1 text-xl">
             <div className="flex flex-1 items-center gap-1">
               <span className="font-mono">
@@ -60,37 +59,19 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
               <span>{isFetching && <LoaderIcon className="stroke-1 animate-spin" />}</span>
             </div>
           </CardTitle>
-          <div className="leading-none font-semibold tracking-tight text-3xl">{data.bill?.sum} sat</div>
+          <div className="leading-none font-semibold tracking-tight text-3xl">
+            {formatNumber("en", data.bill?.sum)} sat
+          </div>
           <Badge>{humanReadableDurationDays("en", new Date(Date.parse(data.bill.maturity_date)))}</Badge>
+
+          <ParticipantsOverviewCard
+            drawee={data.bill?.drawee}
+            drawer={data.bill?.drawer}
+            payee={data.bill?.payee}
+            holder={data.bill?.holder}
+            className="gap-1.5"
+          />
         </div>
-        <Table className="my-2">
-          <TableBody>
-            <TableRow>
-              <TableCell className="font-bold">Maturity date: </TableCell>
-              <TableCell>
-                {!data.bill?.maturity_date ? (
-                  <>(empty)</>
-                ) : (
-                  <div className="flex gap-0.5">
-                    <span>{formatDate("en", new Date(Date.parse(data.bill.maturity_date)))}</span>
-                    <span>({humanReadableDurationDays("en", new Date(Date.parse(data.bill.maturity_date)))})</span>
-                  </div>
-                )}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Participants: </TableCell>
-              <TableCell>
-                <ParticipantsOverviewCard
-                  drawee={data.bill?.drawee}
-                  drawer={data.bill?.drawer}
-                  payee={data.bill?.payee}
-                  holder={data.bill?.holder}
-                />
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
         <CardFooter>
           <Button
             size="sm"
@@ -214,8 +195,14 @@ function PageBody() {
   return (
     <>
       <Suspense fallback={<Loader />}>
-        <QuoteListPending />
-        <QuoteListAccepted />
+        <div className="flex flex-col gap-2">
+          <div>
+            <QuoteListPending />
+          </div>
+          <div>
+            <QuoteListAccepted />
+          </div>
+        </div>
       </Suspense>
     </>
   )

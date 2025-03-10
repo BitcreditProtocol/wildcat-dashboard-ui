@@ -13,9 +13,10 @@ import {
   resolveQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
+import { cn } from "@/lib/utils"
 import { formatDate, humanReadableDurationDays } from "@/utils/dates"
 import { randomAvatar } from "@/utils/dev"
-import { truncateString } from "@/utils/strings"
+import { formatNumber, truncateString } from "@/utils/strings"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
@@ -115,26 +116,27 @@ export function ParticipantsOverviewCard({
   drawer,
   holder,
   payee,
+  className,
 }: {
   drawee?: IdentityPublicData
   drawer?: IdentityPublicData
   holder?: IdentityPublicData
   payee?: IdentityPublicData
+  className?: string
 }) {
-  ;<Tooltip />
   return (
     <>
-      <div className="flex gap-0.5 items-center py-1">
-        <div className="px-1">
+      <div className={cn("flex gap-2 items-center py-1", className)}>
+        <div>
           <IdentityPublicDataAvatar value={drawee} tooltip="Drawee" />
         </div>
-        <div className="px-1">
+        <div>
           <IdentityPublicDataAvatar value={drawer} tooltip="Drawer" />
         </div>
-        <div className="px-1">
+        <div>
           <IdentityPublicDataAvatar value={payee} tooltip="Payee" />
         </div>
-        <div className="px-1">
+        <div>
           <IdentityPublicDataAvatar value={holder} tooltip="Holder" />
         </div>
       </div>
@@ -205,7 +207,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
             </TableRow>
             <TableRow>
               <TableCell className="font-bold">Sum: </TableCell>
-              <TableCell>{value.bill?.sum} sat</TableCell>
+              <TableCell>{formatNumber("en", value.bill?.sum)} sat</TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-bold">Maturity date: </TableCell>
