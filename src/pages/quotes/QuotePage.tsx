@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
-import { InfoReply } from "@/generated/client"
+import { IdentityPublicData, InfoReply } from "@/generated/client"
 import {
   adminLookupQuoteOptions,
   adminLookupQuoteQueryKey,
@@ -104,6 +104,17 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   )
 }
 
+function IdentityPublicDataCard({ value } : { value?: IdentityPublicData}) {
+  return (<>
+    <div className="flex flex-col">
+      <div>{value?.name}</div>
+      <div>{value?.email}</div>
+      <div>{value?.address}, {value?.zip}, {value?.city}, {value?.country}</div>
+      <div><pre>{value?.node_id}</pre></div>
+    </div>
+  </>)
+}
+
 function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
   return (
     <>
@@ -127,24 +138,24 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
               <TableCell>{value.bill?.sum} sat</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>maturiy date: </TableCell>
+              <TableCell>maturity date: </TableCell>
               <TableCell>{value.bill?.maturity_date}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell>drawee: </TableCell>
-              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill?.drawee, null, 2)}</pre> : "(empty)"}</TableCell>
+              <TableCell><IdentityPublicDataCard value={value.bill?.drawee} /></TableCell>
             </TableRow>
             <TableRow>
               <TableCell>drawer: </TableCell>
-              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill?.drawer, null, 2)}</pre> : "(empty)"}</TableCell>
+              <TableCell><IdentityPublicDataCard value={value.bill?.drawer} /></TableCell>
             </TableRow>
             <TableRow>
               <TableCell>payee: </TableCell>
-              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill?.payee, null, 2)}</pre> : "(empty)"}</TableCell>
+              <TableCell><IdentityPublicDataCard value={value.bill?.payee} /></TableCell>
             </TableRow>
             <TableRow>
               <TableCell>holder: </TableCell>
-              <TableCell>{value.bill ? <pre>{JSON.stringify(value.bill?.holder, null, 2)}</pre> : "(empty)"}</TableCell>
+              <TableCell><IdentityPublicDataCard value={value.bill?.holder} /></TableCell>
             </TableRow>
           </TableBody>
         </Table>
