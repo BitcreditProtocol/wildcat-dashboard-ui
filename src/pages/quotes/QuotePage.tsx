@@ -107,18 +107,55 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   )
 }
 
+function ParticipantsOverviewCard({
+  drawee,
+  drawer,
+  holder,
+  payee,
+}: {
+  drawee?: IdentityPublicData
+  drawer?: IdentityPublicData
+  holder?: IdentityPublicData
+  payee?: IdentityPublicData
+}) {
+  return (
+    <>
+      <div className="flex gap-0.5 items-center py-1">
+        <div className="px-1">
+          <IdentityPublicDataAvatar value={drawee} />
+        </div>
+        <div className="px-1">
+          <IdentityPublicDataAvatar value={drawer} />
+        </div>
+        <div className="px-1">
+          <IdentityPublicDataAvatar value={holder} />
+        </div>
+        <div className="px-1">
+          <IdentityPublicDataAvatar value={payee} />
+        </div>
+      </div>
+    </>
+  )
+}
+
+function IdentityPublicDataAvatar({ value }: { value?: IdentityPublicData }) {
+  return (
+    <Avatar>
+      <AvatarImage src={randomAvatar(value?.node_id.startsWith("03") ? "men" : "women", value?.node_id)} />
+      <AvatarFallback>{value?.name}</AvatarFallback>
+    </Avatar>
+  )
+}
+
 function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
   return (
     <>
       <div className="flex gap-0.5 items-center">
-        <div className="m-4">
-          <Avatar>
-            <AvatarImage src={randomAvatar(value?.node_id.startsWith("03") ? "men" : "women", value?.node_id)} />
-            <AvatarFallback>{value?.name}</AvatarFallback>
-          </Avatar>
+        <div className="px-1 me-4">
+          <IdentityPublicDataAvatar value={value} />
         </div>
         <div className="flex flex-col">
-          <div>{value?.name}</div>
+          <div className="font-bold">{value?.name}</div>
           <div>{value?.email}</div>
           <div>
             {value?.address}, {value?.zip}, {value?.city}, {value?.country}
@@ -165,6 +202,17 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
                     <span>({humanReadableDurationDays("en", new Date(Date.parse(value.bill.maturity_date)))})</span>
                   </div>
                 )}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>participants: </TableCell>
+              <TableCell>
+                <ParticipantsOverviewCard
+                  drawee={value.bill?.drawee}
+                  drawer={value.bill?.drawer}
+                  payee={value.bill?.payee}
+                  holder={value.bill?.holder}
+                />
               </TableCell>
             </TableRow>
             <TableRow>
