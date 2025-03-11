@@ -172,7 +172,11 @@ function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
         </div>
         <div className="flex flex-col">
           <div className="font-bold">{value?.name}</div>
-          <div>{value?.email}</div>
+          <div>
+            <a className="underline" href={`mailto:${value?.email}`}>
+              {value?.email}
+            </a>
+          </div>
           <div>
             {value?.address}, {value?.zip}, {value?.city}, {value?.country}
           </div>

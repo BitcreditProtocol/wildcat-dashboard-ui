@@ -1,7 +1,5 @@
-"use client"
-
 import { ChevronRight, type LucideIcon } from "lucide-react"
-
+import { NavLink } from "react-router"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   SidebarGroup,
@@ -14,7 +12,6 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { NavLink } from "react-router"
 
 export function NavMain({
   items,
