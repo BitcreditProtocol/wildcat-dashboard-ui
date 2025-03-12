@@ -1,3 +1,9 @@
+import { differenceInCalendarDays } from "date-fns"
+
+export const daysBetween = (startDate: Date, endDate: Date): number => {
+  return differenceInCalendarDays(endDate, startDate)
+}
+
 export function humanReadableDurationDays(locale: string, from: Date, until = new Date(Date.now())) {
   const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
 
