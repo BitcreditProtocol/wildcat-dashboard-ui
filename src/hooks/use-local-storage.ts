@@ -6,7 +6,7 @@ type DispatchAction<T> = T | ((prevState: T) => T)
 export default function useLocalStorage<T>(key: string, initialValue: T) {
   const [value, setValue] = useState(() => {
     const data = getItem(key)
-    return (data || initialValue) as T
+    return (data ?? initialValue) as T
   })
 
   function handleDispatch(action: DispatchAction<T>) {

@@ -11,6 +11,8 @@ import meta from "./constants/meta"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import InfoPage from "./pages/info/InfoPage"
 import QuotePage from "./pages/quotes/QuotePage"
+import PendingQuotesPage from "./pages/quotes/PendingQuotesPage"
+import AcceptedQuotesPage from "./pages/quotes/AcceptedQuotesPage"
 
 const queryClient = new QueryClient()
 
@@ -31,6 +33,8 @@ void prepare().then(() => {
               <Route index element={<HomePage />} />
               <Route path="balances" element={<BalancesPage />} />
               <Route path="quotes" element={<QuotesPage />} />
+              <Route path="quotes/pending" element={<PendingQuotesPage />} />
+              <Route path="quotes/accepted" element={<AcceptedQuotesPage />} />
               <Route path="quotes/:id" element={<QuotePage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="info" element={<InfoPage />} />

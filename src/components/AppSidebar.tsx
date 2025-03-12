@@ -21,6 +21,16 @@ const data = {
       title: "Quotes",
       url: "/quotes",
       icon: Inbox,
+      items: [
+        {
+          title: "Pending",
+          url: "/quotes/pending",
+        },
+        {
+          title: "Accepted",
+          url: "/quotes/accepted",
+        },
+      ],
     },
     {
       title: "Settings",
