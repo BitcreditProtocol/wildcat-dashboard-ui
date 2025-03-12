@@ -39,7 +39,7 @@ type OfferConfirmDrawerProps = Parameters<typeof Drawer>[0] & {
 
 function OfferConfirmDrawer({ children, onSubmit, ...drawerProps }: OfferConfirmDrawerProps) {
   return (
-    <ConfirmDrawer onSubmit={onSubmit} trigger={children} {...drawerProps} submitButtonText="Yes, offer quote.">
+    <ConfirmDrawer {...drawerProps} onSubmit={onSubmit} trigger={children} submitButtonText="Yes, offer quote.">
       <div className="p-4">
         <div className="flex items-center justify-center space-x-2">
           Are you sure you want to <span className="ps-1 font-bold">offer the quote</span>?
@@ -56,7 +56,13 @@ type DenyConfirmDrawerProps = Parameters<typeof Drawer>[0] & {
 
 function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDrawerProps) {
   return (
-    <ConfirmDrawer onSubmit={onSubmit} trigger={children} {...drawerProps} submitButtonText="Yes, deny quote.">
+    <ConfirmDrawer
+      {...drawerProps}
+      trigger={children}
+      submitButtonText="Yes, deny quote."
+      submitButtonVariant="destructive"
+      onSubmit={onSubmit}
+    >
       <div className="p-4">
         <div className="flex items-center justify-center space-x-2">
           Are you sure you want to <span className="ps-1 font-bold">deny the quote</span>?

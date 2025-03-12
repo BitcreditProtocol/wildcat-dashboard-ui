@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Drawer,
   DrawerClose,
@@ -9,6 +9,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
+import { VariantProps } from "class-variance-authority"
 
 type DrawerProps = Parameters<typeof Drawer>[0]
 type ConfirmDrawerProps = DrawerProps & {
@@ -16,15 +17,18 @@ type ConfirmDrawerProps = DrawerProps & {
   description?: string
   cancelButtonText?: string
   submitButtonText?: string
+  submitButtonVariant?: VariantProps<typeof buttonVariants>["variant"]
   trigger: React.ReactNode
   onSubmit: () => void
   children?: React.ReactNode
 }
+
 export function ConfirmDrawer({
   title,
   description,
   cancelButtonText = "Cancel",
   submitButtonText = "Confirm",
+  submitButtonVariant,
   trigger,
   onSubmit,
   children,
@@ -49,7 +53,7 @@ export function ConfirmDrawer({
                   {cancelButtonText}
                 </Button>
               </DrawerClose>
-              <Button className="flex-1" onClick={onSubmit} size="lg">
+              <Button className="flex-1" variant={submitButtonVariant} size="lg" onClick={onSubmit}>
                 {submitButtonText}
               </Button>
             </div>
