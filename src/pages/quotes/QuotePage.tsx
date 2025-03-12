@@ -14,7 +14,7 @@ import {
 } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { cn } from "@/lib/utils"
-import { formatDate, humanReadableDurationDays } from "@/utils/dates"
+import { formatDate, humanReadableDuration } from "@/utils/dates"
 import { randomAvatar } from "@/utils/dev"
 import { formatNumber, truncateString } from "@/utils/strings"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
@@ -279,7 +279,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
                 ) : (
                   <div className="flex gap-0.5">
                     <span>{formatDate("en", new Date(Date.parse(value.bill.maturity_date)))}</span>
-                    <span>({humanReadableDurationDays("en", new Date(Date.parse(value.bill.maturity_date)))})</span>
+                    <span>({humanReadableDuration("en", new Date(Date.parse(value.bill.maturity_date)))})</span>
                   </div>
                 )}
               </TableCell>

@@ -95,11 +95,14 @@ const CHARLIE = db.identity_public_data.create({
 })
 
 const AMOUNT_OF_BILLS = 100
-const BILLS = Array.from(Array(AMOUNT_OF_BILLS).keys()).map(() =>
+const BILLS = Array.from(Array(AMOUNT_OF_BILLS).keys()).map((_, index) =>
   db.bill.create({
     id: faker.string.uuid(),
     sum: faker.number.int({ min: 21, max: 21 * 1_000 }),
-    maturity_date: faker.date.future({ years: 1 }).toUTCString(),
+    maturity_date: (faker.datatype.boolean()
+      ? faker.date.between({ from: Date.now(), to: Date.now() + (index + 1) * 1_000_000 })
+      : faker.date.future({ years: 3, refDate: Date.now() })
+    ).toUTCString(),
     drawee: ALICE,
     drawer: BOB,
     payee: ALICE,
@@ -107,7 +110,16 @@ const BILLS = Array.from(Array(AMOUNT_OF_BILLS).keys()).map(() =>
   }),
 )
 
-const PENDING_BILLS = BILLS.slice(0, 3)
+db.bill.update({
+  where: { id: { equals: BILLS[0].id } },
+  data: {
+    ...BILLS[0],
+    // set a maturiy date in the past (just for testing)
+    maturity_date: faker.date.between({ from: Date.now() - 1_000_000, to: Date.now() }).toUTCString(),
+  },
+})
+
+const PENDING_BILLS = BILLS.slice(0, 5)
 PENDING_BILLS.forEach((bill) =>
   db.quotes.create({
     id: faker.string.uuid(),
@@ -116,7 +128,7 @@ PENDING_BILLS.forEach((bill) =>
   }),
 )
 
-const OFFERED_BILLS = BILLS.slice(3, 6)
+const OFFERED_BILLS = BILLS.slice(5, 10)
 OFFERED_BILLS.forEach((bill) =>
   db.quotes.create({
     id: faker.string.uuid(),
@@ -125,7 +137,7 @@ OFFERED_BILLS.forEach((bill) =>
   }),
 )
 
-const REJECTED_BILLS = BILLS.slice(6, 9)
+const REJECTED_BILLS = BILLS.slice(10, 15)
 REJECTED_BILLS.forEach((bill) =>
   db.quotes.create({
     id: faker.string.uuid(),
@@ -134,7 +146,7 @@ REJECTED_BILLS.forEach((bill) =>
   }),
 )
 
-const ACCEPTED_BILLS = BILLS.slice(9, 32)
+const ACCEPTED_BILLS = BILLS.slice(15, 30)
 ACCEPTED_BILLS.forEach((bill) => {
   return db.bill.update({
     where: { id: { equals: bill.id } },

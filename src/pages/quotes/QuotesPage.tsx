@@ -16,7 +16,7 @@ import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
 import { Link, useNavigate } from "react-router"
 import { ParticipantsOverviewCard } from "./QuotePage"
-import { humanReadableDurationDays } from "@/utils/dates"
+import { humanReadableDuration } from "@/utils/dates"
 import { formatNumber, truncateString } from "@/utils/strings"
 import { Badge } from "@/components/ui/badge"
 
@@ -63,7 +63,7 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
             <div className="leading-none font-semibold tracking-tight text-3xl">
               {formatNumber("en", data.bill?.sum)} sat
             </div>
-            <Badge>{humanReadableDurationDays("en", new Date(Date.parse(data.bill.maturity_date)))}</Badge>
+            <Badge>{humanReadableDuration("en", new Date(Date.parse(data.bill.maturity_date)))}</Badge>
           </div>
         </div>
         <div className="flex justify-between items-center gap-4 px-4 py-2">
