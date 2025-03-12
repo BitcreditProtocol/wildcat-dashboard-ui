@@ -19,8 +19,10 @@ import { randomAvatar } from "@/utils/dev"
 import { formatNumber, truncateString } from "@/utils/strings"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 import { Link, useParams } from "react-router"
+import { ConfirmDrawer } from "@/components/ConfirmDrawer"
+import { Drawer } from "@/components/ui/drawer"
 
 function Loader() {
   return (
@@ -30,7 +32,44 @@ function Loader() {
   )
 }
 
+type OfferConfirmDrawerProps = Parameters<typeof Drawer>[0] & {
+  onSubmit: () => void
+  children: React.ReactNode
+}
+
+function OfferConfirmDrawer({ children, onSubmit, ...drawerProps }: OfferConfirmDrawerProps) {
+  return (
+    <ConfirmDrawer onSubmit={onSubmit} trigger={children} {...drawerProps} submitButtonText="Yes, offer quote.">
+      <div className="p-4">
+        <div className="flex items-center justify-center space-x-2">
+          Are you sure you want to <span className="ps-1 font-bold">offer the quote</span>?
+        </div>
+      </div>
+    </ConfirmDrawer>
+  )
+}
+
+type DenyConfirmDrawerProps = Parameters<typeof Drawer>[0] & {
+  onSubmit: () => void
+  children: React.ReactNode
+}
+
+function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDrawerProps) {
+  return (
+    <ConfirmDrawer onSubmit={onSubmit} trigger={children} {...drawerProps} submitButtonText="Yes, deny quote.">
+      <div className="p-4">
+        <div className="flex items-center justify-center space-x-2">
+          Are you sure you want to <span className="ps-1 font-bold">deny the quote</span>?
+        </div>
+      </div>
+    </ConfirmDrawer>
+  )
+}
+
 function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
+  const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
+  const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false)
+
   const queryClient = useQueryClient()
 
   const denyQuote = useMutation({
@@ -91,21 +130,34 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button
-          className="flex-1"
-          onClick={onDenyQuote}
-          disabled={isFetching || denyQuote.isPending || value.status !== "pending"}
-          variant={value.status !== "pending" ? "outline" : "destructive"}
+        <DenyConfirmDrawer
+          open={denyConfirmDrawerOpen}
+          onOpenChange={setDenyConfirmDrawerOpen}
+          onSubmit={() => {
+            onDenyQuote()
+            setDenyConfirmDrawerOpen(false)
+          }}
         >
-          Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-        </Button>
-        <Button
-          className="flex-1"
-          onClick={onOfferQuote}
-          disabled={isFetching || offerQuote.isPending || value.status !== "pending"}
+          <Button
+            className="flex-1"
+            disabled={isFetching || denyQuote.isPending || value.status !== "pending"}
+            variant={value.status !== "pending" ? "outline" : "destructive"}
+          >
+            Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+          </Button>
+        </DenyConfirmDrawer>
+        <OfferConfirmDrawer
+          open={offerConfirmDrawerOpen}
+          onOpenChange={setOfferConfirmDrawerOpen}
+          onSubmit={() => {
+            onOfferQuote()
+            setOfferConfirmDrawerOpen(false)
+          }}
         >
-          Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-        </Button>
+          <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "pending"}>
+            Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+          </Button>
+        </OfferConfirmDrawer>
       </div>
     </>
   )
