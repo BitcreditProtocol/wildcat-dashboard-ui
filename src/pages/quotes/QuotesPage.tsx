@@ -7,7 +7,7 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { Link } from "react-router"
-import { ChevronRight, ChevronRightCircle } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 function Loader() {
   return (

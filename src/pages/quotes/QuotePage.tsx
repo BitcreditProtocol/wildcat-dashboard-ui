@@ -40,7 +40,7 @@ type OfferConfirmDrawerProps = Parameters<typeof Drawer>[0] & {
 function OfferConfirmDrawer({ children, onSubmit, ...drawerProps }: OfferConfirmDrawerProps) {
   return (
     <ConfirmDrawer {...drawerProps} onSubmit={onSubmit} trigger={children} submitButtonText="Yes, offer quote.">
-      <div className="p-4">
+      <div className="px-4 py-12">
         <div className="flex items-center justify-center space-x-2">
           Are you sure you want to <span className="ps-1 font-bold">offer the quote</span>?
         </div>
@@ -63,7 +63,7 @@ function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDr
       submitButtonVariant="destructive"
       onSubmit={onSubmit}
     >
-      <div className="p-4">
+      <div className="px-4 py-12">
         <div className="flex items-center justify-center space-x-2">
           Are you sure you want to <span className="ps-1 font-bold">deny the quote</span>?
         </div>
@@ -183,22 +183,20 @@ export function ParticipantsOverviewCard({
   className?: string
 }) {
   return (
-    <>
-      <div className={cn("flex gap-2 items-center py-1", className)}>
-        <div>
-          <IdentityPublicDataAvatar value={drawee} tooltip="Drawee" />
-        </div>
-        <div>
-          <IdentityPublicDataAvatar value={drawer} tooltip="Drawer" />
-        </div>
-        <div>
-          <IdentityPublicDataAvatar value={payee} tooltip="Payee" />
-        </div>
-        <div>
-          <IdentityPublicDataAvatar value={holder} tooltip="Holder" />
-        </div>
+    <div className={cn("flex gap-2 items-center py-1", className)}>
+      <div>
+        <IdentityPublicDataAvatar value={drawee} tooltip="Drawee" />
       </div>
-    </>
+      <div>
+        <IdentityPublicDataAvatar value={drawer} tooltip="Drawer" />
+      </div>
+      <div>
+        <IdentityPublicDataAvatar value={payee} tooltip="Payee" />
+      </div>
+      <div>
+        <IdentityPublicDataAvatar value={holder} tooltip="Holder" />
+      </div>
+    </div>
   )
 }
 
@@ -223,108 +221,104 @@ function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicDa
 
 function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
   return (
-    <>
-      <div className="flex gap-0.5 items-center">
-        <div className="px-1 me-4">
-          <IdentityPublicDataAvatar value={value} />
+    <div className="flex gap-0.5 items-center">
+      <div className="px-1 me-4">
+        <IdentityPublicDataAvatar value={value} />
+      </div>
+      <div className="flex flex-col">
+        <div className="font-bold">{value?.name}</div>
+        <div>
+          <a className="underline" href={`mailto:${value?.email}`}>
+            {value?.email}
+          </a>
         </div>
-        <div className="flex flex-col">
-          <div className="font-bold">{value?.name}</div>
-          <div>
-            <a className="underline" href={`mailto:${value?.email}`}>
-              {value?.email}
-            </a>
-          </div>
-          <div>
-            {value?.address}, {value?.zip}, {value?.city}, {value?.country}
-          </div>
-          <div>
-            <pre>{value?.node_id}</pre>
-          </div>
+        <div>
+          {value?.address}, {value?.zip}, {value?.city}, {value?.country}
+        </div>
+        <div>
+          <pre>{value?.node_id}</pre>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
 function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
   return (
-    <>
-      <div className="flex flex-col gap-1">
-        <Table className="my-2">
-          <TableBody>
-            <TableRow>
-              <TableCell className="font-bold">ID: </TableCell>
-              <TableCell>
-                <span className="font-mono">{value.id}</span>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Status: </TableCell>
-              <TableCell>
-                <Badge variant={["rejected", "denied"].includes(value.status) ? "destructive" : "default"}>
-                  {value.status}
-                </Badge>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Sum: </TableCell>
-              <TableCell>{formatNumber("en", value.bill?.sum)} sat</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Maturity date: </TableCell>
-              <TableCell>
-                {!value.bill?.maturity_date ? (
-                  <>(empty)</>
-                ) : (
-                  <div className="flex gap-0.5">
-                    <span>{formatDate("en", new Date(Date.parse(value.bill.maturity_date)))}</span>
-                    <span>({humanReadableDuration("en", new Date(Date.parse(value.bill.maturity_date)))})</span>
-                  </div>
-                )}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Participants: </TableCell>
-              <TableCell>
-                <ParticipantsOverviewCard
-                  drawee={value.bill?.drawee}
-                  drawer={value.bill?.drawer}
-                  payee={value.bill?.payee}
-                  holder={value.bill?.holder}
-                />
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Drawee: </TableCell>
-              <TableCell>
-                <IdentityPublicDataCard value={value.bill?.drawee} />
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Drawer: </TableCell>
-              <TableCell>
-                <IdentityPublicDataCard value={value.bill?.drawer} />
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Payee: </TableCell>
-              <TableCell>
-                <IdentityPublicDataCard value={value.bill?.payee} />
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-bold">Holder: </TableCell>
-              <TableCell>
-                <IdentityPublicDataCard value={value.bill?.holder} />
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+    <div className="flex flex-col gap-1">
+      <Table className="my-2">
+        <TableBody>
+          <TableRow>
+            <TableCell className="font-bold">ID: </TableCell>
+            <TableCell>
+              <span className="font-mono">{value.id}</span>
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Status: </TableCell>
+            <TableCell>
+              <Badge variant={["rejected", "denied"].includes(value.status) ? "destructive" : "default"}>
+                {value.status}
+              </Badge>
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Sum: </TableCell>
+            <TableCell>{formatNumber("en", value.bill?.sum)} sat</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Maturity date: </TableCell>
+            <TableCell>
+              {!value.bill?.maturity_date ? (
+                <>(empty)</>
+              ) : (
+                <div className="flex gap-0.5">
+                  <span>{formatDate("en", new Date(Date.parse(value.bill.maturity_date)))}</span>
+                  <span>({humanReadableDuration("en", new Date(Date.parse(value.bill.maturity_date)))})</span>
+                </div>
+              )}
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Participants: </TableCell>
+            <TableCell>
+              <ParticipantsOverviewCard
+                drawee={value.bill?.drawee}
+                drawer={value.bill?.drawer}
+                payee={value.bill?.payee}
+                holder={value.bill?.holder}
+              />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Drawee: </TableCell>
+            <TableCell>
+              <IdentityPublicDataCard value={value.bill?.drawee} />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Drawer: </TableCell>
+            <TableCell>
+              <IdentityPublicDataCard value={value.bill?.drawer} />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Payee: </TableCell>
+            <TableCell>
+              <IdentityPublicDataCard value={value.bill?.payee} />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Holder: </TableCell>
+            <TableCell>
+              <IdentityPublicDataCard value={value.bill?.holder} />
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
-        <QuoteActions value={value} isFetching={isFetching} />
-      </div>
-    </>
+      <QuoteActions value={value} isFetching={isFetching} />
+    </div>
   )
 }
 
@@ -364,7 +358,13 @@ function PageBody({ id }: { id: InfoReply["id"] }) {
   return (
     <>
       <div className="flex items-center gap-1">
-        <span>{isFetching && <LoaderIcon className="stroke-1 animate-spin" />}</span>
+        {" "}
+        <LoaderIcon
+          className={cn("stroke-1 animate-spin", {
+            "animate-spin": isFetching,
+            invisible: !isFetching,
+          })}
+        />
       </div>
       <Quote value={data} isFetching={isFetching} />
     </>
