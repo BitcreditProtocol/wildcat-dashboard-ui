@@ -19,10 +19,11 @@ import { randomAvatar } from "@/utils/dev"
 import { formatNumber, truncateString } from "@/utils/strings"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
-import { Suspense, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
 import { Link, useParams } from "react-router"
-import { ConfirmDrawer } from "@/components/ConfirmDrawer"
-import { Drawer } from "@/components/ui/drawer"
+import { BaseDrawer, ConfirmDrawer } from "@/components/Drawers"
+import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm"
+import Big from "big.js"
 
 function Loader() {
   return (
@@ -32,26 +33,71 @@ function Loader() {
   )
 }
 
-type OfferConfirmDrawerProps = Parameters<typeof Drawer>[0] & {
+type OfferFormResult = Parameters<Parameters<typeof GrossToNetDiscountForm>[0]["onSubmit"]>[0]
+
+interface OfferFormProps {
+  discount: Omit<Parameters<typeof GrossToNetDiscountForm>[0], "onSubmit">
+  onSubmit: Parameters<typeof GrossToNetDiscountForm>[0]["onSubmit"]
+}
+
+function OfferForm({ onSubmit, discount }: OfferFormProps) {
+  return (
+    <>
+      <GrossToNetDiscountForm
+        {...discount}
+        startDate={discount.startDate ?? new Date(Date.now())}
+        onSubmit={onSubmit}
+      />
+    </>
+  )
+}
+
+type OfferFormDrawerProps = Parameters<typeof BaseDrawer>[0] & {
+  onSubmit: OfferFormProps["onSubmit"]
+}
+
+function OfferFormDrawer({ onSubmit, children, ...drawerProps }: OfferFormDrawerProps) {
+  return (
+    <BaseDrawer {...drawerProps} trigger={children}>
+      <div className="px-4 py-12">
+        <OfferForm
+          discount={{
+            endDate: new Date(Date.now() + 1_000_000_000),
+            gross: {
+              value: new Big(21_000),
+              currency: "sat",
+            },
+          }}
+          onSubmit={onSubmit}
+        />
+      </div>
+    </BaseDrawer>
+  )
+}
+
+type OfferConfirmDrawerProps = Parameters<typeof ConfirmDrawer>[0] & {
   onSubmit: () => void
-  children: React.ReactNode
+  children?: React.ReactNode
 }
 
 function OfferConfirmDrawer({ children, onSubmit, ...drawerProps }: OfferConfirmDrawerProps) {
   return (
-    <ConfirmDrawer {...drawerProps} onSubmit={onSubmit} trigger={children} submitButtonText="Yes, offer quote.">
-      <div className="px-4 py-12">
-        <div className="flex items-center justify-center space-x-2">
-          Are you sure you want to <span className="ps-1 font-bold">offer the quote</span>?
+    <ConfirmDrawer {...drawerProps} onSubmit={onSubmit} submitButtonText="Yes, offer quote.">
+      <>
+        <div className="px-4 py-12">
+          <div className="flex items-center justify-center space-x-2">
+            Are you sure you want to <span className="ps-1 font-bold">offer the quote</span>?
+          </div>
         </div>
-      </div>
+        <>{children}</>
+      </>
     </ConfirmDrawer>
   )
 }
 
-type DenyConfirmDrawerProps = Parameters<typeof Drawer>[0] & {
+type DenyConfirmDrawerProps = Parameters<typeof ConfirmDrawer>[0] & {
   onSubmit: () => void
-  children: React.ReactNode
+  children?: React.ReactNode
 }
 
 function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDrawerProps) {
@@ -73,8 +119,16 @@ function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDr
 }
 
 function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
+  const [offerFormData, setOfferFormData] = useState<OfferFormResult>()
+  const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false)
+
+  const effectiveDiscount = useMemo(() => {
+    if (!offerFormData) return
+    console.table(offerFormData)
+    return new Big(1).minus(offerFormData.net.value.div(offerFormData.gross.value))
+  }, [offerFormData])
 
   const queryClient = useQueryClient()
 
@@ -120,14 +174,14 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
     })
   }
 
-  const onOfferQuote = () => {
+  const onOfferQuote = (values: OfferFormResult) => {
     offerQuote.mutate({
       path: {
         id: value.id,
       },
       body: {
         action: "offer",
-        discount: "1",
+        discount: values.net.value.div(values.gross.value).toFixed(4),
         ttl: "1",
       },
     })
@@ -152,17 +206,38 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
             Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
           </Button>
         </DenyConfirmDrawer>
-        <OfferConfirmDrawer
-          open={offerConfirmDrawerOpen}
-          onOpenChange={setOfferConfirmDrawerOpen}
-          onSubmit={() => {
-            onOfferQuote()
-            setOfferConfirmDrawerOpen(false)
+        <OfferFormDrawer
+          open={offerFormDrawerOpen}
+          onOpenChange={setOfferFormDrawerOpen}
+          onSubmit={(data) => {
+            setOfferFormData(data)
+            setOfferConfirmDrawerOpen(true)
+            setOfferFormDrawerOpen(false)
           }}
         >
           <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "pending"}>
             Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
           </Button>
+        </OfferFormDrawer>
+        <OfferConfirmDrawer
+          open={offerConfirmDrawerOpen}
+          onOpenChange={setOfferConfirmDrawerOpen}
+          onSubmit={() => {
+            if (!offerFormData) return
+            onOfferQuote(offerFormData)
+            setOfferConfirmDrawerOpen(false)
+          }}
+        >
+          <div className="flex flex-col justify-center gap-1 py-8 mb-8">
+            <span>
+              <span className="font-bold">Effective discount:</span> {effectiveDiscount?.mul(new Big("100")).toFixed(2)}
+              %
+            </span>
+            <span>
+              <span className="font-bold">Net amount:</span> {offerFormData?.net.value.round(0).toFixed(0)}{" "}
+              {offerFormData?.net.currency}
+            </span>
+          </div>
         </OfferConfirmDrawer>
       </div>
     </>
