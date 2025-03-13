@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { Suspense } from "react"
+import { toast } from "sonner"
 
 function Loader() {
   return (
@@ -26,6 +27,15 @@ function PageBody() {
             className="cursor-pointer"
             checked={devMode}
             onCheckedChange={() => {
+              toast.info(
+                <>
+                  Developer mode is <span className="font-bold">{(!devMode && "ON") || "OFF"}</span>
+                </>,
+                {
+                  id: "settings-dev-mode",
+                  duration: 1_337,
+                },
+              )
               setDevMode((it) => !it)
             }}
           />
