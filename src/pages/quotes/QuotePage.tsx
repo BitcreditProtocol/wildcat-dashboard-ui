@@ -135,6 +135,9 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
 
   const denyQuote = useMutation({
     ...resolveQuoteMutation(),
+    onSettled: () => {
+      toast.dismiss(`quote-${value.id}-deny`)
+    },
     onError: (error) => {
       toast.error("Error while denying quote: " + error.message)
       console.warn(error)
@@ -152,6 +155,9 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   })
   const offerQuote = useMutation({
     ...resolveQuoteMutation(),
+    onSettled: () => {
+      toast.dismiss(`quote-${value.id}-offer`)
+    },
     onError: (error) => {
       toast.error("Error while offering quote: " + error.message)
       console.warn(error)
@@ -169,6 +175,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   })
 
   const onDenyQuote = () => {
+    toast.loading("Denying quote…", { id: `quote-${value.id}-deny` })
     denyQuote.mutate({
       path: {
         id: value.id,
@@ -180,6 +187,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   }
 
   const onOfferQuote = (values: OfferFormResult) => {
+    toast.loading("Offering quote…", { id: `quote-${value.id}-offer` })
     offerQuote.mutate({
       path: {
         id: value.id,
