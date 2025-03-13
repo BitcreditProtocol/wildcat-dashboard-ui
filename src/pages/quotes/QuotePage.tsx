@@ -24,6 +24,7 @@ import { Link, useParams } from "react-router"
 import { BaseDrawer, ConfirmDrawer } from "@/components/Drawers"
 import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm"
 import Big from "big.js"
+import { toast } from "sonner"
 
 function Loader() {
   return (
@@ -135,9 +136,11 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   const denyQuote = useMutation({
     ...resolveQuoteMutation(),
     onError: (error) => {
-      console.log(error)
+      toast.error("Error while denying quote: " + error.message)
+      console.warn(error)
     },
     onSuccess: () => {
+      toast.success("Quote has been denied.")
       void queryClient.invalidateQueries({
         queryKey: adminLookupQuoteQueryKey({
           path: {
@@ -150,9 +153,11 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   const offerQuote = useMutation({
     ...resolveQuoteMutation(),
     onError: (error) => {
-      console.log(error)
+      toast.error("Error while offering quote: " + error.message)
+      console.warn(error)
     },
     onSuccess: () => {
+      toast.success("Quote has been offered.")
       void queryClient.invalidateQueries({
         queryKey: adminLookupQuoteQueryKey({
           path: {
@@ -230,8 +235,12 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
         >
           <div className="flex flex-col justify-center gap-1 py-8 mb-8">
             <span>
-              <span className="font-bold">Effective discount:</span> {effectiveDiscount?.mul(new Big("100")).toFixed(2)}
-              %
+              <span className="font-bold">Effective discount (relative):</span>{" "}
+              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
+            </span>
+            <span>
+              <span className="font-bold">Effective discount (absolute):</span>{" "}
+              {offerFormData?.gross.value.minus(offerFormData?.net.value).toFixed(0)} {offerFormData?.net.currency}
             </span>
             <span>
               <span className="font-bold">Net amount:</span> {offerFormData?.net.value.round(0).toFixed(0)}{" "}
