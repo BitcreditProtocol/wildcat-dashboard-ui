@@ -13,6 +13,7 @@ import InfoPage from "./pages/info/InfoPage"
 import QuotePage from "./pages/quotes/QuotePage"
 import PendingQuotesPage from "./pages/quotes/PendingQuotesPage"
 import AcceptedQuotesPage from "./pages/quotes/AcceptedQuotesPage"
+import { Toaster } from "./components/ui/sonner"
 
 const queryClient = new QueryClient()
 
@@ -42,6 +43,7 @@ void prepare().then(() => {
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>
+      <Toaster />
     </StrictMode>,
   )
 })
