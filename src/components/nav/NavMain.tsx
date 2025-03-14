@@ -21,6 +21,7 @@ export function NavMain({
     url: string
     icon?: LucideIcon
     isActive?: boolean
+    disabled?: boolean
     items?: {
       title: string
       url: string
@@ -36,7 +37,7 @@ export function NavMain({
         {items.map((item) =>
           (item.items ?? []).length === 0 || state === "collapsed" ? (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild tooltip={item.title}>
+              <SidebarMenuButton asChild tooltip={item.title} disabled={item.disabled}>
                 <NavLink to={item.url}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
