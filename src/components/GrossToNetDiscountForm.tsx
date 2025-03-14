@@ -60,7 +60,13 @@ const INPUT_DAYS_MAX_VALUE = 360
 
 type GrossToNetFormValues = FormValues
 
-const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitButtonText = "Submit" }: GrossToNetProps) => {
+const GrossToNetDiscountForm = ({
+  startDate,
+  endDate,
+  gross,
+  onSubmit,
+  submitButtonText = "Submit",
+}: GrossToNetProps) => {
   const {
     watch,
     register,

@@ -25,6 +25,7 @@ import { BaseDrawer, ConfirmDrawer } from "@/components/Drawers"
 import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm"
 import Big from "big.js"
 import { toast } from "sonner"
+import { useForm } from "react-hook-form"
 
 function Loader() {
   return (
@@ -34,8 +35,78 @@ function Loader() {
   )
 }
 
+interface TimeToLiveFormValues {
+  ttl?: Date
+}
+
+interface TimeToLiveFormResult {
+  ttl: Date
+}
+
+interface TimeToLiveFormProps {
+  submitButtonText?: string
+  onSubmit: (values: TimeToLiveFormResult) => void
+}
+
+const TimeToLiveForm = ({ onSubmit, submitButtonText = "Submit" }: TimeToLiveFormProps) => {
+  const {
+    watch,
+    register,
+    handleSubmit,
+    formState: { isValid, errors },
+  } = useForm<TimeToLiveFormValues>({
+    mode: "all",
+  })
+
+  const { ttl } = watch()
+
+  return (
+    <form
+      className="flex flex-col gap-2 min-w-[8rem]"
+      onSubmit={(e) => {
+        handleSubmit(() => {
+          if (errors.root !== undefined || ttl === undefined) return
+
+          onSubmit({
+            ttl,
+          })
+        })(e).catch(() => {
+          // TODO
+        })
+      }}
+    >
+      <div className="flex flex-col">
+        <div
+          className={cn(
+            "flex gap-2 justify-between items-center font-semibold",
+            "peer flex h-[58px] w-full rounded-[8px] border bg-elevation-200 px-4 text-sm transition-all duration-200 ease-in-out outline-none focus:outline-none",
+            "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-0",
+          )}
+        >
+          <label htmlFor={"ttl"}>Valid until</label>
+
+          <input
+            id="ttl"
+            step="1"
+            type="number"
+            className="bg-transparent text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            {...register("ttl", {
+              required: true,
+            })}
+          />
+        </div>
+      </div>
+
+      <Button type="submit" size="sm" className="my-[16px]" disabled={!isValid}>
+        {submitButtonText}
+      </Button>
+    </form>
+  )
+}
+
 interface OfferFormResult {
   discount: Parameters<Parameters<typeof GrossToNetDiscountForm>[0]["onSubmit"]>[0]
+  ttl: Parameters<Parameters<typeof TimeToLiveForm>[0]["onSubmit"]>[0]
 }
 
 interface OfferFormProps {
@@ -44,16 +115,32 @@ interface OfferFormProps {
 }
 
 function OfferForm({ onSubmit, discount }: OfferFormProps) {
+  const [discountResult, setDiscountResult] = useState<OfferFormResult["discount"]>()
   return (
     <>
-      <GrossToNetDiscountForm
-        {...discount}
-        startDate={discount.startDate ?? new Date(Date.now())}
-        onSubmit={(values) => onSubmit({
-          discount: values
-        })}
-        submitButtonText="Next"
-      />
+      {!discountResult ? (
+        <>
+          <GrossToNetDiscountForm
+            {...discount}
+            startDate={discount.startDate ?? new Date(Date.now())}
+            onSubmit={setDiscountResult}
+            submitButtonText="Next"
+          />
+        </>
+      ) : (
+        <>
+          <TimeToLiveForm
+            {...discount}
+            onSubmit={(ttlResult) =>
+              onSubmit({
+                discount: discountResult,
+                ttl: ttlResult,
+              })
+            }
+            submitButtonText="Next"
+          />
+        </>
+      )}
     </>
   )
 }
@@ -203,67 +290,68 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   }
 
   return (
-      <div className="flex items-center gap-2">
-        <DenyConfirmDrawer
-          title="Confirm denying quote"
-          open={denyConfirmDrawerOpen}
-          onOpenChange={setDenyConfirmDrawerOpen}
-          onSubmit={() => {
-            onDenyQuote()
-            setDenyConfirmDrawerOpen(false)
-          }}
+    <div className="flex items-center gap-2">
+      <DenyConfirmDrawer
+        title="Confirm denying quote"
+        open={denyConfirmDrawerOpen}
+        onOpenChange={setDenyConfirmDrawerOpen}
+        onSubmit={() => {
+          onDenyQuote()
+          setDenyConfirmDrawerOpen(false)
+        }}
+      >
+        <Button
+          className="flex-1"
+          disabled={isFetching || denyQuote.isPending || value.status !== "pending"}
+          variant={value.status !== "pending" ? "outline" : "destructive"}
         >
-          <Button
-            className="flex-1"
-            disabled={isFetching || denyQuote.isPending || value.status !== "pending"}
-            variant={value.status !== "pending" ? "outline" : "destructive"}
-          >
-            Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-          </Button>
-        </DenyConfirmDrawer>
-        <OfferFormDrawer
-          title="Offer quote"
-          description="Make an offer to the current holder of this bill"
-          value={value}
-          open={offerFormDrawerOpen}
-          onOpenChange={setOfferFormDrawerOpen}
-          onSubmit={(data) => {
-            setOfferFormData(data)
-            setOfferConfirmDrawerOpen(true)
-            setOfferFormDrawerOpen(false)
-          }}
-        >
-          <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "pending"}>
-            Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-          </Button>
-        </OfferFormDrawer>
-        <OfferConfirmDrawer
-          title="Confirm offering quote"
-          description="Review your inputs and confirm the offer"
-          open={offerConfirmDrawerOpen}
-          onOpenChange={setOfferConfirmDrawerOpen}
-          onSubmit={() => {
-            if (!offerFormData) return
-            onOfferQuote(offerFormData)
-            setOfferConfirmDrawerOpen(false)
-          }}
-        >
-          <div className="flex flex-col justify-center gap-1 py-8 mb-8">
-            <span>
-              <span className="font-bold">Effective discount (relative):</span>{" "}
-              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
-            </span>
-            <span>
-              <span className="font-bold">Effective discount (absolute):</span>{" "}
-              {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)} {offerFormData?.discount.net.currency}
-            </span>
-            <span>
-              <span className="font-bold">Net amount:</span> {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
-              {offerFormData?.discount.net.currency}
-            </span>
-          </div>
-        </OfferConfirmDrawer>
-      </div>
+          Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+        </Button>
+      </DenyConfirmDrawer>
+      <OfferFormDrawer
+        title="Offer quote"
+        description="Make an offer to the current holder of this bill"
+        value={value}
+        open={offerFormDrawerOpen}
+        onOpenChange={setOfferFormDrawerOpen}
+        onSubmit={(data) => {
+          setOfferFormData(data)
+          setOfferConfirmDrawerOpen(true)
+          setOfferFormDrawerOpen(false)
+        }}
+      >
+        <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "pending"}>
+          Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+        </Button>
+      </OfferFormDrawer>
+      <OfferConfirmDrawer
+        title="Confirm offering quote"
+        description="Review your inputs and confirm the offer"
+        open={offerConfirmDrawerOpen}
+        onOpenChange={setOfferConfirmDrawerOpen}
+        onSubmit={() => {
+          if (!offerFormData) return
+          onOfferQuote(offerFormData)
+          setOfferConfirmDrawerOpen(false)
+        }}
+      >
+        <div className="flex flex-col justify-center gap-1 py-8 mb-8">
+          <span>
+            <span className="font-bold">Effective discount (relative):</span>{" "}
+            {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
+          </span>
+          <span>
+            <span className="font-bold">Effective discount (absolute):</span>{" "}
+            {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
+            {offerFormData?.discount.net.currency}
+          </span>
+          <span>
+            <span className="font-bold">Net amount:</span> {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
+            {offerFormData?.discount.net.currency}
+          </span>
+        </div>
+      </OfferConfirmDrawer>
+    </div>
   )
 }
 
