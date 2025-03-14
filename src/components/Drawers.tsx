@@ -13,23 +13,21 @@ import { VariantProps } from "class-variance-authority"
 
 type DrawerProps = Parameters<typeof Drawer>[0]
 type BaseDrawerProps = DrawerProps & {
-  title?: string
+  title: string
   description?: string
   trigger?: React.ReactNode
   children?: React.ReactNode
 }
-export function BaseDrawer({ title, description, trigger, children, ...drawerProps }: BaseDrawerProps) {
+export function BaseDrawer({ title, description = "", trigger, children, ...drawerProps }: BaseDrawerProps) {
   return (
     <Drawer {...drawerProps}>
       {trigger && <DrawerTrigger asChild>{trigger}</DrawerTrigger>}
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
-          {title && (
-            <DrawerHeader>
-              <DrawerTitle>{title}</DrawerTitle>
-              {description && <DrawerDescription>{description}</DrawerDescription>}
-            </DrawerHeader>
-          )}
+          <DrawerHeader>
+            <DrawerTitle>{title}</DrawerTitle>
+            {description && <DrawerDescription>{description}</DrawerDescription>}
+          </DrawerHeader>
           {children}
         </div>
       </DrawerContent>

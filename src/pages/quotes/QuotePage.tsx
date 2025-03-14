@@ -85,10 +85,8 @@ function OfferConfirmDrawer({ children, onSubmit, ...drawerProps }: OfferConfirm
   return (
     <ConfirmDrawer {...drawerProps} onSubmit={onSubmit} submitButtonText="Yes, offer quote.">
       <>
-        <div className="px-4 py-12">
-          <div className="flex items-center justify-center space-x-2">
-            Are you sure you want to <span className="ps-1 font-bold">offer the quote</span>?
-          </div>
+        <div className="py-12 text-xl">
+          Are you sure you want to <span className="ps-1 font-bold">offer the quote</span>?
         </div>
         <>{children}</>
       </>
@@ -110,10 +108,8 @@ function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDr
       submitButtonVariant="destructive"
       onSubmit={onSubmit}
     >
-      <div className="px-4 py-12">
-        <div className="flex items-center justify-center space-x-2">
-          Are you sure you want to <span className="ps-1 font-bold">deny the quote</span>?
-        </div>
+      <div className="py-12 text-xl">
+        Are you sure you want to <span className="ps-1 font-bold">deny offering a quote</span>?
       </div>
     </ConfirmDrawer>
   )
@@ -204,6 +200,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
     <>
       <div className="flex items-center gap-2">
         <DenyConfirmDrawer
+          title="Confirm denying quote"
           open={denyConfirmDrawerOpen}
           onOpenChange={setDenyConfirmDrawerOpen}
           onSubmit={() => {
@@ -220,6 +217,8 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
           </Button>
         </DenyConfirmDrawer>
         <OfferFormDrawer
+          title="Offer quote"
+          description="Make an offer to the current holder of this bill"
           open={offerFormDrawerOpen}
           onOpenChange={setOfferFormDrawerOpen}
           onSubmit={(data) => {
@@ -233,6 +232,8 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
           </Button>
         </OfferFormDrawer>
         <OfferConfirmDrawer
+          title="Confirm offering quote"
+          description="Review your inputs and confirm the offer"
           open={offerConfirmDrawerOpen}
           onOpenChange={setOfferConfirmDrawerOpen}
           onSubmit={() => {
