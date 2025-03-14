@@ -1,31 +1,11 @@
-import { LabelHTMLAttributes, PropsWithChildren, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import Big from "big.js"
-import { cn } from "@/lib/utils"
 import { parseFloatSafe, parseIntSafe } from "@/utils/numbers"
 import { daysBetween } from "@/utils/dates"
 import { Act360 } from "@/utils/discount-util"
 import { Button } from "./ui/button"
-
-type InputContainerProps = PropsWithChildren<{
-  htmlFor: LabelHTMLAttributes<HTMLLabelElement>["htmlFor"]
-  label: React.ReactNode
-}>
-
-const InputContainer = ({ children, htmlFor, label }: InputContainerProps) => {
-  return (
-    <div
-      className={cn(
-        "flex gap-2 justify-between items-center font-semibold",
-        "peer flex h-[58px] w-full rounded-[8px] border bg-elevation-200 px-4 text-sm transition-all duration-200 ease-in-out outline-none focus:outline-none",
-        "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-0",
-      )}
-    >
-      <label htmlFor={htmlFor}>{label}</label>
-      {children}
-    </div>
-  )
-}
+import { InputContainer } from "./InputContainer"
 
 interface CurrencyAmount {
   value: Big

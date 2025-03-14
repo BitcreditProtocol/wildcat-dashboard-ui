@@ -26,6 +26,9 @@ import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm"
 import Big from "big.js"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form"
+import { Calendar } from "@/components/ui/calendar"
+import { InputContainer } from "@/components/InputContainer"
+import { addDays } from "date-fns"
 
 function Loader() {
   return (
@@ -51,8 +54,8 @@ interface TimeToLiveFormProps {
 const TimeToLiveForm = ({ onSubmit, submitButtonText = "Submit" }: TimeToLiveFormProps) => {
   const {
     watch,
-    register,
     handleSubmit,
+    setValue,
     formState: { isValid, errors },
   } = useForm<TimeToLiveFormValues>({
     mode: "all",
@@ -75,24 +78,22 @@ const TimeToLiveForm = ({ onSubmit, submitButtonText = "Submit" }: TimeToLiveFor
         })
       }}
     >
-      <div className="flex flex-col">
-        <div
-          className={cn(
-            "flex gap-2 justify-between items-center font-semibold",
-            "peer flex h-[58px] w-full rounded-[8px] border bg-elevation-200 px-4 text-sm transition-all duration-200 ease-in-out outline-none focus:outline-none",
-            "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-0",
-          )}
-        >
-          <label htmlFor={"ttl"}>Valid until</label>
-
+      <div className="flex flex-col items-center">
+        <InputContainer htmlFor={"ttl"} label={<>Valid until</>}>
           <input
             id="ttl"
             step="1"
-            type="number"
+            value={ttl?.toDateString()}
             className="bg-transparent text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            {...register("ttl", {
-              required: true,
-            })}
+            readOnly
+          />
+        </InputContainer>
+        <div className="flex justify-center my-2 rounded-md border w-full">
+          <Calendar
+            mode="single"
+            selected={ttl}
+            onSelect={(day) => setValue("ttl", day)}
+            fromDate={addDays(new Date(Date.now()), 1)}
           />
         </div>
       </div>
@@ -284,7 +285,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
       body: {
         action: "offer",
         discount: result.discount.net.value.div(result.discount.gross.value).toFixed(4),
-        ttl: "1",
+        ttl: result.ttl.ttl.getTime().toFixed(0),
       },
     })
   }
@@ -348,6 +349,10 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
           <span>
             <span className="font-bold">Net amount:</span> {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
             {offerFormData?.discount.net.currency}
+          </span>
+          <span>
+            <span className="font-bold">Valid until:</span> {offerFormData?.ttl.ttl.toDateString()} (
+            {offerFormData && humanReadableDuration("en", offerFormData.ttl.ttl)})
           </span>
         </div>
       </OfferConfirmDrawer>
