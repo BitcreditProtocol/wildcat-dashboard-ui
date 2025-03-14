@@ -48,24 +48,26 @@ function OfferForm({ onSubmit, discount }: OfferFormProps) {
         {...discount}
         startDate={discount.startDate ?? new Date(Date.now())}
         onSubmit={onSubmit}
+        submitButtonText="Next"
       />
     </>
   )
 }
 
 type OfferFormDrawerProps = Parameters<typeof BaseDrawer>[0] & {
+  value: InfoReply
   onSubmit: OfferFormProps["onSubmit"]
 }
 
-function OfferFormDrawer({ onSubmit, children, ...drawerProps }: OfferFormDrawerProps) {
+function OfferFormDrawer({ value, onSubmit, children, ...drawerProps }: OfferFormDrawerProps) {
   return (
     <BaseDrawer {...drawerProps} trigger={children}>
       <div className="px-4 py-12">
         <OfferForm
           discount={{
-            endDate: new Date(Date.now() + 1_000_000_000),
+            endDate: new Date(Date.parse(value.bill.maturity_date)),
             gross: {
-              value: new Big(21_000),
+              value: new Big(value.bill.sum),
               currency: "sat",
             },
           }}
@@ -197,7 +199,6 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   }
 
   return (
-    <>
       <div className="flex items-center gap-2">
         <DenyConfirmDrawer
           title="Confirm denying quote"
@@ -219,6 +220,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
         <OfferFormDrawer
           title="Offer quote"
           description="Make an offer to the current holder of this bill"
+          value={value}
           open={offerFormDrawerOpen}
           onOpenChange={setOfferFormDrawerOpen}
           onSubmit={(data) => {
@@ -258,7 +260,6 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
           </div>
         </OfferConfirmDrawer>
       </div>
-    </>
   )
 }
 

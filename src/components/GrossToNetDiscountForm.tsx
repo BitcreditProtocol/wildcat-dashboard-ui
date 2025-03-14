@@ -40,6 +40,7 @@ interface CommonDiscountFormProps {
 
 type GrossToNetProps = CommonDiscountFormProps & {
   gross: CurrencyAmount
+  submitButtonText?: string
 }
 
 interface FormResult {
@@ -59,7 +60,7 @@ const INPUT_DAYS_MAX_VALUE = 360
 
 type GrossToNetFormValues = FormValues
 
-const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit }: GrossToNetProps) => {
+const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitButtonText = "Submit" }: GrossToNetProps) => {
   const {
     watch,
     register,
@@ -94,7 +95,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit }: GrossTo
 
   useEffect(() => {
     if (startDate === undefined) return
-    setValue("daysInput", String(Math.min(daysBetween(startDate, endDate), INPUT_DAYS_MAX_VALUE)), {
+    setValue("daysInput", String(Math.min(Math.max(1, daysBetween(startDate, endDate)), INPUT_DAYS_MAX_VALUE)), {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true,
@@ -208,7 +209,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit }: GrossTo
       </div>
 
       <Button type="submit" size="sm" className="my-[16px]" disabled={!isValid}>
-        Confirm
+        {submitButtonText}
       </Button>
     </form>
   )
