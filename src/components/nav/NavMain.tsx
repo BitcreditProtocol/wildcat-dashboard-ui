@@ -12,6 +12,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 export function NavMain({
   items,
@@ -25,6 +26,7 @@ export function NavMain({
     items?: {
       title: string
       url: string
+      disabled?: boolean
     }[]
   }[]
 }) {
@@ -38,10 +40,17 @@ export function NavMain({
           (item.items ?? []).length === 0 || state === "collapsed" ? (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild tooltip={item.title} disabled={item.disabled}>
-                <NavLink to={item.url}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                </NavLink>
+                {item.disabled === true ? (
+                  <>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </>
+                ) : (
+                  <NavLink to={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </NavLink>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           ) : (
@@ -59,7 +68,14 @@ export function NavMain({
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton asChild>
-                          <NavLink to={subItem.url}>
+                          <NavLink
+                            to={subItem.url}
+                            onClick={subItem.disabled ? (e) => e.preventDefault() : undefined}
+                            className={cn({
+                              "opacity-50": subItem.disabled,
+                              "cursor-not-allowed": subItem.disabled,
+                            })}
+                          >
                             <span>{subItem.title}</span>
                           </NavLink>
                         </SidebarMenuSubButton>

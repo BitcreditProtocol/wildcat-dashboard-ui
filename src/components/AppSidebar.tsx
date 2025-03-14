@@ -27,8 +27,28 @@ const data = {
           url: "/quotes/pending",
         },
         {
+          title: "Offered",
+          url: "/quotes/offered",
+          disabled: true,
+        },
+        {
           title: "Accepted",
           url: "/quotes/accepted",
+        },
+        {
+          title: "Denied",
+          url: "/quotes/denied",
+          disabled: true,
+        },
+        {
+          title: "Rejected",
+          url: "/quotes/rejected",
+          disabled: true,
+        },
+        {
+          title: "Expired",
+          url: "/quotes/expired",
+          disabled: true,
         },
       ],
     },
