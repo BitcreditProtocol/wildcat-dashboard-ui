@@ -34,11 +34,13 @@ function Loader() {
   )
 }
 
-type OfferFormResult = Parameters<Parameters<typeof GrossToNetDiscountForm>[0]["onSubmit"]>[0]
+interface OfferFormResult {
+  discount: Parameters<Parameters<typeof GrossToNetDiscountForm>[0]["onSubmit"]>[0]
+}
 
 interface OfferFormProps {
   discount: Omit<Parameters<typeof GrossToNetDiscountForm>[0], "onSubmit">
-  onSubmit: Parameters<typeof GrossToNetDiscountForm>[0]["onSubmit"]
+  onSubmit: (result: OfferFormResult) => void
 }
 
 function OfferForm({ onSubmit, discount }: OfferFormProps) {
@@ -47,7 +49,9 @@ function OfferForm({ onSubmit, discount }: OfferFormProps) {
       <GrossToNetDiscountForm
         {...discount}
         startDate={discount.startDate ?? new Date(Date.now())}
-        onSubmit={onSubmit}
+        onSubmit={(values) => onSubmit({
+          discount: values
+        })}
         submitButtonText="Next"
       />
     </>
@@ -62,7 +66,7 @@ type OfferFormDrawerProps = Parameters<typeof BaseDrawer>[0] & {
 function OfferFormDrawer({ value, onSubmit, children, ...drawerProps }: OfferFormDrawerProps) {
   return (
     <BaseDrawer {...drawerProps} trigger={children}>
-      <div className="px-4 py-12">
+      <div className="px-4 pt-12">
         <OfferForm
           discount={{
             endDate: new Date(Date.parse(value.bill.maturity_date)),
@@ -126,7 +130,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   const effectiveDiscount = useMemo(() => {
     if (!offerFormData) return
     console.table(offerFormData)
-    return new Big(1).minus(offerFormData.net.value.div(offerFormData.gross.value))
+    return new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
   }, [offerFormData])
 
   const queryClient = useQueryClient()
@@ -184,7 +188,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
     })
   }
 
-  const onOfferQuote = (values: OfferFormResult) => {
+  const onOfferQuote = (result: OfferFormResult) => {
     toast.loading("Offering quote…", { id: `quote-${value.id}-offer` })
     offerQuote.mutate({
       path: {
@@ -192,7 +196,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
       },
       body: {
         action: "offer",
-        discount: values.net.value.div(values.gross.value).toFixed(4),
+        discount: result.discount.net.value.div(result.discount.gross.value).toFixed(4),
         ttl: "1",
       },
     })
@@ -251,11 +255,11 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
             </span>
             <span>
               <span className="font-bold">Effective discount (absolute):</span>{" "}
-              {offerFormData?.gross.value.minus(offerFormData?.net.value).toFixed(0)} {offerFormData?.net.currency}
+              {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)} {offerFormData?.discount.net.currency}
             </span>
             <span>
-              <span className="font-bold">Net amount:</span> {offerFormData?.net.value.round(0).toFixed(0)}{" "}
-              {offerFormData?.net.currency}
+              <span className="font-bold">Net amount:</span> {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
+              {offerFormData?.discount.net.currency}
             </span>
           </div>
         </OfferConfirmDrawer>
