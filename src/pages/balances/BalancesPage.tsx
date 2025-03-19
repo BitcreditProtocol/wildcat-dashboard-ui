@@ -222,11 +222,11 @@ function PageBody() {
 
       <Earnings />
 
-      <div className="flex items-center gap-2 hidden">
-        <Card className="flex-1 max-h-[500px] py-4">
+      <div className="flex items-center gap-2">
+        <Card className="flex-1 py-4">
           <BitcoinBalanceChart />
         </Card>
-        <Card className="flex-1 max-h-[500px] py-4">
+        <Card className="flex-1 py-4">
           <OtherBalanceChart />
         </Card>
       </div>
