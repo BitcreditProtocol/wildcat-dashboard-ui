@@ -185,8 +185,8 @@ function PageBody() {
 
   return (
     <>
-      <div className="flex items-center gap-2 my-2">
-        <Card className="flex-1 bg-indigo-100 self-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <Card className="bg-indigo-100">
           <CardHeader>
             <CardTitle>Bitcoin balance</CardTitle>
           </CardHeader>
@@ -194,7 +194,7 @@ function PageBody() {
             <BalanceText value={data.bitcoin} />
           </CardContent>
         </Card>
-        <Card className="flex-1 bg-orange-100 self-stretch">
+        <Card className="bg-orange-100">
           <CardHeader>
             <CardTitle>e-IOU balance</CardTitle>
           </CardHeader>
@@ -202,7 +202,7 @@ function PageBody() {
             <BalanceText value={data.eiou} />
           </CardContent>
         </Card>
-        <Card className="flex-1 bg-purple-200 self-stretch">
+        <Card className="bg-purple-200">
           <CardHeader>
             <CardTitle>Credit token balance</CardTitle>
           </CardHeader>
@@ -210,7 +210,7 @@ function PageBody() {
             <BalanceText value={data.credit} />
           </CardContent>
         </Card>
-        <Card className="flex-1 bg-purple-400 self-stretch">
+        <Card className="bg-purple-400">
           <CardHeader>
             <CardTitle>Debit token balance</CardTitle>
           </CardHeader>
@@ -222,11 +222,11 @@ function PageBody() {
 
       <Earnings />
 
-      <div className="flex items-center gap-2">
-        <Card className="flex-1 py-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+        <Card className="py-4">
           <BitcoinBalanceChart />
         </Card>
-        <Card className="flex-1 py-4">
+        <Card className="py-4">
           <OtherBalanceChart />
         </Card>
       </div>
