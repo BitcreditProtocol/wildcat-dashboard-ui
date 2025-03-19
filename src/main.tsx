@@ -15,6 +15,7 @@ import PendingQuotesPage from "./pages/quotes/PendingQuotesPage"
 import AcceptedQuotesPage from "./pages/quotes/AcceptedQuotesPage"
 import { Toaster } from "./components/ui/sonner"
 import EarningsPage from "./pages/balances/EarningsPage"
+import CashFlowPage from "./pages/balances/CashFlowPage"
 
 const queryClient = new QueryClient()
 
@@ -35,6 +36,7 @@ void prepare().then(() => {
               <Route index element={<HomePage />} />
               <Route path="balances" element={<BalancesPage />} />
               <Route path="earnings" element={<EarningsPage />} />
+              <Route path="earnings/cashflow" element={<CashFlowPage />} />
               <Route path="quotes" element={<QuotesPage />} />
               <Route path="quotes/pending" element={<PendingQuotesPage />} />
               <Route path="quotes/accepted" element={<AcceptedQuotesPage />} />

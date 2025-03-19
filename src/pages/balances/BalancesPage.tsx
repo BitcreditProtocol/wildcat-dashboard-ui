@@ -1,9 +1,9 @@
+import { PropsWithChildren, Suspense } from "react"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { PropsWithChildren, Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BalancesResponse, fetchBalances } from "@/lib/api"
 import { useSuspenseQuery } from "@tanstack/react-query"
@@ -11,11 +11,17 @@ import useLocalStorage from "@/hooks/use-local-storage"
 
 function Loader() {
   return (
-    <div className="flex gap-2 py-2">
-      <Skeleton className="flex-1 h-32 rounded-lg" />
-      <Skeleton className="flex-1 h-32 rounded-lg" />
-      <Skeleton className="flex-1 h-32 rounded-lg" />
-      <Skeleton className="flex-1 h-32 rounded-lg" />
+    <div className="flex flex-col gap-4 my-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <Skeleton className="h-32 rounded-lg" />
+        <Skeleton className="h-32 rounded-lg" />
+        <Skeleton className="h-32 rounded-lg" />
+        <Skeleton className="h-32 rounded-lg" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Skeleton className="h-96 rounded-lg" />
+        <Skeleton className="h-96 rounded-lg" />
+      </div>
     </div>
   )
 }
@@ -132,7 +138,7 @@ function PageBody() {
   })
 
   return (
-    <div className="my-4">
+    <div className="flex flex-col gap-4 my-2">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card className="bg-indigo-100">
           <CardHeader>
@@ -168,7 +174,7 @@ function PageBody() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="py-4">
           <BitcoinBalanceChart />
         </Card>
