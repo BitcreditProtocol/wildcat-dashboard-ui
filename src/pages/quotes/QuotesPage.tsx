@@ -15,6 +15,7 @@ function Loader() {
     <div className="flex flex-col gap-1.5 py-2">
       <Skeleton className="h-32 rounded-lg" />
       <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-32 rounded-lg" />
     </div>
   )
 }
@@ -27,8 +28,16 @@ function PageBody() {
   const { data: quotesAccepted } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: 'accepted'
-      } as unknown as ListQuotesData['query']
+        status: "accepted",
+      } as unknown as ListQuotesData["query"],
+    }),
+  })
+
+  const { data: quotesOffered } = useSuspenseQuery({
+    ...listQuotesOptions({
+      query: {
+        status: "offered",
+      } as unknown as ListQuotesData["query"],
     }),
   })
 
@@ -53,6 +62,21 @@ function PageBody() {
                   <>{quotesPending.quotes.length} pending</>
                 )}
               </CardContent>
+            </div>
+            <div className="flex p-8">
+              <ChevronRight size={48} className="text-neutral-400" />
+            </div>
+          </div>
+        </Card>
+      </Link>
+      <Link to={"/quotes/offered"}>
+        <Card className="flex-1 self-stretch">
+          <div className="flex items-center">
+            <div className="flex-1 flex flex-col justify-center">
+              <CardHeader>
+                <CardTitle>Offered quotes</CardTitle>
+              </CardHeader>
+              <CardContent className="text-2xl">{quotesOffered.quotes.length} offered</CardContent>
             </div>
             <div className="flex p-8">
               <ChevronRight size={48} className="text-neutral-400" />
