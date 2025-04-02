@@ -1,4 +1,4 @@
-import { factory, nullable, oneOf, primaryKey } from "@mswjs/data"
+import { factory, manyOf, nullable, oneOf, primaryKey } from "@mswjs/data"
 import { faker } from "@faker-js/faker"
 
 // Seed `faker` to ensure reproducible random values of model properties.
@@ -25,7 +25,7 @@ export const db = factory({
     id: primaryKey(String),
     drawee: nullable(oneOf("identity_public_data")),
     drawer: nullable(oneOf("identity_public_data")),
-    holder: nullable(oneOf("identity_public_data")),
+    endorsees: nullable(manyOf("identity_public_data")),
     payee: nullable(oneOf("identity_public_data")),
     sum: Number,
     maturity_date: String,
@@ -105,8 +105,8 @@ const BILLS = Array.from(Array(AMOUNT_OF_BILLS).keys()).map((_, index) =>
     ).toUTCString(),
     drawee: ALICE,
     drawer: BOB,
-    payee: ALICE,
-    holder: CHARLIE,
+    payee: ALICE, // payee: CHARLIE
+    endorsees: [CHARLIE],
   }),
 )
 
@@ -152,7 +152,8 @@ ACCEPTED_BILLS.forEach((bill) => {
     where: { id: { equals: bill.id } },
     data: {
       ...bill,
-      holder: MINT,
+      endorsees: [MINT],
+      payee: MINT
     },
   })
 })

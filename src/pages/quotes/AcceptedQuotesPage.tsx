@@ -2,7 +2,8 @@ import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { listAcceptedQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { ListQuotesData } from "@/generated/client"
+import { listQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { cn } from "@/lib/utils"
 import { useSuspenseQuery } from "@tanstack/react-query"
@@ -27,7 +28,11 @@ function QuoteListAccepted() {
   const navigate = useNavigate()
 
   const { data, isFetching } = useSuspenseQuery({
-    ...listAcceptedQuotesOptions(),
+    ...listQuotesOptions({
+      query: {
+        status: 'accepted'
+      } as unknown as ListQuotesData['query']
+    }),
   })
 
   return (
@@ -48,10 +53,10 @@ function QuoteListAccepted() {
             <div key={index} className="flex gap-1 items-center text-sm">
               <span className="font-mono">
                 {isFetching ? (
-                  <>{it}</>
+                  <>{it.id}</>
                 ) : (
                   <>
-                    <Link to={"/quotes/:id".replace(":id", it)}>{it}</Link>
+                    <Link to={"/quotes/:id".replace(":id", it.id as string)}>{it.id}</Link>
                   </>
                 )}
               </span>
@@ -60,7 +65,7 @@ function QuoteListAccepted() {
                 size="sm"
                 disabled={isFetching}
                 onClick={() => {
-                  void navigate("/quotes/:id".replace(":id", it))
+                  void navigate("/quotes/:id".replace(":id", it.id as string))
                 }}
               >
                 View
@@ -77,7 +82,11 @@ function DevSection() {
   const [devMode] = useLocalStorage("devMode", false)
 
   const { data: quotesAccepted } = useSuspenseQuery({
-    ...listAcceptedQuotesOptions({}),
+    ...listQuotesOptions({
+      query: {
+        status: 'accepted'
+      } as unknown as ListQuotesData['query']
+    }),
   })
 
   return (

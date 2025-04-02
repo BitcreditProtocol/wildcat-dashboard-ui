@@ -1,12 +1,13 @@
 import { http, delay, HttpResponse, StrictResponse } from "msw"
 import { API_URL } from "@/constants/api"
-import { ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING, ADMIN_QUOTE_ACCEPTED } from "@/constants/endpoints"
+import { ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING, ADMIN_QUOTE } from "@/constants/endpoints"
 import {
   AdminLookupQuoteResponse,
   InfoReply,
-  ListAcceptedQuotesResponse,
   ListPendingQuotesResponse,
-  ResolveRequest,
+  ListReplyLight,
+  UpdateQuoteRequest,
+  UpdateQuoteResponse,
 } from "@/generated/client"
 import { db } from "../db"
 
@@ -23,15 +24,23 @@ export const fetchAdminQuotePending = http.get<never, never, ListPendingQuotesRe
   },
 )
 
-export const fetchAdminQuoteAccepted = http.get<never, never, ListAcceptedQuotesResponse>(
-  `${API_URL}${ADMIN_QUOTE_ACCEPTED}`,
-  async () => {
+export const fetchAdminQuote = http.get<never, never, ListReplyLight>(
+  `${API_URL}${ADMIN_QUOTE}`,
+  async ({ request }) => {
+    const url = new URL(request.url)
     await delay(1_000)
+    let data = db.quotes.getAll();
 
-    const data = db.quotes.getAll().filter((it) => it.status === "accepted")
+    const states = url.searchParams.getAll('status')
+    if (states.length !== 0) {
+      data = data.filter((it) => states.includes(it.status ?? ''))
+    }
 
     return HttpResponse.json({
-      quotes: data.map((it) => it.id),
+      quotes: data.map((it) => ({
+        id: it.id,
+        status: it.status ?? undefined
+      })),
     })
   },
 )
@@ -52,7 +61,7 @@ export const fetchAdminLookupQuote = http.get<never, never, AdminLookupQuoteResp
   },
 )
 
-export const updateAdminQuote = http.post<never, ResolveRequest>(
+export const updateAdminQuote = http.post<never, UpdateQuoteRequest>(
   `${API_URL}${ADMIN_QUOTE_BY_ID}`,
   async ({ params, request }) => {
     const { id } = params
@@ -81,6 +90,6 @@ export const updateAdminQuote = http.post<never, ResolveRequest>(
       data: quote,
     })
 
-    return HttpResponse.json(updated as InfoReply)
+    return HttpResponse.json(updated as UpdateQuoteResponse)
   },
 )

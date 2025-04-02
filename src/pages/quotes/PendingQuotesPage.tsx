@@ -82,7 +82,6 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
             drawee={data.bill?.drawee}
             drawer={data.bill?.drawer}
             payee={data.bill?.payee}
-            holder={data.bill?.holder}
             className="gap-1.5"
           />
         </div>

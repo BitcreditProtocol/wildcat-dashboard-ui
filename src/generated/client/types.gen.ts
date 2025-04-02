@@ -15,10 +15,12 @@ export type P2PkWitness = string;
  */
 export type HtlcWitness = string;
 
-/**
- * Manually added - should be replaced with generated one.
- */
-export type Resolve = string;
+export type ListReplyLight = {
+    quotes: Array<{
+        id: string;
+        status?: string;
+    }>;
+};
 
 /**
  * Amount can be any unit
@@ -31,7 +33,7 @@ export type Amount = number;
 export type BillInfo = {
     drawee: IdentityPublicData;
     drawer: IdentityPublicData;
-    holder: IdentityPublicData;
+    endorsees: Array<IdentityPublicData>;
     id: string;
     maturity_date: string;
     payee: IdentityPublicData;
@@ -138,9 +140,6 @@ export type InfoReply = {
     tstamp: string;
 };
 
-/**
- * --------------------------- List quotes
- */
 export type ListReply = {
     quotes: Array<string>;
 };
@@ -162,9 +161,28 @@ export type ResolveOffer = {
 };
 
 /**
- * --------------------------- Resolve quote request
+ * --------------------------- Look up quote
  */
-export type ResolveRequest = {
+export type StatusReply = {
+    status: 'Pending';
+} | {
+    status: 'Denied';
+} | {
+    expiration_date: string;
+    signatures: Array<BlindSignature>;
+    status: 'Offered';
+} | {
+    signatures: Array<BlindSignature>;
+    status: 'Accepted';
+} | {
+    status: 'Rejected';
+    tstamp: string;
+};
+
+/**
+ * --------------------------- Update quote status request
+ */
+export type UpdateQuoteRequest = {
     action: 'deny';
 } | {
     action: 'offer';
@@ -172,29 +190,60 @@ export type ResolveRequest = {
     ttl?: string | null;
 };
 
-/**
- * --------------------------- Look up quote
- */
-export type StatusReply = {
-    status: 'pending';
-} | {
+export type UpdateQuoteResponse = {
     status: 'denied';
 } | {
-    expiration_date: string;
-    signatures: Array<BlindSignature>;
+    discount: string;
     status: 'offered';
-} | {
-    signatures: Array<BlindSignature>;
-    status: 'accepted';
-} | {
-    status: 'rejected';
-    tstamp: string;
+    ttl: string;
 };
 
 /**
  * Witness
  */
 export type Witness = P2PkWitness | HtlcWitness;
+
+export type ListQuotesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * quotes younger than `since`
+         */
+        since?: string | null;
+    };
+    url: '/v1/admin/credit/quote';
+};
+
+export type ListQuotesResponses = {
+    /**
+     * Successful response
+     */
+    200: ListReplyLight;
+};
+
+export type ListQuotesResponse = ListQuotesResponses[keyof ListQuotesResponses];
+
+export type ListPendingQuotesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * only quote requests younger than `since`
+         */
+        since?: string | null;
+    };
+    url: '/v1/admin/credit/quote/pending';
+};
+
+export type ListPendingQuotesResponses = {
+    /**
+     * Successful response
+     */
+    200: ListReply;
+};
+
+export type ListPendingQuotesResponse = ListPendingQuotesResponses[keyof ListPendingQuotesResponses];
 
 export type AdminLookupQuoteData = {
     body?: never;
@@ -224,8 +273,8 @@ export type AdminLookupQuoteResponses = {
 
 export type AdminLookupQuoteResponse = AdminLookupQuoteResponses[keyof AdminLookupQuoteResponses];
 
-export type ResolveQuoteData = {
-    body: ResolveRequest;
+export type AdminUpdateQuoteData = {
+    body: UpdateQuoteRequest;
     path: {
         /**
          * The quote id
@@ -236,57 +285,17 @@ export type ResolveQuoteData = {
     url: '/v1/admin/credit/quote/{id}';
 };
 
-export type ResolveQuoteResponses = {
+export type AdminUpdateQuoteResponses = {
     /**
      * Successful response
      */
-    200: unknown;
+    200: UpdateQuoteResponse;
 };
 
-export type ListAcceptedQuotesData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * only accepted quotes younger than `since`
-         */
-        since?: string | null;
-    };
-    url: '/v1/admin/credit/quote/accepted';
-};
-
-export type ListAcceptedQuotesResponses = {
-    /**
-     * Successful response
-     */
-    200: ListReply;
-};
-
-export type ListAcceptedQuotesResponse = ListAcceptedQuotesResponses[keyof ListAcceptedQuotesResponses];
-
-export type ListPendingQuotesData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * only quote requests younger than `since`
-         */
-        since?: string | null;
-    };
-    url: '/v1/admin/credit/quote/pending';
-};
-
-export type ListPendingQuotesResponses = {
-    /**
-     * Successful response
-     */
-    200: ListReply;
-};
-
-export type ListPendingQuotesResponse = ListPendingQuotesResponses[keyof ListPendingQuotesResponses];
+export type AdminUpdateQuoteResponse = AdminUpdateQuoteResponses[keyof AdminUpdateQuoteResponses];
 
 export type ResolveOfferData = {
-    body: Resolve;
+    body: ResolveOffer;
     path: {
         /**
          * The quote id
