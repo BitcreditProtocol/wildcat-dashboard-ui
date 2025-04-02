@@ -10,7 +10,7 @@ import { IdentityPublicData, InfoReply } from "@/generated/client"
 import {
   adminLookupQuoteOptions,
   adminLookupQuoteQueryKey,
-  resolveQuoteMutation,
+  adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { cn } from "@/lib/utils"
@@ -93,7 +93,7 @@ const TimeToLiveForm = ({ onSubmit, submitButtonText = "Submit" }: TimeToLiveFor
             mode="single"
             selected={ttl}
             onSelect={(day) => setValue("ttl", day)}
-            fromDate={addDays(new Date(Date.now()), 1)}
+            hidden={{ before: addDays(new Date(Date.now()), 1) }}
           />
         </div>
       </div>
@@ -224,7 +224,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   const queryClient = useQueryClient()
 
   const denyQuote = useMutation({
-    ...resolveQuoteMutation(),
+    ...adminUpdateQuoteMutation(),
     onSettled: () => {
       toast.dismiss(`quote-${value.id}-deny`)
     },
@@ -244,7 +244,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
     },
   })
   const offerQuote = useMutation({
-    ...resolveQuoteMutation(),
+    ...adminUpdateQuoteMutation(),
     onSettled: () => {
       toast.dismiss(`quote-${value.id}-offer`)
     },
@@ -363,7 +363,6 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
 export function ParticipantsOverviewCard({
   drawee,
   drawer,
-  holder,
   payee,
   className,
 }: {
@@ -385,7 +384,7 @@ export function ParticipantsOverviewCard({
         <IdentityPublicDataAvatar value={payee} tooltip="Payee" />
       </div>
       <div>
-        <IdentityPublicDataAvatar value={holder} tooltip="Holder" />
+        <IdentityPublicDataAvatar value={payee} tooltip="Holder" />
       </div>
     </div>
   )
@@ -477,7 +476,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
                 drawee={value.bill?.drawee}
                 drawer={value.bill?.drawer}
                 payee={value.bill?.payee}
-                holder={value.bill?.holder}
+                holder={value.bill?.payee}
               />
             </TableCell>
           </TableRow>
@@ -497,12 +496,6 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
             <TableCell className="font-bold">Payee: </TableCell>
             <TableCell>
               <IdentityPublicDataCard value={value.bill?.payee} />
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-bold">Holder: </TableCell>
-            <TableCell>
-              <IdentityPublicDataCard value={value.bill?.holder} />
             </TableCell>
           </TableRow>
         </TableBody>

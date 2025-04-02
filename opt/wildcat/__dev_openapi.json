@@ -9,84 +9,17 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/v1/admin/credit/quote/{id}": {
+    "/v1/admin/credit/quote": {
       "get": {
         "tags": [
           "crate::admin"
         ],
-        "operationId": "admin_lookup_quote",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The quote id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InfoReply"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Quote id not  found"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "crate::admin"
-        ],
-        "operationId": "resolve_quote",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The quote id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResolveRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/v1/admin/credit/quote/accepted": {
-      "get": {
-        "tags": [
-          "crate::admin"
-        ],
-        "operationId": "list_accepted_quotes",
+        "operationId": "list_quotes",
         "parameters": [
           {
             "name": "since",
             "in": "query",
-            "description": "only accepted quotes younger than `since`",
+            "description": "quotes younger than `since`",
             "required": false,
             "schema": {
               "type": "string",
@@ -101,7 +34,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListReply"
+                  "$ref": "#/components/schemas/ListReplyLight"
                 }
               }
             }
@@ -143,6 +76,81 @@
         }
       }
     },
+    "/v1/admin/credit/quote/{id}": {
+      "get": {
+        "tags": [
+          "crate::admin"
+        ],
+        "operationId": "admin_lookup_quote",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfoReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quote id not  found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "crate::admin"
+        ],
+        "operationId": "admin_update_quote",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateQuoteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/credit/quote/{id}": {
       "post": {
         "tags": [
@@ -165,7 +173,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Resolve"
+                "$ref": "#/components/schemas/ResolveOffer"
               }
             }
           },
@@ -269,9 +277,31 @@
         "type": "string",
         "description": "Manually added - should be replaced with generated one."
       },
-      "Resolve": {
-        "type": "string",
-        "description": "Manually added - should be replaced with generated one."
+      "ListReplyLight": {
+        "type": "object",
+        "required": [
+          "quotes"
+        ],
+        "properties": {
+          "quotes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "status": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
       },
       "Amount": {
         "type": "integer",
@@ -287,7 +317,7 @@
           "drawee",
           "drawer",
           "payee",
-          "holder",
+          "endorsees",
           "sum",
           "maturity_date"
         ],
@@ -298,8 +328,11 @@
           "drawer": {
             "$ref": "#/components/schemas/IdentityPublicData"
           },
-          "holder": {
-            "$ref": "#/components/schemas/IdentityPublicData"
+          "endorsees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdentityPublicData"
+            }
           },
           "id": {
             "type": "string"
@@ -628,7 +661,6 @@
       },
       "ListReply": {
         "type": "object",
-        "description": "--------------------------- List quotes",
         "required": [
           "quotes"
         ],
@@ -698,7 +730,109 @@
         ],
         "description": "--------------------------- Resolve quote"
       },
-      "ResolveRequest": {
+      "StatusReply": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Pending"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Denied"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "signatures",
+              "expiration_date",
+              "status"
+            ],
+            "properties": {
+              "expiration_date": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BlindSignature"
+                }
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Offered"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "signatures",
+              "status"
+            ],
+            "properties": {
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BlindSignature"
+                }
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Accepted"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "tstamp",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Rejected"
+                ]
+              },
+              "tstamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        ],
+        "description": "--------------------------- Look up quote",
+        "discriminator": {
+          "propertyName": "status"
+        }
+      },
+      "UpdateQuoteRequest": {
         "oneOf": [
           {
             "type": "object",
@@ -738,27 +872,13 @@
             }
           }
         ],
-        "description": "--------------------------- Resolve quote request",
+        "description": "--------------------------- Update quote status request",
         "discriminator": {
           "propertyName": "action"
         }
       },
-      "StatusReply": {
+      "UpdateQuoteResponse": {
         "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "status"
-            ],
-            "properties": {
-              "status": {
-                "type": "string",
-                "enum": [
-                  "pending"
-                ]
-              }
-            }
-          },
           {
             "type": "object",
             "required": [
@@ -776,71 +896,27 @@
           {
             "type": "object",
             "required": [
-              "signatures",
-              "expiration_date",
+              "discount",
+              "ttl",
               "status"
             ],
             "properties": {
-              "expiration_date": {
-                "type": "string",
-                "format": "date-time"
-              },
-              "signatures": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/BlindSignature"
-                }
+              "discount": {
+                "type": "string"
               },
               "status": {
                 "type": "string",
                 "enum": [
                   "offered"
                 ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "signatures",
-              "status"
-            ],
-            "properties": {
-              "signatures": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/BlindSignature"
-                }
               },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "accepted"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "tstamp",
-              "status"
-            ],
-            "properties": {
-              "status": {
-                "type": "string",
-                "enum": [
-                  "rejected"
-                ]
-              },
-              "tstamp": {
+              "ttl": {
                 "type": "string",
                 "format": "date-time"
               }
             }
           }
         ],
-        "description": "--------------------------- Look up quote",
         "discriminator": {
           "propertyName": "status"
         }

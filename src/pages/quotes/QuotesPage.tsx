@@ -2,12 +2,13 @@ import { Suspense } from "react"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
-import { listAcceptedQuotesOptions, listPendingQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { listQuotesOptions, listPendingQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { Link } from "react-router"
 import { ChevronRight } from "lucide-react"
+import { ListQuotesData } from "@/generated/client"
 
 function Loader() {
   return (
@@ -24,7 +25,11 @@ function PageBody() {
   })
 
   const { data: quotesAccepted } = useSuspenseQuery({
-    ...listAcceptedQuotesOptions({}),
+    ...listQuotesOptions({
+      query: {
+        status: 'accepted'
+      } as unknown as ListQuotesData['query']
+    }),
   })
 
   return (
