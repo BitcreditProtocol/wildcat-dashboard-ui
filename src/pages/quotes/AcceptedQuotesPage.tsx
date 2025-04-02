@@ -30,8 +30,8 @@ function QuoteListAccepted() {
   const { data, isFetching } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: 'accepted'
-      } as unknown as ListQuotesData['query']
+        status: "accepted",
+      } as unknown as ListQuotesData["query"],
     }),
   })
 
@@ -84,8 +84,8 @@ function DevSection() {
   const { data: quotesAccepted } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: 'accepted'
-      } as unknown as ListQuotesData['query']
+        status: "accepted",
+      } as unknown as ListQuotesData["query"],
     }),
   })
 

@@ -29,17 +29,17 @@ export const fetchAdminQuote = http.get<never, never, ListReplyLight>(
   async ({ request }) => {
     const url = new URL(request.url)
     await delay(1_000)
-    let data = db.quotes.getAll();
+    let data = db.quotes.getAll()
 
-    const states = url.searchParams.getAll('status')
+    const states = url.searchParams.getAll("status")
     if (states.length !== 0) {
-      data = data.filter((it) => states.includes(it.status ?? ''))
+      data = data.filter((it) => states.includes(it.status ?? ""))
     }
 
     return HttpResponse.json({
       quotes: data.map((it) => ({
         id: it.id,
-        status: it.status ?? undefined
+        status: it.status ?? undefined,
       })),
     })
   },
