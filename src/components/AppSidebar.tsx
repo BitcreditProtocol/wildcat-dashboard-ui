@@ -51,7 +51,6 @@ const data = {
         {
           title: "Expired",
           url: "/quotes/expired",
-          disabled: true,
         },
       ],
     },

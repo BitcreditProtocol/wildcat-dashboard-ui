@@ -18,6 +18,7 @@ import EarningsPage from "./pages/balances/EarningsPage"
 import CashFlowPage from "./pages/balances/CashFlowPage"
 import OfferedQuotesPage from "./pages/quotes/OfferedQuotesPage"
 import DeniedQuotesPage from "./pages/quotes/DeniedQuotesPage"
+import ExpiredQuotesPage from "./pages/quotes/ExpiredQuotesPage"
 
 const queryClient = new QueryClient()
 
@@ -44,6 +45,7 @@ void prepare().then(() => {
               <Route path="quotes/accepted" element={<AcceptedQuotesPage />} />
               <Route path="quotes/offered" element={<OfferedQuotesPage />} />
               <Route path="quotes/denied" element={<DeniedQuotesPage />} />
+              <Route path="quotes/expired" element={<ExpiredQuotesPage />} />
               <Route path="quotes/:id" element={<QuotePage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="info" element={<InfoPage />} />
