@@ -46,7 +46,6 @@ const data = {
         {
           title: "Rejected",
           url: "/quotes/rejected",
-          disabled: true,
         },
         {
           title: "Expired",
