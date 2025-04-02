@@ -24,13 +24,13 @@ function Loader() {
   )
 }
 
-function QuoteListOffered() {
+function QuoteListDenied() {
   const navigate = useNavigate()
 
   const { data, isFetching } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: "offered",
+        status: "denied",
       } as unknown as ListQuotesData["query"],
     }),
   })
@@ -47,7 +47,7 @@ function QuoteListOffered() {
       </div>
 
       <div className="flex flex-col gap-1 my-2">
-        {data.quotes.length === 0 && <div className="py-2 font-bold">No offered quotes.</div>}
+        {data.quotes.length === 0 && <div className="py-2 font-bold">No denied quotes.</div>}
         {data.quotes.map((it, index) => {
           return (
             <div key={index} className="flex gap-1 items-center text-sm">
@@ -81,10 +81,10 @@ function QuoteListOffered() {
 function DevSection() {
   const [devMode] = useLocalStorage("devMode", false)
 
-  const { data: quotesOffered } = useSuspenseQuery({
+  const { data: quotesDenied } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: "offered",
+        status: "denied",
       } as unknown as ListQuotesData["query"],
     }),
   })
@@ -94,7 +94,7 @@ function DevSection() {
       {devMode && (
         <>
           <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-            {JSON.stringify(quotesOffered, null, 2)}
+            {JSON.stringify(quotesDenied, null, 2)}
           </pre>
         </>
       )}
@@ -106,13 +106,13 @@ function PageBody() {
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <QuoteListOffered />
+        <QuoteListDenied />
       </div>
     </div>
   )
 }
 
-export default function OfferedQuotesPage() {
+export default function DeniedQuotesPage() {
   return (
     <>
       <Breadcrumbs
@@ -122,9 +122,9 @@ export default function OfferedQuotesPage() {
           </>,
         ]}
       >
-        Offered
+        Denied
       </Breadcrumbs>
-      <PageTitle>Offered Quotes</PageTitle>
+      <PageTitle>Denied Quotes</PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody />
       </Suspense>
