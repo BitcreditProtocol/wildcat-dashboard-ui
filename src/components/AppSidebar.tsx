@@ -42,7 +42,6 @@ const data = {
         {
           title: "Denied",
           url: "/quotes/denied",
-          disabled: true,
         },
         {
           title: "Rejected",

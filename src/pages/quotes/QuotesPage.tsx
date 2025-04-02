@@ -41,6 +41,14 @@ function PageBody() {
     }),
   })
 
+  const { data: quotesDenied } = useSuspenseQuery({
+    ...listQuotesOptions({
+      query: {
+        status: "denied",
+      } as unknown as ListQuotesData["query"],
+    }),
+  })
+
   return (
     <div className="flex flex-col gap-1.5 my-2">
       <Link to={"/quotes/pending"}>
@@ -92,6 +100,21 @@ function PageBody() {
                 <CardTitle>Accepted quotes</CardTitle>
               </CardHeader>
               <CardContent className="text-2xl">{quotesAccepted.quotes.length} accepted</CardContent>
+            </div>
+            <div className="flex p-8">
+              <ChevronRight size={48} className="text-neutral-400" />
+            </div>
+          </div>
+        </Card>
+      </Link>
+      <Link to={"/quotes/denied"}>
+        <Card className="flex-1 self-stretch">
+          <div className="flex items-center">
+            <div className="flex-1 flex flex-col justify-center">
+              <CardHeader>
+                <CardTitle>Denied quotes</CardTitle>
+              </CardHeader>
+              <CardContent className="text-2xl">{quotesDenied.quotes.length} denied</CardContent>
             </div>
             <div className="flex p-8">
               <ChevronRight size={48} className="text-neutral-400" />
