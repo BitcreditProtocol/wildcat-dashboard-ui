@@ -16,6 +16,8 @@ function Loader() {
       <Skeleton className="h-32 rounded-lg" />
       <Skeleton className="h-32 rounded-lg" />
       <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-32 rounded-lg" />
     </div>
   )
 }
@@ -45,6 +47,14 @@ function PageBody() {
     ...listQuotesOptions({
       query: {
         status: "denied",
+      } as unknown as ListQuotesData["query"],
+    }),
+  })
+
+  const { data: quotesExpired } = useSuspenseQuery({
+    ...listQuotesOptions({
+      query: {
+        status: "expired",
       } as unknown as ListQuotesData["query"],
     }),
   })
@@ -115,6 +125,21 @@ function PageBody() {
                 <CardTitle>Denied quotes</CardTitle>
               </CardHeader>
               <CardContent className="text-2xl">{quotesDenied.quotes.length} denied</CardContent>
+            </div>
+            <div className="flex p-8">
+              <ChevronRight size={48} className="text-neutral-400" />
+            </div>
+          </div>
+        </Card>
+      </Link>
+      <Link to={"/quotes/expired"}>
+        <Card className="flex-1 self-stretch">
+          <div className="flex items-center">
+            <div className="flex-1 flex flex-col justify-center">
+              <CardHeader>
+                <CardTitle>Expired quotes</CardTitle>
+              </CardHeader>
+              <CardContent className="text-2xl">{quotesExpired.quotes.length} expired</CardContent>
             </div>
             <div className="flex p-8">
               <ChevronRight size={48} className="text-neutral-400" />
