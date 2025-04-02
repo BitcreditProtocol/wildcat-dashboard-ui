@@ -56,7 +56,7 @@ function QuoteListOffered() {
                   <>{it.id}</>
                 ) : (
                   <>
-                    <Link to={"/quotes/:id".replace(":id", it.id as string)}>{it.id}</Link>
+                    <Link to={"/quotes/:id".replace(":id", it.id)}>{it.id}</Link>
                   </>
                 )}
               </span>
@@ -65,7 +65,7 @@ function QuoteListOffered() {
                 size="sm"
                 disabled={isFetching}
                 onClick={() => {
-                  void navigate("/quotes/:id".replace(":id", it.id as string))
+                  void navigate("/quotes/:id".replace(":id", it.id))
                 }}
               >
                 View
