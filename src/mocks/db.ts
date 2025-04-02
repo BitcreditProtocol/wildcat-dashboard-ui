@@ -153,7 +153,7 @@ ACCEPTED_BILLS.forEach((bill) => {
     data: {
       ...bill,
       endorsees: [MINT],
-      payee: MINT
+      payee: MINT,
     },
   })
 })

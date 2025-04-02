@@ -8,12 +8,4 @@ const ADMIN_QUOTE_BY_ID = "/v1/admin/credit/quote/:id"
 const CREDIT_QUOTE = "/v1/credit/mint/quote"
 const CREDIT_QUOTES_BY_ID = "/v1/credit/mint/quote/:id"
 
-export {
-  INFO,
-  BALANCES,
-  ADMIN_QUOTE,
-  ADMIN_QUOTE_PENDING,
-  ADMIN_QUOTE_BY_ID,
-  CREDIT_QUOTE,
-  CREDIT_QUOTES_BY_ID,
-}
+export { INFO, BALANCES, ADMIN_QUOTE, ADMIN_QUOTE_PENDING, ADMIN_QUOTE_BY_ID, CREDIT_QUOTE, CREDIT_QUOTES_BY_ID }
