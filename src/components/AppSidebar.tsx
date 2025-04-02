@@ -34,7 +34,6 @@ const data = {
         {
           title: "Offered",
           url: "/quotes/offered",
-          disabled: true,
         },
         {
           title: "Accepted",
