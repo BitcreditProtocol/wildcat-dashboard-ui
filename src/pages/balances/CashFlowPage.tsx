@@ -22,25 +22,29 @@ function Loader() {
 
 function CashFlowChart() {
   const config = {
-    bitcoin: {
-      label: "Bitcoin",
+    credit: {
+      label: "Credit",
       color: "#2563eb",
+    },
+    debit: {
+      label: "Debit",
+      color: "#ff97f9",
     },
   } satisfies ChartConfig
 
   const data = [
-    { month: "January", bitcoin: 186 },
-    { month: "February", bitcoin: 305 },
-    { month: "March", bitcoin: 237 },
-    { month: "April", bitcoin: 73 },
-    { month: "May", bitcoin: 209 },
-    { month: "June", bitcoin: 214 },
-    { month: "July", bitcoin: 21 },
-    { month: "August", bitcoin: 32 },
-    { month: "September", bitcoin: 0 },
-    { month: "October", bitcoin: 0 },
-    { month: "November", bitcoin: 0 },
-    { month: "December", bitcoin: 0 },
+    { month: "January", credit: 186, debit: 15, offered: 12 },
+    { month: "February", credit: 305, debit: 14 },
+    { month: "March", credit: 237, debit: 13 },
+    { month: "April", credit: 73, debit: 12 },
+    { month: "May", credit: 209 },
+    { month: "June", credit: 214 },
+    { month: "July", credit: 21, debit: 12 },
+    { month: "August", credit: 32, debit: 12 },
+    { month: "September", credit: 0 },
+    { month: "October", credit: 0 },
+    { month: "November", credit: 0 },
+    { month: "December", credit: 0 },
   ]
 
   return (
@@ -63,9 +67,11 @@ function CashFlowChart() {
           axisLine={false}
           tickFormatter={(value: string) => value.slice(0, 3)}
         />
-        <YAxis dataKey="bitcoin" tickLine={false} tickMargin={10} axisLine={false} />
         <Tooltip cursor={true} isAnimationActive={true} />
-        <Line type="step" dataKey="bitcoin" fill="var(--color-bitcoin)" radius={4} />
+        <YAxis dataKey="credit" tickLine={false} tickMargin={10} axisLine={false} />
+        <YAxis dataKey="debit" tickLine={false} tickMargin={10} axisLine={false} />
+        <Line type="step" dataKey="debit" fill="var(--color-debit)" stroke="var(--color-debit)" radius={4} />
+        <Line type="step" dataKey="credit" fill="var(--color-credit)" stroke="var(--color-credit)" radius={4} />
         <ChartLegend content={<ChartLegendContent />} />
       </LineChart>
     </ChartContainer>
