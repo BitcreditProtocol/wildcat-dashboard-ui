@@ -1,6 +1,11 @@
-node_modules/
-dist/
-.github/
 Dockerfile
 .dockerignore
+docker-compose.yml
+
+/node_modules/
+/dist/
+/opt/
+/coverage/
+/.github/
 /*.md
+/*.log
