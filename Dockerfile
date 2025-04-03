@@ -1,5 +1,11 @@
+ARG NODE_ENV
+ARG VITE_MODE
 
 FROM node:22.11.0-slim@sha256:f035ba7ffee18f67200e2eb8018e0f13c954ec16338f264940f701997e3c12da AS builder
+ARG NODE_ENV
+ARG VITE_MODE
+ENV NODE_ENV=${NODE_ENV:-production}
+ENV VITE_MODE=${VITE_MODE:-production}
 
 WORKDIR /app
 
@@ -9,7 +15,7 @@ RUN npm install --no-fund --no-audit
 
 COPY . .
 
-RUN npm run build
+RUN npm run build -- --mode=${VITE_MODE}
 
 FROM nginx:1.27.4-alpine@sha256:4ff102c5d78d254a6f0da062b3cf39eaf07f01eec0927fd21e219d0af8bc0591
 
