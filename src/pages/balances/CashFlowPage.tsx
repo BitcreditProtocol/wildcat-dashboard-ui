@@ -8,12 +8,13 @@ import { fetchBalances } from "@/lib/api"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
+import { listQuotesQueryKey } from "@/generated/client/@tanstack/react-query.gen"
+import { adminLookupQuote, listQuotes, ListQuotesData } from "@/generated/client"
 
 function Loader() {
   return (
     <div className="flex flex-col gap-4 my-2">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Skeleton className="h-96 rounded-lg" />
+      <div className="grid grid-cols-1 gap-4">
         <Skeleton className="h-96 rounded-lg" />
       </div>
     </div>
@@ -22,30 +23,71 @@ function Loader() {
 
 function CashFlowChart() {
   const config = {
-    credit: {
-      label: "Credit",
+    offered: {
+      label: "Offered",
       color: "#2563eb",
     },
-    debit: {
-      label: "Debit",
+    accepted: {
+      label: "Accepted",
       color: "#ff97f9",
     },
   } satisfies ChartConfig
 
-  const data = [
-    { month: "January", credit: 186, debit: 15, offered: 12 },
-    { month: "February", credit: 305, debit: 14 },
-    { month: "March", credit: 237, debit: 13 },
-    { month: "April", credit: 73, debit: 12 },
-    { month: "May", credit: 209 },
-    { month: "June", credit: 214 },
-    { month: "July", credit: 21, debit: 12 },
-    { month: "August", credit: 32, debit: 12 },
-    { month: "September", credit: 0 },
-    { month: "October", credit: 0 },
-    { month: "November", credit: 0 },
-    { month: "December", credit: 0 },
+  const options = {
+    query: {
+      status: ["accepted", "offered"],
+    } as unknown as ListQuotesData["query"],
+  }
+
+  const { data: quotesAcceptedOrOffered } = useSuspenseQuery({
+    queryKey: listQuotesQueryKey(options),
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await listQuotes({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+
+      return (
+        await Promise.all(
+          data.quotes.map((it) =>
+            adminLookupQuote({
+              path: {
+                id: it.id,
+              },
+            }),
+          ),
+        )
+      )
+        .map((it) => it.data)
+        .filter((it) => !!it)
+    },
+  })
+
+  const acc = [
+    { month: "January", accepted: 0, offered: 0, sum: 0 },
+    { month: "February", accepted: 0, offered: 0, sum: 0 },
+    { month: "March", accepted: 0, offered: 0, sum: 0 },
+    { month: "April", accepted: 0, offered: 0, sum: 0 },
+    { month: "May", accepted: 0, offered: 0, sum: 0 },
+    { month: "June", accepted: 0, offered: 0, sum: 0 },
+    { month: "July", accepted: 0, offered: 0, sum: 0 },
+    { month: "August", accepted: 0, offered: 0, sum: 0 },
+    { month: "September", accepted: 0, offered: 0, sum: 0 },
+    { month: "October", accepted: 0, offered: 0, sum: 0 },
+    { month: "November", accepted: 0, offered: 0, sum: 0 },
+    { month: "December", accepted: 0, offered: 0, sum: 0 },
   ]
+
+  const data = quotesAcceptedOrOffered.reduce((acc, curr) => {
+    const maturityDate = new Date(Date.parse(curr.bill.maturity_date))
+    if (curr.status === "accepted" || curr.status === "offered") {
+      acc[maturityDate.getMonth()][curr.status] += curr.bill.sum
+      acc[maturityDate.getMonth()].sum += curr.bill.sum
+    }
+    return acc
+  }, acc)
 
   return (
     <ChartContainer config={config} className="max-h-[300px] min-h-[200px] w-full">
@@ -68,10 +110,9 @@ function CashFlowChart() {
           tickFormatter={(value: string) => value.slice(0, 3)}
         />
         <Tooltip cursor={true} isAnimationActive={true} />
-        <YAxis dataKey="credit" tickLine={false} tickMargin={10} axisLine={false} />
-        <YAxis dataKey="debit" tickLine={false} tickMargin={10} axisLine={false} />
-        <Line type="step" dataKey="debit" fill="var(--color-debit)" stroke="var(--color-debit)" radius={4} />
-        <Line type="step" dataKey="credit" fill="var(--color-credit)" stroke="var(--color-credit)" radius={4} />
+        <YAxis dataKey="sum" tickLine={false} tickMargin={10} axisLine={false} />
+        <Line type="step" dataKey="offered" fill="var(--color-offered)" stroke="var(--color-offered)" radius={4} />
+        <Line type="step" dataKey="accepted" fill="var(--color-accepted)" stroke="var(--color-accepted)" radius={4} />
         <ChartLegend content={<ChartLegendContent />} />
       </LineChart>
     </ChartContainer>

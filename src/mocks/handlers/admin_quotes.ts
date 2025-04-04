@@ -33,7 +33,7 @@ export const fetchAdminQuote = http.get<never, never, ListReplyLight>(
 
     const states = url.searchParams.getAll("status")
     if (states.length !== 0) {
-      data = data.filter((it) => states.includes(it.status ?? ""))
+      data = data.filter((it) => states.includes(it.status?.toLowerCase() ?? ""))
     }
 
     return HttpResponse.json({
