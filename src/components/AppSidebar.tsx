@@ -47,10 +47,10 @@ const data = {
           title: "Rejected",
           url: "/quotes/rejected",
         },
-        {
+        /*{
           title: "Expired",
           url: "/quotes/expired",
-        },
+        },*/
       ],
     },
     {
