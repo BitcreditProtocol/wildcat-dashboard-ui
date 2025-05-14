@@ -115,28 +115,28 @@ export type IdentityPublicData = PostalAddress & {
 export type InfoReply = {
     bill: BillInfo;
     id: string;
-    status: 'pending';
+    status: 'Pending';
     submitted: string;
     suggested_expiration: string;
 } | {
     bill: BillInfo;
     id: string;
     signatures: Array<BlindSignature>;
-    status: 'offered';
+    status: 'Offered';
     ttl: string;
 } | {
     bill: BillInfo;
     id: string;
-    status: 'denied';
+    status: 'Denied';
 } | {
     bill: BillInfo;
     id: string;
     signatures: Array<BlindSignature>;
-    status: 'accepted';
+    status: 'Accepted';
 } | {
     bill: BillInfo;
     id: string;
-    status: 'rejected';
+    status: 'Rejected';
     tstamp: string;
 };
 
@@ -183,10 +183,10 @@ export type StatusReply = {
  * --------------------------- Update quote status request
  */
 export type UpdateQuoteRequest = {
-    action: 'deny';
+    action: 'Deny';
 } | {
-    action: 'offer';
-    discount: string;
+    action: 'Offer';
+    discounted: number;
     ttl?: string | null;
 };
 
@@ -378,3 +378,30 @@ export type LookupQuoteResponse = LookupQuoteResponses[keyof LookupQuoteResponse
 export type ClientOptions = {
     baseUrl: `${string}://opt` | (string & {});
 };
+
+export type ActivateKeysetRequest = {
+    qid: string;
+};
+
+export type ActivateKeysetData = {
+    body: ActivateKeysetRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/keys/activate';
+};
+
+export type ActivateKeysetErrors = {
+    /**
+     * keyset id not found
+     */
+    404: unknown;
+};
+
+export type ActivateKeysetResponses = {
+    /**
+     * Successful response
+     */
+    200: unknown;
+};
+
+export type ActivateKeysetResponse = ActivateKeysetResponses[keyof ActivateKeysetResponses];
