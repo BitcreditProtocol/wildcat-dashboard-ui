@@ -3,8 +3,9 @@ import { PageTitle } from "@/components/PageTitle"
 import { Button } from "@/components/ui/button"
 import { Card, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { InfoReply } from "@/generated/client"
-import { adminLookupQuoteOptions, listPendingQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { InfoReply, listQuotes } from "@/generated/client"
+import { ListQuotesData } from "@/generated/client"
+import { adminLookupQuoteOptions, listPendingQuotesOptions, listQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
@@ -92,7 +93,11 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
 
 function QuoteListPending() {
   const { data, isFetching } = useSuspenseQuery({
-    ...listPendingQuotesOptions(),
+    ...listQuotesOptions({
+      query: {
+        status: "Pending",
+      } as unknown as ListQuotesData["query"],
+    }),
   })
 
   return (
@@ -107,11 +112,11 @@ function QuoteListPending() {
       </div>
 
       <div className="flex flex-col gap-1.5 my-2">
-        {data.quotes.length === 0 && <div className="py-2 font-bold">💪 No pending quotes.</div>}
+        {data.quotes.length === 0 && <div className="py-2 font-bold">No pending quotes.</div>}
         {data.quotes.map((it, index) => {
           return (
             <div key={index}>
-              <QuoteItemCard id={it} isLoading={isFetching} />
+              <QuoteItemCard id={it.id} isLoading={isFetching} />
             </div>
           )
         })}
@@ -121,10 +126,11 @@ function QuoteListPending() {
 }
 
 function DevSection() {
+  return <></>
   const [devMode] = useLocalStorage("devMode", false)
 
   const { data: quotesPending } = useSuspenseQuery({
-    ...listPendingQuotesOptions({}),
+    ...listQuotesOptions({}),
   })
 
   return (
