@@ -30,7 +30,7 @@ function QuoteListExpired() {
   const { data, isFetching } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: "expired",
+        status: "Expired",
       } as unknown as ListQuotesData["query"],
     }),
   })
@@ -84,7 +84,7 @@ function DevSection() {
   const { data: quotesExpired } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: "expired",
+        status: "Expired",
       } as unknown as ListQuotesData["query"],
     }),
   })
