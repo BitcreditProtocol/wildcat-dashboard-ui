@@ -21,7 +21,13 @@ import DeniedQuotesPage from "./pages/quotes/DeniedQuotesPage"
 import ExpiredQuotesPage from "./pages/quotes/ExpiredQuotesPage"
 import RejectedQuotesPage from "./pages/quotes/RejectedQuotesPage"
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      enabled: (query) => query.queryKey[0] !== "balances"
+    }
+  }
+})
 
 const prepare = async () => {
   if (meta.apiMocksEnabled) {
@@ -47,7 +53,7 @@ void prepare().then(() => {
               <Route path="quotes/offered" element={<OfferedQuotesPage />} />
               <Route path="quotes/denied" element={<DeniedQuotesPage />} />
               <Route path="quotes/rejected" element={<RejectedQuotesPage />} />
-              <Route path="quotes/expired" element={<ExpiredQuotesPage />} />
+              {/* <Route path="quotes/expired" element={<ExpiredQuotesPage />} /> */}
               <Route path="quotes/:id" element={<QuotePage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="info" element={<InfoPage />} />
