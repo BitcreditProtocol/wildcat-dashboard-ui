@@ -1,4 +1,4 @@
-import { StrictMode } from "react"
+import { StrictMode, useEffect } from "react"
 import { createRoot } from "react-dom/client"
 import { BrowserRouter, Route, Routes } from "react-router"
 import "./index.css"
@@ -18,9 +18,12 @@ import EarningsPage from "./pages/balances/EarningsPage"
 import CashFlowPage from "./pages/balances/CashFlowPage"
 import OfferedQuotesPage from "./pages/quotes/OfferedQuotesPage"
 import DeniedQuotesPage from "./pages/quotes/DeniedQuotesPage"
-import ExpiredQuotesPage from "./pages/quotes/ExpiredQuotesPage"
+// import ExpiredQuotesPage from "./pages/quotes/ExpiredQuotesPage"
 import RejectedQuotesPage from "./pages/quotes/RejectedQuotesPage"
 
+import keycloak from "./keycloak"
+
+// old code don't remove
 function loadToken() {
   const formData = new URLSearchParams();
   formData.append('grant_type', 'password');
@@ -49,13 +52,6 @@ function loadToken() {
       console.error('Error loading token:', error);
     });
 
-    // get token from local storage
-    const token = localStorage.getItem('token');
-    if (token) {
-      console.log('Token loaded successfully');
-    } else {
-      console.error('Failed to get access token:');
-    }
 }
 
 const queryClient = new QueryClient({
@@ -73,10 +69,9 @@ const prepare = async () => {
   }
 }
 
-void prepare().then(() => {
-  loadToken(); 
-  createRoot(document.getElementById("root")!).render(
-    <StrictMode>
+function App() {
+
+  return (
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
@@ -99,6 +94,14 @@ void prepare().then(() => {
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>
+  );
+}
+
+void prepare().then(() => {
+  // loadToken(); 
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
       <Toaster />
     </StrictMode>,
   )

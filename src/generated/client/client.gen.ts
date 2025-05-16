@@ -25,9 +25,6 @@ client.interceptors.request.use((request) => {
     }
     headers.set('Authorization', `Bearer ${token}`);
 
-    console.log('request', request);
-    console.log('headers', headers);
-    
     if (!(request.headers instanceof Headers)) {
         (request as any).headers = headers;
     }
