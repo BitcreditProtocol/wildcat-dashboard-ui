@@ -1,12 +1,13 @@
 import Keycloak from 'keycloak-js';
 
 const keycloak = new Keycloak({
-    url: "/",
-    realm: "dev",
-    clientId: "bff-local-dev",
+    url: import.meta.env.VITE_KEYCLOAK_URL,
+    realm: import.meta.env.VITE_KEYCLOAK_REALM,
+    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
 });
 
 try {
+    console.log('loading keycloak');
     const authenticated = await keycloak.init({
         onLoad: 'login-required',
         flow: 'implicit',

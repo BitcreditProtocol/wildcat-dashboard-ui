@@ -20,39 +20,7 @@ import OfferedQuotesPage from "./pages/quotes/OfferedQuotesPage"
 import DeniedQuotesPage from "./pages/quotes/DeniedQuotesPage"
 // import ExpiredQuotesPage from "./pages/quotes/ExpiredQuotesPage"
 import RejectedQuotesPage from "./pages/quotes/RejectedQuotesPage"
-
-import keycloak from "./keycloak"
-
-// old code don't remove
-function loadToken() {
-  const formData = new URLSearchParams();
-  formData.append('grant_type', 'password');
-  formData.append('client_id', 'bff-local-dev');
-  formData.append('client_secret', 'cute-kitties');
-  formData.append('username', 'democat');
-  formData.append('password', 'bitcredit');
-
-  fetch('/realms/dev/protocol/openid-connect/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: formData,
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.access_token) {
-        localStorage.setItem('token', data.access_token);
-        console.log('Token loaded successfully');
-      } else {
-        console.error('Failed to get access token:', data);
-      }
-    })
-    .catch(error => {
-      console.error('Error loading token:', error);
-    });
-
-}
+import "./keycloak"
 
 const queryClient = new QueryClient({
   defaultOptions: {
