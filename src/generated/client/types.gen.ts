@@ -377,6 +377,7 @@ export type LookupQuoteResponse = LookupQuoteResponses[keyof LookupQuoteResponse
 
 export type ClientOptions = {
     baseUrl: `${string}://opt` | (string & {});
+    token?: string;
 };
 
 export type ActivateKeysetRequest = {

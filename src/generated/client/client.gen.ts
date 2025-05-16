@@ -14,3 +14,25 @@ import { type Config, type ClientOptions as DefaultClientOptions, createClient, 
 export type CreateClientConfig<T extends DefaultClientOptions = ClientOptions> = (override?: Config<DefaultClientOptions & T>) => Config<Required<DefaultClientOptions> & T>;
 
 export const client = createClient(createConfig<ClientOptions>());
+
+client.interceptors.request.use((request) => {
+  const token = localStorage.getItem('token');
+
+  if (token) {
+    let headers = request.headers;
+    if (!(headers instanceof Headers)) {
+      headers = new Headers(headers as HeadersInit);
+    }
+    headers.set('Authorization', `Bearer ${token}`);
+
+    console.log('request', request);
+    console.log('headers', headers);
+    
+    if (!(request.headers instanceof Headers)) {
+        (request as any).headers = headers;
+    }
+  }
+  return request;
+});
+
+
