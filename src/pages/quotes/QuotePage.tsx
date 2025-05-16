@@ -456,7 +456,7 @@ export function ParticipantsOverviewCard({
 function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
   const avatar = (
     <Avatar>
-      <AvatarImage src={randomAvatar("men","01") /*randomAvatar(value?.node_id.startsWith("03") ? "men" : "women", value?.node_id)*/ } />
+      <AvatarImage src={randomAvatar(value?.node_id?.startsWith("03") ? "men" : "women", value?.node_id) } />
       <AvatarFallback>{value?.name}</AvatarFallback>
     </Avatar>
   )
