@@ -1,4 +1,4 @@
-import { http, delay, HttpResponse, StrictResponse } from "msw"
+import { http, delay, HttpResponse } from "msw"
 import { API_URL } from "@/constants/api"
 import { ADMIN_QUOTE_BY_ID, ADMIN_QUOTE_PENDING, ADMIN_QUOTE } from "@/constants/endpoints"
 import {
@@ -54,7 +54,8 @@ export const fetchAdminLookupQuote = http.get<never, never, AdminLookupQuoteResp
 
     const data = db.quotes.getAll().filter((it) => it.id === id)
     if (data.length === 0) {
-      return HttpResponse.json(null, { status: 404 }) as unknown as StrictResponse<InfoReply>
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return HttpResponse.json(null, { status: 404 })
     }
 
     return HttpResponse.json(data[0] as InfoReply)
@@ -71,15 +72,16 @@ export const updateAdminQuote = http.post<never, UpdateQuoteRequest>(
 
     const data = db.quotes.getAll().filter((it) => it.id === id)
     if (data.length === 0) {
-      return HttpResponse.json(null, { status: 404 }) as unknown as StrictResponse<InfoReply>
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return HttpResponse.json(null, { status: 404 })
     }
 
     const quote = data[0]
 
-    if (body.action === "deny") {
+    if (body.action === "Deny") {
       quote.status = "denied"
     }
-    if (body.action === "offer") {
+    if (body.action === "Offer") {
       quote.status = "offered"
       quote.ttl = body.ttl ?? null
       // TODO: not yet impelemnted: quote.discount = body.discount ?? null
