@@ -2,7 +2,7 @@ import { client as heyApiClient } from "@/generated/client/client.gen"
 import * as sdk from "@/generated/client/sdk.gen"
 
 heyApiClient.setConfig({
-  baseUrl: import.meta.env.VITE_API_BASE_URL,
+  baseUrl: import.meta.env.VITE_API_BASE_URL as string,
 })
 
 // Add the auth token interceptor
@@ -17,6 +17,7 @@ heyApiClient.interceptors.request.use((request) => {
     headers.set("Authorization", `Bearer ${token}`)
 
     if (!(request.headers instanceof Headers)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
       ;(request as any).headers = headers
     }
   }
