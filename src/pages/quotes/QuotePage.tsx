@@ -311,9 +311,8 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
     toast.loading("Offering quote…", { id: `quote-${value.id}-offer` })
 
     // console.log("Net amount", result.discount.net);
-    let net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber();
-    console.log('Net amount:', net_amount);
-    
+    const net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber()
+
     offerQuote.mutate({
       path: {
         id: value.id,
@@ -344,9 +343,9 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
       >
         <Button
           className="flex-1"
-          disabled={isFetching || denyQuote.isPending ||  value.status !== "Pending" }
+          disabled={isFetching || denyQuote.isPending || value.status !== "Pending"}
           variant={value.status !== "Pending" ? "outline" : "destructive"}
-        > 
+        >
           Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
         </Button>
       </DenyConfirmDrawer>
@@ -418,7 +417,6 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
           </Button>
         }
       />
-
     </div>
   )
 }
@@ -456,7 +454,7 @@ export function ParticipantsOverviewCard({
 function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
   const avatar = (
     <Avatar>
-      <AvatarImage src={randomAvatar(value?.node_id?.startsWith("03") ? "men" : "women", value?.node_id) } />
+      <AvatarImage src={randomAvatar(value?.node_id?.startsWith("03") ? "men" : "women", value?.node_id)} />
       <AvatarFallback>{value?.name}</AvatarFallback>
     </Avatar>
   )
