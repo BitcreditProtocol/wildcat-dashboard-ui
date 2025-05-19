@@ -6,7 +6,6 @@ const keycloak = new Keycloak({
   clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID as string,
 })
 
-// Initialize function that can be awaited by importing code
 export const initKeycloak = async (): Promise<boolean> => {
   try {
     console.log("loading keycloak")
@@ -27,7 +26,6 @@ export const initKeycloak = async (): Promise<boolean> => {
 
     return authenticated
   } catch (error: unknown) {
-    // Properly type the error and safely log it
     console.error("Failed to initialize adapter:", error instanceof Error ? error.message : String(error))
     return false
   }
