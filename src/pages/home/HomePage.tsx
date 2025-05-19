@@ -1,7 +1,7 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
-import { fetchInfo } from "@/lib/api"
-import { useSuspenseQuery } from "@tanstack/react-query"
+// import { fetchInfo } from "@/lib/api"
+// import { useSuspenseQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 
 function Loader() {
