@@ -20,7 +20,7 @@ import OfferedQuotesPage from "./pages/quotes/OfferedQuotesPage"
 import DeniedQuotesPage from "./pages/quotes/DeniedQuotesPage"
 // import ExpiredQuotesPage from "./pages/quotes/ExpiredQuotesPage"
 import RejectedQuotesPage from "./pages/quotes/RejectedQuotesPage"
-import "./keycloak"
+import { initKeycloak } from "./keycloak"
 import "./lib/api-client"
 
 const queryClient = new QueryClient({
@@ -32,6 +32,7 @@ const queryClient = new QueryClient({
 })
 
 const prepare = async () => {
+  await initKeycloak()
   if (meta.apiMocksEnabled) {
     const { worker } = await import("./mocks/browser")
     await worker.start()
