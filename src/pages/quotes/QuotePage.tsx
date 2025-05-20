@@ -276,6 +276,9 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
       })
       return data
     },
+    onMutate: () => {
+      toast.loading("Activating keyset…", { id: `quote-${value.id}-activate-keyset` })
+    },
     onSettled: () => {
       toast.dismiss(`quote-${value.id}-activate-keyset`)
     },
@@ -310,7 +313,6 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   const onOfferQuote = (result: OfferFormResult) => {
     toast.loading("Offering quote…", { id: `quote-${value.id}-offer` })
 
-    // console.log("Net amount", result.discount.net);
     const net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber()
 
     offerQuote.mutate({
@@ -326,7 +328,6 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   }
 
   const onActivateKeyset = () => {
-    toast.loading("Activating keyset…", { id: `quote-${value.id}-activate-keyset` })
     activateKeysetMutation.mutate()
   }
 
