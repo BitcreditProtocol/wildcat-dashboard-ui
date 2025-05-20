@@ -11,7 +11,6 @@ export const initKeycloak = async (): Promise<boolean> => {
     console.log("loading keycloak")
     const authenticated = await keycloak.init({
       onLoad: "login-required",
-      flow: "implicit",
     })
 
     if (authenticated) {
