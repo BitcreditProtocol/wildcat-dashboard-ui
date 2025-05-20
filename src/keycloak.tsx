@@ -20,10 +20,6 @@ export const initKeycloak = async (): Promise<boolean> => {
       console.log("User is not authenticated")
     }
 
-    if (keycloak.token) {
-      localStorage.setItem("token", keycloak.token)
-    }
-
     return authenticated
   } catch (error: unknown) {
     console.error("Failed to initialize adapter:", error instanceof Error ? error.message : String(error))

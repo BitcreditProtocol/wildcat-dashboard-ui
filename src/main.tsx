@@ -67,7 +67,6 @@ function App() {
 }
 
 void prepare().then(() => {
-  // loadToken();
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <App />
