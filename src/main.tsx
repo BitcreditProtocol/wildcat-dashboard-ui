@@ -7,7 +7,6 @@ import HomePage from "./pages/home/HomePage"
 import BalancesPage from "./pages/balances/BalancesPage"
 import QuotesPage from "./pages/quotes/QuotesPage"
 import SettingsPage from "./pages/settings/SettingsPage"
-import meta from "./constants/meta"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import InfoPage from "./pages/info/InfoPage"
 import QuotePage from "./pages/quotes/QuotePage"
@@ -33,10 +32,10 @@ const queryClient = new QueryClient({
 
 const prepare = async () => {
   await initKeycloak()
-  if (meta.apiMocksEnabled) {
-    const { worker } = await import("./mocks/browser")
-    await worker.start()
-  }
+  // if (meta.apiMocksEnabled) {
+  //   const { worker } = await import("./mocks/browser")
+  //   await worker.start()
+  // }
 }
 
 function App() {
