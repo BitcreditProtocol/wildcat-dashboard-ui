@@ -406,3 +406,30 @@ export type ActivateKeysetResponses = {
 };
 
 export type ActivateKeysetResponse = ActivateKeysetResponses[keyof ActivateKeysetResponses];
+
+/**
+ * Currency unit used for ECash
+ */
+export type CurrencyUnit = string;
+
+/**
+ * ECash balance information
+ */
+export type ECashBalance = {
+    amount: Amount;
+    unit: CurrencyUnit;
+};
+
+export type DebitData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/balance/debit';
+};
+
+export type CreditData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/balance/credit';
+};
