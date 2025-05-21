@@ -1,13 +1,12 @@
-import { PropsWithChildren, Suspense } from "react"
+import { PropsWithChildren, Suspense, useEffect, useState } from "react"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BalancesResponse, fetchBalances } from "@/lib/api"
-import { useSuspenseQuery } from "@tanstack/react-query"
 import useLocalStorage from "@/hooks/use-local-storage"
+import { debitBalance, creditBalance } from "@/generated/client/sdk.gen"
 
 function Loader() {
   return (
@@ -120,22 +119,117 @@ export function OtherBalanceChart() {
   )
 }
 
-export function BalanceText({ value, children }: PropsWithChildren<{ value: BalancesResponse["bitcoin"] }>) {
+// Define balance display interface
+interface BalanceDisplay {
+  amount: string
+  unit: string
+}
+
+// Balance text display component
+export function BalanceText({ amount, unit, children }: PropsWithChildren<{ amount: string; unit: string }>) {
   return (
     <>
       <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
-        {value.value} {value.currency}
+        {amount} {unit}
       </h3>
       {children}
     </>
   )
 }
 
-function PageBody() {
-  const { data } = useSuspenseQuery({
-    queryKey: ["balances"],
-    queryFn: fetchBalances,
+// Custom hook for fetching balance data
+function useBalances() {
+  // State for balances with initial values
+  const [balances, setBalances] = useState<Record<string, BalanceDisplay>>({
+    bitcoin: { amount: "0", unit: "BTC" },
+    eiou: { amount: "0", unit: "eIOU" },
+    credit: { amount: "0", unit: "credit" },
+    debit: { amount: "0", unit: "debit" }
   })
+
+  // Update credit balance from API
+  const updateCreditBalance = async () => {
+    try {
+      const response = await creditBalance({})
+      
+      // Safe type checking
+      if (response && 
+          typeof response === 'object' && 
+          'data' in response && 
+          response.data && 
+          typeof response.data === 'object' && 
+          'amount' in response.data && 
+          'unit' in response.data) {
+        
+        setBalances(prev => ({
+          ...prev,
+          credit: { 
+            amount: String(response.data.amount), 
+            unit: String(response.data.unit) 
+          }
+        }))
+      }
+    } catch (error) {
+      console.error("Failed to fetch credit balance:", error)
+    }
+  }
+
+  // Update debit balance from API
+  const updateDebitBalance = async () => {
+    try {
+      const response = await debitBalance({})
+      
+      // Safe type checking
+      if (response && 
+          typeof response === 'object' && 
+          'data' in response && 
+          response.data && 
+          typeof response.data === 'object' && 
+          'amount' in response.data && 
+          'unit' in response.data) {
+        
+        setBalances(prev => ({
+          ...prev,
+          debit: { 
+            amount: String(response.data.amount), 
+            unit: String(response.data.unit) 
+          }
+        }))
+      }
+    } catch (error) {
+      console.error("Failed to fetch debit balance:", error)
+    }
+  }
+
+  // Effect to fetch and update balances
+  useEffect(() => {
+    // Function to update both balances
+    const updateBalances = () => {
+      // We need to handle these separately so one failing doesn't prevent the other
+      updateCreditBalance().catch(err => {
+        console.error("Error updating credit balance:", err)
+      })
+      
+      updateDebitBalance().catch(err => {
+        console.error("Error updating debit balance:", err)
+      })
+    }
+    
+    // Initial fetch
+    updateBalances()
+    
+    // Set up interval for periodic updates
+    const interval = setInterval(updateBalances, 30000)
+    
+    // Clean up interval on unmount
+    return () => clearInterval(interval)
+  }, [])
+
+  return balances
+}
+
+function PageBody() {
+  const balances = useBalances()
 
   return (
     <div className="flex flex-col gap-4 my-2">
@@ -145,7 +239,7 @@ function PageBody() {
             <CardTitle>Bitcoin balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <BalanceText value={data.bitcoin} />
+            <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
           </CardContent>
         </Card>
         <Card className="bg-orange-100">
@@ -153,7 +247,7 @@ function PageBody() {
             <CardTitle>e-IOU balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <BalanceText value={data.eiou} />
+            <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
           </CardContent>
         </Card>
         <Card className="bg-purple-200">
@@ -161,7 +255,7 @@ function PageBody() {
             <CardTitle>Credit token balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <BalanceText value={data.credit} />
+            <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
           </CardContent>
         </Card>
         <Card className="bg-purple-400">
@@ -169,7 +263,7 @@ function PageBody() {
             <CardTitle>Debit token balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <BalanceText value={data.debit} />
+            <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
           </CardContent>
         </Card>
       </div>
@@ -188,16 +282,13 @@ function PageBody() {
 
 function DevSection() {
   const [devMode] = useLocalStorage("devMode", false)
-  const { data } = useSuspenseQuery({
-    queryKey: ["balances"],
-    queryFn: fetchBalances,
-  })
+  const balances = useBalances()
 
   return (
     <>
       {devMode && (
         <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-          {JSON.stringify(data, null, 2)}
+          {JSON.stringify(balances, null, 2)}
         </pre>
       )}
     </>
