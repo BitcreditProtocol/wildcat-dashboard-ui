@@ -12,6 +12,7 @@ import {
   adminLookupQuoteQueryKey,
   adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
+import { activateKeyset } from "@/generated/client/sdk.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { cn } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
@@ -214,6 +215,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false)
+  const [activateKeysetConfirmDrawerOpen, setActivateKeysetConfirmDrawerOpen] = useState(false)
 
   const effectiveDiscount = useMemo(() => {
     if (!offerFormData) return
@@ -264,6 +266,38 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
     },
   })
 
+  const activateKeysetMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await activateKeyset({
+        body: {
+          qid: value.id,
+        },
+        throwOnError: true,
+      })
+      return data
+    },
+    onMutate: () => {
+      toast.loading("Activating keyset…", { id: `quote-${value.id}-activate-keyset` })
+    },
+    onSettled: () => {
+      toast.dismiss(`quote-${value.id}-activate-keyset`)
+    },
+    onError: (error) => {
+      toast.error("Error while activating keyset: " + error.message)
+      console.warn(error)
+    },
+    onSuccess: () => {
+      toast.success("Keyset has been activated.")
+      void queryClient.invalidateQueries({
+        queryKey: adminLookupQuoteQueryKey({
+          path: {
+            id: value.id,
+          },
+        }),
+      })
+    },
+  })
+
   const onDenyQuote = () => {
     toast.loading("Denying quote…", { id: `quote-${value.id}-deny` })
     denyQuote.mutate({
@@ -271,23 +305,30 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
         id: value.id,
       },
       body: {
-        action: "deny",
+        action: "Deny",
       },
     })
   }
 
   const onOfferQuote = (result: OfferFormResult) => {
     toast.loading("Offering quote…", { id: `quote-${value.id}-offer` })
+
+    const net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber()
+
     offerQuote.mutate({
       path: {
         id: value.id,
       },
       body: {
-        action: "offer",
-        discount: result.discount.net.value.div(result.discount.gross.value).toFixed(4),
-        ttl: result.ttl.ttl.getTime().toFixed(0),
+        action: "Offer",
+        discounted: net_amount,
+        ttl: result.ttl.ttl.toISOString(),
       },
     })
+  }
+
+  const onActivateKeyset = () => {
+    activateKeysetMutation.mutate()
   }
 
   return (
@@ -303,8 +344,8 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
       >
         <Button
           className="flex-1"
-          disabled={isFetching || denyQuote.isPending || value.status !== "pending"}
-          variant={value.status !== "pending" ? "outline" : "destructive"}
+          disabled={isFetching || denyQuote.isPending || value.status !== "Pending"}
+          variant={value.status !== "Pending" ? "outline" : "destructive"}
         >
           Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
         </Button>
@@ -321,7 +362,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
           setOfferFormDrawerOpen(false)
         }}
       >
-        <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "pending"}>
+        <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "Pending"}>
           Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
         </Button>
       </OfferFormDrawer>
@@ -356,6 +397,27 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
           </span>
         </div>
       </OfferConfirmDrawer>
+
+      <ConfirmDrawer
+        title="Confirm activating keyset"
+        description="Are you sure you want to activate the keyset for this quote?"
+        open={activateKeysetConfirmDrawerOpen}
+        onOpenChange={setActivateKeysetConfirmDrawerOpen}
+        onSubmit={() => {
+          onActivateKeyset()
+          setActivateKeysetConfirmDrawerOpen(false)
+        }}
+        submitButtonText="Yes, activate keyset"
+        trigger={
+          <Button
+            className="flex-1"
+            disabled={isFetching || activateKeysetMutation.isPending || value.status !== "Offered"}
+            variant="default"
+          >
+            Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+          </Button>
+        }
+      />
     </div>
   )
 }
@@ -393,7 +455,7 @@ export function ParticipantsOverviewCard({
 function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
   const avatar = (
     <Avatar>
-      <AvatarImage src={randomAvatar(value?.node_id.startsWith("03") ? "men" : "women", value?.node_id)} />
+      <AvatarImage src={randomAvatar(value?.node_id?.startsWith("03") ? "men" : "women", value?.node_id)} />
       <AvatarFallback>{value?.name}</AvatarFallback>
     </Avatar>
   )

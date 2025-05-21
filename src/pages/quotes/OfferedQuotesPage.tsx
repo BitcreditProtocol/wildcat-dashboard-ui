@@ -30,7 +30,7 @@ function QuoteListOffered() {
   const { data, isFetching } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: "offered",
+        status: "Offered",
       } as unknown as ListQuotesData["query"],
     }),
   })
@@ -84,7 +84,7 @@ function DevSection() {
   const { data: quotesOffered } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: "offered",
+        status: "Offered",
       } as unknown as ListQuotesData["query"],
     }),
   })

@@ -1,8 +1,8 @@
 const INFO = "/v1/info"
-const BALANCES = "/v1/balances"
+const BALANCES = "/v1/admin/balance"
 
 const ADMIN_QUOTE = "/v1/admin/credit/quote"
-const ADMIN_QUOTE_PENDING = "/v1/admin/credit/quote/pending"
+const ADMIN_QUOTE_PENDING = "/v1/admin/credit/quote"
 const ADMIN_QUOTE_BY_ID = "/v1/admin/credit/quote/:id"
 
 const CREDIT_QUOTE = "/v1/credit/mint/quote"

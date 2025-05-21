@@ -30,7 +30,7 @@ function QuoteListRejected() {
   const { data, isFetching } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: "rejected",
+        status: "Rejected",
       } as unknown as ListQuotesData["query"],
     }),
   })
@@ -84,7 +84,7 @@ function DevSection() {
   const { data: quotesRejected } = useSuspenseQuery({
     ...listQuotesOptions({
       query: {
-        status: "rejected",
+        status: "Rejected",
       } as unknown as ListQuotesData["query"],
     }),
   })

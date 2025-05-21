@@ -1,7 +1,7 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
-import { fetchInfo } from "@/lib/api"
-import { useSuspenseQuery } from "@tanstack/react-query"
+// import { fetchInfo } from "@/lib/api"
+// import { useSuspenseQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 
 function Loader() {
@@ -13,10 +13,16 @@ function Loader() {
 }
 
 function PageBody() {
-  const { data } = useSuspenseQuery({
-    queryKey: ["info"],
-    queryFn: fetchInfo,
-  })
+  // const { data } = []; useSuspenseQuery({
+  //   queryKey: ["info"],
+  //   queryFn: fetchInfo,
+  // })
+
+  const data = {
+    name: "bcr-wdc-quote-service",
+    version: "0.1.0",
+    pubkey: "0283bf290884eed3a7ca2663fc0260de2e2064d6b355ea13f98dec004b7a7ead99",
+  }
 
   return (
     <>
