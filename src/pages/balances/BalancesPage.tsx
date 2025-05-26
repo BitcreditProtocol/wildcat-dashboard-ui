@@ -7,6 +7,7 @@ import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } fro
 import { Skeleton } from "@/components/ui/skeleton"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { debitBalance, creditBalance } from "@/generated/client/sdk.gen"
+import { ECashBalance } from "@/generated/client/types.gen"
 
 function Loader() {
   return (
@@ -119,13 +120,11 @@ export function OtherBalanceChart() {
   )
 }
 
-// Define balance display interface
 interface BalanceDisplay {
   amount: string
   unit: string
 }
 
-// Balance text display component
 export function BalanceText({ amount, unit, children }: PropsWithChildren<{ amount: string; unit: string }>) {
   return (
     <>
@@ -137,36 +136,40 @@ export function BalanceText({ amount, unit, children }: PropsWithChildren<{ amou
   )
 }
 
-// Custom hook for fetching balance data
+function isErrorResponse<T>(res: { data?: T; error?: unknown }): res is { data: undefined; error: unknown } {
+  return res.error !== undefined
+}
+
 function useBalances() {
-  // State for balances with initial values
   const [balances, setBalances] = useState<Record<string, BalanceDisplay>>({
     bitcoin: { amount: "0", unit: "BTC" },
     eiou: { amount: "0", unit: "eIOU" },
     credit: { amount: "0", unit: "credit" },
-    debit: { amount: "0", unit: "debit" }
+    debit: { amount: "0", unit: "debit" },
   })
 
-  // Update credit balance from API
   const updateCreditBalance = async () => {
     try {
       const response = await creditBalance({})
-      
-      // Safe type checking
-      if (response && 
-          typeof response === 'object' && 
-          'data' in response && 
-          response.data && 
-          typeof response.data === 'object' && 
-          'amount' in response.data && 
-          'unit' in response.data) {
-        
-        setBalances(prev => ({
+      if (response.error !== undefined) {
+      } else {
+      }
+
+      if (
+        response &&
+        typeof response === "object" &&
+        "data" in response &&
+        response.data &&
+        typeof response.data === "object" &&
+        "amount" in response.data &&
+        "unit" in response.data
+      ) {
+        setBalances((prev) => ({
           ...prev,
-          credit: { 
-            amount: String(response.data.amount), 
-            unit: String(response.data.unit) 
-          }
+          credit: {
+            amount: String(response.data.amount),
+            unit: String(response.data.unit),
+          },
         }))
       }
     } catch (error) {
@@ -174,54 +177,36 @@ function useBalances() {
     }
   }
 
-  // Update debit balance from API
   const updateDebitBalance = async () => {
-    try {
       const response = await debitBalance({})
-      
-      // Safe type checking
-      if (response && 
-          typeof response === 'object' && 
-          'data' in response && 
-          response.data && 
-          typeof response.data === 'object' && 
-          'amount' in response.data && 
-          'unit' in response.data) {
-        
-        setBalances(prev => ({
-          ...prev,
-          debit: { 
-            amount: String(response.data.amount), 
-            unit: String(response.data.unit) 
-          }
-        }))
-      }
-    } catch (error) {
-      console.error("Failed to fetch debit balance:", error)
+
+    if (isErrorResponse<ECashBalance>(response as { data?: ECashBalance; error?: unknown })) {
+    } else if (response.data !== undefined) {
+      setBalances((prev) => ({
+        ...prev,
+        debit: {
+          amount: String(response.data.amount),
+          unit: String(response.data.unit),
+        },
+      }))
     }
   }
 
-  // Effect to fetch and update balances
   useEffect(() => {
-    // Function to update both balances
     const updateBalances = () => {
-      // We need to handle these separately so one failing doesn't prevent the other
-      updateCreditBalance().catch(err => {
+      updateCreditBalance().catch((err) => {
         console.error("Error updating credit balance:", err)
       })
-      
-      updateDebitBalance().catch(err => {
+
+      updateDebitBalance().catch((err) => {
         console.error("Error updating debit balance:", err)
       })
     }
-    
-    // Initial fetch
+
     updateBalances()
-    
-    // Set up interval for periodic updates
+
     const interval = setInterval(updateBalances, 30000)
-    
-    // Clean up interval on unmount
+
     return () => clearInterval(interval)
   }, [])
 
