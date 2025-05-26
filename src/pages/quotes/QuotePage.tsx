@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { IdentityPublicData, InfoReply } from "@/generated/client"
+import { IdentityPublicData, PayeePublicData, InfoReply, AnonPublicData } from "@/generated/client"
 import {
   adminLookupQuoteOptions,
   adminLookupQuoteQueryKey,
@@ -411,7 +411,11 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
         trigger={
           <Button
             className="flex-1"
-            disabled={isFetching || activateKeysetMutation.isPending || value.status !== "Offered"}
+            disabled={
+              isFetching ||
+              activateKeysetMutation.isPending ||
+              (value.status !== "Offered" && value.status !== "Accepted")
+            }
             variant="default"
           >
             Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
@@ -430,8 +434,8 @@ export function ParticipantsOverviewCard({
 }: {
   drawee?: IdentityPublicData
   drawer?: IdentityPublicData
-  holder?: IdentityPublicData
-  payee?: IdentityPublicData
+  holder?: PayeePublicData
+  payee?: PayeePublicData
   className?: string
 }) {
   return (
@@ -443,12 +447,31 @@ export function ParticipantsOverviewCard({
         <IdentityPublicDataAvatar value={drawer} tooltip="Drawer" />
       </div>
       <div>
-        <IdentityPublicDataAvatar value={payee} tooltip="Payee" />
+        <PayeePublicDataAvatar value={payee} tooltip="Payee" />
       </div>
       <div>
-        <IdentityPublicDataAvatar value={payee} tooltip="Holder" />
+        <PayeePublicDataAvatar value={payee} tooltip="Holder" />
       </div>
     </div>
+  )
+}
+
+function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?: React.ReactNode }) {
+  const avatar = (
+    <Avatar>
+      <AvatarImage src={randomAvatar("men", value?.node_id)} />
+      <AvatarFallback>{value?.node_id}</AvatarFallback>
+    </Avatar>
+  )
+  return !tooltip ? (
+    avatar
+  ) : (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>{avatar}</TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
@@ -469,6 +492,19 @@ function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicDa
       </Tooltip>
     </TooltipProvider>
   )
+}
+function PayeePublicDataAvatar({ value, tooltip }: { value?: PayeePublicData; tooltip?: React.ReactNode }) {
+  if (!value) return <></>
+
+  if ("Ident" in value) {
+    const identData = (value as { Ident: IdentityPublicData }).Ident
+    return <IdentityPublicDataAvatar value={identData} tooltip={tooltip} />
+  } else if ("Anon" in value) {
+    const anonData = (value as { Anon: AnonPublicData }).Anon
+    return <IdentityPublicDataAvatar value={anonData} tooltip={tooltip} />
+  }
+
+  return <></>
 }
 
 function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
@@ -493,6 +529,42 @@ function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
       </div>
     </div>
   )
+}
+function AnonPublicDataCard({ value }: { value?: AnonPublicData }) {
+  return (
+    <div className="flex gap-0.5 items-center">
+      <div className="px-1 me-4">
+        <AnonPublicAvatar value={value} />
+      </div>
+      <div className="flex flex-col">
+        <div className="font-bold">{value?.node_id}</div>
+        <div>
+          <a className="underline" href={`mailto:${value?.email}`}>
+            {value?.email}
+          </a>
+        </div>
+        <div>
+          <pre>{value?.node_id}</pre>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PayeePublicDataCard({ value }: { value?: PayeePublicData }) {
+  if (!value) return null
+
+  console.log("Payee public data", value)
+
+  if ("Ident" in value) {
+    const identData = (value as { Ident: IdentityPublicData }).Ident
+    return IdentityPublicDataCard({ value: identData })
+  } else if ("Anon" in value) {
+    const anonData = (value as { Anon: AnonPublicData }).Anon
+    return AnonPublicDataCard({ value: anonData })
+  }
+
+  return <></>
 }
 
 function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
@@ -557,7 +629,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
           <TableRow>
             <TableCell className="font-bold">Payee: </TableCell>
             <TableCell>
-              <IdentityPublicDataCard value={value.bill?.payee} />
+              <PayeePublicDataCard value={value.bill?.payee} />
             </TableCell>
           </TableRow>
         </TableBody>
