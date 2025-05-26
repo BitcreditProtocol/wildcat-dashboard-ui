@@ -23,6 +23,9 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
 
+  const backgroundColor = "#f59e0b"
+  const initials = "" + user.name[0]
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -34,9 +37,14 @@ export function NavUser({
               tooltip={user.name}
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">{user.name}</AvatarFallback>
+                <div
+                  className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
+                  style={{ backgroundColor }}
+                >
+                  {initials}
+                </div>
               </Avatar>
+
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>
                 <span className="truncate text-xs">{user.email}</span>

@@ -1,6 +1,6 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,9 +16,21 @@ import { activateKeyset } from "@/generated/client/sdk.gen"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { cn } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
-import { randomAvatar } from "@/utils/dev"
+
 import { formatNumber, truncateString } from "@/utils/strings"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
+import { getDeterministicColor } from "@/utils/dev"
+
+// Utility functions for deterministic avatars
+function getInitials(name?: string): string {
+  if (!name) return "?"
+  const words = name.trim().split(/\s+/)
+  if (words.length === 1) {
+    return words[0].substring(0, 2).toUpperCase()
+  }
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase()
+}
+
 import { LoaderIcon } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 import { Link, useParams } from "react-router"
@@ -457,10 +469,17 @@ export function ParticipantsOverviewCard({
 }
 
 function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?: React.ReactNode }) {
+  const initials = "?" // getInitials(value?.node_id?.slice(-8)) // Use last 8 chars of node_id
+  const backgroundColor = getDeterministicColor(value?.node_id)
+
   const avatar = (
     <Avatar>
-      <AvatarImage src={randomAvatar("men", value?.node_id)} />
-      <AvatarFallback>{value?.node_id}</AvatarFallback>
+      <div
+        className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
+        style={{ backgroundColor }}
+      >
+        {initials}
+      </div>
     </Avatar>
   )
   return !tooltip ? (
@@ -476,10 +495,17 @@ function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?
 }
 
 function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
+  const initials = getInitials(value?.name)
+  const backgroundColor = getDeterministicColor(value?.name || value?.node_id)
+
   const avatar = (
     <Avatar>
-      <AvatarImage src={randomAvatar(value?.node_id?.startsWith("03") ? "men" : "women", value?.node_id)} />
-      <AvatarFallback>{value?.name}</AvatarFallback>
+      <div
+        className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
+        style={{ backgroundColor }}
+      >
+        {initials}
+      </div>
     </Avatar>
   )
   return !tooltip ? (

@@ -1,7 +1,6 @@
 import { Bitcoin, Home, Inbox, Settings, LifeBuoy, Send } from "lucide-react"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
 import { NavUser } from "./nav/NavUser"
-import { randomAvatar } from "@/utils/dev"
 import { NavMain } from "./nav/NavMain"
 import { NavSecondary } from "./nav/NavSecondary"
 
@@ -97,7 +96,7 @@ export function AppSidebar() {
           user={{
             name: "Account",
             email: "",
-            avatar: randomAvatar("women", "0283bf290884eed3a7ca2663fc0260de2e2064d6b355ea13f98dec004b7a7ead99"),
+            avatar: "",
           }}
         />
       </SidebarFooter>
