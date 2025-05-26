@@ -13,22 +13,12 @@ import {
   adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
 import { activateKeyset } from "@/generated/client/sdk.gen"
-import { cn } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
 
 import { formatNumber, truncateString } from "@/utils/strings"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { getDeterministicColor } from "@/utils/dev"
-
-// Utility functions for deterministic avatars
-function getInitials(name?: string): string {
-  if (!name) return "?"
-  const words = name.trim().split(/\s+/)
-  if (words.length === 1) {
-    return words[0].substring(0, 2).toUpperCase()
-  }
-  return (words[0][0] + words[words.length - 1][0]).toUpperCase()
-}
 
 import { LoaderIcon } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
@@ -464,7 +454,7 @@ export function ParticipantsOverviewCard({
 }
 
 function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?: React.ReactNode }) {
-  const initials = "?" // getInitials(value?.node_id?.slice(-8)) // Use last 8 chars of node_id
+  const initials = "?"
   const backgroundColor = getDeterministicColor(value?.node_id)
 
   const avatar = (
