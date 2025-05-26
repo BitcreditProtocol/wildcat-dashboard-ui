@@ -27,6 +27,14 @@ export type ListReplyLight = {
  */
 export type Amount = number;
 
+
+export type PayeePublicData = {
+    Ident: IdentityPublicData;
+} | {
+    Anon: AnonPublicData;
+};
+
+
 /**
  * --------------------------- Enquire mint quote
  */
@@ -36,7 +44,7 @@ export type BillInfo = {
     endorsees: Array<IdentityPublicData>;
     id: string;
     maturity_date: string;
-    payee: IdentityPublicData;
+    payee: PayeePublicData;
     sum: number;
 };
 
@@ -108,6 +116,12 @@ export type IdentityPublicData = PostalAddress & {
     nostr_relay?: string | null;
     type: ContactType;
 };
+
+export type AnonPublicData = {
+  node_id: string;
+  email?: string | null;
+  nostr_relays: Array<string>;
+}
 
 /**
  * --------------------------- Quote info request
