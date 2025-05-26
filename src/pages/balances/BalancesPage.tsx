@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
-import { debitBalance, creditBalance } from "@/generated/client/sdk.gen"
-// import { ECashBalance } from "@/generated/client/types.gen"
+import { debitBalance, creditBalance, onchainBalance } from "@/generated/client/sdk.gen"
 
 function Loader() {
   return (
@@ -155,11 +154,15 @@ function useBalances() {
 
     try {
       // Fetch both credit and debit balances concurrently
-      const [creditResponse, debitResponse] = await Promise.allSettled([creditBalance({}), debitBalance({})])
+      const [creditResponse, debitResponse, onchainResponse] = await Promise.allSettled([
+        creditBalance({}),
+        debitBalance({}),
+        onchainBalance({}),
+      ])
 
       const newBalances: Record<string, BalanceDisplay> = {
-        bitcoin: { amount: "0", unit: "BTC" }, // TODO: Implement bitcoin balance fetching
-        eiou: { amount: "0", unit: "eIOU" }, // TODO: Implement e-IOU balance fetching
+        bitcoin: { amount: "0", unit: "BTC" },
+        eiou: { amount: "0", unit: "eIOU" },
         credit: { amount: "0", unit: "credit" },
         debit: { amount: "0", unit: "debit" },
       }
@@ -193,6 +196,22 @@ function useBalances() {
         console.warn(
           "Failed to fetch debit balance:",
           debitResponse.status === "rejected" ? debitResponse.reason : debitResponse.value.error,
+        )
+      }
+
+      if (onchainResponse.status === "fulfilled" && !isErrorResponse(onchainResponse.value)) {
+        const onchainData = onchainResponse.value.data
+        if (onchainData && typeof onchainData === "object" && "confirmed" in onchainData) {
+          console.log("Onchain balance:", onchainData.confirmed)
+          newBalances.bitcoin = {
+            amount: String(onchainData.confirmed),
+            unit: "BTC",
+          }
+        }
+      } else {
+        console.warn(
+          "Failed to fetch onchain balance:",
+          onchainResponse.status === "rejected" ? onchainResponse.reason : onchainResponse.value.error,
         )
       }
 

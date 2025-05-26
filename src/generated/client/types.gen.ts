@@ -447,3 +447,18 @@ export type CreditData = {
     query?: never;
     url: '/v1/admin/balance/credit';
 };
+
+export type OnChainBalanceData = {
+  immature: number;
+  trusted_pending: number;
+  untrusted_pending: number;
+  confirmed: number;
+};
+
+
+export type OnChainData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/admin/onchain/balance';
+};
