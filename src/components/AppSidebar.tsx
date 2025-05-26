@@ -1,8 +1,8 @@
-import { Bitcoin, Home, Inbox, Settings, LifeBuoy, Send } from "lucide-react"
+import { Bitcoin, Home, Inbox } from "lucide-react"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
 import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain"
-import { NavSecondary } from "./nav/NavSecondary"
+import { useKeycloak } from "../lib/keycloak-user"
 
 const data = {
   navMain: [
@@ -16,11 +16,6 @@ const data = {
       url: "/balances",
       icon: Bitcoin,
     },
-    // {
-    //   title: "Earnings",
-    //   url: "/earnings",
-    //   icon: TrendingUpIcon,
-    // },
     {
       title: "Quotes",
       url: "/quotes",
@@ -46,60 +41,20 @@ const data = {
           title: "Rejected",
           url: "/quotes/rejected",
         },
-        /*{
-          title: "Expired",
-          url: "/quotes/expired",
-        },*/
       ],
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
-      items: [
-        {
-          title: "General",
-          url: "/settings",
-        },
-      ],
-    },
-    // {
-    //   title: "Info",
-    //   url: "/info",
-    //   icon: InfoIcon,
-    // },
-  ],
-
-  navSecondary: [
-    {
-      title: "Support",
-      url: "/#",
-      icon: LifeBuoy,
-    },
-    {
-      title: "Feedback",
-      url: "/#",
-      icon: Send,
     },
   ],
 }
 
 export function AppSidebar() {
+  const { user, isLoading } = useKeycloak()
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser
-          user={{
-            name: "Account",
-            email: "",
-            avatar: "",
-          }}
-        />
-      </SidebarFooter>
+      <SidebarFooter>{!isLoading && user && <NavUser user={user} />}</SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
