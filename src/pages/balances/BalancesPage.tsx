@@ -1,4 +1,4 @@
-import { PropsWithChildren, Suspense, useEffect, useState } from "react"
+import { PropsWithChildren, Suspense, useCallback, useEffect, useState } from "react"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,7 +7,7 @@ import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } fro
 import { Skeleton } from "@/components/ui/skeleton"
 import useLocalStorage from "@/hooks/use-local-storage"
 import { debitBalance, creditBalance } from "@/generated/client/sdk.gen"
-import { ECashBalance } from "@/generated/client/types.gen"
+// import { ECashBalance } from "@/generated/client/types.gen"
 
 function Loader() {
   return (
@@ -147,135 +147,168 @@ function useBalances() {
     credit: { amount: "0", unit: "credit" },
     debit: { amount: "0", unit: "debit" },
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const updateCreditBalance = async () => {
+  const fetchAllBalances = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
     try {
-      const response = await creditBalance({})
-      if (response.error !== undefined) {
+      // Fetch both credit and debit balances concurrently
+      const [creditResponse, debitResponse] = await Promise.allSettled([creditBalance({}), debitBalance({})])
+
+      const newBalances: Record<string, BalanceDisplay> = {
+        bitcoin: { amount: "0", unit: "BTC" }, // TODO: Implement bitcoin balance fetching
+        eiou: { amount: "0", unit: "eIOU" }, // TODO: Implement e-IOU balance fetching
+        credit: { amount: "0", unit: "credit" },
+        debit: { amount: "0", unit: "debit" },
+      }
+
+      // Handle credit balance response
+      if (creditResponse.status === "fulfilled" && !isErrorResponse(creditResponse.value)) {
+        const creditData = creditResponse.value.data
+        if (creditData && "amount" in creditData && "unit" in creditData) {
+          newBalances.credit = {
+            amount: String(creditData.amount),
+            unit: String(creditData.unit),
+          }
+        }
       } else {
+        console.warn(
+          "Failed to fetch credit balance:",
+          creditResponse.status === "rejected" ? creditResponse.reason : creditResponse.value.error,
+        )
       }
 
-      if (
-        response &&
-        typeof response === "object" &&
-        "data" in response &&
-        response.data &&
-        typeof response.data === "object" &&
-        "amount" in response.data &&
-        "unit" in response.data
-      ) {
-        setBalances((prev) => ({
-          ...prev,
-          credit: {
-            amount: String(response.data.amount),
-            unit: String(response.data.unit),
-          },
-        }))
+      // Handle debit balance response
+      if (debitResponse.status === "fulfilled" && !isErrorResponse(debitResponse.value)) {
+        const debitData = debitResponse.value.data
+        if (debitData && "amount" in debitData && "unit" in debitData) {
+          newBalances.debit = {
+            amount: String(debitData.amount),
+            unit: String(debitData.unit),
+          }
+        }
+      } else {
+        console.warn(
+          "Failed to fetch debit balance:",
+          debitResponse.status === "rejected" ? debitResponse.reason : debitResponse.value.error,
+        )
       }
+
+      setBalances(newBalances)
     } catch (error) {
-      console.error("Failed to fetch credit balance:", error)
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
+      setError(errorMessage)
+      console.error("Failed to fetch balances:", error)
+    } finally {
+      setIsLoading(false)
     }
-  }
-
-  const updateDebitBalance = async () => {
-      const response = await debitBalance({})
-
-    if (isErrorResponse<ECashBalance>(response as { data?: ECashBalance; error?: unknown })) {
-    } else if (response.data !== undefined) {
-      setBalances((prev) => ({
-        ...prev,
-        debit: {
-          amount: String(response.data.amount),
-          unit: String(response.data.unit),
-        },
-      }))
-    }
-  }
-
-  useEffect(() => {
-    const updateBalances = () => {
-      updateCreditBalance().catch((err) => {
-        console.error("Error updating credit balance:", err)
-      })
-
-      updateDebitBalance().catch((err) => {
-        console.error("Error updating debit balance:", err)
-      })
-    }
-
-    updateBalances()
-
-    const interval = setInterval(updateBalances, 30000)
-
-    return () => clearInterval(interval)
   }, [])
 
-  return balances
+  useEffect(() => {
+    void fetchAllBalances()
+
+    const interval = setInterval(() => void fetchAllBalances(), 30000)
+
+    return () => clearInterval(interval)
+  }, [fetchAllBalances])
+
+  return { balances, isLoading, error, refetch: fetchAllBalances }
 }
 
-function PageBody() {
-  const balances = useBalances()
 
-  return (
-    <div className="flex flex-col gap-4 my-2">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card className="bg-indigo-100">
-          <CardHeader>
-            <CardTitle>Bitcoin balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
-          </CardContent>
-        </Card>
-        <Card className="bg-orange-100">
-          <CardHeader>
-            <CardTitle>e-IOU balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
-          </CardContent>
-        </Card>
-        <Card className="bg-purple-200">
-          <CardHeader>
-            <CardTitle>Credit token balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
-          </CardContent>
-        </Card>
-        <Card className="bg-purple-400">
-          <CardHeader>
-            <CardTitle>Debit token balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
-          </CardContent>
-        </Card>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="py-4">
-          <BitcoinBalanceChart />
-        </Card>
-        <Card className="py-4">
-          <OtherBalanceChart />
-        </Card>
-      </div>
-    </div>
-  )
-}
-
-function DevSection() {
+function DevSection({ balances, isLoading, error }: { balances: Record<string, BalanceDisplay>; isLoading: boolean; error: string | null }) {
   const [devMode] = useLocalStorage("devMode", false)
-  const balances = useBalances()
 
   return (
     <>
       {devMode && (
         <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-          {JSON.stringify(balances, null, 2)}
+          {JSON.stringify({ balances, isLoading, error }, null, 2)}
         </pre>
       )}
+    </>
+  )
+}
+
+function PageBodyWithDevSection() {
+  const { balances, isLoading, error } = useBalances()
+
+  if (error) {
+    return (
+      <>
+        <div className="flex flex-col gap-4 my-2">
+          <Card className="bg-red-50 border-red-200">
+            <CardContent className="p-4">
+              <p className="text-red-800">Error loading balances: {error}</p>
+            </CardContent>
+          </Card>
+        </div>
+        <DevSection balances={balances} isLoading={isLoading} error={error} />
+      </>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        <Loader />
+        <DevSection balances={balances} isLoading={isLoading} error={error} />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-4 my-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Card className="bg-indigo-100">
+            <CardHeader>
+              <CardTitle>Bitcoin balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
+            </CardContent>
+          </Card>
+          <Card className="bg-orange-100">
+            <CardHeader>
+              <CardTitle>e-IOU balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-200">
+            <CardHeader>
+              <CardTitle>Credit token balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-400">
+            <CardHeader>
+              <CardTitle>Debit token balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="py-4">
+            <BitcoinBalanceChart />
+          </Card>
+          <Card className="py-4">
+            <OtherBalanceChart />
+          </Card>
+        </div>
+      </div>
+      <DevSection balances={balances} isLoading={isLoading} error={error} />
     </>
   )
 }
@@ -287,8 +320,7 @@ export default function BalancesPage() {
       <PageTitle>Balances</PageTitle>
 
       <Suspense fallback={<Loader />}>
-        <PageBody />
-        <DevSection />
+        <PageBodyWithDevSection />
       </Suspense>
     </>
   )
