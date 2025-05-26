@@ -17,6 +17,12 @@ import { formatNumber, truncateString } from "@/utils/strings"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
+type QuoteStatus = "Accepted" | "Denied" | "Expired" | "Offered" | "Pending" | "Rejected" | "Cancelled"
+
+interface StatusQuotePageProps {
+  status?: QuoteStatus
+}
+
 function Loader() {
   return (
     <div className="flex flex-col gap-1.5 my-2">
@@ -91,14 +97,17 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
   )
 }
 
-function QuoteListPending() {
+function QuoteList({ status }: { status?: QuoteStatus }) {
+  const queryParams = status ? ({ status } as unknown as ListQuotesData["query"]) : {}
+
   const { data, isFetching } = useSuspenseQuery({
     ...listQuotesOptions({
-      query: {
-        status: "Pending",
-      } as unknown as ListQuotesData["query"],
+      query: queryParams,
     }),
   })
+
+  const statusText = status ? status.toLowerCase() : "all"
+  const noQuotesMessage = `No ${statusText} quotes.`
 
   return (
     <>
@@ -112,7 +121,7 @@ function QuoteListPending() {
       </div>
 
       <div className="flex flex-col gap-1.5 my-2">
-        {data.quotes.length === 0 && <div className="py-2 font-bold">No pending quotes.</div>}
+        {data.quotes.length === 0 && <div className="py-2 font-bold">{noQuotesMessage}</div>}
         {data.quotes.map((it, index) => {
           return (
             <div key={index}>
@@ -125,12 +134,15 @@ function QuoteListPending() {
   )
 }
 
-function DevSection() {
+function DevSection({ status }: { status?: QuoteStatus }) {
   return <></>
   const [devMode] = useLocalStorage("devMode", false)
 
-  const { data: quotesPending } = useSuspenseQuery({
-    ...listQuotesOptions({}),
+  const queryParams = status ? ({ status } as unknown as ListQuotesData["query"]) : {}
+  const { data: quotesData } = useSuspenseQuery({
+    ...listQuotesOptions({
+      query: queryParams,
+    }),
   })
 
   return (
@@ -138,7 +150,7 @@ function DevSection() {
       {devMode && (
         <>
           <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-            {JSON.stringify(quotesPending, null, 2)}
+            {JSON.stringify(quotesData, null, 2)}
           </pre>
         </>
       )}
@@ -146,17 +158,20 @@ function DevSection() {
   )
 }
 
-function PageBody() {
+function PageBody({ status }: { status?: QuoteStatus }) {
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <QuoteListPending />
+        <QuoteList status={status} />
       </div>
     </div>
   )
 }
 
-export default function PendingQuotesPage() {
+export default function StatusQuotePage({ status }: StatusQuotePageProps) {
+  const pageTitle = status ? `${status} Quotes` : "All Quotes"
+  const breadcrumbText = status ?? "All"
+
   return (
     <>
       <Breadcrumbs
@@ -166,15 +181,15 @@ export default function PendingQuotesPage() {
           </>,
         ]}
       >
-        Pending
+        {breadcrumbText}
       </Breadcrumbs>
 
-      <PageTitle>Pending Quotes</PageTitle>
+      <PageTitle>{pageTitle}</PageTitle>
       <Suspense fallback={<Loader />}>
-        <PageBody />
+        <PageBody status={status} />
       </Suspense>
       <Suspense>
-        <DevSection />
+        <DevSection status={status} />
       </Suspense>
     </>
   )
