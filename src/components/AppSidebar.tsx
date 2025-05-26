@@ -1,4 +1,4 @@
-import { Bitcoin, Home, Inbox, Settings, InfoIcon, LifeBuoy, Send, TrendingUpIcon } from "lucide-react"
+import { Bitcoin, Home, Inbox, Settings, LifeBuoy, Send } from "lucide-react"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
 import { NavUser } from "./nav/NavUser"
 import { randomAvatar } from "@/utils/dev"
@@ -17,11 +17,11 @@ const data = {
       url: "/balances",
       icon: Bitcoin,
     },
-    {
-      title: "Earnings",
-      url: "/earnings",
-      icon: TrendingUpIcon,
-    },
+    // {
+    //   title: "Earnings",
+    //   url: "/earnings",
+    //   icon: TrendingUpIcon,
+    // },
     {
       title: "Quotes",
       url: "/quotes",
@@ -64,11 +64,11 @@ const data = {
         },
       ],
     },
-    {
-      title: "Info",
-      url: "/info",
-      icon: InfoIcon,
-    },
+    // {
+    //   title: "Info",
+    //   url: "/info",
+    //   icon: InfoIcon,
+    // },
   ],
 
   navSecondary: [
