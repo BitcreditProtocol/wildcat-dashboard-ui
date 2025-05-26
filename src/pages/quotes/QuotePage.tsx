@@ -453,10 +453,10 @@ export function ParticipantsOverviewCard({
   return (
     <div className={cn("flex gap-2 items-center py-1", className)}>
       <div>
-        <IdentityPublicDataAvatar value={drawee} tooltip="Drawee" />
+        <IdentityPublicAvatar value={drawee} tooltip="Drawee" />
       </div>
       <div>
-        <IdentityPublicDataAvatar value={drawer} tooltip="Drawer" />
+        <IdentityPublicAvatar value={drawer} tooltip="Drawer" />
       </div>
       <div>
         <PayeePublicDataAvatar value={payee} tooltip="Payee" />
@@ -494,9 +494,9 @@ function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?
   )
 }
 
-function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
+function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
   const initials = getInitials(value?.name)
-  const backgroundColor = getDeterministicColor(value?.name || value?.node_id)
+  const backgroundColor = getDeterministicColor(value?.name ?? value?.node_id)
 
   const avatar = (
     <Avatar>
@@ -524,10 +524,10 @@ function PayeePublicDataAvatar({ value, tooltip }: { value?: PayeePublicData; to
 
   if ("Ident" in value) {
     const identData = (value as { Ident: IdentityPublicData }).Ident
-    return <IdentityPublicDataAvatar value={identData} tooltip={tooltip} />
+    return <IdentityPublicAvatar value={identData} tooltip={tooltip} />
   } else if ("Anon" in value) {
     const anonData = (value as { Anon: AnonPublicData }).Anon
-    return <IdentityPublicDataAvatar value={anonData} tooltip={tooltip} />
+    return <AnonPublicAvatar value={anonData} tooltip={tooltip} />
   }
 
   return <></>
@@ -537,7 +537,7 @@ function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
   return (
     <div className="flex gap-0.5 items-center">
       <div className="px-1 me-4">
-        <IdentityPublicDataAvatar value={value} />
+        <IdentityPublicAvatar value={value} />
       </div>
       <div className="flex flex-col">
         <div className="font-bold">{value?.name}</div>
