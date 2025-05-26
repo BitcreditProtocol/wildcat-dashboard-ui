@@ -1,11 +1,7 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
-import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Switch } from "@/components/ui/switch"
-import useLocalStorage from "@/hooks/use-local-storage"
 import { Suspense } from "react"
-import { toast } from "sonner"
 
 function Loader() {
   return (
