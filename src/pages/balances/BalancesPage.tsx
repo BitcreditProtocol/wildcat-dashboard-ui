@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
-import useLocalStorage from "@/hooks/use-local-storage"
 import { debitBalance, creditBalance } from "@/generated/client/sdk.gen"
 // import { ECashBalance } from "@/generated/client/types.gen"
 
@@ -218,22 +217,6 @@ function useBalances() {
   return { balances, isLoading, error, refetch: fetchAllBalances }
 }
 
-
-
-function DevSection({ balances, isLoading, error }: { balances: Record<string, BalanceDisplay>; isLoading: boolean; error: string | null }) {
-  const [devMode] = useLocalStorage("devMode", false)
-
-  return (
-    <>
-      {devMode && (
-        <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-          {JSON.stringify({ balances, isLoading, error }, null, 2)}
-        </pre>
-      )}
-    </>
-  )
-}
-
 function PageBodyWithDevSection() {
   const { balances, isLoading, error } = useBalances()
 
@@ -247,7 +230,6 @@ function PageBodyWithDevSection() {
             </CardContent>
           </Card>
         </div>
-        <DevSection balances={balances} isLoading={isLoading} error={error} />
       </>
     )
   }
@@ -256,7 +238,6 @@ function PageBodyWithDevSection() {
     return (
       <>
         <Loader />
-        <DevSection balances={balances} isLoading={isLoading} error={error} />
       </>
     )
   }
@@ -308,7 +289,6 @@ function PageBodyWithDevSection() {
           </Card>
         </div>
       </div>
-      <DevSection balances={balances} isLoading={isLoading} error={error} />
     </>
   )
 }

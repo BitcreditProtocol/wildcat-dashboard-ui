@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { InfoReply } from "@/generated/client"
 import { ListQuotesData } from "@/generated/client"
 import { adminLookupQuoteOptions, listQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
-import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
@@ -134,30 +133,6 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   )
 }
 
-function DevSection({ status }: { status?: QuoteStatus }) {
-  return <></>
-  const [devMode] = useLocalStorage("devMode", false)
-
-  const queryParams = status ? ({ status } as unknown as ListQuotesData["query"]) : {}
-  const { data: quotesData } = useSuspenseQuery({
-    ...listQuotesOptions({
-      query: queryParams,
-    }),
-  })
-
-  return (
-    <>
-      {devMode && (
-        <>
-          <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-            {JSON.stringify(quotesData, null, 2)}
-          </pre>
-        </>
-      )}
-    </>
-  )
-}
-
 function PageBody({ status }: { status?: QuoteStatus }) {
   return (
     <div className="flex flex-col gap-2">
@@ -187,9 +162,6 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
       <PageTitle>{pageTitle}</PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody status={status} />
-      </Suspense>
-      <Suspense>
-        <DevSection status={status} />
       </Suspense>
     </>
   )

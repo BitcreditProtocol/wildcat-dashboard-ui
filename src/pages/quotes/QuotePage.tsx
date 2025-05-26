@@ -1,6 +1,6 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -13,7 +13,6 @@ import {
   adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
 import { activateKeyset } from "@/generated/client/sdk.gen"
-import useLocalStorage from "@/hooks/use-local-storage"
 import { cn } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
 
@@ -666,30 +665,6 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
   )
 }
 
-function DevSection({ id }: { id: InfoReply["id"] }) {
-  const [devMode] = useLocalStorage("devMode", false)
-
-  const { data } = useSuspenseQuery({
-    ...adminLookupQuoteOptions({
-      path: {
-        id,
-      },
-    }),
-  })
-
-  return (
-    <>
-      {devMode && (
-        <>
-          <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </>
-      )}
-    </>
-  )
-}
-
 function PageBody({ id }: { id: InfoReply["id"] }) {
   const { data, isFetching } = useSuspenseQuery({
     ...adminLookupQuoteOptions({
@@ -738,7 +713,6 @@ export default function QuotePage() {
       </PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody id={id} />
-        <DevSection id={id} />
       </Suspense>
     </>
   )

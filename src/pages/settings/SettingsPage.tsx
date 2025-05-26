@@ -16,32 +16,9 @@ function Loader() {
 }
 
 function PageBody() {
-  const [devMode, setDevMode] = useLocalStorage("devMode", false)
-
   return (
     <>
-      <div className="my-2">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="developer-mode"
-            className="cursor-pointer"
-            checked={devMode}
-            onCheckedChange={() => {
-              toast.info(
-                <>
-                  Developer mode is <span className="font-bold">{(!devMode && "ON") || "OFF"}</span>
-                </>,
-                {
-                  id: "settings-dev-mode",
-                  duration: 1_337,
-                },
-              )
-              setDevMode((it) => !it)
-            }}
-          />
-          <Label htmlFor="developer-mode">Developer Mode</Label>
-        </div>
-      </div>
+      <div className="my-2"></div>
     </>
   )
 }
