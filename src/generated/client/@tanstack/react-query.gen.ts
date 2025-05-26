@@ -2,7 +2,7 @@
 
 import { type Options, listQuotes, listPendingQuotes, adminLookupQuote, adminUpdateQuote, resolveOffer, enquireQuote, lookupQuote, debitBalance, creditBalance } from '../sdk.gen';
 import { queryOptions, type UseMutationOptions, type DefaultError } from '@tanstack/react-query';
-import type { ListQuotesData, ListPendingQuotesData, AdminLookupQuoteData, AdminUpdateQuoteData, AdminUpdateQuoteResponse, ResolveOfferData, EnquireQuoteData, EnquireQuoteResponse, LookupQuoteData, DebitData, ECashBalance } from '../types.gen';
+import type { ListQuotesData, ListPendingQuotesData, AdminLookupQuoteData, AdminUpdateQuoteData, AdminUpdateQuoteResponse, ResolveOfferData, EnquireQuoteData, EnquireQuoteResponse, LookupQuoteData, DebitData} from '../types.gen';
 import { client as _heyApiClient } from '../client.gen';
 
 export type QueryKey<TOptions extends Options> = [
