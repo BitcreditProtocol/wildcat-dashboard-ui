@@ -422,11 +422,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
         trigger={
           <Button
             className="flex-1"
-            disabled={
-              isFetching ||
-              activateKeysetMutation.isPending ||
-              (value.status !== "Offered" && value.status !== "Accepted")
-            }
+            disabled={isFetching || activateKeysetMutation.isPending || value.status !== "Accepted"}
             variant="default"
           >
             Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
