@@ -1,13 +1,21 @@
 import { PropsWithChildren, Suspense } from "react"
+import { useQueries } from "@tanstack/react-query"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BalancesResponse, fetchBalances } from "@/lib/api"
-import { useSuspenseQuery } from "@tanstack/react-query"
-import useLocalStorage from "@/hooks/use-local-storage"
+import { debitBalance, creditBalance, onchainBalance } from "@/generated/client/sdk.gen"
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs),
+    ),
+  ])
+}
 
 function Loader() {
   return (
@@ -120,86 +128,165 @@ export function OtherBalanceChart() {
   )
 }
 
-export function BalanceText({ value, children }: PropsWithChildren<{ value: BalancesResponse["bitcoin"] }>) {
+interface BalanceDisplay {
+  amount: string
+  unit: string
+}
+
+export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
       <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
-        {value.value} {value.currency}
+        {amount} {unit}
       </h3>
       {children}
     </>
   )
 }
 
-function PageBody() {
-  const { data } = useSuspenseQuery({
-    queryKey: ["balances"],
-    queryFn: fetchBalances,
+function useBalances() {
+  const queries = useQueries({
+    queries: [
+      {
+        queryKey: ["balance", "credit"],
+        queryFn: async () => {
+          const response = await withTimeout(creditBalance({}), 10_000)
+          if (response.error) {
+            throw new Error("Failed to fetch credit balance")
+          }
+          return response.data
+        },
+        refetchInterval: 30_000,
+        staleTime: 25_000,
+        retry: 2,
+        gcTime: 10_000,
+      },
+      {
+        queryKey: ["balance", "debit"],
+        queryFn: async () => {
+          const response = await withTimeout(debitBalance({}), 10_000)
+          if (response.error) {
+            throw new Error("Failed to fetch debit balance")
+          }
+          return response.data
+        },
+        refetchInterval: 30_000,
+        staleTime: 25_000,
+        retry: 2,
+        gcTime: 10_000,
+      },
+      {
+        queryKey: ["balance", "onchain"],
+        queryFn: async () => {
+          const response = await withTimeout(onchainBalance({}), 10_000)
+          if (response.error) {
+            throw new Error("Failed to fetch onchain balance")
+          }
+          return response.data
+        },
+        refetchInterval: 30_000,
+        staleTime: 25_000,
+        retry: 2,
+        gcTime: 10_000,
+      },
+    ],
   })
 
-  return (
-    <div className="flex flex-col gap-4 my-2">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card className="bg-indigo-100">
-          <CardHeader>
-            <CardTitle>Bitcoin balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BalanceText value={data.bitcoin} />
-          </CardContent>
-        </Card>
-        <Card className="bg-orange-100">
-          <CardHeader>
-            <CardTitle>e-IOU balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BalanceText value={data.eiou} />
-          </CardContent>
-        </Card>
-        <Card className="bg-purple-200">
-          <CardHeader>
-            <CardTitle>Credit token balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BalanceText value={data.credit} />
-          </CardContent>
-        </Card>
-        <Card className="bg-purple-400">
-          <CardHeader>
-            <CardTitle>Debit token balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BalanceText value={data.debit} />
-          </CardContent>
-        </Card>
-      </div>
+  const [creditQuery, debitQuery, onchainQuery] = queries
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="py-4">
-          <BitcoinBalanceChart />
-        </Card>
-        <Card className="py-4">
-          <OtherBalanceChart />
-        </Card>
-      </div>
-    </div>
-  )
+  const hasError = queries.some((query) => query.isError)
+  const error = hasError ? "Failed to load one or more balances" : null
+
+  const balances: Record<string, BalanceDisplay> = {
+    bitcoin: {
+      amount:
+        onchainQuery.data && typeof onchainQuery.data === "object" && "confirmed" in onchainQuery.data
+          ? String(onchainQuery.data.confirmed)
+          : "0",
+      unit: "BTC",
+    },
+    eiou: { amount: "0", unit: "eIOU" },
+    credit: {
+      amount: creditQuery.data && "amount" in creditQuery.data ? String(creditQuery.data.amount) : "0",
+      unit: creditQuery.data && "unit" in creditQuery.data ? String(creditQuery.data.unit) : "credit",
+    },
+    debit: {
+      amount: debitQuery.data && "amount" in debitQuery.data ? String(debitQuery.data.amount) : "0",
+      unit: debitQuery.data && "unit" in debitQuery.data ? String(debitQuery.data.unit) : "debit",
+    },
+  }
+
+  const refetch = () => {
+    void Promise.all(queries.map((query) => query.refetch()))
+  }
+
+  return { balances, error, refetch }
 }
 
-function DevSection() {
-  const [devMode] = useLocalStorage("devMode", false)
-  const { data } = useSuspenseQuery({
-    queryKey: ["balances"],
-    queryFn: fetchBalances,
-  })
+function PageBodyWithDevSection() {
+  const { balances, error } = useBalances()
+
+  if (error) {
+    return (
+      <>
+        <div className="flex flex-col gap-4 my-2">
+          <Card className="bg-red-50 border-red-200">
+            <CardContent className="p-4">
+              <p className="text-red-800">Error loading balances: {error}</p>
+            </CardContent>
+          </Card>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
-      {devMode && (
-        <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      )}
+      <div className="flex flex-col gap-4 my-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Card className="bg-indigo-100">
+            <CardHeader>
+              <CardTitle>Bitcoin balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
+            </CardContent>
+          </Card>
+          <Card className="bg-orange-100">
+            <CardHeader>
+              <CardTitle>e-IOU balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-200">
+            <CardHeader>
+              <CardTitle>Credit token balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-400">
+            <CardHeader>
+              <CardTitle>Debit token balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="py-4">
+            <BitcoinBalanceChart />
+          </Card>
+          <Card className="py-4">
+            <OtherBalanceChart />
+          </Card>
+        </div>
+      </div>
     </>
   )
 }
@@ -211,8 +298,7 @@ export default function BalancesPage() {
       <PageTitle>Balances</PageTitle>
 
       <Suspense fallback={<Loader />}>
-        <PageBody />
-        <DevSection />
+        <PageBodyWithDevSection />
       </Suspense>
     </>
   )

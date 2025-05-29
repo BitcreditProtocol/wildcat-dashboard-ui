@@ -23,5 +23,17 @@ heyApiClient.interceptors.request.use((request) => {
   return request
 })
 
+const originalFetch = window.fetch
+window.fetch = async function (...args) {
+  try {
+    console.log("Refreshing token...")
+    await keycloak.updateToken(30)
+  } catch (error) {
+    console.error("Failed to refresh token:", error)
+  }
+
+  return originalFetch.apply(this, args)
+}
+
 export const client = heyApiClient
 export { sdk }

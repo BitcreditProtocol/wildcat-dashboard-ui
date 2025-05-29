@@ -27,6 +27,14 @@ export type ListReplyLight = {
  */
 export type Amount = number;
 
+
+export type PayeePublicData = {
+    Ident: IdentityPublicData;
+} | {
+    Anon: AnonPublicData;
+};
+
+
 /**
  * --------------------------- Enquire mint quote
  */
@@ -36,7 +44,7 @@ export type BillInfo = {
     endorsees: Array<IdentityPublicData>;
     id: string;
     maturity_date: string;
-    payee: IdentityPublicData;
+    payee: PayeePublicData;
     sum: number;
 };
 
@@ -108,6 +116,12 @@ export type IdentityPublicData = PostalAddress & {
     nostr_relay?: string | null;
     type: ContactType;
 };
+
+export type AnonPublicData = {
+  node_id: string;
+  email?: string | null;
+  nostr_relays: Array<string>;
+}
 
 /**
  * --------------------------- Quote info request
@@ -406,3 +420,45 @@ export type ActivateKeysetResponses = {
 };
 
 export type ActivateKeysetResponse = ActivateKeysetResponses[keyof ActivateKeysetResponses];
+
+/**
+ * Currency unit used for ECash
+ */
+export type CurrencyUnit = string;
+
+/**
+ * ECash balance information
+ */
+export type ECashBalance = {
+    amount: Amount;
+    unit: CurrencyUnit;
+};
+
+export type DebitData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/balance/debit';
+};
+
+export type CreditData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/balance/credit';
+};
+
+export type OnChainBalanceData = {
+  immature: number;
+  trusted_pending: number;
+  untrusted_pending: number;
+  confirmed: number;
+};
+
+
+export type OnChainData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/admin/onchain/balance';
+};

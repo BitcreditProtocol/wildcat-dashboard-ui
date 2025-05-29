@@ -1,11 +1,7 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
-import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Switch } from "@/components/ui/switch"
-import useLocalStorage from "@/hooks/use-local-storage"
 import { Suspense } from "react"
-import { toast } from "sonner"
 
 function Loader() {
   return (
@@ -16,32 +12,9 @@ function Loader() {
 }
 
 function PageBody() {
-  const [devMode, setDevMode] = useLocalStorage("devMode", false)
-
   return (
     <>
-      <div className="my-2">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="developer-mode"
-            className="cursor-pointer"
-            checked={devMode}
-            onCheckedChange={() => {
-              toast.info(
-                <>
-                  Developer mode is <span className="font-bold">{(!devMode && "ON") || "OFF"}</span>
-                </>,
-                {
-                  id: "settings-dev-mode",
-                  duration: 1_337,
-                },
-              )
-              setDevMode((it) => !it)
-            }}
-          />
-          <Label htmlFor="developer-mode">Developer Mode</Label>
-        </div>
-      </div>
+      <div className="my-2"></div>
     </>
   )
 }

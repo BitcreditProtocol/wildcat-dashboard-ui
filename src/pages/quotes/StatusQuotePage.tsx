@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { InfoReply } from "@/generated/client"
 import { ListQuotesData } from "@/generated/client"
 import { adminLookupQuoteOptions, listQuotesOptions } from "@/generated/client/@tanstack/react-query.gen"
-import useLocalStorage from "@/hooks/use-local-storage"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Suspense } from "react"
@@ -16,6 +15,12 @@ import { humanReadableDuration } from "@/utils/dates"
 import { formatNumber, truncateString } from "@/utils/strings"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+
+type QuoteStatus = "Accepted" | "Denied" | "Expired" | "Offered" | "Pending" | "Rejected" | "Cancelled"
+
+interface StatusQuotePageProps {
+  status?: QuoteStatus
+}
 
 function Loader() {
   return (
@@ -91,14 +96,17 @@ function QuoteItemCard({ id, isLoading }: { id: InfoReply["id"]; isLoading: bool
   )
 }
 
-function QuoteListPending() {
+function QuoteList({ status }: { status?: QuoteStatus }) {
+  const queryParams = status ? ({ status } as unknown as ListQuotesData["query"]) : {}
+
   const { data, isFetching } = useSuspenseQuery({
     ...listQuotesOptions({
-      query: {
-        status: "Pending",
-      } as unknown as ListQuotesData["query"],
+      query: queryParams,
     }),
   })
+
+  const statusText = status ? status.toLowerCase() : "all"
+  const noQuotesMessage = `No ${statusText} quotes.`
 
   return (
     <>
@@ -112,7 +120,7 @@ function QuoteListPending() {
       </div>
 
       <div className="flex flex-col gap-1.5 my-2">
-        {data.quotes.length === 0 && <div className="py-2 font-bold">No pending quotes.</div>}
+        {data.quotes.length === 0 && <div className="py-2 font-bold">{noQuotesMessage}</div>}
         {data.quotes.map((it, index) => {
           return (
             <div key={index}>
@@ -125,38 +133,20 @@ function QuoteListPending() {
   )
 }
 
-function DevSection() {
-  return <></>
-  const [devMode] = useLocalStorage("devMode", false)
-
-  const { data: quotesPending } = useSuspenseQuery({
-    ...listQuotesOptions({}),
-  })
-
-  return (
-    <>
-      {devMode && (
-        <>
-          <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-            {JSON.stringify(quotesPending, null, 2)}
-          </pre>
-        </>
-      )}
-    </>
-  )
-}
-
-function PageBody() {
+function PageBody({ status }: { status?: QuoteStatus }) {
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <QuoteListPending />
+        <QuoteList status={status} />
       </div>
     </div>
   )
 }
 
-export default function PendingQuotesPage() {
+export default function StatusQuotePage({ status }: StatusQuotePageProps) {
+  const pageTitle = status ? `${status} Quotes` : "All Quotes"
+  const breadcrumbText = status ?? "All"
+
   return (
     <>
       <Breadcrumbs
@@ -166,15 +156,12 @@ export default function PendingQuotesPage() {
           </>,
         ]}
       >
-        Pending
+        {breadcrumbText}
       </Breadcrumbs>
 
-      <PageTitle>Pending Quotes</PageTitle>
+      <PageTitle>{pageTitle}</PageTitle>
       <Suspense fallback={<Loader />}>
-        <PageBody />
-      </Suspense>
-      <Suspense>
-        <DevSection />
+        <PageBody status={status} />
       </Suspense>
     </>
   )

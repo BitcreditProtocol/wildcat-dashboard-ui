@@ -1,24 +1,25 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { IdentityPublicData, InfoReply } from "@/generated/client"
+import { IdentityPublicData, PayeePublicData, InfoReply, AnonPublicData } from "@/generated/client"
 import {
   adminLookupQuoteOptions,
   adminLookupQuoteQueryKey,
   adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
 import { activateKeyset } from "@/generated/client/sdk.gen"
-import useLocalStorage from "@/hooks/use-local-storage"
-import { cn } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
-import { randomAvatar } from "@/utils/dev"
+
 import { formatNumber, truncateString } from "@/utils/strings"
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
+import { getDeterministicColor } from "@/utils/dev"
+
 import { LoaderIcon } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 import { Link, useParams } from "react-router"
@@ -411,7 +412,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
         trigger={
           <Button
             className="flex-1"
-            disabled={isFetching || activateKeysetMutation.isPending || value.status !== "Offered"}
+            disabled={isFetching || activateKeysetMutation.isPending || value.status !== "Accepted"}
             variant="default"
           >
             Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
@@ -430,33 +431,40 @@ export function ParticipantsOverviewCard({
 }: {
   drawee?: IdentityPublicData
   drawer?: IdentityPublicData
-  holder?: IdentityPublicData
-  payee?: IdentityPublicData
+  holder?: PayeePublicData
+  payee?: PayeePublicData
   className?: string
 }) {
   return (
     <div className={cn("flex gap-2 items-center py-1", className)}>
       <div>
-        <IdentityPublicDataAvatar value={drawee} tooltip="Drawee" />
+        <IdentityPublicAvatar value={drawee} tooltip="Drawee" />
       </div>
       <div>
-        <IdentityPublicDataAvatar value={drawer} tooltip="Drawer" />
+        <IdentityPublicAvatar value={drawer} tooltip="Drawer" />
       </div>
       <div>
-        <IdentityPublicDataAvatar value={payee} tooltip="Payee" />
+        <PayeePublicDataAvatar value={payee} tooltip="Payee" />
       </div>
       <div>
-        <IdentityPublicDataAvatar value={payee} tooltip="Holder" />
+        <PayeePublicDataAvatar value={payee} tooltip="Holder" />
       </div>
     </div>
   )
 }
 
-function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
+function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?: React.ReactNode }) {
+  const initials = "?"
+  const backgroundColor = getDeterministicColor(value?.node_id)
+
   const avatar = (
     <Avatar>
-      <AvatarImage src={randomAvatar(value?.node_id?.startsWith("03") ? "men" : "women", value?.node_id)} />
-      <AvatarFallback>{value?.name}</AvatarFallback>
+      <div
+        className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
+        style={{ backgroundColor }}
+      >
+        {initials}
+      </div>
     </Avatar>
   )
   return !tooltip ? (
@@ -471,11 +479,50 @@ function IdentityPublicDataAvatar({ value, tooltip }: { value?: IdentityPublicDa
   )
 }
 
+function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
+  const initials = getInitials(value?.name)
+  const backgroundColor = getDeterministicColor(value?.name ?? value?.node_id)
+
+  const avatar = (
+    <Avatar>
+      <div
+        className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
+        style={{ backgroundColor }}
+      >
+        {initials}
+      </div>
+    </Avatar>
+  )
+  return !tooltip ? (
+    avatar
+  ) : (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>{avatar}</TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+function PayeePublicDataAvatar({ value, tooltip }: { value?: PayeePublicData; tooltip?: React.ReactNode }) {
+  if (!value) return <></>
+
+  if ("Ident" in value) {
+    const identData = (value as { Ident: IdentityPublicData }).Ident
+    return <IdentityPublicAvatar value={identData} tooltip={tooltip} />
+  } else if ("Anon" in value) {
+    const anonData = (value as { Anon: AnonPublicData }).Anon
+    return <AnonPublicAvatar value={anonData} tooltip={tooltip} />
+  }
+
+  return <></>
+}
+
 function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
   return (
     <div className="flex gap-0.5 items-center">
       <div className="px-1 me-4">
-        <IdentityPublicDataAvatar value={value} />
+        <IdentityPublicAvatar value={value} />
       </div>
       <div className="flex flex-col">
         <div className="font-bold">{value?.name}</div>
@@ -493,6 +540,42 @@ function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
       </div>
     </div>
   )
+}
+function AnonPublicDataCard({ value }: { value?: AnonPublicData }) {
+  return (
+    <div className="flex gap-0.5 items-center">
+      <div className="px-1 me-4">
+        <AnonPublicAvatar value={value} />
+      </div>
+      <div className="flex flex-col">
+        <div className="font-bold">{value?.node_id}</div>
+        <div>
+          <a className="underline" href={`mailto:${value?.email}`}>
+            {value?.email}
+          </a>
+        </div>
+        <div>
+          <pre>{value?.node_id}</pre>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PayeePublicDataCard({ value }: { value?: PayeePublicData }) {
+  if (!value) return null
+
+  console.log("Payee public data", value)
+
+  if ("Ident" in value) {
+    const identData = (value as { Ident: IdentityPublicData }).Ident
+    return IdentityPublicDataCard({ value: identData })
+  } else if ("Anon" in value) {
+    const anonData = (value as { Anon: AnonPublicData }).Anon
+    return AnonPublicDataCard({ value: anonData })
+  }
+
+  return <></>
 }
 
 function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
@@ -557,7 +640,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
           <TableRow>
             <TableCell className="font-bold">Payee: </TableCell>
             <TableCell>
-              <IdentityPublicDataCard value={value.bill?.payee} />
+              <PayeePublicDataCard value={value.bill?.payee} />
             </TableCell>
           </TableRow>
         </TableBody>
@@ -565,30 +648,6 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
 
       <QuoteActions value={value} isFetching={isFetching} />
     </div>
-  )
-}
-
-function DevSection({ id }: { id: InfoReply["id"] }) {
-  const [devMode] = useLocalStorage("devMode", false)
-
-  const { data } = useSuspenseQuery({
-    ...adminLookupQuoteOptions({
-      path: {
-        id,
-      },
-    }),
-  })
-
-  return (
-    <>
-      {devMode && (
-        <>
-          <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </>
-      )}
-    </>
   )
 }
 
@@ -640,7 +699,6 @@ export default function QuotePage() {
       </PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody id={id} />
-        <DevSection id={id} />
       </Suspense>
     </>
   )
