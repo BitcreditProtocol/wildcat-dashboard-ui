@@ -194,7 +194,6 @@ function useBalances() {
 
   const [creditQuery, debitQuery, onchainQuery] = queries
 
-  const isPending = queries.some((query) => query.isPending)
   const hasError = queries.some((query) => query.isError)
   const error = hasError ? "Failed to load one or more balances" : null
 
@@ -221,11 +220,11 @@ function useBalances() {
     void Promise.all(queries.map((query) => query.refetch()))
   }
 
-  return { balances, isPending, error, refetch }
+  return { balances, error, refetch }
 }
 
 function PageBodyWithDevSection() {
-  const { balances, isPending, error } = useBalances()
+  const { balances, error } = useBalances()
 
   if (error) {
     return (
