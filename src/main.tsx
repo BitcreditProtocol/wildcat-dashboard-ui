@@ -16,13 +16,7 @@ import CashFlowPage from "./pages/balances/CashFlowPage"
 import { initKeycloak } from "./keycloak"
 import "./lib/api-client"
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      enabled: (query) => query.queryKey[0] !== "balances",
-    },
-  },
-})
+const queryClient = new QueryClient()
 
 const prepare = async () => {
   await initKeycloak()

@@ -1,4 +1,5 @@
-import { PropsWithChildren, Suspense, useCallback, useEffect, useState } from "react"
+import { PropsWithChildren, Suspense } from "react"
+import { useQueries } from "@tanstack/react-query"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -6,6 +7,15 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 import { debitBalance, creditBalance, onchainBalance } from "@/generated/client/sdk.gen"
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs),
+    ),
+  ])
+}
 
 function Loader() {
   return (
@@ -134,110 +144,88 @@ export function BalanceText({ amount, unit, children }: PropsWithChildren<Balanc
   )
 }
 
-function isErrorResponse<T>(res: { data?: T; error?: unknown }): res is { data: undefined; error: unknown } {
-  return res.error !== undefined
-}
-
 function useBalances() {
-  const [balances, setBalances] = useState<Record<string, BalanceDisplay>>({
-    bitcoin: { amount: "0", unit: "BTC" },
-    eiou: { amount: "0", unit: "eIOU" },
-    credit: { amount: "0", unit: "credit" },
-    debit: { amount: "0", unit: "debit" },
+  const queries = useQueries({
+    queries: [
+      {
+        queryKey: ["balance", "credit"],
+        queryFn: async () => {
+          const response = await withTimeout(creditBalance({}), 10_000)
+          if (response.error) {
+            throw new Error("Failed to fetch credit balance")
+          }
+          return response.data
+        },
+        refetchInterval: 30_000,
+        staleTime: 25_000,
+        retry: 2,
+        gcTime: 10_000,
+      },
+      {
+        queryKey: ["balance", "debit"],
+        queryFn: async () => {
+          const response = await withTimeout(debitBalance({}), 10_000)
+          if (response.error) {
+            throw new Error("Failed to fetch debit balance")
+          }
+          return response.data
+        },
+        refetchInterval: 30_000,
+        staleTime: 25_000,
+        retry: 2,
+        gcTime: 10_000,
+      },
+      {
+        queryKey: ["balance", "onchain"],
+        queryFn: async () => {
+          const response = await withTimeout(onchainBalance({}), 10_000)
+          if (response.error) {
+            throw new Error("Failed to fetch onchain balance")
+          }
+          return response.data
+        },
+        refetchInterval: 30_000,
+        staleTime: 25_000,
+        retry: 2,
+        gcTime: 10_000,
+      },
+    ],
   })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const fetchAllBalances = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+  const [creditQuery, debitQuery, onchainQuery] = queries
 
-    try {
-      // Fetch both credit and debit balances concurrently
-      const [creditResponse, debitResponse, onchainResponse] = await Promise.allSettled([
-        creditBalance({}),
-        debitBalance({}),
-        onchainBalance({}),
-      ])
+  const isPending = queries.some((query) => query.isPending)
+  const hasError = queries.some((query) => query.isError)
+  const error = hasError ? "Failed to load one or more balances" : null
 
-      const newBalances: Record<string, BalanceDisplay> = {
-        bitcoin: { amount: "0", unit: "BTC" },
-        eiou: { amount: "0", unit: "eIOU" },
-        credit: { amount: "0", unit: "credit" },
-        debit: { amount: "0", unit: "debit" },
-      }
+  const balances: Record<string, BalanceDisplay> = {
+    bitcoin: {
+      amount:
+        onchainQuery.data && typeof onchainQuery.data === "object" && "confirmed" in onchainQuery.data
+          ? String(onchainQuery.data.confirmed)
+          : "0",
+      unit: "BTC",
+    },
+    eiou: { amount: "0", unit: "eIOU" },
+    credit: {
+      amount: creditQuery.data && "amount" in creditQuery.data ? String(creditQuery.data.amount) : "0",
+      unit: creditQuery.data && "unit" in creditQuery.data ? String(creditQuery.data.unit) : "credit",
+    },
+    debit: {
+      amount: debitQuery.data && "amount" in debitQuery.data ? String(debitQuery.data.amount) : "0",
+      unit: debitQuery.data && "unit" in debitQuery.data ? String(debitQuery.data.unit) : "debit",
+    },
+  }
 
-      // Handle credit balance response
-      if (creditResponse.status === "fulfilled" && !isErrorResponse(creditResponse.value)) {
-        const creditData = creditResponse.value.data
-        if (creditData && "amount" in creditData && "unit" in creditData) {
-          newBalances.credit = {
-            amount: String(creditData.amount),
-            unit: String(creditData.unit),
-          }
-        }
-      } else {
-        console.warn(
-          "Failed to fetch credit balance:",
-          creditResponse.status === "rejected" ? creditResponse.reason : creditResponse.value.error,
-        )
-      }
+  const refetch = () => {
+    void Promise.all(queries.map((query) => query.refetch()))
+  }
 
-      // Handle debit balance response
-      if (debitResponse.status === "fulfilled" && !isErrorResponse(debitResponse.value)) {
-        const debitData = debitResponse.value.data
-        if (debitData && "amount" in debitData && "unit" in debitData) {
-          newBalances.debit = {
-            amount: String(debitData.amount),
-            unit: String(debitData.unit),
-          }
-        }
-      } else {
-        console.warn(
-          "Failed to fetch debit balance:",
-          debitResponse.status === "rejected" ? debitResponse.reason : debitResponse.value.error,
-        )
-      }
-
-      if (onchainResponse.status === "fulfilled" && !isErrorResponse(onchainResponse.value)) {
-        const onchainData = onchainResponse.value.data
-        if (onchainData && typeof onchainData === "object" && "confirmed" in onchainData) {
-          console.log("Onchain balance:", onchainData.confirmed)
-          newBalances.bitcoin = {
-            amount: String(onchainData.confirmed),
-            unit: "BTC",
-          }
-        }
-      } else {
-        console.warn(
-          "Failed to fetch onchain balance:",
-          onchainResponse.status === "rejected" ? onchainResponse.reason : onchainResponse.value.error,
-        )
-      }
-
-      setBalances(newBalances)
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
-      setError(errorMessage)
-      console.error("Failed to fetch balances:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchAllBalances()
-
-    const interval = setInterval(() => void fetchAllBalances(), 30_000)
-
-    return () => clearInterval(interval)
-  }, [fetchAllBalances])
-
-  return { balances, isLoading, error, refetch: fetchAllBalances }
+  return { balances, isPending, error, refetch }
 }
 
 function PageBodyWithDevSection() {
-  const { balances, isLoading, error } = useBalances()
+  const { balances, isPending, error } = useBalances()
 
   if (error) {
     return (
@@ -249,14 +237,6 @@ function PageBodyWithDevSection() {
             </CardContent>
           </Card>
         </div>
-      </>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <>
-        <Loader />
       </>
     )
   }
