@@ -23,7 +23,6 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
 
-  const backgroundColor = "#f59e0b"
   const initials = user.name.length > 0 ? user.name[0].toUpperCase() : "U"
 
   return (
@@ -37,10 +36,7 @@ export function NavUser({
               tooltip={user.name || "Unknown User"}
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <div
-                  className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
-                  style={{ backgroundColor }}
-                >
+                <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm bg-[#f59e0b]">
                   {initials}
                 </div>
               </Avatar>
