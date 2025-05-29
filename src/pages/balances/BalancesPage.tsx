@@ -228,7 +228,7 @@ function useBalances() {
   useEffect(() => {
     void fetchAllBalances()
 
-    const interval = setInterval(() => void fetchAllBalances(), 30000)
+    const interval = setInterval(() => void fetchAllBalances(), 30_000)
 
     return () => clearInterval(interval)
   }, [fetchAllBalances])
