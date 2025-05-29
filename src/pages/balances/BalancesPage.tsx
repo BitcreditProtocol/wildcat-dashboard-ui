@@ -123,7 +123,7 @@ interface BalanceDisplay {
   unit: string
 }
 
-export function BalanceText({ amount, unit, children }: PropsWithChildren<{ amount: string; unit: string }>) {
+export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
       <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
