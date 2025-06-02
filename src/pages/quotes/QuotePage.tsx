@@ -590,6 +590,14 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
               <span className="font-mono">{value.id}</span>
             </TableCell>
           </TableRow>
+          {(value.status === "Offered" || value.status === "Accepted") && "keyset_id" in value ? (
+            <TableRow>
+              <TableCell className="font-bold">Keyset ID: </TableCell>
+              <TableCell>{value.keyset_id}</TableCell>
+            </TableRow>
+          ) : (
+            <></>
+          )}
           <TableRow>
             <TableCell className="font-bold">Status: </TableCell>
             <TableCell>
