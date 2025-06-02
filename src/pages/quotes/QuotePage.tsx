@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { IdentityPublicData, PayeePublicData, InfoReply, AnonPublicData, KeySetInfo } from "@/generated/client"
+import { IdentityPublicData, PayeePublicData, InfoReply, AnonPublicData } from "@/generated/client"
 import {
   adminLookupQuoteOptions,
   adminLookupQuoteQueryKey,
@@ -339,7 +339,6 @@ function QuoteActions({
   const onActivateKeyset = () => {
     activateKeysetMutation.mutate()
   }
-
   return (
     <div className="flex items-center gap-2">
       {value.status === "Pending" ? (
@@ -416,7 +415,7 @@ function QuoteActions({
         </div>
       </OfferConfirmDrawer>
 
-      {(value.status === "Accepted" || value.status === "Offered") && "keyset_id" in value ? (
+      {value.status === "Accepted" && "keyset_id" in value ? (
         <ConfirmDrawer
           title="Confirm activating keyset"
           description="Are you sure you want to activate the keyset for this quote?"
@@ -425,6 +424,7 @@ function QuoteActions({
           onSubmit={() => {
             onActivateKeyset()
             setActivateKeysetConfirmDrawerOpen(false)
+            keysetActive = true
           }}
           submitButtonText="Yes, activate keyset"
           trigger={
@@ -586,8 +586,6 @@ function AnonPublicDataCard({ value }: { value?: AnonPublicData }) {
 function PayeePublicDataCard({ value }: { value?: PayeePublicData }) {
   if (!value) return null
 
-  console.log("Payee public data", value)
-
   if ("Ident" in value) {
     const identData = (value as { Ident: IdentityPublicData }).Ident
     return IdentityPublicDataCard({ value: identData })
@@ -600,8 +598,6 @@ function PayeePublicDataCard({ value }: { value?: PayeePublicData }) {
 }
 
 function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
-  console.log("Quote Page", value)
-
   const shouldFetchKeyset = (value.status === "Offered" || value.status === "Accepted") && "keyset_id" in value
 
   const keysetId = "keyset_id" in value ? value.keyset_id : ""
@@ -617,7 +613,6 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
 
   let keysetActive = false
   if (keysetData) {
-    console.log("Keyset Info:", keysetData)
     if ("data" in keysetData && keysetData.data !== undefined) {
       keysetActive = keysetData.data.active
     }
