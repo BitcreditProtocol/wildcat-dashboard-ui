@@ -135,7 +135,7 @@ export type InfoReply = {
 } | {
     bill: BillInfo;
     id: string;
-    status: 'Cancelled';
+    status: 'Canceled';
     tstamp: string;
 } | {
     bill: BillInfo;

@@ -39,10 +39,11 @@ function App() {
             <Route path="quotes" element={<StatusQuotePage />} />
             <Route path="quotes/pending" element={<StatusQuotePage status="Pending" />} />
             <Route path="quotes/accepted" element={<StatusQuotePage status="Accepted" />} />
+            <Route path="quotes/canceled" element={<StatusQuotePage status="Canceled" />} />
             <Route path="quotes/offered" element={<StatusQuotePage status="Offered" />} />
+            <Route path="quotes/offerexpired" element={<StatusQuotePage status="OfferExpired" />} />
             <Route path="quotes/denied" element={<StatusQuotePage status="Denied" />} />
             <Route path="quotes/rejected" element={<StatusQuotePage status="Rejected" />} />
-            {/* <Route path="quotes/expired" element={<StatusQuotePage status="Rejected" />} /> */}
             <Route path="quotes/:id" element={<QuotePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="info" element={<InfoPage />} />

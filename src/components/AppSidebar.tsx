@@ -30,6 +30,10 @@ const data = {
           url: "/quotes/offered",
         },
         {
+          title: "Offer Expired",
+          url: "/quotes/offerexpired",
+        },
+        {
           title: "Accepted",
           url: "/quotes/accepted",
         },
@@ -40,6 +44,10 @@ const data = {
         {
           title: "Rejected",
           url: "/quotes/rejected",
+        },
+        {
+          title: "Canceled",
+          url: "/quotes/canceled",
         },
       ],
     },
