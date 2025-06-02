@@ -476,3 +476,29 @@ export type OnChainData = {
   query?: never;
   url: '/v1/admin/onchain/balance';
 };
+
+
+// {"id":"0095980cf97298e4","unit":"crsat","active":true,"input_fee_ppk":0}
+// KeysetResponse
+// cashu::nuts::nut02
+// pub struct KeySetInfo {
+//     pub id: Id,
+//     pub unit: CurrencyUnit,
+//     pub active: bool,
+//     pub input_fee_ppk: u64,
+// }
+
+export type KeySetInfo = {
+  id: string;
+  unit: CurrencyUnit;
+  active: boolean;
+  input_fee_ppk: number;
+};
+
+
+export type KeysetInfoData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/admin/keysets/{keyset_id}';
+};
