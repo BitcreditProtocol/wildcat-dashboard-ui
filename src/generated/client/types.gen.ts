@@ -469,7 +469,6 @@ export type OnChainBalanceData = {
   confirmed: number;
 };
 
-
 export type OnChainData = {
   body?: never;
   path?: never;
@@ -477,16 +476,9 @@ export type OnChainData = {
   url: '/v1/admin/onchain/balance';
 };
 
-
-// {"id":"0095980cf97298e4","unit":"crsat","active":true,"input_fee_ppk":0}
-// KeysetResponse
-// cashu::nuts::nut02
-// pub struct KeySetInfo {
-//     pub id: Id,
-//     pub unit: CurrencyUnit,
-//     pub active: bool,
-//     pub input_fee_ppk: u64,
-// }
+/**
+ * Keyset information
+ */
 
 export type KeySetInfo = {
   id: string;
