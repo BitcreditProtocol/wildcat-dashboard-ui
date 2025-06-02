@@ -130,7 +130,6 @@ export const onchainBalance = <ThrowOnError extends boolean = false>(options: Op
   * --------------------------- KeySetInfo
 */
 
-
 export const keysetInfo = <ThrowOnError extends boolean = false>(options: Options<KeysetInfoData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<KeySetInfo, unknown, ThrowOnError>({
         url: '/v1/admin/keysets/{keyset_id}',

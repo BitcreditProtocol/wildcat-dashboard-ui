@@ -498,7 +498,9 @@ export type KeySetInfo = {
 
 export type KeysetInfoData = {
   body?: never;
-  path?: never;
+  path: {
+      keyset_id: string;
+  };
   query?: never;
   url: '/v1/admin/keysets/{keyset_id}';
 };
