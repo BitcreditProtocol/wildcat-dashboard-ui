@@ -579,6 +579,7 @@ function PayeePublicDataCard({ value }: { value?: PayeePublicData }) {
 }
 
 function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
+  console.log("Quote Page", value)
   return (
     <div className="flex flex-col gap-1">
       <Table className="my-2">
@@ -601,6 +602,18 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
             <TableCell className="font-bold">Sum: </TableCell>
             <TableCell>{formatNumber("en", value.bill?.sum)} sat</TableCell>
           </TableRow>
+          {(value.status === "Offered" ||
+            value.status === "Accepted" ||
+            value.status === "Rejected" ||
+            value.status === "OfferExpired") &&
+          "discounted" in value ? (
+            <TableRow>
+              <TableCell className="font-bold">Discounted: </TableCell>
+              <TableCell>{formatNumber("en", value.discounted)} crsat</TableCell>
+            </TableRow>
+          ) : (
+            <></>
+          )}
           <TableRow>
             <TableCell className="font-bold">Maturity date: </TableCell>
             <TableCell>

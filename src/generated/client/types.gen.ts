@@ -135,9 +135,21 @@ export type InfoReply = {
 } | {
     bill: BillInfo;
     id: string;
-    signatures: Array<BlindSignature>;
+    status: 'Cancelled';
+    tstamp: string;
+} | {
+    bill: BillInfo;
+    id: string;
+    keyset_id: string;
     status: 'Offered';
+    discounted: number;
     ttl: string;
+} | {
+    bill: BillInfo;
+    id: string;
+    status: 'OfferExpired';
+    discounted: number;
+    tstamp: string;
 } | {
     bill: BillInfo;
     id: string;
@@ -145,12 +157,14 @@ export type InfoReply = {
 } | {
     bill: BillInfo;
     id: string;
-    signatures: Array<BlindSignature>;
+    keyset_id: string;
+    discounted: number;
     status: 'Accepted';
 } | {
     bill: BillInfo;
     id: string;
     status: 'Rejected';
+    discounted: number;
     tstamp: string;
 };
 
