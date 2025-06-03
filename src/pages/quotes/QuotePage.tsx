@@ -424,7 +424,6 @@ function QuoteActions({
           onSubmit={() => {
             onActivateKeyset()
             setActivateKeysetConfirmDrawerOpen(false)
-            keysetActive = true
           }}
           submitButtonText="Yes, activate keyset"
           trigger={
