@@ -297,13 +297,7 @@ function QuoteActions({
     },
     onSuccess: () => {
       toast.success("Keyset has been activated.")
-      void queryClient.invalidateQueries({
-        queryKey: adminLookupQuoteQueryKey({
-          path: {
-            id: value.id,
-          },
-        }),
-      })
+      void queryClient.invalidateQueries()
     },
   })
 
