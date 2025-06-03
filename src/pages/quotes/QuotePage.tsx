@@ -211,15 +211,7 @@ function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDr
   )
 }
 
-function QuoteActions({
-  value,
-  isFetching,
-  keysetActive,
-}: {
-  value: InfoReply
-  isFetching: boolean
-  keysetActive: boolean
-}) {
+function QuoteActions({ value, isFetching, newKeyset }: { value: InfoReply; isFetching: boolean; newKeyset: boolean }) {
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>()
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
@@ -423,7 +415,7 @@ function QuoteActions({
           trigger={
             <Button
               className="flex-1"
-              disabled={isFetching || activateKeysetMutation.isPending || keysetActive}
+              disabled={isFetching || activateKeysetMutation.isPending || !newKeyset}
               variant="default"
             >
               Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
@@ -604,12 +596,9 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
     enabled: shouldFetchKeyset,
   })
 
-  let keysetActive = false
-  if (keysetData) {
-    if ("data" in keysetData && keysetData.data !== undefined) {
-      keysetActive = keysetData.data.active
-    }
-  }
+  const ebillPaid = keysetData?.data && "active" in keysetData.data && keysetData.data.active === false
+  const newKeyset = "keyset_id" in value && (!keysetData?.data || !("active" in keysetData.data))
+
   return (
     <div className="flex flex-col gap-1">
       <Table className="my-2">
@@ -624,16 +613,19 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
             <TableRow>
               <TableCell className="font-bold">Keyset ID: </TableCell>
               <TableCell className="flex items-center gap-2">
-                {keysetId.length > 0 ? (
-                  <Badge
-                    variant={keysetActive ? "default" : "destructive"}
-                    className={keysetActive ? "bg-blue-500" : "bg-red-500"}
-                  >
-                    {keysetId}
-                  </Badge>
-                ) : (
-                  <></>
-                )}
+                <span className="font-mono">{keysetId}</span>
+                <Badge
+                  variant={ebillPaid ? "default" : "destructive"}
+                  className={ebillPaid ? "bg-green-500" : "bg-red-500"}
+                >
+                  {ebillPaid ? "Paid" : "Unpaid"}
+                </Badge>
+                <Badge
+                  variant={newKeyset ? "default" : "destructive"}
+                  className={newKeyset ? "bg-red-500" : "bg-blue-500"}
+                >
+                  {newKeyset ? "Disabled" : "Enabled"}
+                </Badge>
               </TableCell>
             </TableRow>
           ) : (
@@ -708,7 +700,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
         </TableBody>
       </Table>
 
-      <QuoteActions value={value} isFetching={isFetching} keysetActive={keysetActive} />
+      <QuoteActions value={value} isFetching={isFetching} newKeyset={newKeyset} />
     </div>
   )
 }
