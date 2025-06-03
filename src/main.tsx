@@ -20,10 +20,6 @@ const queryClient = new QueryClient()
 
 const prepare = async () => {
   await initKeycloak()
-  // if (meta.apiMocksEnabled) {
-  //   const { worker } = await import("./mocks/browser")
-  //   await worker.start()
-  // }
 }
 
 function App() {
