@@ -416,7 +416,7 @@ export type ActivateKeysetData = {
     body: ActivateKeysetRequest;
     path?: never;
     query?: never;
-    url: '/v1/admin/keys/activate';
+    url: '/v1/admin/keys/enable';
 };
 
 export type ActivateKeysetErrors = {

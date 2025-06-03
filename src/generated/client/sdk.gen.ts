@@ -91,7 +91,7 @@ export const lookupQuote = <ThrowOnError extends boolean = false>(options: Optio
  */
 export const activateKeyset = <ThrowOnError extends boolean = false>(options: Options<ActivateKeysetData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<ActivateKeysetResponse, unknown, ThrowOnError>({
-        url: '/v1/admin/keys/activate',
+        url: '/v1/admin/keys/enable',
         ...options,
         headers: {
             'Content-Type': 'application/json',
