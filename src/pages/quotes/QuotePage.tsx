@@ -12,12 +12,12 @@ import {
   adminLookupQuoteQueryKey,
   adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
-import { activateKeyset } from "@/generated/client/sdk.gen"
+import { activateKeyset, keysetInfo } from "@/generated/client/sdk.gen"
 import { cn, getInitials } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
 
 import { formatNumber, truncateString } from "@/utils/strings"
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { getDeterministicColor } from "@/utils/dev"
 
 import { LoaderIcon } from "lucide-react"
@@ -211,7 +211,7 @@ function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDr
   )
 }
 
-function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
+function QuoteActions({ value, isFetching, newKeyset }: { value: InfoReply; isFetching: boolean; newKeyset: boolean }) {
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>()
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
@@ -289,13 +289,7 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
     },
     onSuccess: () => {
       toast.success("Keyset has been activated.")
-      void queryClient.invalidateQueries({
-        queryKey: adminLookupQuoteQueryKey({
-          path: {
-            id: value.id,
-          },
-        }),
-      })
+      void queryClient.invalidateQueries()
     },
   })
 
@@ -331,42 +325,50 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
   const onActivateKeyset = () => {
     activateKeysetMutation.mutate()
   }
-
   return (
     <div className="flex items-center gap-2">
-      <DenyConfirmDrawer
-        title="Confirm denying quote"
-        open={denyConfirmDrawerOpen}
-        onOpenChange={setDenyConfirmDrawerOpen}
-        onSubmit={() => {
-          onDenyQuote()
-          setDenyConfirmDrawerOpen(false)
-        }}
-      >
-        <Button
-          className="flex-1"
-          disabled={isFetching || denyQuote.isPending || value.status !== "Pending"}
-          variant={value.status !== "Pending" ? "outline" : "destructive"}
+      {value.status === "Pending" ? (
+        <DenyConfirmDrawer
+          title="Confirm denying quote"
+          open={denyConfirmDrawerOpen}
+          onOpenChange={setDenyConfirmDrawerOpen}
+          onSubmit={() => {
+            onDenyQuote()
+            setDenyConfirmDrawerOpen(false)
+          }}
         >
-          Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-        </Button>
-      </DenyConfirmDrawer>
-      <OfferFormDrawer
-        title="Offer quote"
-        description="Make an offer to the current holder of this bill"
-        value={value}
-        open={offerFormDrawerOpen}
-        onOpenChange={setOfferFormDrawerOpen}
-        onSubmit={(data) => {
-          setOfferFormData(data)
-          setOfferConfirmDrawerOpen(true)
-          setOfferFormDrawerOpen(false)
-        }}
-      >
-        <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "Pending"}>
-          Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-        </Button>
-      </OfferFormDrawer>
+          <Button
+            className="flex-1"
+            disabled={isFetching || denyQuote.isPending || value.status !== "Pending"}
+            variant={value.status !== "Pending" ? "outline" : "destructive"}
+          >
+            Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+          </Button>
+        </DenyConfirmDrawer>
+      ) : (
+        <></>
+      )}
+      {value.status === "Pending" ? (
+        <OfferFormDrawer
+          title="Offer quote"
+          description="Make an offer to the current holder of this bill"
+          value={value}
+          open={offerFormDrawerOpen}
+          onOpenChange={setOfferFormDrawerOpen}
+          onSubmit={(data) => {
+            setOfferFormData(data)
+            setOfferConfirmDrawerOpen(true)
+            setOfferFormDrawerOpen(false)
+          }}
+        >
+          <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "Pending"}>
+            Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+          </Button>
+        </OfferFormDrawer>
+      ) : (
+        <></>
+      )}
+
       <OfferConfirmDrawer
         title="Confirm offering quote"
         description="Review your inputs and confirm the offer"
@@ -399,26 +401,30 @@ function QuoteActions({ value, isFetching }: { value: InfoReply; isFetching: boo
         </div>
       </OfferConfirmDrawer>
 
-      <ConfirmDrawer
-        title="Confirm activating keyset"
-        description="Are you sure you want to activate the keyset for this quote?"
-        open={activateKeysetConfirmDrawerOpen}
-        onOpenChange={setActivateKeysetConfirmDrawerOpen}
-        onSubmit={() => {
-          onActivateKeyset()
-          setActivateKeysetConfirmDrawerOpen(false)
-        }}
-        submitButtonText="Yes, activate keyset"
-        trigger={
-          <Button
-            className="flex-1"
-            disabled={isFetching || activateKeysetMutation.isPending || value.status !== "Accepted"}
-            variant="default"
-          >
-            Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-          </Button>
-        }
-      />
+      {value.status === "Accepted" && "keyset_id" in value ? (
+        <ConfirmDrawer
+          title="Confirm activating keyset"
+          description="Are you sure you want to activate the keyset for this quote?"
+          open={activateKeysetConfirmDrawerOpen}
+          onOpenChange={setActivateKeysetConfirmDrawerOpen}
+          onSubmit={() => {
+            onActivateKeyset()
+            setActivateKeysetConfirmDrawerOpen(false)
+          }}
+          submitButtonText="Yes, activate keyset"
+          trigger={
+            <Button
+              className="flex-1"
+              disabled={isFetching || activateKeysetMutation.isPending || !newKeyset}
+              variant="default"
+            >
+              Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+            </Button>
+          }
+        />
+      ) : (
+        <></>
+      )}
     </div>
   )
 }
@@ -565,8 +571,6 @@ function AnonPublicDataCard({ value }: { value?: AnonPublicData }) {
 function PayeePublicDataCard({ value }: { value?: PayeePublicData }) {
   if (!value) return null
 
-  console.log("Payee public data", value)
-
   if ("Ident" in value) {
     const identData = (value as { Ident: IdentityPublicData }).Ident
     return IdentityPublicDataCard({ value: identData })
@@ -579,6 +583,22 @@ function PayeePublicDataCard({ value }: { value?: PayeePublicData }) {
 }
 
 function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
+  const shouldFetchKeyset = (value.status === "Offered" || value.status === "Accepted") && "keyset_id" in value
+
+  const keysetId = "keyset_id" in value ? value.keyset_id : ""
+
+  const { data: keysetData } = useQuery({
+    queryKey: ["keyset", keysetId],
+    queryFn: () =>
+      keysetInfo({
+        path: { keyset_id: keysetId },
+      }),
+    enabled: shouldFetchKeyset,
+  })
+
+  const ebillPaid = keysetData?.data && "active" in keysetData.data && keysetData.data.active === false
+  const newKeyset = "keyset_id" in value && (!keysetData?.data || !("active" in keysetData.data))
+
   return (
     <div className="flex flex-col gap-1">
       <Table className="my-2">
@@ -589,6 +609,28 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
               <span className="font-mono">{value.id}</span>
             </TableCell>
           </TableRow>
+          {(value.status === "Offered" || value.status === "Accepted") && "keyset_id" in value ? (
+            <TableRow>
+              <TableCell className="font-bold">Keyset ID: </TableCell>
+              <TableCell className="flex items-center gap-2">
+                <span className="font-mono">{keysetId}</span>
+                <Badge
+                  variant={ebillPaid ? "default" : "destructive"}
+                  className={ebillPaid ? "bg-green-500" : "bg-red-500"}
+                >
+                  {ebillPaid ? "Paid" : "Unpaid"}
+                </Badge>
+                <Badge
+                  variant={newKeyset ? "default" : "destructive"}
+                  className={newKeyset ? "bg-red-500" : "bg-blue-500"}
+                >
+                  {newKeyset ? "Disabled" : "Enabled"}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ) : (
+            <></>
+          )}
           <TableRow>
             <TableCell className="font-bold">Status: </TableCell>
             <TableCell>
@@ -601,6 +643,18 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
             <TableCell className="font-bold">Sum: </TableCell>
             <TableCell>{formatNumber("en", value.bill?.sum)} sat</TableCell>
           </TableRow>
+          {(value.status === "Offered" ||
+            value.status === "Accepted" ||
+            value.status === "Rejected" ||
+            value.status === "OfferExpired") &&
+          "discounted" in value ? (
+            <TableRow>
+              <TableCell className="font-bold">Discounted: </TableCell>
+              <TableCell>{formatNumber("en", value.discounted)} crsat</TableCell>
+            </TableRow>
+          ) : (
+            <></>
+          )}
           <TableRow>
             <TableCell className="font-bold">Maturity date: </TableCell>
             <TableCell>
@@ -646,7 +700,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
         </TableBody>
       </Table>
 
-      <QuoteActions value={value} isFetching={isFetching} />
+      <QuoteActions value={value} isFetching={isFetching} newKeyset={newKeyset} />
     </div>
   )
 }

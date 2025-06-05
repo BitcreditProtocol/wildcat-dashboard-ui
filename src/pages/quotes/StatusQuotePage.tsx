@@ -16,7 +16,7 @@ import { formatNumber, truncateString } from "@/utils/strings"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-type QuoteStatus = "Accepted" | "Denied" | "Expired" | "Offered" | "Pending" | "Rejected" | "Cancelled"
+type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled"
 
 interface StatusQuotePageProps {
   status?: QuoteStatus

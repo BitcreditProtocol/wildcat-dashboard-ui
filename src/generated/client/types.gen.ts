@@ -135,9 +135,21 @@ export type InfoReply = {
 } | {
     bill: BillInfo;
     id: string;
-    signatures: Array<BlindSignature>;
+    status: 'Canceled';
+    tstamp: string;
+} | {
+    bill: BillInfo;
+    id: string;
+    keyset_id: string;
     status: 'Offered';
+    discounted: number;
     ttl: string;
+} | {
+    bill: BillInfo;
+    id: string;
+    status: 'OfferExpired';
+    discounted: number;
+    tstamp: string;
 } | {
     bill: BillInfo;
     id: string;
@@ -145,12 +157,14 @@ export type InfoReply = {
 } | {
     bill: BillInfo;
     id: string;
-    signatures: Array<BlindSignature>;
+    keyset_id: string;
+    discounted: number;
     status: 'Accepted';
 } | {
     bill: BillInfo;
     id: string;
     status: 'Rejected';
+    discounted: number;
     tstamp: string;
 };
 
@@ -402,7 +416,7 @@ export type ActivateKeysetData = {
     body: ActivateKeysetRequest;
     path?: never;
     query?: never;
-    url: '/v1/admin/keys/activate';
+    url: '/v1/admin/keys/enable';
 };
 
 export type ActivateKeysetErrors = {
@@ -455,10 +469,30 @@ export type OnChainBalanceData = {
   confirmed: number;
 };
 
-
 export type OnChainData = {
   body?: never;
   path?: never;
   query?: never;
   url: '/v1/admin/onchain/balance';
+};
+
+/**
+ * Keyset information
+ */
+
+export type KeySetInfo = {
+  id: string;
+  unit: CurrencyUnit;
+  active: boolean;
+  input_fee_ppk: number;
+};
+
+
+export type KeysetInfoData = {
+  body?: never;
+  path: {
+      keyset_id: string;
+  };
+  query?: never;
+  url: '/v1/admin/keysets/{keyset_id}';
 };
