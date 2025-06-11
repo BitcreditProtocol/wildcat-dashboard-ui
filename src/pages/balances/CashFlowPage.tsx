@@ -4,9 +4,6 @@ import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
-import { fetchBalances } from "@/lib/api"
-import { useSuspenseQuery } from "@tanstack/react-query"
-import useLocalStorage from "@/hooks/use-local-storage"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 
 function Loader() {
@@ -88,23 +85,6 @@ function PageBody() {
   )
 }
 
-function DevSection() {
-  const [devMode] = useLocalStorage("devMode", false)
-  const { data } = useSuspenseQuery({
-    queryKey: ["balances"],
-    queryFn: fetchBalances,
-  })
-
-  return (
-    <>
-      {devMode && (
-        <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      )}
-    </>
-  )
-}
 
 export default function CashFlowPage() {
   return (
@@ -122,7 +102,6 @@ export default function CashFlowPage() {
 
       <Suspense fallback={<Loader />}>
         <PageBody />
-        <DevSection />
       </Suspense>
     </>
   )

@@ -1,5 +1,5 @@
 import { API_URL } from "@/constants/api"
-import { BALANCES, INFO } from "@/constants/endpoints"
+import { INFO } from "@/constants/endpoints"
 
 const apiFetch = async <T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${API_URL}${endpoint}`
@@ -77,10 +77,3 @@ export interface BalancesResponse {
   }
 }
 
-export async function fetchBalances(): Promise<BalancesResponse> {
-  return apiFetch<BalancesResponse>(BALANCES, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-}
