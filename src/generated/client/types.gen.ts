@@ -452,14 +452,14 @@ export type DebitData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/v1/admin/balance/debit';
+    url: '/v1/admin/treasury/debit/balance';
 };
 
 export type CreditData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/v1/admin/balance/credit';
+    url: '/v1/admin/treasury/credit/balance';
 };
 
 export type OnChainBalanceData = {
@@ -473,7 +473,7 @@ export type OnChainData = {
   body?: never;
   path?: never;
   query?: never;
-  url: '/v1/admin/onchain/balance';
+  url: '/v1/admin/ebpp/onchain/balance';
 };
 
 /**

@@ -107,21 +107,21 @@ export const activateKeyset = <ThrowOnError extends boolean = false>(options: Op
 
 export const debitBalance = <ThrowOnError extends boolean = false>(options: Options<DebitData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<ECashBalance, unknown, ThrowOnError>({
-        url: '/v1/admin/balance/debit',
+        url: '/v1/admin/treasury/debit/balance',
         ...options
     });
 };
 
 export const creditBalance = <ThrowOnError extends boolean = false>(options: Options<CreditData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<ECashBalance, unknown, ThrowOnError>({
-        url: '/v1/admin/balance/credit',
+        url: '/v1/admin/treasury/credit/balance',
         ...options
     });
 };
 
 export const onchainBalance = <ThrowOnError extends boolean = false>(options: Options<OnChainData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<OnChainBalanceData, unknown, ThrowOnError>({
-        url: '/v1/admin/onchain/balance',
+        url: '/v1/admin/ebpp/onchain/balance',
         ...options
     });
 };

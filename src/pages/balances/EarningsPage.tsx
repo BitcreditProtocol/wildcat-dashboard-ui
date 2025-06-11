@@ -2,9 +2,6 @@ import { Suspense, useState } from "react"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
-import { fetchBalances } from "@/lib/api"
-import { useSuspenseQuery } from "@tanstack/react-query"
-import useLocalStorage from "@/hooks/use-local-storage"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Link } from "react-router"
 import { Button } from "@/components/ui/button"
@@ -85,23 +82,6 @@ function PageBody() {
   )
 }
 
-function DevSection() {
-  const [devMode] = useLocalStorage("devMode", false)
-  const { data } = useSuspenseQuery({
-    queryKey: ["balances"],
-    queryFn: fetchBalances,
-  })
-
-  return (
-    <>
-      {devMode && (
-        <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      )}
-    </>
-  )
-}
 
 export default function EarningsPage() {
   return (
@@ -111,7 +91,6 @@ export default function EarningsPage() {
 
       <Suspense fallback={<Loader />}>
         <PageBody />
-        <DevSection />
       </Suspense>
     </>
   )
