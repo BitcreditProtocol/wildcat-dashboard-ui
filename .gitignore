@@ -28,3 +28,4 @@ coverage/
 tsconfig.app.tsbuildinfo
 tsconfig.node.tsbuildinfo
 *storybook.log
+.env
