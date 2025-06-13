@@ -604,9 +604,15 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
       <Table className="my-2">
         <TableBody>
           <TableRow>
-            <TableCell className="font-bold">ID: </TableCell>
+            <TableCell className="font-bold">Quote ID: </TableCell>
             <TableCell>
               <span className="font-mono">{value.id}</span>
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-bold">Bill ID: </TableCell>
+            <TableCell>
+              <span className="font-mono">{value.bill.id}</span>
             </TableCell>
           </TableRow>
           {(value.status === "Offered" || value.status === "Accepted") && "keyset_id" in value ? (
