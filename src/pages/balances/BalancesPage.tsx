@@ -205,7 +205,7 @@ function useBalances() {
           : "0",
       unit: "BTC",
     },
-    eiou: { amount: "0", unit: "eIOU" },
+    eiou: { amount: "0", unit: "e-IOU" },
     credit: {
       amount: creditQuery.data && "amount" in creditQuery.data ? String(creditQuery.data.amount) : "0",
       unit: creditQuery.data && "unit" in creditQuery.data ? String(creditQuery.data.unit) : "credit",
