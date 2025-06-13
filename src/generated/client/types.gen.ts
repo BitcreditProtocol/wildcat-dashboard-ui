@@ -496,3 +496,38 @@ export type KeysetInfoData = {
   query?: never;
   url: '/v1/admin/keysets/{keyset_id}';
 };
+
+/**
+ * Request Mint
+ */
+
+ // pub struct RequestToMintFromEBillRequest {
+ //     pub ebill_id: String,
+ //     pub amount: Amount,
+ // }
+
+ export type RequestToMintRequest = {
+   id: string;
+   amount: number;
+ };
+
+ export type RequestToMintResponseInfo = {
+   request_id: string;
+   request: string;
+ };
+
+ export type RequestToMintResponse = {
+     /**
+      * Successful response
+      */
+     200: RequestToMintResponseInfo;
+ };
+
+ export type RequestToMintData = {
+   body?: never;
+   path: {
+       keyset_id: string;
+   };
+   query?: never;
+   url: '/v1/admin/treasury/debit/request_to_mint_from_ebill'
+ };
