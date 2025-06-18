@@ -26,7 +26,6 @@ jobs:
       contents: read
       deployments: write
 
-    # define environments
     strategy:
       matrix:
         include:
@@ -42,11 +41,6 @@ jobs:
             vite_keycloak_url: ${{ vars.VITE_KEYCLOAK_URL_DOCKER }}
             vite_keycloak_realm: 'dev'
             vite_keycloak_client_id: 'bff-dashboard'
-    
-    # only run job for the selected environment on manual dispatch or on push to a tag
-    if: |
-      github.event_name == 'push' || 
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment)
 
     steps:
       - name: Checkout repository
@@ -55,7 +49,6 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 0
 
-      # only allow tags on manual dispatch
       - name: Validate Tag on Manual Dispatch
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -94,10 +87,9 @@ jobs:
     
       - name: Deploy ${{ matrix.environment }} to Cloudflare Pages (PRODUCTION)
         id: deploy_production
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Target the production branch ('main' or 'master') for manual deployments
           command: pages deploy dist --project-name=${{ matrix.project_name }} --branch=master
