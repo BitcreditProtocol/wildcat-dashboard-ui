@@ -1,0 +1,103 @@
+name: Deploy to wildcat-docker (Cloudflare Pages)
+
+on:
+  # deploy new tag to CF project PREVIEW
+  push:
+    tags:
+      - 'v*'
+
+  # promote a version to CF project PRODUCTION
+  workflow_dispatch:
+    inputs:
+        environment:
+          description: 'target'
+          required: true
+          default: 'wildcat-dev-docker'
+          type: choice
+          options:
+            - wildcat-docker
+            - wildcat-dev-docker
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    # define environments
+    strategy:
+      matrix:
+        include:
+          - environment: 'wildcat-dev-docker'
+            project_name: ${{ secrets.CLOUDFLARE_PROJECT_DEV_DOCKER }}
+            vite_api_base_url: ${{ vars.VITE_API_BASE_URL_DEV_DOCKER }}
+            vite_keycloak_url: ${{ vars.VITE_KEYCLOAK_URL_DEV_DOCKER }}
+            vite_keycloak_realm: 'dev'
+            vite_keycloak_client_id: 'bff-dashboard'
+          - environment: 'wildcat-docker'
+            project_name: ${{ secrets.CLOUDFLARE_PROJECT_DOCKER }}
+            vite_api_base_url: ${{ vars.VITE_API_BASE_URL_DOCKER }}
+            vite_keycloak_url: ${{ vars.VITE_KEYCLOAK_URL_DOCKER }}
+            vite_keycloak_realm: 'dev'
+            vite_keycloak_client_id: 'bff-dashboard'
+    
+    # only run job for the selected environment on manual dispatch or on push to a tag
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      # only allow tags on manual dispatch
+      - name: Validate Tag on Manual Dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ "${{ github.ref_type }}" != 'tag' ]]; then
+            echo "::error::Manual deployments must be triggered from a tag."
+            echo "::error::Please select a tag from the 'Use workflow from' dropdown, not a branch."
+            exit 1
+          fi
+          echo "✅ Validation successful: Running from tag '${{ github.ref_name }}'."
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application for ${{ matrix.environment }}
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ matrix.vite_api_base_url }}
+          VITE_KEYCLOAK_URL: ${{ matrix.vite_keycloak_url }}
+          VITE_KEYCLOAK_REALM: ${{ matrix.vite_keycloak_realm }}
+          VITE_KEYCLOAK_CLIENT_ID: ${{ matrix.vite_keycloak_client_id }}
+          VITE_API_MOCKING_ENABLED: false
+
+      - name: Deploy ${{ matrix.environment }} to Cloudflare Pages (PREVIEW)
+        id: deploy_preview
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ matrix.project_name }} --branch=preview
+    
+      - name: Deploy ${{ matrix.environment }} to Cloudflare Pages (PRODUCTION)
+        id: deploy_production
+        if: github.event_name == 'workflow_dispatch'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Target the production branch ('main' or 'master') for manual deployments
+          command: pages deploy dist --project-name=${{ matrix.project_name }} --branch=master
