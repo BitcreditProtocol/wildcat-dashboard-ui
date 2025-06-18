@@ -31,13 +31,13 @@ jobs:
       matrix:
         include:
           - environment: 'wildcat-dev-docker'
-            project_name: ${{ secrets.CLOUDFLARE_PROJECT_DEV_DOCKER }}
+            project_name: ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
             vite_api_base_url: ${{ vars.VITE_API_BASE_URL_DEV_DOCKER }}
             vite_keycloak_url: ${{ vars.VITE_KEYCLOAK_URL_DEV_DOCKER }}
             vite_keycloak_realm: 'dev'
             vite_keycloak_client_id: 'bff-dashboard'
           - environment: 'wildcat-docker'
-            project_name: ${{ secrets.CLOUDFLARE_PROJECT_DOCKER }}
+            project_name: ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
             vite_api_base_url: ${{ vars.VITE_API_BASE_URL_DOCKER }}
             vite_keycloak_url: ${{ vars.VITE_KEYCLOAK_URL_DOCKER }}
             vite_keycloak_realm: 'dev'
