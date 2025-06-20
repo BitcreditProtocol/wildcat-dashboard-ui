@@ -99,6 +99,7 @@ jobs:
       # PREVIEW branch
       - name: Deploy ${{ github.ref_name }} to PREVIEW branch of ${{ env.PROJECT_NAME }} project
         if: github.event_name == 'push'
+        id: deploy-preview
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -107,6 +108,7 @@ jobs:
       
       # VERSION branch
       - name: Deploy ${{ github.ref_name }} to VERSION branch ${{ github.ref_name }} of ${{ env.PROJECT_NAME }} project
+        id: deploy-version
         if: github.event_name == 'push'
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
@@ -116,12 +118,33 @@ jobs:
       
       # PRODUCTION branch
       - name: Deploy ${{ github.ref_name }} to PRODUCTION of ${{ env.PROJECT_NAME }} project
+        id: deploy-production
         if: github.event_name == 'workflow_dispatch'
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master --commit-message="${{ github.ref_name }}"
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master --commit-message="${{ github.ref_name }}" --commit-message=
+      
+      # print deployment URLs
+
+      - name: print PREVIEW deployment-url
+        if: steps.deploy-preview.outputs.deployment-url
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy-preview.outputs.deployment-url }}
+        run: echo $DEPLOYMENT_URL
+
+      - name: print VERSION deployment-url
+        if: steps.deploy-version.outputs.deployment-url
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy-version.outputs.deployment-url }}
+        run: echo $DEPLOYMENT_URL
+
+      - name: print PRODUCTION deployment-url
+        if: steps.deploy-production.outputs.deployment-url
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy-production.outputs.deployment-url }}
+        run: echo $DEPLOYMENT_URL
 
 
 ######################################################################
@@ -199,6 +222,7 @@ jobs:
       # PREVIEW branch
       - name: Deploy ${{ github.ref_name }} to PREVIEW branch of ${{ env.PROJECT_NAME }} project
         if: github.event_name == 'push'
+        id: deploy-preview
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -207,6 +231,7 @@ jobs:
       
       # VERSION branch
       - name: Deploy ${{ github.ref_name }} to VERSION branch ${{ github.ref_name }} of ${{ env.PROJECT_NAME }} project
+        id: deploy-version
         if: github.event_name == 'push'
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
@@ -216,9 +241,30 @@ jobs:
       
       # PRODUCTION branch
       - name: Deploy ${{ github.ref_name }} to PRODUCTION of ${{ env.PROJECT_NAME }} project
+        id: deploy-production
         if: github.event_name == 'workflow_dispatch'
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master --commit-message="${{ github.ref_name }}"
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master --commit-message="${{ github.ref_name }}" --commit-message=
+      
+      # print deployment URLs
+
+      - name: print PREVIEW deployment-url
+        if: steps.deploy-preview.outputs.deployment-url
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy-preview.outputs.deployment-url }}
+        run: echo $DEPLOYMENT_URL
+
+      - name: print VERSION deployment-url
+        if: steps.deploy-version.outputs.deployment-url
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy-version.outputs.deployment-url }}
+        run: echo $DEPLOYMENT_URL
+
+      - name: print PRODUCTION deployment-url
+        if: steps.deploy-production.outputs.deployment-url
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy-production.outputs.deployment-url }}
+        run: echo $DEPLOYMENT_URL
