@@ -35,18 +35,18 @@ jobs:
       deployments: write
 
     # set env
-    name: Deploy to  ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
+    name: Deploy to ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
     
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'wildcat-dev-docker')
 
     env:
-      PROJECT_NAME:             ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
-      VITE_API_BASE_URL:        ${{ vars.VITE_API_BASE_URL_DEV_DOCKER }}
-      VITE_KEYCLOAK_URL:        ${{ vars.VITE_KEYCLOAK_URL_DEV_DOCKER  }}
-      VITE_KEYCLOAK_REALM:      ${{ vars.VITE_KEYCLOAK_REALM_DEV_DOCKER || 'dev'  }}
-      VITE_KEYCLOAK_CLIENT_ID:  ${{ vars.VITE_KEYCLOAK_CLIENT_ID_DEV_DOCKER || 'bff-dashboard' }}
+      PROJECT_NAME: ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_DEV_DOCKER }}
+      VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL_DEV_DOCKER  }}
+      VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM_DEV_DOCKER || 'dev'  }}
+      VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID_DEV_DOCKER || 'bff-dashboard' }}
       VITE_API_MOCKING_ENABLED: 'false'
 
     # checkout, validate on dispatch, setup and build, deploy
@@ -70,7 +70,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: ${{ env.NODE_VERSION}}
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Cache node modules
         id: cache-npm
@@ -135,18 +135,18 @@ jobs:
       deployments: write
 
     # set env
-    name: Deploy to  ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
+    name: Deploy to ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
     
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'wildcat-docker')
 
     env:
-      PROJECT_NAME:             ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
-      VITE_API_BASE_URL:        ${{ vars.VITE_API_BASE_URL_DOCKER }}
-      VITE_KEYCLOAK_URL:        ${{ vars.VITE_KEYCLOAK_URL_DOCKER  }}
-      VITE_KEYCLOAK_REALM:      ${{ vars.VITE_KEYCLOAK_REALM_DOCKER || 'dev'  }}
-      VITE_KEYCLOAK_CLIENT_ID:  ${{ vars.VITE_KEYCLOAK_CLIENT_ID_DOCKER || 'bff-dashboard' }}
+      PROJECT_NAME: ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_DOCKER }}
+      VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL_DOCKER  }}
+      VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM_DOCKER || 'dev'  }}
+      VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID_DOCKER || 'bff-dashboard' }}
       VITE_API_MOCKING_ENABLED: 'false'
 
     # checkout, validate on dispatch, setup and build, deploy
@@ -170,7 +170,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: ${{ env.NODE_VERSION}}
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Cache node modules
         id: cache-npm
