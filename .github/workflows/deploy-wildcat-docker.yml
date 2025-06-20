@@ -1,7 +1,7 @@
-name: Deploy to wildcat-docker (Cloudflare Pages)
+name: Deploy wildcat-dashboard-ui (Cloudflare Pages)
 
 on:
-  # deploy new tag to CF project PREVIEW
+  # auto deploy new tag to CF project PREVIEW
   push:
     tags:
       - 'v*'
@@ -15,41 +15,49 @@ on:
           default: 'wildcat-dev-docker'
           type: choice
           options:
-            - wildcat-docker
             - wildcat-dev-docker
+            - wildcat-docker
+
+env:
+  NODE_VERSION: 22
+
 
 jobs:
-  deploy:
 
+######################################################################
+# ENV:          wildcat-dev-docker
+# CF project:   wildcat-dev-docker
+######################################################################
+  deploy-wildcat-dev-docker:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
 
-    strategy:
-      matrix:
-        include:
-          - environment: 'wildcat-dev-docker'
-            project_name: ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
-            vite_api_base_url: ${{ vars.VITE_API_BASE_URL_DEV_DOCKER }}
-            vite_keycloak_url: ${{ vars.VITE_KEYCLOAK_URL_DEV_DOCKER }}
-            vite_keycloak_realm: 'dev'
-            vite_keycloak_client_id: 'bff-dashboard'
-          - environment: 'wildcat-docker'
-            project_name: ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
-            vite_api_base_url: ${{ vars.VITE_API_BASE_URL_DOCKER }}
-            vite_keycloak_url: ${{ vars.VITE_KEYCLOAK_URL_DOCKER }}
-            vite_keycloak_realm: 'dev'
-            vite_keycloak_client_id: 'bff-dashboard'
+    # set env
+    name: Deploy to  ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
+    
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'wildcat-dev-docker')
 
+    env:
+      PROJECT_NAME:             ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
+      VITE_API_BASE_URL:        ${{ vars.VITE_API_BASE_URL_DEV_DOCKER }}
+      VITE_KEYCLOAK_URL:        ${{ vars.VITE_KEYCLOAK_URL_DEV_DOCKER  }}
+      VITE_KEYCLOAK_REALM:      ${{ vars.VITE_KEYCLOAK_REALM_DEV_DOCKER || 'dev'  }}
+      VITE_KEYCLOAK_CLIENT_ID:  ${{ vars.VITE_KEYCLOAK_CLIENT_ID_DEV_DOCKER || 'bff-dashboard' }}
+      VITE_API_MOCKING_ENABLED: 'false'
+
+    # checkout, validate on dispatch, setup and build, deploy
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout ${{ github.ref_name }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
 
-      - name: Validate Tag on Manual Dispatch
+      - name: Validate tag on manual dispatch
         if: github.event_name == 'workflow_dispatch'
         run: |
           if [[ "${{ github.ref_type }}" != 'tag' ]]; then
@@ -57,39 +65,160 @@ jobs:
             echo "::error::Please select a tag from the 'Use workflow from' dropdown, not a branch."
             exit 1
           fi
-          echo "✅ Validation successful: Running from tag '${{ github.ref_name }}'."
+          echo "Validation successful: Running from tag '${{ github.ref_name }}'."
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION}}
+
+      - name: Cache node modules
+        id: cache-npm
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: List the state of node modules
+        if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+        continue-on-error: true
+        run: npm list
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build application for ${{ matrix.environment }}
+      - name: Build app
         run: npm run build
-        env:
-          VITE_API_BASE_URL: ${{ matrix.vite_api_base_url }}
-          VITE_KEYCLOAK_URL: ${{ matrix.vite_keycloak_url }}
-          VITE_KEYCLOAK_REALM: ${{ matrix.vite_keycloak_realm }}
-          VITE_KEYCLOAK_CLIENT_ID: ${{ matrix.vite_keycloak_client_id }}
-          VITE_API_MOCKING_ENABLED: false
-
-      - name: Deploy ${{ matrix.environment }} to Cloudflare Pages (PREVIEW)
-        id: deploy_preview
+      
+      # PREVIEW branch
+      - name: Deploy ${{ github.ref_name }} to PREVIEW branch of ${{ env.PROJECT_NAME }} project
         if: github.event_name == 'push'
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ matrix.project_name }} --branch=preview
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=preview
+      
+      # VERSION branch
+      - name: Deploy ${{ github.ref_name }} to VERSION branch ${{ github.ref_name }} of ${{ env.PROJECT_NAME }} project
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }}
+      
+      # PRODUCTION branch
+      - name: Deploy ${{ github.ref_name }} to PRODUCTION of ${{ env.PROJECT_NAME }} project
+        if: github.event_name == 'workflow_dispatch'
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }}
+
+
+######################################################################
+# ENV:          wildcat-docker
+# CF project:   wildcat-docker
+######################################################################
+  deploy-wildcat-docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    # set env
+    name: Deploy to  ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
     
-      - name: Deploy ${{ matrix.environment }} to Cloudflare Pages (PRODUCTION)
-        id: deploy_production
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment
-        uses: cloudflare/wrangler-action@v3
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'wildcat-docker')
+
+    env:
+      PROJECT_NAME:             ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
+      VITE_API_BASE_URL:        ${{ vars.VITE_API_BASE_URL_DOCKER }}
+      VITE_KEYCLOAK_URL:        ${{ vars.VITE_KEYCLOAK_URL_DOCKER  }}
+      VITE_KEYCLOAK_REALM:      ${{ vars.VITE_KEYCLOAK_REALM_DOCKER || 'dev'  }}
+      VITE_KEYCLOAK_CLIENT_ID:  ${{ vars.VITE_KEYCLOAK_CLIENT_ID_DOCKER || 'bff-dashboard' }}
+      VITE_API_MOCKING_ENABLED: 'false'
+
+    # checkout, validate on dispatch, setup and build, deploy
+    steps:
+      - name: Checkout ${{ github.ref_name }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ matrix.project_name }} --branch=master
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Validate tag on manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ "${{ github.ref_type }}" != 'tag' ]]; then
+            echo "::error::Manual deployments must be triggered from a tag."
+            echo "::error::Please select a tag from the 'Use workflow from' dropdown, not a branch."
+            exit 1
+          fi
+          echo "Validation successful: Running from tag '${{ github.ref_name }}'."
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION}}
+
+      - name: Cache node modules
+        id: cache-npm
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: List the state of node modules
+        if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+        continue-on-error: true
+        run: npm list
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+      
+      # PREVIEW branch
+      - name: Deploy ${{ github.ref_name }} to PREVIEW branch of ${{ env.PROJECT_NAME }} project
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=preview
+      
+      # VERSION branch
+      - name: Deploy ${{ github.ref_name }} to VERSION branch ${{ github.ref_name }} of ${{ env.PROJECT_NAME }} project
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }}
+      
+      # PRODUCTION branch
+      - name: Deploy ${{ github.ref_name }} to PRODUCTION of ${{ env.PROJECT_NAME }} project
+        if: github.event_name == 'workflow_dispatch'
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }}
