@@ -103,7 +103,7 @@ jobs:
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=preview
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=preview --commit-message="LATEST PREVIEW ${{ github.ref_name }}"
       
       # VERSION branch
       - name: Deploy ${{ github.ref_name }} to VERSION branch ${{ github.ref_name }} of ${{ env.PROJECT_NAME }} project
@@ -112,7 +112,7 @@ jobs:
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }} --commit-message="VERSION ${{ github.ref_name }}"
       
       # PRODUCTION branch
       - name: Deploy ${{ github.ref_name }} to PRODUCTION of ${{ env.PROJECT_NAME }} project
@@ -121,7 +121,7 @@ jobs:
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master --commit-message="${{ github.ref_name }}"
 
 
 ######################################################################
@@ -203,7 +203,7 @@ jobs:
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=preview
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=preview --commit-message="LATEST PREVIEW ${{ github.ref_name }}"
       
       # VERSION branch
       - name: Deploy ${{ github.ref_name }} to VERSION branch ${{ github.ref_name }} of ${{ env.PROJECT_NAME }} project
@@ -212,7 +212,7 @@ jobs:
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }} --commit-message="VERSION ${{ github.ref_name }}"
       
       # PRODUCTION branch
       - name: Deploy ${{ github.ref_name }} to PRODUCTION of ${{ env.PROJECT_NAME }} project
@@ -221,4 +221,4 @@ jobs:
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master --commit-message="${{ github.ref_name }}"
