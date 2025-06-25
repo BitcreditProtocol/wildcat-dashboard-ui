@@ -6,13 +6,19 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { IdentityPublicData, PayeePublicData, InfoReply, AnonPublicData } from "@/generated/client"
+import {
+  IdentityPublicData,
+  PayeePublicData,
+  InfoReply,
+  AnonPublicData,
+  RequestToMintResponseInfo,
+} from "@/generated/client"
 import {
   adminLookupQuoteOptions,
   adminLookupQuoteQueryKey,
   adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
-import { activateKeyset, keysetInfo } from "@/generated/client/sdk.gen"
+import { activateKeyset, keysetInfo, requestToMint } from "@/generated/client/sdk.gen"
 import { cn, getInitials } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
 
@@ -211,12 +217,24 @@ function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDr
   )
 }
 
-function QuoteActions({ value, isFetching, newKeyset }: { value: InfoReply; isFetching: boolean; newKeyset: boolean }) {
+function QuoteActions({
+  value,
+  isFetching,
+  newKeyset,
+  ebillPaid,
+}: {
+  value: InfoReply
+  isFetching: boolean
+  newKeyset: boolean
+  ebillPaid: boolean
+}) {
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>()
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false)
   const [activateKeysetConfirmDrawerOpen, setActivateKeysetConfirmDrawerOpen] = useState(false)
+  const [requestToMintConfirmDrawerOpen, setRequestToMintConfirmDrawerOpen] = useState(false)
+  const [mintRequestResponse, setMintRequestResponse] = useState<RequestToMintResponseInfo | null>(null)
 
   const effectiveDiscount = useMemo(() => {
     if (!offerFormData) return
@@ -293,6 +311,35 @@ function QuoteActions({ value, isFetching, newKeyset }: { value: InfoReply; isFe
     },
   })
 
+  const requestToMintMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await requestToMint({
+        body: {
+          ebill_id: value.bill.id,
+          amount: value.bill.sum,
+        },
+        throwOnError: true,
+      })
+      console.log(data)
+      return data
+    },
+    onMutate: () => {
+      toast.loading("Requesting to mint…", { id: `quote-${value.id}-request-to-mint` })
+    },
+    onSettled: () => {
+      toast.dismiss(`quote-${value.id}-request-to-mint`)
+    },
+    onError: (error) => {
+      toast.error("Error while requesting to mint: " + error.message)
+      console.warn(error)
+    },
+    onSuccess: (data) => {
+      toast.success("Payment request has been created.")
+      console.log(data)
+      setMintRequestResponse(data)
+    },
+  })
+
   const onDenyQuote = () => {
     toast.loading("Denying quote…", { id: `quote-${value.id}-deny` })
     denyQuote.mutate({
@@ -325,107 +372,152 @@ function QuoteActions({ value, isFetching, newKeyset }: { value: InfoReply; isFe
   const onActivateKeyset = () => {
     activateKeysetMutation.mutate()
   }
+
+  const onRequestToMint = () => {
+    requestToMintMutation.mutate()
+  }
   return (
-    <div className="flex items-center gap-2">
-      {value.status === "Pending" ? (
-        <DenyConfirmDrawer
-          title="Confirm denying quote"
-          open={denyConfirmDrawerOpen}
-          onOpenChange={setDenyConfirmDrawerOpen}
-          onSubmit={() => {
-            onDenyQuote()
-            setDenyConfirmDrawerOpen(false)
-          }}
-        >
-          <Button
-            className="flex-1"
-            disabled={isFetching || denyQuote.isPending || value.status !== "Pending"}
-            variant={value.status !== "Pending" ? "outline" : "destructive"}
+    <>
+      <div className="flex items-center gap-2">
+        {value.status === "Pending" ? (
+          <DenyConfirmDrawer
+            title="Confirm denying quote"
+            open={denyConfirmDrawerOpen}
+            onOpenChange={setDenyConfirmDrawerOpen}
+            onSubmit={() => {
+              onDenyQuote()
+              setDenyConfirmDrawerOpen(false)
+            }}
           >
-            Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-          </Button>
-        </DenyConfirmDrawer>
-      ) : (
-        <></>
-      )}
-      {value.status === "Pending" ? (
-        <OfferFormDrawer
-          title="Offer quote"
-          description="Make an offer to the current holder of this bill"
-          value={value}
-          open={offerFormDrawerOpen}
-          onOpenChange={setOfferFormDrawerOpen}
-          onSubmit={(data) => {
-            setOfferFormData(data)
-            setOfferConfirmDrawerOpen(true)
-            setOfferFormDrawerOpen(false)
-          }}
-        >
-          <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "Pending"}>
-            Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-          </Button>
-        </OfferFormDrawer>
-      ) : (
-        <></>
-      )}
-
-      <OfferConfirmDrawer
-        title="Confirm offering quote"
-        description="Review your inputs and confirm the offer"
-        open={offerConfirmDrawerOpen}
-        onOpenChange={setOfferConfirmDrawerOpen}
-        onSubmit={() => {
-          if (!offerFormData) return
-          onOfferQuote(offerFormData)
-          setOfferConfirmDrawerOpen(false)
-        }}
-      >
-        <div className="flex flex-col justify-center gap-1 py-8 mb-8">
-          <span>
-            <span className="font-bold">Effective discount (relative):</span>{" "}
-            {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
-          </span>
-          <span>
-            <span className="font-bold">Effective discount (absolute):</span>{" "}
-            {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
-            {offerFormData?.discount.net.currency}
-          </span>
-          <span>
-            <span className="font-bold">Net amount:</span> {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
-            {offerFormData?.discount.net.currency}
-          </span>
-          <span>
-            <span className="font-bold">Valid until:</span> {offerFormData?.ttl.ttl.toDateString()} (
-            {offerFormData && humanReadableDuration("en", offerFormData.ttl.ttl)})
-          </span>
-        </div>
-      </OfferConfirmDrawer>
-
-      {value.status === "Accepted" && "keyset_id" in value ? (
-        <ConfirmDrawer
-          title="Confirm activating keyset"
-          description="Are you sure you want to activate the keyset for this quote?"
-          open={activateKeysetConfirmDrawerOpen}
-          onOpenChange={setActivateKeysetConfirmDrawerOpen}
-          onSubmit={() => {
-            onActivateKeyset()
-            setActivateKeysetConfirmDrawerOpen(false)
-          }}
-          submitButtonText="Yes, activate keyset"
-          trigger={
             <Button
               className="flex-1"
-              disabled={isFetching || activateKeysetMutation.isPending || !newKeyset}
-              variant="default"
+              disabled={isFetching || denyQuote.isPending || value.status !== "Pending"}
+              variant={value.status !== "Pending" ? "outline" : "destructive"}
             >
-              Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+              Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
-          }
-        />
-      ) : (
-        <></>
+          </DenyConfirmDrawer>
+        ) : (
+          <></>
+        )}
+        {value.status === "Pending" ? (
+          <OfferFormDrawer
+            title="Offer quote"
+            description="Make an offer to the current holder of this bill"
+            value={value}
+            open={offerFormDrawerOpen}
+            onOpenChange={setOfferFormDrawerOpen}
+            onSubmit={(data) => {
+              setOfferFormData(data)
+              setOfferConfirmDrawerOpen(true)
+              setOfferFormDrawerOpen(false)
+            }}
+          >
+            <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "Pending"}>
+              Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+            </Button>
+          </OfferFormDrawer>
+        ) : (
+          <></>
+        )}
+
+        <OfferConfirmDrawer
+          title="Confirm offering quote"
+          description="Review your inputs and confirm the offer"
+          open={offerConfirmDrawerOpen}
+          onOpenChange={setOfferConfirmDrawerOpen}
+          onSubmit={() => {
+            if (!offerFormData) return
+            onOfferQuote(offerFormData)
+            setOfferConfirmDrawerOpen(false)
+          }}
+        >
+          <div className="flex flex-col justify-center gap-1 py-8 mb-8">
+            <span>
+              <span className="font-bold">Effective discount (relative):</span>{" "}
+              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
+            </span>
+            <span>
+              <span className="font-bold">Effective discount (absolute):</span>{" "}
+              {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
+              {offerFormData?.discount.net.currency}
+            </span>
+            <span>
+              <span className="font-bold">Net amount:</span> {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
+              {offerFormData?.discount.net.currency}
+            </span>
+            <span>
+              <span className="font-bold">Valid until:</span> {offerFormData?.ttl.ttl.toDateString()} (
+              {offerFormData && humanReadableDuration("en", offerFormData.ttl.ttl)})
+            </span>
+          </div>
+        </OfferConfirmDrawer>
+
+        {value.status === "Accepted" && "keyset_id" in value ? (
+          <ConfirmDrawer
+            title="Confirm activating keyset"
+            description="Are you sure you want to activate the keyset for this quote?"
+            open={activateKeysetConfirmDrawerOpen}
+            onOpenChange={setActivateKeysetConfirmDrawerOpen}
+            onSubmit={() => {
+              onActivateKeyset()
+              setActivateKeysetConfirmDrawerOpen(false)
+            }}
+            submitButtonText="Yes, activate keyset"
+            trigger={
+              <Button
+                className="flex-1"
+                disabled={isFetching || activateKeysetMutation.isPending || !newKeyset}
+                variant="default"
+              >
+                Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+              </Button>
+            }
+          />
+        ) : (
+          <></>
+        )}
+
+        {value.status === "Accepted" && "keyset_id" in value && !ebillPaid && !newKeyset ? (
+          <ConfirmDrawer
+            title="Confirm requesting to mint"
+            description="Are you sure you want to request to mint from this e-bill?"
+            open={requestToMintConfirmDrawerOpen}
+            onOpenChange={setRequestToMintConfirmDrawerOpen}
+            onSubmit={() => {
+              onRequestToMint()
+              setRequestToMintConfirmDrawerOpen(false)
+            }}
+            submitButtonText="Yes, request to mint"
+            trigger={
+              <Button className="flex-1" disabled={isFetching || requestToMintMutation.isPending} variant="default">
+                Request to Pay {requestToMintMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+              </Button>
+            }
+          />
+        ) : (
+          <></>
+        )}
+      </div>
+
+      {mintRequestResponse && (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h3 className="font-bold mb-2">Payment Request</h3>
+          <div className="space-y-2">
+            <div>
+              <span className="font-bold">ID</span>
+              <span className="font-mono ml-2">{mintRequestResponse.request_id}</span>
+            </div>
+            <div>
+              <span className="font-bold">Details</span>
+              <div className="font-mono text-sm mt-1 p-2 bg-white rounded border break-all">
+                {mintRequestResponse.request}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   )
 }
 
@@ -706,7 +798,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
         </TableBody>
       </Table>
 
-      <QuoteActions value={value} isFetching={isFetching} newKeyset={newKeyset} />
+      <QuoteActions value={value} isFetching={isFetching} newKeyset={newKeyset} ebillPaid={ebillPaid ?? false} />
     </div>
   )
 }

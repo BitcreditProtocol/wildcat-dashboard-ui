@@ -507,7 +507,7 @@ export type KeysetInfoData = {
  // }
 
  export type RequestToMintRequest = {
-   id: string;
+   ebill_id: string;
    amount: number;
  };
 
@@ -524,10 +524,8 @@ export type KeysetInfoData = {
  };
 
  export type RequestToMintData = {
-   body?: never;
-   path: {
-       keyset_id: string;
-   };
+   body?: RequestToMintRequest;
+   path?: never;
    query?: never;
    url: '/v1/admin/treasury/debit/request_to_mint_from_ebill'
  };
