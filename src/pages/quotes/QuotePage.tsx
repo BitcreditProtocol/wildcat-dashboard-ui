@@ -320,22 +320,20 @@ function QuoteActions({
         },
         throwOnError: true,
       })
-      console.log(data)
       return data
     },
     onMutate: () => {
-      toast.loading("Requesting to mint…", { id: `quote-${value.id}-request-to-mint` })
+      toast.loading("Requesting to pay…", { id: `quote-${value.id}-request-to-mint` })
     },
     onSettled: () => {
-      toast.dismiss(`quote-${value.id}-request-to-mint`)
+      toast.dismiss(`quote-${value.id}-request-to-pay`)
     },
     onError: (error) => {
-      toast.error("Error while requesting to mint: " + error.message)
+      toast.error("Error while requesting to pay")
       console.warn(error)
     },
     onSuccess: (data) => {
       toast.success("Payment request has been created.")
-      console.log(data)
       setMintRequestResponse(data)
     },
   })
