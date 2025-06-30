@@ -1,55 +1,128 @@
 name: Deploy wildcat-dashboard-ui (Cloudflare Pages)
 
 on:
-  # auto deploy new tag to CF project PREVIEW
   push:
     tags:
       - 'v*'
-
-  # promote a version to CF project PRODUCTION
+    branches:
+      - 'master'
   workflow_dispatch:
     inputs:
         environment:
           description: 'target'
           required: true
-          default: 'wildcat-dev-docker'
+          default: 'production'
           type: choice
           options:
-            - wildcat-dev-docker
-            - wildcat-docker
-
-env:
-  NODE_VERSION: 22
+            - dev
+            - staging
+            - production
 
 
 jobs:
 
 ######################################################################
-# ENV:          wildcat-dev-docker
-# CF project:   wildcat-dev-docker
+# ENV:          dev
+# CF project:   wildcat-dashboard
 ######################################################################
-  deploy-wildcat-dev-docker:
+  deploy-dev:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
+    concurrency:
+      group: 'deploy-dev-${{ github.ref_name }}'
+      cancel-in-progress: true
 
-    # set env
-    name: Deploy to ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
-    
+    # SET ENVIRONMENT
+    environment: dev
+    name: Deploy to dev (wildcat-dashboard)
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev'
+
+    ##############################################################################
+    # keep section similar, dev has different validation step
+    env:
+      CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
+      NODE_VERSION: ${{ vars.NODE_VERSION }}
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL  }}
+      VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM  }}
+      VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID }}
+      VITE_API_MOCKING_ENABLED: ${{ vars.VITE_API_MOCKING_ENABLED }}
+
+    steps:
+      - name: Checkout ${{ github.ref_name }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+      
+      # for dev: only allow dev branch
+      - name: Validate correct branch on manual dispatch
+        run: |
+          if [[ "${{ github.ref_name }}" != 'dev' ]]; then
+            echo "::error::Manual deployments to the 'dev' environment must be triggered from the 'dev' branch."
+            echo "::error::Please select the 'dev' branch from the 'Use workflow from' dropdown."
+            exit 1
+          fi
+          echo "Validation successful: Running from 'dev' branch."
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+      ##############################################################################
+      # Customize deployment triggers
+
+      # DEV: manual dispatch, branch dev
+      - name: Deploy ${{ github.ref_name }} to DEV of ${{ env.CLOUDFLARE_PROJECT }} project
+        id: deploy-dev-dispatch
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=dev --commit-message="MANUAL DISPATCH ${{ github.sha }}" --commit-hash=${{ github.sha }} --commit-dirty=true
+
+
+######################################################################
+# ENV:          staging
+# CF project:   wildcat-dashboard-staging
+######################################################################
+  deploy-staging:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    concurrency:
+      group: 'deploy-staging-${{ github.ref_name }}'
+      cancel-in-progress: true
+
+    # SET ENVIRONMENT
+    environment: staging
+    name: Deploy to staging (wildcat-dashboard-staging)
     if: |
       github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'wildcat-dev-docker')
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
 
+    ##############################################################################
+    # keep section similar
     env:
-      PROJECT_NAME: ${{ vars.CLOUDFLARE_PROJECT_DEV_DOCKER }}
-      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_DEV_DOCKER }}
-      VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL_DEV_DOCKER  }}
-      VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM_DEV_DOCKER || 'dev'  }}
-      VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID_DEV_DOCKER || 'bff-dashboard' }}
-      VITE_API_MOCKING_ENABLED: 'false'
+      CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
+      NODE_VERSION: ${{ vars.NODE_VERSION }}
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL  }}
+      VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM  }}
+      VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID }}
+      VITE_API_MOCKING_ENABLED: ${{ vars.VITE_API_MOCKING_ENABLED }}
 
-    # checkout, validate on dispatch, setup and build, deploy
     steps:
       - name: Checkout ${{ github.ref_name }}
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -71,108 +144,79 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
-      - name: List the state of node modules
-        if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
-        continue-on-error: true
-        run: npm list
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build app
         run: npm run build
+
+      ##############################################################################
+      # Customize deployment triggers
       
-      # PREVIEW branch
-      - name: Deploy ${{ github.ref_name }} to PREVIEW branch of ${{ env.PROJECT_NAME }} project
-        if: github.event_name == 'push'
-        id: deploy-preview
+      # STAGING PREVIEW: on push, branch master
+      - name: Deploy ${{ github.ref_name }} to STAGING PREVIEW of ${{ env.CLOUDFLARE_PROJECT }} project
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        id: deploy-staging-preview-push-master
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=preview --commit-message="LATEST PREVIEW ${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
-      
-      # VERSION branch
-      - name: Deploy ${{ github.ref_name }} to VERSION branch ${{ github.ref_name }} of ${{ env.PROJECT_NAME }} project
-        id: deploy-version
-        if: github.event_name == 'push'
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=preview --commit-message="PREVIEW ${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
+
+      # STAGING PROD: on push, with tag
+      - name: Deploy ${{ github.ref_name }} to STAGING PROD of ${{ env.CLOUDFLARE_PROJECT }} project
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        id: deploy-staging-push-tag
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }} --commit-message="VERSION ${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
-      
-      # PRODUCTION branch
-      - name: Deploy ${{ github.ref_name }} to PRODUCTION of ${{ env.PROJECT_NAME }} project
-        id: deploy-production
-        if: github.event_name == 'workflow_dispatch'
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=master --commit-message="${{ github.ref_name }} (TAG PUSH)" --commit-hash=${{ github.sha }} --commit-dirty=true
+
+      # STAGING PROD: on manual dispatch
+      - name: Deploy ${{ github.ref_name }} to STAGING PROD of ${{ env.CLOUDFLARE_PROJECT }} project
+        id: deploy-staging-dispatch
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master --commit-message="${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
-      
-      # print deployment URLs
-
-      - name: print PREVIEW deployment-url
-        if: steps.deploy-preview.outputs.deployment-url
-        env:
-          DEPLOYMENT_URL_PREVIEW: ${{ steps.deploy-preview.outputs.deployment-url }}
-        run: echo $DEPLOYMENT_URL_PREVIEW
-
-      - name: print VERSION deployment-url
-        if: steps.deploy-version.outputs.deployment-url
-        env:
-          DEPLOYMENT_URL_VERSION: ${{ steps.deploy-version.outputs.deployment-url }}
-        run: echo $DEPLOYMENT_URL_VERSION
-
-      - name: print PRODUCTION deployment-url
-        if: steps.deploy-production.outputs.deployment-url
-        env:
-          DEPLOYMENT_URL_PRODUCTION: ${{ steps.deploy-production.outputs.deployment-url }}
-        run: echo $DEPLOYMENT_URL_PRODUCTION
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=master --commit-message="${{ github.ref_name }} (DISPATCH)" --commit-hash=${{ github.sha }} --commit-dirty=true
 
 
 ######################################################################
-# ENV:          wildcat-docker
-# CF project:   wildcat-docker
+# ENV:          production
+# CF project:   wildcat-dashboard-production
 ######################################################################
-  deploy-wildcat-docker:
+  deploy-production:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
+    concurrency:
+      group: 'deploy-production-${{ github.ref_name }}'
+      cancel-in-progress: true
 
-    # set env
-    name: Deploy to ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
-    
+    # SET ENVIRONMENT
+    environment: production
+    name: Deploy to production (wildcat-dashboard-production)
     if: |
       github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'wildcat-docker')
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
 
+    ##############################################################################
+    # keep section similar
     env:
-      PROJECT_NAME: ${{ vars.CLOUDFLARE_PROJECT_DOCKER }}
-      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_DOCKER }}
-      VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL_DOCKER  }}
-      VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM_DOCKER || 'dev'  }}
-      VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID_DOCKER || 'bff-dashboard' }}
-      VITE_API_MOCKING_ENABLED: 'false'
+      CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
+      NODE_VERSION: ${{ vars.NODE_VERSION }}
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL  }}
+      VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM  }}
+      VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID }}
+      VITE_API_MOCKING_ENABLED: ${{ vars.VITE_API_MOCKING_ENABLED }}
 
-    # checkout, validate on dispatch, setup and build, deploy
     steps:
       - name: Checkout ${{ github.ref_name }}
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -194,77 +238,34 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
-      - name: List the state of node modules
-        if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
-        continue-on-error: true
-        run: npm list
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build app
         run: npm run build
+
+
+      ##############################################################################
+      # Customize deployment triggers
       
-      # PREVIEW branch
-      - name: Deploy ${{ github.ref_name }} to PREVIEW branch of ${{ env.PROJECT_NAME }} project
-        if: github.event_name == 'push'
-        id: deploy-preview
+      # PRODUCTION PREVIEW: on push, with tag
+      - name: Deploy ${{ github.ref_name }} to PRODUCTION PREVIEW of ${{ env.CLOUDFLARE_PROJECT }} project
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        id: deploy-production-preview-push-tag
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=preview --commit-message="LATEST PREVIEW ${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
-      
-      # VERSION branch
-      - name: Deploy ${{ github.ref_name }} to VERSION branch ${{ github.ref_name }} of ${{ env.PROJECT_NAME }} project
-        id: deploy-version
-        if: github.event_name == 'push'
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=preview --commit-message="PREVIEW ${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
+
+      # PRODUCTION PROD: manual dispatch, with tag
+      - name: Deploy ${{ github.ref_name }} to PRODUCTION PROD of ${{ env.CLOUDFLARE_PROJECT }} project
+        id: deploy-production-dispatch
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }} --commit-message="VERSION ${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
-      
-      # PRODUCTION branch
-      - name: Deploy ${{ github.ref_name }} to PRODUCTION of ${{ env.PROJECT_NAME }} project
-        id: deploy-production
-        if: github.event_name == 'workflow_dispatch'
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
-        with:
-          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=master --commit-message="${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
-      
-      # print deployment URLs
-
-      - name: print PREVIEW deployment-url
-        if: steps.deploy-preview.outputs.deployment-url
-        env:
-          DEPLOYMENT_URL_PREVIEW: ${{ steps.deploy-preview.outputs.deployment-url }}
-        run: echo $DEPLOYMENT_URL_PREVIEW
-
-      - name: print VERSION deployment-url
-        if: steps.deploy-version.outputs.deployment-url
-        env:
-          DEPLOYMENT_URL_VERSION: ${{ steps.deploy-version.outputs.deployment-url }}
-        run: echo $DEPLOYMENT_URL_VERSION
-
-      - name: print PRODUCTION deployment-url
-        if: steps.deploy-production.outputs.deployment-url
-        env:
-          DEPLOYMENT_URL_PRODUCTION: ${{ steps.deploy-production.outputs.deployment-url }}
-        run: echo $DEPLOYMENT_URL_PRODUCTION
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=master --commit-message="${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
