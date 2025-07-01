@@ -501,11 +501,6 @@ export type KeysetInfoData = {
  * Request Mint
  */
 
- // pub struct RequestToMintFromEBillRequest {
- //     pub ebill_id: String,
- //     pub amount: Amount,
- // }
-
  export type RequestToMintRequest = {
    ebill_id: string;
    amount: number;
@@ -529,3 +524,41 @@ export type KeysetInfoData = {
    query?: never;
    url: '/v1/admin/treasury/debit/request_to_mint_from_ebill'
  };
+
+ /**
+  * Node ID
+  */
+
+  export type IdentityDetailRequest = {
+  };
+
+  export type IdentityDetailInfo = {
+    node_id: string;
+    name: string;
+    email: string;
+    bitcoin_public_key: string;
+    npub: string;
+    postal_address: PostalAddress;
+    date_of_birth: string;
+    country_of_birth: string | null;
+    city_of_birth: string | null;
+    identification_number: string | null;
+    profile_picture_file: string | null;
+    identity_document_file: string | null;
+    nostr_relays: Array<string>;
+  };
+
+  export type IdentityDetailResponse = {
+      /**
+       * Successful response
+       */
+      200: IdentityDetailInfo;
+  };
+
+
+  export type IdentityDetailData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/identity/detail'
+  };
