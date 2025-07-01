@@ -23,6 +23,10 @@ function PageBody() {
     gcTime: Infinity,
   })
 
+  if (!data) {
+    return <></>
+  }
+
   return (
     <>
       <div className="flex flex-col gap-2 bg-accent text-accent-foreground rounded-lg p-4 my-2">
