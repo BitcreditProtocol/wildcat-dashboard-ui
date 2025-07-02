@@ -535,11 +535,11 @@ export type KeysetInfoData = {
   export type IdentityDetailInfo = {
     node_id: string;
     name: string;
-    email: string;
+    email: string | null;
     bitcoin_public_key: string;
     npub: string;
-    postal_address: PostalAddress;
-    date_of_birth: string;
+    postal_address: PostalAddress | null;
+    date_of_birth: string | null;
     country_of_birth: string | null;
     city_of_birth: string | null;
     identification_number: string | null;

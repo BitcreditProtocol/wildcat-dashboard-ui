@@ -24,7 +24,7 @@ function PageBody() {
   })
 
   if (!data) {
-    return <></>
+    return <>No identity found</>
   }
 
   return (
@@ -36,14 +36,18 @@ function PageBody() {
             <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Name</span>
             <span className="font-semibold text-base">{data.name}</span>
           </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Email</span>
-            <span className="font-mono text-sm text-muted-foreground">{data.email}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Date of Birth</span>
-            <span className="text-sm">{data.date_of_birth}</span>
-          </div>
+          {data.email && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Email</span>
+              <span className="font-mono text-sm text-muted-foreground">{data.email}</span>
+            </div>
+          )}
+          {data.date_of_birth && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Date of Birth</span>
+              <span className="text-sm">{data.date_of_birth}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -71,19 +75,21 @@ function PageBody() {
         </div>
       </div>
 
-      <div className="bg-card text-card-foreground rounded-lg border p-6">
-        <h3 className="text-lg font-semibold mb-4">Address</h3>
-        <div className="flex flex-col gap-1">
-          <div className="text-sm leading-relaxed">
-            <div className="font-medium">{data.postal_address.address}</div>
-            <div className="text-muted-foreground">
-              {data.postal_address.city}
-              {data.postal_address.zip && `, ${data.postal_address.zip}`}
+      {data.postal_address && (
+        <div className="bg-card text-card-foreground rounded-lg border p-6">
+          <h3 className="text-lg font-semibold mb-4">Address</h3>
+          <div className="flex flex-col gap-1">
+            <div className="text-sm leading-relaxed">
+              <div className="font-medium">{data.postal_address.address}</div>
+              <div className="text-muted-foreground">
+                {data.postal_address.city}
+                {data.postal_address.zip && `, ${data.postal_address.zip}`}
+              </div>
+              <div className="text-muted-foreground">{data.postal_address.country}</div>
             </div>
-            <div className="text-muted-foreground">{data.postal_address.country}</div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
