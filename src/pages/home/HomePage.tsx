@@ -17,14 +17,18 @@ function PageBody() {
     queryKey: ["identity-detail"],
     queryFn: async () => {
       const response = await identityDetail()
-      return response.data
+      return response.data ?? null
     },
     staleTime: Infinity,
     gcTime: Infinity,
   })
 
   if (!data) {
-    return <>No identity found</>
+    return (
+      <div className="bg-card text-card-foreground rounded-lg border p-6">
+        <div className="text-center text-muted-foreground">No identity found</div>
+      </div>
+    )
   }
 
   return (
