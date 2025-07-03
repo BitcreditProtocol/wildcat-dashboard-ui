@@ -18,7 +18,7 @@ import {
   adminLookupQuoteQueryKey,
   adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
-import { activateKeyset, keysetInfo, requestToMint } from "@/generated/client/sdk.gen"
+import { activateKeyset, keysetInfo, paymentStatus, requestToMint } from "@/generated/client/sdk.gen"
 import { cn, getInitials } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
 
@@ -222,11 +222,13 @@ function QuoteActions({
   isFetching,
   newKeyset,
   ebillPaid,
+  requestedToPay,
 }: {
   value: InfoReply
   isFetching: boolean
   newKeyset: boolean
   ebillPaid: boolean
+  requestedToPay: boolean
 }) {
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>()
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
@@ -323,7 +325,7 @@ function QuoteActions({
       return data
     },
     onMutate: () => {
-      toast.loading("Requesting to pay…", { id: `quote-${value.id}-request-to-mint` })
+      toast.loading("Requesting to pay…", { id: `quote-${value.id}-request-to-pay` })
     },
     onSettled: () => {
       toast.dismiss(`quote-${value.id}-request-to-pay`)
@@ -476,7 +478,7 @@ function QuoteActions({
           <></>
         )}
 
-        {value.status === "Accepted" && "keyset_id" in value && !ebillPaid && !newKeyset ? (
+        {value.status === "Accepted" && "keyset_id" in value && !ebillPaid && !newKeyset && !requestedToPay ? (
           <ConfirmDrawer
             title="Confirm requesting to mint"
             description="Are you sure you want to request to mint from this e-bill?"
@@ -676,6 +678,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
   const shouldFetchKeyset = (value.status === "Offered" || value.status === "Accepted") && "keyset_id" in value
 
   const keysetId = "keyset_id" in value ? value.keyset_id : ""
+  const billId = "bill" in value && "id" in value.bill ? value.bill.id : ""
 
   const { data: keysetData } = useQuery({
     queryKey: ["keyset", keysetId],
@@ -685,6 +688,20 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
       }),
     enabled: shouldFetchKeyset,
   })
+
+  const { data: paymentData } = useQuery({
+    queryKey: ["bill_id", billId],
+    queryFn: () =>
+      paymentStatus({
+        path: { bill_id: billId },
+      }),
+  })
+
+  const requestedToPay = paymentData?.data?.payment_status.requested_to_pay ?? false
+  const paymentAddress = paymentData?.data?.payment_details?.address_to_pay ?? ""
+
+  console.log(billId)
+  console.log(paymentData)
 
   const ebillPaid = keysetData?.data && "active" in keysetData.data && keysetData.data.active === false
   const newKeyset = "keyset_id" in value && (!keysetData?.data || !("active" in keysetData.data))
@@ -722,6 +739,16 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
                 >
                   {newKeyset ? "Disabled" : "Enabled"}
                 </Badge>
+              </TableCell>
+            </TableRow>
+          ) : (
+            <></>
+          )}
+          {requestedToPay ? (
+            <TableRow>
+              <TableCell className="font-bold">Payment Address: </TableCell>
+              <TableCell className="flex items-center gap-2">
+                <span className="font-mono">{paymentAddress}</span>
               </TableCell>
             </TableRow>
           ) : (
@@ -796,7 +823,13 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
         </TableBody>
       </Table>
 
-      <QuoteActions value={value} isFetching={isFetching} newKeyset={newKeyset} ebillPaid={ebillPaid ?? false} />
+      <QuoteActions
+        value={value}
+        isFetching={isFetching}
+        newKeyset={newKeyset}
+        ebillPaid={ebillPaid ?? false}
+        requestedToPay={requestedToPay ?? false}
+      />
     </div>
   )
 }

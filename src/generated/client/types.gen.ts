@@ -498,67 +498,102 @@ export type KeysetInfoData = {
 };
 
 /**
- * Request Mint
- */
+* Request Mint
+*/
 
- export type RequestToMintRequest = {
-   ebill_id: string;
-   amount: number;
- };
+export type RequestToMintRequest = {
+  ebill_id: string;
+  amount: number;
+};
 
- export type RequestToMintResponseInfo = {
-   request_id: string;
-   request: string;
- };
+export type RequestToMintResponseInfo = {
+  request_id: string;
+  request: string;
+};
 
- export type RequestToMintResponse = {
-     /**
+export type RequestToMintResponse = {
+    /**
+    * Successful response
+    */
+    200: RequestToMintResponseInfo;
+};
+
+export type RequestToMintData = {
+  body?: RequestToMintRequest;
+  path?: never;
+  query?: never;
+  url: '/v1/admin/treasury/debit/request_to_mint_from_ebill'
+};
+
+/**
+* Node ID
+*/
+
+export type IdentityDetailRequest = {
+};
+
+export type IdentityDetailInfo = {
+  node_id: string;
+  name: string;
+  email: string | null;
+  bitcoin_public_key: string;
+  npub: string;
+  postal_address: PostalAddress | null;
+  date_of_birth: string | null;
+  country_of_birth: string | null;
+  city_of_birth: string | null;
+  identification_number: string | null;
+  profile_picture_file: string | null;
+  identity_document_file: string | null;
+  nostr_relays: Array<string>;
+};
+
+export type IdentityDetailResponse = {
+    /**
       * Successful response
       */
-     200: RequestToMintResponseInfo;
- };
+    200: IdentityDetailInfo;
+};
 
- export type RequestToMintData = {
-   body?: RequestToMintRequest;
-   path?: never;
-   query?: never;
-   url: '/v1/admin/treasury/debit/request_to_mint_from_ebill'
- };
 
- /**
-  * Node ID
-  */
+export type IdentityDetailData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/admin/identity/detail'
+};
 
-  export type IdentityDetailRequest = {
+/**
+* Bill Payment Status
+*/
+
+export type BillWaitingForPaymentState = {
+    time_of_request: number,
+    currency: string,
+    sum: string,
+    link_to_pay: string,
+    address_to_pay: string,
+    mempool_link_for_address_to_pay: string,
+}
+
+export type BillPaymentStatus = {
+    time_of_request_to_pay: number | null,
+    requested_to_pay: boolean,
+    paid: boolean,
+    request_to_pay_timed_out: boolean,
+    rejected_to_pay: boolean,
+}
+
+export type BillPaymentState = {
+    payment_status: BillPaymentStatus,
+    payment_details: BillWaitingForPaymentState | null,
+}
+
+export type BillPaymentData = {
+  body?: never;
+  path: {
+      bill_id: string;
   };
-
-  export type IdentityDetailInfo = {
-    node_id: string;
-    name: string;
-    email: string | null;
-    bitcoin_public_key: string;
-    npub: string;
-    postal_address: PostalAddress | null;
-    date_of_birth: string | null;
-    country_of_birth: string | null;
-    city_of_birth: string | null;
-    identification_number: string | null;
-    profile_picture_file: string | null;
-    identity_document_file: string | null;
-    nostr_relays: Array<string>;
-  };
-
-  export type IdentityDetailResponse = {
-      /**
-       * Successful response
-       */
-      200: IdentityDetailInfo;
-  };
-
-
-  export type IdentityDetailData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/admin/identity/detail'
-  };
+  query?: never;
+  url: '/v1/admin/bill/payment_status/{bill_id}';
+};
