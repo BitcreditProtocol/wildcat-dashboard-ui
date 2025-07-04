@@ -700,9 +700,6 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
   const requestedToPay = paymentData?.data?.payment_status.requested_to_pay ?? false
   const paymentAddress = paymentData?.data?.payment_details?.address_to_pay ?? ""
 
-  console.log(billId)
-  console.log(paymentData)
-
   const ebillPaid = keysetData?.data && "active" in keysetData.data && keysetData.data.active === false
   const newKeyset = "keyset_id" in value && (!keysetData?.data || !("active" in keysetData.data))
 
