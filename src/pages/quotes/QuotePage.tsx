@@ -337,6 +337,9 @@ function QuoteActions({
     onSuccess: (data) => {
       toast.success("Payment request has been created.")
       setPayRequestResponse(data)
+      void queryClient.invalidateQueries({
+        queryKey: ["bill_id", value.bill.id],
+      })
     },
   })
 
