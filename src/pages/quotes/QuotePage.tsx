@@ -695,6 +695,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
       paymentStatus({
         path: { bill_id: billId },
       }),
+    enabled: !!billId,
   })
 
   const requestedToPay = paymentData?.data?.payment_status.requested_to_pay ?? false
