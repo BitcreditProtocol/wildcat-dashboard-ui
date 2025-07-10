@@ -597,3 +597,23 @@ export type BillPaymentData = {
   query?: never;
   url: '/v1/admin/bill/payment_status/{bill_id}';
 };
+
+/**
+* Mint Info
+*/
+
+export type MintInfo = {
+    name: string,
+    pubkey: string | null,
+    version: string | null,
+    description: string | null,
+    description_long: string | null,
+    contact: Array<string> | null,
+}
+
+export type MintInfoData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/admin/info'
+};

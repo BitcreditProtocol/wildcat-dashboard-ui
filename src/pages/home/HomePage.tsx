@@ -1,6 +1,6 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
-import { identityDetail } from "@/generated/client/sdk.gen"
+import { identityDetail, mintInfo } from "@/generated/client/sdk.gen"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 
@@ -23,6 +23,16 @@ function PageBody() {
     gcTime: Infinity,
   })
 
+  const { data: mintData } = useSuspenseQuery({
+    queryKey: ["mint-info"],
+    queryFn: async () => {
+      const response = await mintInfo()
+      return response.data ?? null
+    },
+    staleTime: Infinity,
+    gcTime: Infinity,
+  })
+
   if (!data) {
     return (
       <div className="bg-card text-card-foreground rounded-lg border p-6">
@@ -33,8 +43,62 @@ function PageBody() {
 
   return (
     <div className="flex flex-col gap-4">
+      {mintData && (
+        <div className="bg-card text-card-foreground rounded-lg border p-6">
+          <h3 className="text-lg font-semibold mb-4">Mint Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {mintData.name && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Name</span>
+                <span className="font-semibold text-base">{mintData.name}</span>
+              </div>
+            )}
+            {mintData.version && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Version</span>
+                <span className="text-sm">{mintData.version}</span>
+              </div>
+            )}
+            {mintData.description && (
+              <div className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Description</span>
+                <span className="text-sm">{mintData.description}</span>
+              </div>
+            )}
+            {mintData.description_long && (
+              <div className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                  Long Description
+                </span>
+                <span className="text-sm">{mintData.description_long}</span>
+              </div>
+            )}
+            {mintData.pubkey && (
+              <div className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Public Key</span>
+                <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
+                  {mintData.pubkey}
+                </span>
+              </div>
+            )}
+            {mintData.contact && mintData.contact.length > 0 && (
+              <div className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Contact</span>
+                <div className="flex flex-wrap gap-2">
+                  {mintData.contact.map((contact, index) => (
+                    <span key={index} className="text-sm bg-muted px-2 py-1 rounded">
+                      {contact}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="bg-card text-card-foreground rounded-lg border p-6">
-        <h3 className="text-lg font-semibold mb-4">Information</h3>
+        <h3 className="text-lg font-semibold mb-4">Identity</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Name</span>
