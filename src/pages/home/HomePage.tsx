@@ -1,7 +1,7 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
 import { identityDetail, mintInfo } from "@/generated/client/sdk.gen"
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 
 function Loader() {
