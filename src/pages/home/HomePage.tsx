@@ -1,7 +1,7 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
 import { identityDetail, mintInfo } from "@/generated/client/sdk.gen"
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 
 function Loader() {
@@ -13,7 +13,7 @@ function Loader() {
 }
 
 function PageBody() {
-  const { data: identityData } = useSuspenseQuery({
+  const { data: identityData } = useQuery({
     queryKey: ["identity-detail"],
     queryFn: async () => {
       const response = await identityDetail()
@@ -21,9 +21,10 @@ function PageBody() {
     },
     staleTime: Infinity,
     gcTime: Infinity,
+    throwOnError: false,
   })
 
-  const { data: mintData } = useSuspenseQuery({
+  const { data: mintData } = useQuery({
     queryKey: ["mint-info"],
     queryFn: async () => {
       const response = await mintInfo()
@@ -31,6 +32,7 @@ function PageBody() {
     },
     staleTime: Infinity,
     gcTime: Infinity,
+    throwOnError: false,
   })
 
   return (
