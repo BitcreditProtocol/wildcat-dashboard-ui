@@ -70,7 +70,7 @@ function PageBody() {
                 <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                   Long Description
                 </span>
-                <span className="text-sm">{mintData.description_long}</span>
+                <span className="text-sm whitespace-pre-line">{mintData.description_long}</span>
               </div>
             )}
             {mintData.pubkey && (
