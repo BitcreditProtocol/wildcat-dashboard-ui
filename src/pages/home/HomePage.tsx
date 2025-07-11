@@ -85,8 +85,8 @@ function PageBody() {
               <div className="flex flex-col gap-1 md:col-span-2">
                 <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Contact</span>
                 <div className="flex flex-wrap gap-2">
-                  {mintData.contact.map((contact, index) => (
-                    <span key={index} className="text-sm bg-muted px-2 py-1 rounded">
+                  {mintData.contact.map((contact) => (
+                    <span key={contact} className="text-sm bg-muted px-2 py-1 rounded">
                       {contact}
                     </span>
                   ))}
