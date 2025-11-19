@@ -18,7 +18,7 @@ import {
   adminLookupQuoteQueryKey,
   adminUpdateQuoteMutation,
 } from "@/generated/client/@tanstack/react-query.gen"
-import { activateKeyset, keysetInfo, paymentStatus, requestToMint } from "@/generated/client/sdk.gen"
+import { enableMinting, keysetInfo, paymentStatus, requestToMint } from "@/generated/client/sdk.gen"
 import { cn, getInitials } from "@/lib/utils"
 import { formatDate, humanReadableDuration } from "@/utils/dates"
 
@@ -234,7 +234,7 @@ function QuoteActions({
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false)
-  const [activateKeysetConfirmDrawerOpen, setActivateKeysetConfirmDrawerOpen] = useState(false)
+  const [enableMintingConfirmDrawerOpen, setEnableMintingConfirmDrawerOpen] = useState(false)
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false)
   const [payRequestResponse, setPayRequestResponse] = useState<RequestToMintResponseInfo | null>(null)
 
@@ -287,28 +287,29 @@ function QuoteActions({
     },
   })
 
-  const activateKeysetMutation = useMutation({
+  const enableMintingMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await activateKeyset({
-        body: {
-          qid: value.id,
+      const { data } = await enableMinting({
+        path: {
+          id: value.id,
         },
+        body: {},
         throwOnError: true,
       })
       return data
     },
     onMutate: () => {
-      toast.loading("Activating keyset…", { id: `quote-${value.id}-activate-keyset` })
+      toast.loading("Enabling minting…", { id: `quote-${value.id}-enable-minting` })
     },
     onSettled: () => {
-      toast.dismiss(`quote-${value.id}-activate-keyset`)
+      toast.dismiss(`quote-${value.id}-enable-minting`)
     },
     onError: (error) => {
-      toast.error("Error while activating keyset: " + error.message)
+      toast.error("Error while enabling minting: " + error.message)
       console.warn(error)
     },
     onSuccess: () => {
-      toast.success("Keyset has been activated.")
+      toast.success("Minting has been enabled.")
       void queryClient.invalidateQueries()
     },
   })
@@ -372,8 +373,8 @@ function QuoteActions({
     })
   }
 
-  const onActivateKeyset = () => {
-    activateKeysetMutation.mutate()
+  const onEnableMinting = () => {
+    enableMintingMutation.mutate()
   }
 
   const onRequestToPay = () => {
@@ -458,22 +459,22 @@ function QuoteActions({
 
         {value.status === "Accepted" && "keyset_id" in value ? (
           <ConfirmDrawer
-            title="Confirm activating keyset"
-            description="Are you sure you want to activate the keyset for this quote?"
-            open={activateKeysetConfirmDrawerOpen}
-            onOpenChange={setActivateKeysetConfirmDrawerOpen}
+            title="Confirm enabling minting"
+            description="Are you sure you want to enable minting for this quote?"
+            open={enableMintingConfirmDrawerOpen}
+            onOpenChange={setEnableMintingConfirmDrawerOpen}
             onSubmit={() => {
-              onActivateKeyset()
-              setActivateKeysetConfirmDrawerOpen(false)
+              onEnableMinting()
+              setEnableMintingConfirmDrawerOpen(false)
             }}
-            submitButtonText="Yes, activate keyset"
+            submitButtonText="Yes, enable minting"
             trigger={
               <Button
                 className="flex-1"
-                disabled={isFetching || activateKeysetMutation.isPending || !newKeyset}
+                disabled={isFetching || enableMintingMutation.isPending || !newKeyset}
                 variant="default"
               >
-                Activate Keyset {activateKeysetMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                Enable Minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
               </Button>
             }
           />
