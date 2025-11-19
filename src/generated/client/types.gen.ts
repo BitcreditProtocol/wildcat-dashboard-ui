@@ -408,32 +408,36 @@ export type ClientOptions = {
     token?: string;
 };
 
-export type ActivateKeysetRequest = {
-    qid: string;
+export type EnableMintingRequest = {
 };
 
-export type ActivateKeysetData = {
-    body: ActivateKeysetRequest;
-    path?: never;
+export type EnableMintingData = {
+    body: EnableMintingRequest;
+    path: {
+        /**
+         * The quote id
+         */
+        id: string;
+    };
     query?: never;
-    url: '/v1/admin/keys/enable';
+    url: '/v1/admin/credit/quote/enable_minting/{id}';
 };
 
-export type ActivateKeysetErrors = {
+export type EnableMintingErrors = {
     /**
      * keyset id not found
      */
     404: unknown;
 };
 
-export type ActivateKeysetResponses = {
+export type EnableMintingResponses = {
     /**
      * Successful response
      */
     200: unknown;
 };
 
-export type ActivateKeysetResponse = ActivateKeysetResponses[keyof ActivateKeysetResponses];
+export type EnableMintingResponse = EnableMintingResponses[keyof EnableMintingResponses];
 
 /**
  * Currency unit used for ECash
