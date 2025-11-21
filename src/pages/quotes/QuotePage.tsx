@@ -220,13 +220,13 @@ function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDr
 function QuoteActions({
   value,
   isFetching,
-  newKeyset,
+  mintingEnabled,
   ebillPaid,
   requestedToPay,
 }: {
   value: InfoReply
   isFetching: boolean
-  newKeyset: boolean
+  mintingEnabled: boolean
   ebillPaid: boolean
   requestedToPay: boolean
 }) {
@@ -471,7 +471,7 @@ function QuoteActions({
             trigger={
               <Button
                 className="flex-1"
-                disabled={isFetching || enableMintingMutation.isPending || !newKeyset}
+                disabled={isFetching || enableMintingMutation.isPending || mintingEnabled}
                 variant="default"
               >
                 Enable Minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
@@ -482,7 +482,7 @@ function QuoteActions({
           <></>
         )}
 
-        {value.status === "Accepted" && "keyset_id" in value && !ebillPaid && !newKeyset && !requestedToPay ? (
+        {value.status === "Accepted" && "keyset_id" in value && !ebillPaid && !requestedToPay ? (
           <ConfirmDrawer
             title="Confirm requesting to pay"
             description="Are you sure you want to request to pay this e-bill?"
@@ -706,7 +706,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
   const paymentAddress = paymentData?.data?.payment_details?.address_to_pay ?? ""
 
   const ebillPaid = keysetData?.data && "active" in keysetData.data && keysetData.data.active === false
-  const newKeyset = "keyset_id" in value && (!keysetData?.data || !("active" in keysetData.data))
+  const mintingEnabled = value.status === "Accepted" && value.minting_status.status === "Enabled"
 
   return (
     <div className="flex flex-col gap-1">
@@ -736,10 +736,10 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
                   {ebillPaid ? "Paid" : "Unpaid"}
                 </Badge>
                 <Badge
-                  variant={newKeyset ? "default" : "destructive"}
-                  className={newKeyset ? "bg-red-500" : "bg-blue-500"}
+                  variant={mintingEnabled ? "default" : "destructive"}
+                  className={mintingEnabled ? "bg-red-500" : "bg-blue-500"}
                 >
-                  {newKeyset ? "Disabled" : "Enabled"}
+                  {mintingEnabled ? "Disabled" : "Enabled"}
                 </Badge>
               </TableCell>
             </TableRow>
@@ -828,7 +828,7 @@ function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean })
       <QuoteActions
         value={value}
         isFetching={isFetching}
-        newKeyset={newKeyset}
+        mintingEnabled={mintingEnabled}
         ebillPaid={ebillPaid ?? false}
         requestedToPay={requestedToPay ?? false}
       />
