@@ -126,6 +126,14 @@ export type AnonPublicData = {
 /**
  * --------------------------- Quote info request
  */
+
+export type MintingStatus = {
+    status: 'Disabled'
+} | {
+    status: 'Enabled';
+    minted: number;
+};
+
 export type InfoReply = {
     bill: BillInfo;
     id: string;
@@ -160,6 +168,7 @@ export type InfoReply = {
     keyset_id: string;
     discounted: number;
     status: 'Accepted';
+    minting_status: MintingStatus;
 } | {
     bill: BillInfo;
     id: string;

@@ -92,7 +92,7 @@ export const lookupQuote = <ThrowOnError extends boolean = false>(options: Optio
  */
 export const enableMinting = <ThrowOnError extends boolean = false>(options: Options<EnableMintingData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<EnableMintingResponse, unknown, ThrowOnError>({
-        url: '/v1/admin/credit/quote/enable_mint/{qid}',
+        url: '/v1/admin/credit/quote/enable_mint/{id}',
         ...options,
         headers: {
             'Content-Type': 'application/json',
