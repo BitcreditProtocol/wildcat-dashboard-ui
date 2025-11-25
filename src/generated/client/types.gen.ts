@@ -517,6 +517,7 @@ export type KeysetInfoData = {
 export type RequestToMintRequest = {
   ebill_id: string;
   amount: number;
+  deadline: string;
 };
 
 export type RequestToMintResponseInfo = {

@@ -237,6 +237,7 @@ function QuoteActions({
   const [enableMintingConfirmDrawerOpen, setEnableMintingConfirmDrawerOpen] = useState(false)
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false)
   const [payRequestResponse, setPayRequestResponse] = useState<RequestToMintResponseInfo | null>(null)
+  const [requestToPayDate, setRequestToPayDate] = useState<Date | undefined>(addDays(new Date(Date.now()), 3));
 
   const effectiveDiscount = useMemo(() => {
     if (!offerFormData) return
@@ -315,11 +316,12 @@ function QuoteActions({
   })
 
   const requestToPayMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (deadline: Date) => {
       const { data } = await requestToMint({
         body: {
           ebill_id: value.bill.id,
           amount: value.bill.sum,
+          deadline: deadline.toISOString(),
         },
         throwOnError: true,
       })
@@ -378,7 +380,11 @@ function QuoteActions({
   }
 
   const onRequestToPay = () => {
-    requestToPayMutation.mutate()
+    if (!requestToPayDate) {
+      toast.error("Please select a deadline date")
+      return
+    }
+    requestToPayMutation.mutate(requestToPayDate)
   }
   return (
     <>
@@ -498,7 +504,17 @@ function QuoteActions({
                 Request to Pay {requestToPayMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
               </Button>
             }
-          />
+          >
+            <div className="my-2 mb-4">
+                <Calendar
+                    mode="single"
+                    selected={requestToPayDate}
+                    onSelect={setRequestToPayDate}
+                    hidden={{ before: addDays(new Date(Date.now()), 2) }}
+                    required={true}
+                />
+            </div>
+          </ConfirmDrawer>
         ) : (
           <></>
         )}
