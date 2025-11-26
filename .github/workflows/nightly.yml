@@ -3,8 +3,7 @@ name: build and push nightly image
 on:
   push:
     branches:
-      #- master
-      - "cleot/**"
+      - master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -43,7 +42,6 @@ jobs:
           ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
         tags: |
           type=raw,value=nightly
-          type=sha
 
     - id: push
       name: Build & push ${{ env.IMAGE_NAME }}
