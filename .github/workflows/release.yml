@@ -1,0 +1,56 @@
+name: release tagged image
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+    IMAGE_NAME: "bcr-wdc-dashboard-ui"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+    - name: Login to GHCR
+      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+    - id: meta
+      name: Metadata
+      uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
+      with:
+        images: |
+          ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=semver,pattern={{version}}
+
+    - id: push
+      name: Build & push ${{ env.IMAGE_NAME }}
+      uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha,scope=${{ github.repository }}/${{ env.IMAGE_NAME }}
+        cache-to: type=gha,mode=max,scope=${{ github.repository }}/${{ env.IMAGE_NAME }}
