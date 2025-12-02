@@ -24,11 +24,11 @@ const getEnvValue = <K extends keyof RuntimeEnv>(key: K): RuntimeEnv[K] | undefi
 
 export const env = {
   devModeEnabled: fallbackEnv.DEV,
-  apiBaseUrl: getEnvValue("VITE_API_BASE_URL") as string,
+  apiBaseUrl: getEnvValue("VITE_API_BASE_URL")!,
   apiMocksEnabled: (getEnvValue("VITE_API_MOCKING_ENABLED") ?? "false") === "true",
-  keycloakUrl: getEnvValue("VITE_KEYCLOAK_URL") as string,
-  keycloakRealm: getEnvValue("VITE_KEYCLOAK_REALM") as string,
-  keycloakClientId: getEnvValue("VITE_KEYCLOAK_CLIENT_ID") as string,
+  keycloakUrl: getEnvValue("VITE_KEYCLOAK_URL")!,
+  keycloakRealm: getEnvValue("VITE_KEYCLOAK_REALM")!,
+  keycloakClientId: getEnvValue("VITE_KEYCLOAK_CLIENT_ID")!,
   crowdinInContextToolingEnabled:
     (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ?? "false") === "true",
 }
