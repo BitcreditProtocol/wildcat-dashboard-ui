@@ -3,8 +3,8 @@ name: build and push nightly image
 on:
   push:
     branches:
-      #- master
-      - "**" # push test image
+      - master
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
