@@ -1,9 +1,10 @@
 import Keycloak from "keycloak-js"
+import { env } from "@/lib/env"
 
 const keycloak = new Keycloak({
-  url: import.meta.env.VITE_KEYCLOAK_URL as string,
-  realm: import.meta.env.VITE_KEYCLOAK_REALM as string,
-  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID as string,
+  url: env.keycloakUrl,
+  realm: env.keycloakRealm,
+  clientId: env.keycloakClientId,
 })
 
 export const initKeycloak = async (): Promise<boolean> => {

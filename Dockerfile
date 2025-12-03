@@ -19,7 +19,12 @@ RUN npm run build -- --mode=${VITE_MODE}
 
 FROM nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
 
+RUN apk add --no-cache jq
+
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+COPY docker/entrypoint.d/ /docker-entrypoint.d/
+RUN chmod +x /docker-entrypoint.d/*.sh
 
 COPY docker/nginx/snippets/proxy-params.conf /etc/nginx/snippets/proxy-params.conf
 # each time nginx is started it will perform variable substition in all template

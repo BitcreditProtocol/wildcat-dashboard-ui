@@ -1,9 +1,10 @@
 import { client as heyApiClient } from "@/generated/client/client.gen"
 import * as sdk from "@/generated/client/sdk.gen"
+import { env } from "@/lib/env"
 import keycloak from "../keycloak"
 
 heyApiClient.setConfig({
-  baseUrl: import.meta.env.VITE_API_BASE_URL as string,
+  baseUrl: env.apiBaseUrl,
 })
 
 // Add the auth token interceptor
