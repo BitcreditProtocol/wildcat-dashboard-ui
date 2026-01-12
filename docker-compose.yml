@@ -13,6 +13,8 @@ services:
       - VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
       - VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
       - VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
+      - VITE_API_MOCKING_ENABLED=${VITE_API_MOCKING_ENABLED}
+      - VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING=${VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
       interval: 30s
