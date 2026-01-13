@@ -1,7 +1,7 @@
 import { defineConfig } from '@hey-api/openapi-ts';
 
 export default defineConfig({
-  input: 'opt/wildcat/__dev_openapi.json',
+  input: 'opt/wildcat/openapi.json',
   output: {
     format: 'prettier',
     lint: 'eslint',

@@ -82,7 +82,6 @@ function PageBody() {
   )
 }
 
-
 export default function EarningsPage() {
   return (
     <>

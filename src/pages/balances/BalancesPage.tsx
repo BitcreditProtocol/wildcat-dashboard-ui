@@ -6,16 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
-import { debitBalance, creditBalance, onchainBalance } from "@/generated/client/sdk.gen"
 
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+/* function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
       setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs),
     ),
   ])
-}
+} */
 
 function Loader() {
   return (
@@ -145,17 +144,20 @@ export function BalanceText({ amount, unit, children }: PropsWithChildren<Balanc
 }
 
 function useBalances() {
+  // The following queries relied on deprecated endpoints (creditBalance, debitBalance, onchainBalance).
+  // TODO: When new balance endpoints are available in the API, re-enable queries below.
   const queries = useQueries({
     queries: [
       {
         queryKey: ["balance", "credit"],
-        queryFn: async () => {
-          const response = await withTimeout(creditBalance({}), 10_000)
-          if (response.error) {
-            throw new Error("Failed to fetch credit balance")
-          }
-          return response.data
-        },
+        // queryFn: async () => {
+        //   const response = await withTimeout(creditBalance({}), 10_000)
+        //   if (response.error) {
+        //     throw new Error("Failed to fetch credit balance")
+        //   }
+        //   return response.data
+        // },
+        queryFn: () => ({ amount: 0, unit: "credit" }),
         refetchInterval: 30_000,
         staleTime: 25_000,
         retry: 2,
@@ -163,13 +165,14 @@ function useBalances() {
       },
       {
         queryKey: ["balance", "debit"],
-        queryFn: async () => {
-          const response = await withTimeout(debitBalance({}), 10_000)
-          if (response.error) {
-            throw new Error("Failed to fetch debit balance")
-          }
-          return response.data
-        },
+        // queryFn: async () => {
+        //   const response = await withTimeout(debitBalance({}), 10_000)
+        //   if (response.error) {
+        //     throw new Error("Failed to fetch debit balance")
+        //   }
+        //   return response.data
+        // },
+        queryFn: () => ({ amount: 0, unit: "debit" }),
         refetchInterval: 30_000,
         staleTime: 25_000,
         retry: 2,
@@ -177,13 +180,14 @@ function useBalances() {
       },
       {
         queryKey: ["balance", "onchain"],
-        queryFn: async () => {
-          const response = await withTimeout(onchainBalance({}), 10_000)
-          if (response.error) {
-            throw new Error("Failed to fetch onchain balance")
-          }
-          return response.data
-        },
+        // queryFn: async () => {
+        //   const response = await withTimeout(onchainBalance({}), 10_000)
+        //   if (response.error) {
+        //     throw new Error("Failed to fetch onchain balance")
+        //   }
+        //   return response.data
+        // },
+        queryFn: () => ({ confirmed: 0 }),
         refetchInterval: 30_000,
         staleTime: 25_000,
         retry: 2,

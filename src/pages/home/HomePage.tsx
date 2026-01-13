@@ -1,6 +1,6 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
-import { identityDetail, mintInfo } from "@/generated/client/sdk.gen"
+import { getIdentity /* , getClowderMystatus, listKeysetInfos */ } from "@/generated/client/sdk.gen"
 import { useQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 
@@ -16,7 +16,7 @@ function PageBody() {
   const { data: identityData } = useQuery({
     queryKey: ["identity-detail"],
     queryFn: async () => {
-      const response = await identityDetail()
+      const response = await getIdentity()
       return response.data ?? null
     },
     staleTime: Infinity,
@@ -24,6 +24,12 @@ function PageBody() {
     throwOnError: false,
   })
 
+  // Mint info: the previous mintInfo() function no longer exists in the generated client.
+  // Check for alternatives before removing. Potential endpoints:
+  // - listKeysetInfos(): returns keyset metadata (unit, active, expiry) but not mint name/version/description.
+  // - getClowderMystatus(): returns overall clowder status, not detailed mint info fields.
+  // If a dedicated endpoint is added later (e.g., /v1/admin/mint/info), re-enable the query below.
+  /*
   const { data: mintData } = useQuery({
     queryKey: ["mint-info"],
     queryFn: async () => {
@@ -34,6 +40,16 @@ function PageBody() {
     gcTime: Infinity,
     throwOnError: false,
   })
+
+  const mintData = null as unknown as {
+    name?: string
+    version?: string
+    description?: string
+    description_long?: string
+    pubkey?: string
+    contact?: string[]
+  } | null
+  */
 
   return (
     <div className="flex flex-col gap-4">
@@ -110,6 +126,7 @@ function PageBody() {
           )}
         </div>
 
+        {/* Mint Information Section
         <div className="bg-card text-card-foreground rounded-lg border p-6">
           <h3 className="text-lg font-semibold mb-4">Mint Information</h3>
           {mintData ? (
@@ -165,6 +182,7 @@ function PageBody() {
             <div className="text-center text-muted-foreground">No mint information available</div>
           )}
         </div>
+        */}
       </div>
     </div>
   )
