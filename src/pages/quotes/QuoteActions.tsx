@@ -1,20 +1,24 @@
 import { useMemo, useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Big from "big.js"
 import { LoaderIcon } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ConfirmDrawer } from "@/components/Drawers"
 import { humanReadableDuration } from "@/utils/dates"
+import { Calendar } from "@/components/ui/calendar"
+import { addDays } from "date-fns"
 import {
   updateQuoteMutation,
   postEnableQuoteMintingMutation,
   postEbillReqtopayMutation,
   getQuoteOptions,
+  getEbillOptions,
 } from "@/generated/client/@tanstack/react-query.gen"
-import type { InfoReply, PostEbillReqtopayResponse } from "@/generated/client/types.gen"
+import type { InfoReply, PostEbillReqtopayResponse, BillWaitingStatePaymentData } from "@/generated/client/types.gen"
 import { OfferFormDrawer, type OfferFormResult } from "./OfferFormDrawer"
 import { DenyConfirmDrawer } from "./DenyConfirmDrawer"
+import { removeItem } from "@/utils/local-storage"
 
 interface QuoteActionsProps {
   value: InfoReply
@@ -22,6 +26,8 @@ interface QuoteActionsProps {
   mintingEnabled: boolean
   ebillPaid: boolean
   requestedToPay: boolean
+  paymentDeadlineTs?: number | null
+  timeOfRequestToPay?: number | null
 }
 
 export function QuoteActions({
@@ -30,7 +36,35 @@ export function QuoteActions({
   mintingEnabled,
   ebillPaid,
   requestedToPay,
+  paymentDeadlineTs,
+  timeOfRequestToPay,
 }: QuoteActionsProps) {
+  const billId = value.bill.id
+  const ebillQuery = useQuery({
+    ...getEbillOptions({ path: { bid: billId } }),
+    retry: 1,
+    enabled: !!billId,
+  })
+  const ebill = ebillQuery.data
+  const paymentStatus = ebill?.status.payment
+  const cws = ebill?.current_waiting_state
+  let waitingPaymentData: BillWaitingStatePaymentData | undefined
+  if (cws && "Payment" in cws) {
+    waitingPaymentData = cws.Payment.payment_data
+  }
+
+  const requestedToPayEff = Boolean(requestedToPay || paymentStatus?.requested_to_pay)
+  const ebillPaidEff = Boolean(ebillPaid || paymentStatus?.paid)
+  const effectiveRequestTime = timeOfRequestToPay ?? paymentStatus?.time_of_request_to_pay ?? waitingPaymentData?.time_of_request ?? null
+  const effectiveDeadlineTs = paymentDeadlineTs ?? paymentStatus?.payment_deadline_timestamp ?? waitingPaymentData?.payment_deadline ?? null
+  const rawLinkToPay = waitingPaymentData?.link_to_pay
+  const linkToPay: string | undefined = rawLinkToPay
+    ? rawLinkToPay.split('&')[0]
+    : undefined
+  const addressToPay: string | undefined = waitingPaymentData?.address_to_pay
+  // const mempoolLink: string | undefined = waitingPaymentData?.mempool_link_for_address_to_pay
+  // const hasPayRef = linkToPay ?? addressToPay
+
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>()
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
@@ -38,10 +72,13 @@ export function QuoteActions({
   const [enableMintingConfirmDrawerOpen, setEnableMintingConfirmDrawerOpen] = useState(false)
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false)
   const [payRequestResponse, setPayRequestResponse] = useState<PostEbillReqtopayResponse | null>(null)
+  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
 
   const effectiveDiscount = useMemo(() => {
-    if (!offerFormData) return
-    console.table(offerFormData)
+    if (!offerFormData) {
+      return
+    }
+    // console.table(offerFormData)
     return new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
   }, [offerFormData])
 
@@ -227,31 +264,64 @@ export function QuoteActions({
           title="Confirm offering quote"
           description="Review your inputs and confirm the offer"
           open={offerConfirmDrawerOpen}
-          onOpenChange={setOfferConfirmDrawerOpen}
+          onOpenChange={(open) => {
+            setOfferConfirmDrawerOpen(open)
+            if (open && offerFormData) {
+              setValidUntilDate(offerFormData.ttl.ttl)
+            }
+          }}
           onSubmit={() => {
-            if (!offerFormData) return
-            onOfferQuote(offerFormData)
+            if (!offerFormData) {
+              return
+            }
+            removeItem(`offer-form-${value.id}`)
+
+            const finalOfferData = validUntilDate
+              ? {
+                  ...offerFormData,
+                  ttl: { ttl: validUntilDate },
+                }
+              : offerFormData
+
+            onOfferQuote(finalOfferData)
             setOfferConfirmDrawerOpen(false)
           }}
         >
-          <div className="flex flex-col justify-center gap-1 py-8 mb-8">
-            <span>
-              <span className="font-bold">Effective discount (relative):</span>{" "}
-              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
-            </span>
-            <span>
-              <span className="font-bold">Effective discount (absolute):</span>{" "}
-              {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
-              {offerFormData?.discount.net.currency}
-            </span>
-            <span>
-              <span className="font-bold">Net amount:</span> {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
-              {offerFormData?.discount.net.currency}
-            </span>
-            <span>
-              <span className="font-bold">Valid until:</span> {offerFormData?.ttl.ttl.toDateString()} (
-              {offerFormData && humanReadableDuration("en", offerFormData.ttl.ttl)})
-            </span>
+          <div className="flex flex-col justify-center gap-1 px-4 py-8">
+            <div className="flex justify-between items-center">
+              <span className="font-bold">Effective discount (relative):</span>
+              <span className="text-right">{effectiveDiscount?.mul(new Big("100")).toFixed(2)}%</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-bold">Effective discount (absolute):</span>
+              <span className="text-right">
+                {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
+                {offerFormData?.discount.net.currency}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-bold">Net amount:</span>
+              <span className="text-right">
+                {offerFormData?.discount.net.value.round(0).toFixed(0)} {offerFormData?.discount.net.currency}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="font-bold">Valid until:</span>
+                <span className="text-right">
+                  {validUntilDate?.toDateString() ?? offerFormData?.ttl.ttl.toDateString()} (
+                  {validUntilDate && humanReadableDuration("en", validUntilDate)})
+                </span>
+              </div>
+              <div className="flex justify-center rounded-md border">
+                <Calendar
+                  mode="single"
+                  selected={validUntilDate ?? offerFormData?.ttl.ttl}
+                  onSelect={(day) => setValidUntilDate(day)}
+                  disabled={{ before: addDays(new Date(Date.now()), 1) }}
+                />
+              </div>
+            </div>
           </div>
         </ConfirmDrawer>
 
@@ -280,7 +350,11 @@ export function QuoteActions({
           <></>
         )}
 
-        {value.status === "Accepted" && "keyset_id" in value && !ebillPaid && !requestedToPay ? (
+        {value.status === "Accepted" &&
+        "keyset_id" in value &&
+        !ebillPaidEff &&
+        !requestedToPayEff &&
+        !payRequestResponse ? (
           <ConfirmDrawer
             title="Confirm requesting to pay"
             description="Are you sure you want to request to pay this e-bill?"
@@ -302,20 +376,70 @@ export function QuoteActions({
         )}
       </div>
 
-      {payRequestResponse && (
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-bold mb-2">Payment Request</h3>
-          <div className="space-y-2">
-            <div>
-              <span className="font-bold">ID</span>
-              <span className="font-mono ml-2">{payRequestResponse.request_id}</span>
-            </div>
-            <div>
-              <span className="font-bold">Details</span>
-              <div className="font-mono text-sm mt-1 p-2 bg-white rounded border break-all">
-                {payRequestResponse.request}
+      {((payRequestResponse ?? requestedToPayEff) || requestedToPayEff) && !ebillPaidEff && (
+        <div className="mt-4 p-4 bg-white rounded border">
+          <h2 className="text-2xl font-extrabold tracking-tight mb-3">Payment Request</h2>
+          <div className="space-y-1">
+            {payRequestResponse && (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold w-32">ID</span>
+                  <span className="font-mono text-sm">{payRequestResponse.request_id}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold w-32">Details</span>
+                  <span className="font-mono text-sm break-all">{payRequestResponse.request}</span>
+                </div>
+              </>
+            )}
+            {!payRequestResponse && addressToPay && (
+              <div className="flex items-center gap-2">
+                <span className="font-bold w-32">ID</span>
+                <span className="font-mono text-sm">{addressToPay}</span>
               </div>
+            )}
+            {!payRequestResponse && linkToPay && (
+              <div className="flex items-center gap-2">
+                <span className="font-bold w-32">Details</span>
+                <span className="font-mono text-sm">{linkToPay}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="font-bold w-32">Requested at</span>
+              <span className="text-sm">
+                {effectiveRequestTime ? new Date(effectiveRequestTime * 1000).toLocaleString() : "Unknown"}
+              </span>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold w-32">Deadline</span>
+              <span className="text-sm">
+                {effectiveDeadlineTs ? new Date(effectiveDeadlineTs * 1000).toLocaleString() : "Unknown"}
+              </span>
+            </div>
+            {/* TODO mempool & qr code
+            {hasPayRef && (
+              <div className="flex items-center gap-2">
+                <span className="font-bold w-32">Pay</span>
+                <span className="text-sm break-all">
+                  {linkToPay ? (
+                    <a className="underline" href={linkToPay} target="_blank" rel="noreferrer">
+                      {linkToPay}
+                    </a>
+                  ) : (
+                    addressToPay
+                  )}
+                  {mempoolLink && (
+                    <>
+                      {" "}
+                      <a className="underline" href={mempoolLink} target="_blank" rel="noreferrer">
+                        mempool
+                      </a>
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+            */}
           </div>
         </div>
       )}

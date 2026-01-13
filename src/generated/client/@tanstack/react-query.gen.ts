@@ -154,20 +154,24 @@ export const postEnableRedemptionMutation = (options?: Partial<Options<PostEnabl
 
 export const getQuoteQueryKey = (options: Options<GetQuoteData>) => createQueryKey('getQuote', options);
 
-export const getQuoteOptions = (options: Options<GetQuoteData>) => {
-    return queryOptions({
-        queryFn: async ({ queryKey, signal }) => {
-            const { data } = await getQuote({
-                ...options,
-                ...queryKey[0],
-                signal,
-                throwOnError: true
-            });
-            return data;
-        },
-        queryKey: getQuoteQueryKey(options)
-    });
-};
+const getQuoteQueryKeyFixed = (options: Options<GetQuoteData>) =>
+  ['getQuote', options] as const;
+
+export const getQuoteOptions = (options: Options<GetQuoteData>) =>
+  queryOptions({
+    queryKey: getQuoteQueryKeyFixed(options),
+    queryFn: async ({ queryKey, signal }) => {
+      const [, opts] = queryKey;
+
+      const { data } = await getQuote({
+        ...opts,
+        signal,
+        throwOnError: true,
+      });
+
+      return data;
+    },
+  });
 
 export const updateQuoteMutation = (options?: Partial<Options<UpdateQuoteData>>) => {
     const mutationOptions: UseMutationOptions<UpdateQuoteResponse2, DefaultError, Options<UpdateQuoteData>> = {
@@ -248,9 +252,28 @@ export const getIdentityOptions = (options?: Options<GetIdentityData>) => {
     });
 };
 
-export const getEbillQueryKey = (options: Options<GetEbillData>) => createQueryKey('getEbill', options);
+export const getEbillQueryKeyBugged = (options: Options<GetEbillData>) => createQueryKey('getEbill', options);
 
-export const getEbillOptions = (options: Options<GetEbillData>) => {
+export const getEbillQueryKey = (options: Options<GetEbillData>) =>
+  createQueryKey('getEbill', options);
+
+export const getEbillOptions = (options: Options<GetEbillData>) =>
+  queryOptions({
+    queryKey: getEbillQueryKey(options),
+    queryFn: async ({ queryKey, signal }) => {
+      const params = queryKey[0]; // ✅ this is the object with baseUrl/path/query/etc
+
+      const { data } = await getEbill({
+        ...params,
+        signal,
+        throwOnError: true,
+      });
+
+      return data;
+    },
+  });
+
+export const getEbillOptionsBugged = (options: Options<GetEbillData>) => {
     return queryOptions({
         queryFn: async ({ queryKey, signal }) => {
             const { data } = await getEbill({

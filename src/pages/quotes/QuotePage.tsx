@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview"
-import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { getQuoteOptions, getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { useQuery } from "@tanstack/react-query"
 import { useParams, Link } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
@@ -52,6 +52,12 @@ function PageBody({ id }: { id: string }) {
     retry: 1,
   })
 
+  const billId = quoteData?.bill?.id
+  const ebillQuery = useQuery({
+    ...getEbillOptions({ path: { bid: billId ?? "" } }),
+    retry: 1,
+    enabled: !!billId,
+  })
 
   if (error) {
     return (
@@ -69,6 +75,13 @@ function PageBody({ id }: { id: string }) {
 
   const quote = quoteData!
   const bill = quote?.bill
+
+  const billStatus = ebillQuery.data?.status
+  const paymentStatus = billStatus?.payment
+  const ebillPaid = Boolean(paymentStatus?.paid)
+  const requestedToPay = Boolean(paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds)
+  const paymentDeadlineTs = paymentStatus?.payment_deadline_timestamp ?? null
+  const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
 
   if (!quote || !bill) {
     return <div className="p-4 text-muted-foreground">No quote data available</div>
@@ -132,8 +145,10 @@ function PageBody({ id }: { id: string }) {
         value={quote}
         isFetching={isFetching}
         mintingEnabled={quote.status === "Minting"}
-        ebillPaid={false}
-        requestedToPay={false}
+        ebillPaid={ebillPaid}
+        requestedToPay={requestedToPay}
+        paymentDeadlineTs={paymentDeadlineTs}
+        timeOfRequestToPay={timeOfRequestToPay}
       />
     </div>
   )

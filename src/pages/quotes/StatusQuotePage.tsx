@@ -3,14 +3,14 @@ import { PageTitle } from "@/components/PageTitle"
 import { Button } from "@/components/ui/button"
 import { Card, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { listQuotesOptions, getQuoteOptions, listEbillsOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { listQuotesOptions, getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { useQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 import { formatNumber, truncateString } from "@/utils/strings"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { LightInfo, BitcreditBill } from "@/generated/client/types.gen"
+import type { LightInfo } from "@/generated/client/types.gen"
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview"
 import { toast } from "sonner"
 import * as React from "react"
@@ -52,25 +52,25 @@ function Loader() {
   )
 }
 
-function QuoteItemCard({ quote, bills, isLoading }: { quote: LightInfo; bills?: BitcreditBill[]; isLoading: boolean }) {
+function QuoteItemCard({ quote, isLoading }: { quote: LightInfo; isLoading: boolean }) {
   const navigate = useNavigate()
 
-  const { data: quoteDetails, error: quoteError } = useQuery({
+  const queryResult = useQuery({
     ...getQuoteOptions({
-      path: { qid: quote.id },
+      path: { qid: quote.id }
     }),
     retry: 1,
     enabled: !!quote.id,
   })
 
-  const billId = quoteDetails?.bill?.id
-  const bill: BitcreditBill | undefined = bills?.find((b) => b.id === billId)
+  const { data: quoteDetails, isLoading: isLoadingDetails, error: detailsError } = queryResult
+  const bill = quoteDetails?.bill
 
   const handleQuoteClick = (e: React.MouseEvent) => {
-    if (quoteError) {
+    if (detailsError) {
       e.preventDefault()
       toast.error(`Cannot load quote`, {
-        description: `Quote ${truncateString(quote.id, 12)} is unavailable. ${quoteError.message || "Please try again later."}`,
+        description: `Quote ${truncateString(quote.id, 12)} is unavailable. ${detailsError.message || "Please try again later."}`,
         id: `quote-error-${quote.id}`,
         duration: 5000,
       })
@@ -85,10 +85,7 @@ function QuoteItemCard({ quote, bills, isLoading }: { quote: LightInfo; bills?: 
         <CardTitle className="text-xl">
           <div className="items-center flex gap-1">
             <span className="font-mono pt-2">
-              <Link
-                to={`/quotes/${quote.id}`}
-                onClick={handleQuoteClick}
-              >
+              <Link to={`/quotes/${quote.id}`} onClick={handleQuoteClick}>
                 {truncateString(quote.id, 16)}
               </Link>
             </span>
@@ -106,14 +103,23 @@ function QuoteItemCard({ quote, bills, isLoading }: { quote: LightInfo; bills?: 
             View
           </Button>
         </div>
-        {/* TODO bill information missing here */}
+        {isLoadingDetails && (
+          <div className="text-sm text-gray-500 flex items-center gap-2">
+            <LoaderIcon className="h-4 w-4 animate-spin" />
+            Loading bill details...
+          </div>
+        )}
+        {detailsError && <div className="text-sm text-red-500">Error loading bill: {detailsError.message}</div>}
         {bill && (
           <ParticipantsOverviewCard
-            drawee={bill.participants.drawee}
-            drawer={bill.participants.drawer}
-            payee={bill.participants.payee}
-            holder={bill.participants.endorsee ?? undefined}
+            drawee={bill.drawee}
+            drawer={bill.drawer}
+            payee={bill.payee}
+            holder={bill.endorsees?.[0] ?? undefined}
           />
+        )}
+        {!isLoadingDetails && !detailsError && !bill && (
+          <div className="text-sm text-gray-400">No bill data available</div>
         )}
       </div>
     </Card>
@@ -122,17 +128,8 @@ function QuoteItemCard({ quote, bills, isLoading }: { quote: LightInfo; bills?: 
 
 function QuoteList({ status }: { status?: QuoteStatus }) {
   const { data, isFetching, error, isLoading } = useQuery({
-    ...listQuotesOptions({
-      query: status ? { status } : undefined,
-    }),
+    ...listQuotesOptions(),
     retry: 1,
-  })
-
-  // Fetch all bills once - more efficient than fetching per quote
-  const { data: bills, isLoading: billsLoading } = useQuery({
-    ...listEbillsOptions(),
-    retry: 1,
-    staleTime: 30_000, // Cache for 30 seconds
   })
 
   const statusText = status ? status.toLowerCase() : "all"
@@ -157,8 +154,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       <div className="flex items-center gap-1">
         <LoaderIcon
           className={cn("stroke-1", {
-            "animate-spin": isFetching || billsLoading,
-            invisible: !isFetching && !billsLoading,
+            "animate-spin": isFetching,
+            invisible: !isFetching,
           })}
         />
       </div>
@@ -168,7 +165,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         {data?.quotes.map((quote, index) => {
           return (
             <div key={quote.id || index}>
-              <QuoteItemCard quote={quote} bills={bills} isLoading={isFetching} />
+              <QuoteItemCard quote={quote} isLoading={isFetching} />
             </div>
           )
         })}

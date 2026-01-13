@@ -1,20 +1,12 @@
 import { PropsWithChildren, Suspense } from "react"
-import { useQueries } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { Skeleton } from "@/components/ui/skeleton"
-
-/* function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs),
-    ),
-  ])
-} */
+import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen"
 
 function Loader() {
   return (
@@ -144,84 +136,32 @@ export function BalanceText({ amount, unit, children }: PropsWithChildren<Balanc
 }
 
 function useBalances() {
-  // The following queries relied on deprecated endpoints (creditBalance, debitBalance, onchainBalance).
-  // TODO: When new balance endpoints are available in the API, re-enable queries below.
-  const queries = useQueries({
-    queries: [
-      {
-        queryKey: ["balance", "credit"],
-        // queryFn: async () => {
-        //   const response = await withTimeout(creditBalance({}), 10_000)
-        //   if (response.error) {
-        //     throw new Error("Failed to fetch credit balance")
-        //   }
-        //   return response.data
-        // },
-        queryFn: () => ({ amount: 0, unit: "credit" }),
-        refetchInterval: 30_000,
-        staleTime: 25_000,
-        retry: 2,
-        gcTime: 10_000,
-      },
-      {
-        queryKey: ["balance", "debit"],
-        // queryFn: async () => {
-        //   const response = await withTimeout(debitBalance({}), 10_000)
-        //   if (response.error) {
-        //     throw new Error("Failed to fetch debit balance")
-        //   }
-        //   return response.data
-        // },
-        queryFn: () => ({ amount: 0, unit: "debit" }),
-        refetchInterval: 30_000,
-        staleTime: 25_000,
-        retry: 2,
-        gcTime: 10_000,
-      },
-      {
-        queryKey: ["balance", "onchain"],
-        // queryFn: async () => {
-        //   const response = await withTimeout(onchainBalance({}), 10_000)
-        //   if (response.error) {
-        //     throw new Error("Failed to fetch onchain balance")
-        //   }
-        //   return response.data
-        // },
-        queryFn: () => ({ confirmed: 0 }),
-        refetchInterval: 30_000,
-        staleTime: 25_000,
-        retry: 2,
-        gcTime: 10_000,
-      },
-    ],
+  const { data: coverage, isError, refetch } = useQuery({
+    ...getClowderLocalCoverageOptions(),
+    refetchInterval: 30_000,
+    staleTime: 25_000,
+    retry: 2,
   })
 
-  const [creditQuery, debitQuery, onchainQuery] = queries
-
-  const hasError = queries.some((query) => query.isError)
-  const error = hasError ? "Failed to load one or more balances" : null
+  const error = isError ? "Failed to load coverage data" : null
 
   const balances: Record<string, BalanceDisplay> = {
     bitcoin: {
-      amount:
-        onchainQuery.data && typeof onchainQuery.data === "object" && "confirmed" in onchainQuery.data
-          ? String(onchainQuery.data.confirmed)
-          : "0",
-      unit: "BTC",
+      amount: coverage?.onchain_collateral?.toString() ?? "0",
+      unit: "sat",
     },
-    eiou: { amount: "0", unit: "e-IOU" },
+    eiou: {
+      amount: coverage?.eiou_collateral?.toString() ?? "0",
+      unit: "sat",
+    },
     credit: {
-      amount: creditQuery.data && "amount" in creditQuery.data ? String(creditQuery.data.amount) : "0",
-      unit: creditQuery.data && "unit" in creditQuery.data ? String(creditQuery.data.unit) : "credit",
+      amount: coverage?.credit_circulating_supply?.toString() ?? "0",
+      unit: "sat",
     },
     debit: {
-      amount: debitQuery.data && "amount" in debitQuery.data ? String(debitQuery.data.amount) : "0",
-      unit: debitQuery.data && "unit" in debitQuery.data ? String(debitQuery.data.unit) : "debit",
+      amount: coverage?.debit_circulating_supply?.toString() ?? "0",
+      unit: "sat",
     },
-  }
-
-  const refetch = () => {
-    void Promise.all(queries.map((query) => query.refetch()))
   }
 
   return { balances, error, refetch }
@@ -282,6 +222,10 @@ function PageBodyWithDevSection() {
           </Card>
         </div>
 
+        {/*
+          TODO Charts display mock data - will be updated when historical data endpoint is available
+          TODO Mint fees display pending - endpoint TBD
+        */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="py-4">
             <BitcoinBalanceChart />
