@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Big from "big.js"
-import { LoaderIcon } from "lucide-react"
+import { LoaderIcon, CalendarIcon } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ConfirmDrawer } from "@/components/Drawers"
-import { humanReadableDuration } from "@/utils/dates"
-import { Calendar } from "@/components/ui/calendar"
-import { addDays } from "date-fns"
+import { Calendar } from "@/components/DatePicker/calendar"
+import { addDays, isSameDay } from "date-fns"
+import { cn } from "@/lib/utils"
 import {
   updateQuoteMutation,
   postEnableQuoteMintingMutation,
@@ -79,6 +79,9 @@ export function QuoteActions({
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false)
   const [payRequestResponse, setPayRequestResponse] = useState<PostEbillReqtopayResponse | null>(null)
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
+  const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false)
+  const [showPaymentCalendar, setShowPaymentCalendar] = useState(false)
+  const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
 
   const effectiveDiscount = useMemo(() => {
     if (!offerFormData) {
@@ -293,43 +296,119 @@ export function QuoteActions({
             setOfferConfirmDrawerOpen(false)
           }}
         >
-          <div className="flex flex-col justify-center gap-1 px-4 py-8">
+          <div className="flex flex-col gap-4 px-4 py-4">
             <div className="flex justify-between items-center">
-              <span className="font-bold">Effective discount (relative):</span>
-              <span className="text-right">{effectiveDiscount?.mul(new Big("100")).toFixed(2)}%</span>
+              <span className="text-sm font-semibold w-48">Effective discount (relative):</span>
+              <span className="text-sm text-right">{effectiveDiscount?.mul(new Big("100")).toFixed(2)}%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="font-bold">Effective discount (absolute):</span>
-              <span className="text-right">
+              <span className="text-sm font-semibold w-48">Effective discount (absolute):</span>
+              <span className="text-sm text-right">
                 {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
                 {offerFormData?.discount.net.currency}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="font-bold">Net amount:</span>
-              <span className="text-right">
+              <span className="text-sm font-semibold w-48">Net amount:</span>
+              <span className="text-sm text-right">
                 {offerFormData?.discount.net.value.round(0).toFixed(0)} {offerFormData?.discount.net.currency}
               </span>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <span className="font-bold">Valid until:</span>
-                <span className="text-right">
-                  {validUntilDate?.toDateString() ?? offerFormData?.ttl.ttl.toDateString()} (
-                  {validUntilDate && humanReadableDuration("en", validUntilDate)})
-                </span>
-              </div>
-              <div className="flex justify-center rounded-md border">
-                <Calendar
-                  mode="single"
-                  selected={validUntilDate ?? offerFormData?.ttl.ttl}
-                  onSelect={(day) => setValidUntilDate(day)}
-                  disabled={{ before: addDays(new Date(Date.now()), 1) }}
-                />
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold w-32">Valid until:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftValidUntilDate(validUntilDate ?? offerFormData?.ttl.ttl)
+                  setOfferConfirmDrawerOpen(false)
+                  setShowValidUntilCalendar(true)
+                }}
+                className="flex-1 flex gap-1.5 justify-start items-center bg-elevation-200 text-sm font-medium h-[46px] rounded-lg border border-divider-50 px-4 hover:bg-elevation-300"
+              >
+                <CalendarIcon className="text-text-300 w-5 h-5" strokeWidth={1} />
+                <span>{validUntilDate?.toDateString() ?? offerFormData?.ttl.ttl.toDateString()}</span>
+              </button>
             </div>
           </div>
         </ConfirmDrawer>
+
+        {/* Calendar Modal Overlay for Valid Until */}
+        <div
+          className={cn(
+            "fixed inset-0 bg-black/30 transition-opacity duration-300 z-40",
+            showValidUntilCalendar ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={() => {
+            setShowValidUntilCalendar(false)
+            setOfferConfirmDrawerOpen(true)
+          }}
+        />
+
+        <div
+          className={cn(
+            "fixed bottom-0 z-40 left-0 right-0 w-full bg-white dark:bg-gray-900 transition-transform duration-300 ease-in-out rounded-t-2xl",
+            showValidUntilCalendar ? "translate-y-0" : "translate-y-full"
+          )}
+        >
+          <div
+            {...(!showValidUntilCalendar ? { inert: true } : {})}
+            className="mx-auto max-w-[375px] w-full h-auto max-h-[62.5vh] p-3 justify-center overflow-y-auto"
+          >
+            <div className="flex flex-col gap-4 min-h-full">
+            <div className="text-xs text-text-200">Selected date</div>
+            <div className="text-base">{draftValidUntilDate?.toDateString() ?? "-"}</div>
+
+            <Calendar
+              mode="single"
+              selected={{ from: draftValidUntilDate ?? validUntilDate ?? offerFormData?.ttl.ttl }}
+              onSelect={(range) => {
+                if (range?.from) {
+                  setDraftValidUntilDate(range.from)
+                }
+              }}
+              disabled={{ before: addDays(new Date(Date.now()), 1) }}
+              modifiers={{
+                saved: (d) => !!validUntilDate && isSameDay(d, validUntilDate),
+              }}
+              modifiersClassNames={{
+                saved:
+                  "relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
+              }}
+            />
+
+            <div className="flex gap-2 items-center mt-auto">
+              <Button
+                className="w-full border-text-300"
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setShowValidUntilCalendar(false)
+                  setDraftValidUntilDate(undefined)
+                  setOfferConfirmDrawerOpen(true)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="w-full"
+                size="sm"
+                type="button"
+                disabled={!draftValidUntilDate}
+                onClick={() => {
+                  if (draftValidUntilDate) {
+                    setValidUntilDate(draftValidUntilDate)
+                  }
+                  setShowValidUntilCalendar(false)
+                  setOfferConfirmDrawerOpen(true)
+                }}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+          </div>
+        </div>
 
         {value.status === "Accepted" && "keyset_id" in value ? (
           <ConfirmDrawer
@@ -382,29 +461,105 @@ export function QuoteActions({
               </Button>
             }
           >
-            <div className="flex flex-col justify-center gap-1 px-4 py-8">
+            <div className="flex flex-col gap-4 px-4 py-4">
               <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold">Payment deadline:</span>
-                  <span className="text-right">
-                    {validUntilDate?.toDateString()} (
-                    {validUntilDate && humanReadableDuration("en", validUntilDate)})
-                  </span>
-                </div>
-                <div className="flex justify-center rounded-md border">
-                  <Calendar
-                    mode="single"
-                    selected={validUntilDate}
-                    onSelect={(day) => setValidUntilDate(day)}
-                    disabled={{ before: addDays(new Date(Date.now()), 1) }}
-                  />
-                </div>
+                <span className="text-sm font-semibold">Payment deadline:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftValidUntilDate(validUntilDate)
+                    setRequestToPayConfirmDrawerOpen(false)
+                    setShowPaymentCalendar(true)
+                  }}
+                  className="w-full flex gap-1.5 justify-start items-center bg-elevation-200 text-sm font-medium h-[46px] rounded-lg border border-divider-50 px-4 hover:bg-elevation-300"
+                >
+                  <CalendarIcon className="text-text-300 w-5 h-5" strokeWidth={1} />
+                  <span>{validUntilDate?.toDateString()}</span>
+                </button>
               </div>
             </div>
           </ConfirmDrawer>
         ) : (
           <></>
         )}
+
+        {/* Calendar Modal Overlay for Payment Deadline */}
+        <div
+          className={cn(
+            "fixed inset-0 bg-black/30 transition-opacity duration-300 z-40",
+            showPaymentCalendar ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={() => {
+            setShowPaymentCalendar(false)
+            setRequestToPayConfirmDrawerOpen(true)
+          }}
+        />
+
+        <div
+          className={cn(
+            "fixed bottom-0 z-40 left-0 right-0 w-full bg-white dark:bg-gray-900 transition-transform duration-300 ease-in-out rounded-t-2xl",
+            showPaymentCalendar ? "translate-y-0" : "translate-y-full"
+          )}
+        >
+          <div
+            {...(!showPaymentCalendar ? { inert: true } : {})}
+            className="mx-auto max-w-[375px] w-full h-auto max-h-[62.5vh] p-3 justify-center overflow-y-auto"
+          >
+            <div className="flex flex-col gap-4 min-h-full">
+            <div className="text-xs text-text-200">Payment deadline</div>
+            <div className="text-base">{draftValidUntilDate?.toDateString() ?? "-"}</div>
+
+            <Calendar
+              mode="single"
+              selected={{ from: draftValidUntilDate ?? validUntilDate }}
+              onSelect={(range) => {
+                if (range?.from) {
+                  setDraftValidUntilDate(range.from)
+                }
+              }}
+              disabled={{ before: addDays(new Date(Date.now()), 1) }}
+              modifiers={{
+                saved: (d) => !!validUntilDate && isSameDay(d, validUntilDate),
+              }}
+              modifiersClassNames={{
+                saved:
+                  "relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
+              }}
+            />
+
+            <div className="flex gap-2 items-center mt-auto">
+              <Button
+                className="w-full border-text-300"
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setShowPaymentCalendar(false)
+                  setDraftValidUntilDate(undefined)
+                  setRequestToPayConfirmDrawerOpen(true)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="w-full"
+                size="sm"
+                type="button"
+                disabled={!draftValidUntilDate}
+                onClick={() => {
+                  if (draftValidUntilDate) {
+                    setValidUntilDate(draftValidUntilDate)
+                  }
+                  setShowPaymentCalendar(false)
+                  setRequestToPayConfirmDrawerOpen(true)
+                }}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+          </div>
+        </div>
       </div>
 
       {((payRequestResponse ?? requestedToPayEff) || requestedToPayEff) && !ebillPaidEff && (
@@ -468,7 +623,6 @@ export function QuoteActions({
                     </>
                   )}
                 </span>
-              </div>
             )}
             */}
           </div>

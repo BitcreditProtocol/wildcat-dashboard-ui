@@ -12,7 +12,7 @@ function Calendar({
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
   return (
-    <DayPicker 
+    <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{

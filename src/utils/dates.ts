@@ -45,3 +45,34 @@ export const formatDate = (locale: string, date: Date): string => {
   const day = new Intl.DateTimeFormat(locale, { day: "2-digit" }).format(date)
   return `${day}-${month}-${year}`
 }
+
+export const formatDateLong = (date: Date, locale: string): string => {
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date)
+}
+
+export const formatDateShort = (date: Date, locale: string): string => {
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date)
+}
+
+export const formatMonthLong = (date: Date, locale: string): string => {
+  return new Intl.DateTimeFormat(locale, { month: "long" }).format(date)
+}
+
+export const formatMonthYear = (date: Date, locale: string): string => {
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "long",
+  }).format(date)
+}
+
+export const formatYearNumeric = (date: Date, locale: string): string => {
+  return new Intl.DateTimeFormat(locale, { year: "numeric" }).format(date)
+}

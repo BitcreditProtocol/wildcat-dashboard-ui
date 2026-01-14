@@ -61,9 +61,7 @@ export function OfferFormDrawer({
   const startDate = value.status === "Pending" ? new Date(value.submitted) : new Date()
   const endDate =
     value.status === "Pending" ? new Date(value.suggested_expiration) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-  // request to pay remove when it was clicked
 
-  // signature needed? - mykyta
   return (
     <BaseDrawer title={title} description={description} open={open} onOpenChange={onOpenChange} trigger={children}>
       <GrossToNetDiscountForm

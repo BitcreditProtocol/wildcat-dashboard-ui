@@ -152,11 +152,11 @@ function useBalances() {
     },
     eiou: {
       amount: coverage?.eiou_collateral?.toString() ?? "0",
-      unit: "sat",
+      unit: "e-IOU",
     },
     credit: {
       amount: coverage?.credit_circulating_supply?.toString() ?? "0",
-      unit: "sat",
+      unit: "crsat",
     },
     debit: {
       amount: coverage?.debit_circulating_supply?.toString() ?? "0",
