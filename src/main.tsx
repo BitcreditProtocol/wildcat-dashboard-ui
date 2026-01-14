@@ -58,3 +58,5 @@ void prepare().then(() => {
     </StrictMode>,
   )
 })
+
+export { App }
