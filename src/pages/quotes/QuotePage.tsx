@@ -1,16 +1,18 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { PageTitle } from "@/components/PageTitle"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview"
 import { getQuoteOptions, getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { useQuery } from "@tanstack/react-query"
-import { useParams, Link } from "react-router"
+import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { QuoteActions } from "./QuoteActions"
 import { truncateString } from "@/utils/strings.ts"
+import { ArrowLeft } from "lucide-react"
 
 function Loader() {
   return (
@@ -157,6 +159,11 @@ function PageBody({ id }: { id: string }) {
 export default function QuotePage() {
   const { id } = useParams()
   const quoteId = id ?? ""
+  const location = useLocation()
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  const fromPath = location.state?.from as string | undefined
+  const fromKeyset = fromPath?.startsWith("/keysets")
+  const keysetId = fromPath?.startsWith("/keysets/") ? fromPath.split("/keysets/")[1] : null
 
   return (
     <>
@@ -169,6 +176,26 @@ export default function QuotePage() {
       >
         {quoteId}
       </Breadcrumbs>
+      {fromKeyset && (
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link to={fromPath ?? "/keysets"}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {keysetId ? (
+                <>
+                  Back to keyset <span className="font-mono">{truncateString(keysetId, 16)}</span>
+                </>
+              ) : (
+                "Back to keysets"
+              )}
+            </Link>
+          </Button>
+        </div>
+      )}
       <PageTitle>
         Quote <span className="font-mono">{truncateString(quoteId, 16)}</span>
       </PageTitle>

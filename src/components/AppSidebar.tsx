@@ -1,4 +1,4 @@
-import { Bitcoin, Home, Inbox } from "lucide-react"
+import { Bitcoin, Home, Inbox, Key } from "lucide-react"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
 import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain"
@@ -50,6 +50,11 @@ const data = {
           url: "/quotes/canceled",
         },
       ],
+    },
+    {
+      title: "Keysets",
+      url: "/keysets",
+      icon: Key,
     },
   ],
 }
