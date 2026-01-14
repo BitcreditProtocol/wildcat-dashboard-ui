@@ -260,7 +260,9 @@ const GrossToNetDiscountForm = ({
               e.stopPropagation()
               void (async () => {
                 await handleSubmit(handleFormSubmit)()
-              })()
+              })().catch((err) => {
+                console.error("Submit failed:", err)
+              })
             }}
             disabled={!isValid || net === undefined || discountRate === undefined || days === undefined}
           >

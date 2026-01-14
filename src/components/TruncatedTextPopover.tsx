@@ -22,31 +22,34 @@ function useResponsiveMaxLength(maxLength: number, showFullOnDesktop: boolean): 
       // This excludes scrollbar and respects the actual viewport
       const width = document.documentElement.clientWidth || window.innerWidth
 
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      )
+      // Modern touch device detection using multiple signals
+      const isTouchDevice =
+        (window.matchMedia('(pointer: coarse)').matches) ||
+        (navigator.maxTouchPoints > 0) ||
+        ('ontouchstart' in window)
 
-      // If showFullOnDesktop is true and we're on desktop (>= 1024px), return Infinity to skip truncation
-      if (showFullOnDesktop && width >= 1024 && !isMobileDevice) {
+      // If showFullOnDesktop is true and we're on a large screen without touch, skip truncation
+      if (showFullOnDesktop && width >= 1024 && !isTouchDevice) {
         setEffectiveMaxLength(Infinity)
         return
       }
 
-      // Define breakpoints and scaling factors
-      if (width < 480 || (isMobileDevice && width < 600)) {
+      // Define breakpoints and scaling factors based on viewport width
+      // Touch devices get more aggressive truncation at larger widths
+      if (width < 480) {
         // Extra small mobile: reduce to 30% of maxLength
         setEffectiveMaxLength(Math.max(12, Math.floor(maxLength * 0.3)))
-      } else if (width < 768 || (isMobileDevice && width < 900)) {
+      } else if (width < 768) {
         // Small mobile/tablet: reduce to 50% of maxLength
         setEffectiveMaxLength(Math.max(16, Math.floor(maxLength * 0.5)))
       } else if (width < 1024) {
         // Tablet/small desktop: reduce to 70% of maxLength
         setEffectiveMaxLength(Math.max(16, Math.floor(maxLength * 0.7)))
       } else if (width < 1440) {
-        // Tablet/small desktop: reduce to 90% of maxLength
+        // Medium desktop: reduce to 90% of maxLength
         setEffectiveMaxLength(Math.max(24, Math.floor(maxLength * 0.9)))
       } else {
-        // Desktop: use full maxLength
+        // Large desktop: use full maxLength
         setEffectiveMaxLength(maxLength)
       }
     }

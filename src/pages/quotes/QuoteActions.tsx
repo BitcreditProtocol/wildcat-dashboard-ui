@@ -58,9 +58,15 @@ export function QuoteActions({
   const effectiveRequestTime = timeOfRequestToPay ?? paymentStatus?.time_of_request_to_pay ?? waitingPaymentData?.time_of_request ?? null
   const effectiveDeadlineTs = paymentDeadlineTs ?? paymentStatus?.payment_deadline_timestamp ?? waitingPaymentData?.payment_deadline ?? null
   const rawLinkToPay = waitingPaymentData?.link_to_pay
-  const linkToPay: string | undefined = rawLinkToPay
-    ? rawLinkToPay.split('&')[0]
-    : undefined
+  let linkToPay: string | undefined
+  if(rawLinkToPay) {
+    try {
+      const url = new URL(rawLinkToPay)
+      linkToPay = url.href.split("&")[0]
+    } catch {
+      linkToPay = rawLinkToPay
+    }
+  }
   const addressToPay: string | undefined = waitingPaymentData?.address_to_pay
   // const mempoolLink: string | undefined = waitingPaymentData?.mempool_link_for_address_to_pay
   // const hasPayRef = linkToPay ?? addressToPay
@@ -203,7 +209,7 @@ export function QuoteActions({
   }
 
   const onRequestToPay = () => {
-    const deadlineDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+    const deadlineDate = validUntilDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     const deadlineString = deadlineDate.toISOString()
 
     requestToPayMutation.mutate({
@@ -359,7 +365,12 @@ export function QuoteActions({
             title="Confirm requesting to pay"
             description="Are you sure you want to request to pay this e-bill?"
             open={requestToPayConfirmDrawerOpen}
-            onOpenChange={setRequestToPayConfirmDrawerOpen}
+            onOpenChange={(open) => {
+              setRequestToPayConfirmDrawerOpen(open)
+              if (open) {
+                setValidUntilDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+              }
+            }}
             onSubmit={() => {
               onRequestToPay()
               setRequestToPayConfirmDrawerOpen(false)
@@ -370,7 +381,27 @@ export function QuoteActions({
                 Request to Pay {requestToPayMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
               </Button>
             }
-          />
+          >
+            <div className="flex flex-col justify-center gap-1 px-4 py-8">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">Payment deadline:</span>
+                  <span className="text-right">
+                    {validUntilDate?.toDateString()} (
+                    {validUntilDate && humanReadableDuration("en", validUntilDate)})
+                  </span>
+                </div>
+                <div className="flex justify-center rounded-md border">
+                  <Calendar
+                    mode="single"
+                    selected={validUntilDate}
+                    onSelect={(day) => setValidUntilDate(day)}
+                    disabled={{ before: addDays(new Date(Date.now()), 1) }}
+                  />
+                </div>
+              </div>
+            </div>
+          </ConfirmDrawer>
         ) : (
           <></>
         )}

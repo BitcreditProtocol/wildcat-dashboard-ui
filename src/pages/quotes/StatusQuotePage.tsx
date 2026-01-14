@@ -163,8 +163,11 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       <div className="flex flex-col gap-1.5 my-2">
         {data?.quotes.length === 0 && <div className="py-2 font-bold">{noQuotesMessage}</div>}
         {data?.quotes.map((quote, index) => {
+          if (!quote.id) {
+            console.warn(`Quote at index ${index} is missing an ID:`, quote)
+          }
           return (
-            <div key={quote.id || index}>
+            <div key={quote.id || `quote-fallback-${index}`}>
               <QuoteItemCard quote={quote} isLoading={isFetching} />
             </div>
           )
