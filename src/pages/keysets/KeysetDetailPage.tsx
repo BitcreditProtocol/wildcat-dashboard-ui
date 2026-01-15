@@ -1,8 +1,8 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useParams, Link } from "react-router"
-import { useQuery, useQueries } from "@tanstack/react-query"
-import { listKeysetInfosOptions, listQuotesOptions, getQuoteOptions, listEbillsOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { useQuery, useQueries, useMutation } from "@tanstack/react-query"
+import { listKeysetInfosOptions, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation } from "@/generated/client/@tanstack/react-query.gen"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { truncateString } from "@/utils/strings"
+import { toast } from "sonner"
 
 function Loader() {
   return (
@@ -25,6 +26,16 @@ function PageBody({ keysetId }: { keysetId: string }) {
   const { data: allQuotesData, isLoading: quotesLoading } = useQuery(listQuotesOptions())
   const allQuotes = allQuotesData?.quotes ?? []
   const { data: ebills } = useQuery(listEbillsOptions())
+
+  const redemptionMutation = useMutation({
+    ...postEnableRedemptionMutation(),
+    onSuccess: () => {
+      toast.success("Redemption enabled successfully")
+    },
+    onError: (error) => {
+      toast.error(`Failed to enable redemption: ${error.message}`)
+    },
+  })
 
   const quoteDetailsQueries = useQueries({
     queries: allQuotes.map((quote) =>
@@ -52,7 +63,13 @@ function PageBody({ keysetId }: { keysetId: string }) {
     )
   }
 
-  const finalExpiryDate = keyset.final_expiry ? new Date(keyset.final_expiry * 1000).toLocaleDateString() : "No expiry"
+  const finalExpiryDate = keyset.final_expiry
+    ? new Date(keyset.final_expiry * 1000).toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
+    : "No expiry"
   const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
 
   type EbillType = NonNullable<typeof ebills>[number]
@@ -62,6 +79,24 @@ function PageBody({ keysetId }: { keysetId: string }) {
       billIdToEbillMap.set(ebill.id, ebill)
     }
   }
+
+  const matchingQuotes = allQuotes.filter((_quote, index) => {
+    const quoteDetails = quoteDetailsQueries[index]?.data
+    const billMaturityDate = quoteDetails?.bill?.maturity_date
+
+    if (!keyset.final_expiry || !billMaturityDate) {
+      return false
+    }
+
+    const keysetDate = new Date(keyset.final_expiry * 1000)
+    const billDate = new Date(billMaturityDate)
+
+    return (
+      keysetDate.getFullYear() === billDate.getFullYear() &&
+      keysetDate.getMonth() === billDate.getMonth() &&
+      keysetDate.getDate() === billDate.getDate()
+    )
+  })
 
   return (
     <div className="space-y-4">
@@ -78,26 +113,31 @@ function PageBody({ keysetId }: { keysetId: string }) {
               <Badge variant={keyset.active ? "default" : "secondary"}>{keyset.active ? "Active" : "Inactive"}</Badge>
             </div>
           </div>
-          <div className="w-full my-4">
-            <Button
-              className="w-full"
-              size="sm"
-              variant="default"
-              onClick={() => {
-                // TODO: Implement redeem functionality
-                console.log("Redeem keyset:", keyset.id)
-              }}
-            >
-              Redeem
-            </Button>
-          </div>
+          {keyset.active && (
+            <div className="w-full my-4">
+              <Button
+                className="w-full"
+                size="sm"
+                variant="default"
+                disabled={redemptionMutation.isPending}
+                onClick={() => {
+                  redemptionMutation.mutate({
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+                    body: { kid: keyset.id as any },
+                  })
+                }}
+              >
+                {redemptionMutation.isPending ? "Enabling redemption..." : "Redeem"}
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {quotesLoading ? (
             <Skeleton className="h-20 w-full" />
-          ) : allQuotes.length > 0 ? (
+          ) : matchingQuotes.length > 0 ? (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold">All Quotes ({allQuotes.length})</h4>
+              <h4 className="text-sm font-semibold">All quotes ({matchingQuotes.length})</h4>
 
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-xs">
@@ -112,8 +152,9 @@ function PageBody({ keysetId }: { keysetId: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {allQuotes.map((quote, index) => {
-                      const quoteDetails = quoteDetailsQueries[index]?.data
+                    {matchingQuotes.map((quote) => {
+                      const quoteIndex = allQuotes.findIndex((q) => q.id === quote.id)
+                      const quoteDetails = quoteDetailsQueries[quoteIndex]?.data
                       const billId = quoteDetails?.bill?.id
                       const ebill = billId ? billIdToEbillMap.get(billId) : null
                       const isPaid = ebill?.status?.payment?.paid === true

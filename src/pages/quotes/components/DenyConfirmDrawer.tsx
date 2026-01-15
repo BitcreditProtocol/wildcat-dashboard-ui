@@ -1,4 +1,4 @@
-import { ConfirmDrawer } from "@/components/Drawers"
+import { ConfirmDrawer } from "@/components/Drawers.tsx"
 import type { ReactNode } from "react"
 
 interface DenyConfirmDrawerProps {

@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
-import { QuoteActions } from "./QuoteActions"
+import { QuoteActions } from "./QuoteActionsRefactored"
 import { truncateString } from "@/utils/strings.ts"
 import { ArrowLeft } from "lucide-react"
 
@@ -85,6 +85,9 @@ function PageBody({ id }: { id: string }) {
   const paymentDeadlineTs = paymentStatus?.payment_deadline_timestamp ?? null
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
 
+  const cws = ebillQuery.data?.current_waiting_state
+  const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
+
   if (!quote || !bill) {
     return <div className="p-4 text-muted-foreground">No quote data available</div>
   }
@@ -106,6 +109,24 @@ function PageBody({ id }: { id: string }) {
                 <span className="text-sm font-semibold w-32">Status:</span>
                 <Badge variant={getStatusVariant(quote.status)}>{quote.status}</Badge>
               </div>
+              {(ebillPaid || requestedToPay || isInMempool) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold w-32">Payment:</span>
+                  {ebillPaid ? (
+                    <Badge variant="default" className="bg-green-600">
+                      Paid
+                    </Badge>
+                  ) : isInMempool ? (
+                    <Badge variant="default" className="bg-orange-500">
+                      In mempool
+                    </Badge>
+                  ) : (
+                    <Badge variant="default" className="bg-blue-500">
+                      Requested
+                    </Badge>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
