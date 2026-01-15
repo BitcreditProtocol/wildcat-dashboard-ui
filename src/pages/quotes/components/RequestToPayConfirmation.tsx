@@ -22,6 +22,7 @@ export function RequestToPayConfirmation({
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
   const [showPaymentCalendar, setShowPaymentCalendar] = useState(false)
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
+  const addDays = 30 * 24 * 60 * 60 * 1000
 
   return (
     <>
@@ -32,11 +33,11 @@ export function RequestToPayConfirmation({
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
           if (isOpen) {
-            setValidUntilDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+            setValidUntilDate(new Date(Date.now() + addDays))
           }
         }}
         onSubmit={() => {
-          const deadline = validUntilDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          const deadline = validUntilDate ?? new Date(Date.now() + addDays)
           onSubmit(deadline)
         }}
         submitButtonText="Yes, request to pay"
