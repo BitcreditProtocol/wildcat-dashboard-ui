@@ -14,6 +14,10 @@ import { QuoteActions } from "./QuoteActionsRefactored"
 import { truncateString } from "@/utils/strings.ts"
 import { ArrowLeft } from "lucide-react"
 
+interface LocationState {
+  from?: string
+}
+
 function Loader() {
   return (
     <div className="flex flex-col gap-1.5 py-2">
@@ -181,8 +185,8 @@ export default function QuotePage() {
   const { id } = useParams()
   const quoteId = id ?? ""
   const location = useLocation()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const fromPath = location.state?.from as string | undefined
+  const state = location.state as LocationState | null
+  const fromPath = state?.from
   const fromKeyset = fromPath?.startsWith("/keysets")
   const keysetId = fromPath?.startsWith("/keysets/") ? fromPath.split("/keysets/")[1] : null
 

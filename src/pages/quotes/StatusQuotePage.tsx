@@ -143,6 +143,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     retry: 1,
   })
 
+  /* TODO: optimize this with pagination or batch fetching if API supports it */
   const quoteDetailsQueries = useQueries({
     queries: (data?.quotes ?? []).map((quote) => ({
       ...getQuoteOptions({
