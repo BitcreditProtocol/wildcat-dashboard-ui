@@ -79,19 +79,27 @@ export const formatYearNumeric = (date: Date, locale: string): string => {
 
 /**
  * Calculate a smart default deadline based on maturity date.
- * Returns maturity + 2 days if maturity is in the future, otherwise today + 2 days.
+ * Returns end of day UTC (23:59:59.999) for maturity + 2 days if maturity is in the future,
+ * otherwise end of day UTC for today + 2 days.
  */
 export const getDefaultDeadline = (maturityDate?: string | null): Date => {
   const twoDays = 2 * 24 * 60 * 60 * 1000
-  const today = new Date()
+  const now = new Date()
+
+  let deadline: Date
 
   if (maturityDate) {
     const maturity = new Date(maturityDate)
-    if (maturity > today) {
-      return new Date(maturity.getTime() + twoDays)
+    if (maturity > now) {
+      deadline = new Date(maturity.getTime() + twoDays)
+    } else {
+      deadline = new Date(Date.now() + twoDays)
     }
+  } else {
+    deadline = new Date(Date.now() + twoDays)
   }
 
-  return new Date(Date.now() + twoDays)
+  deadline.setUTCHours(23, 59, 59, 999)
+  return deadline
 }
 

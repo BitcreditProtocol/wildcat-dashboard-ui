@@ -5,6 +5,7 @@ import {
   postEnableQuoteMintingMutation,
   postEbillReqtopayMutation,
   getQuoteOptions,
+  getEbillOptions,
 } from "@/generated/client/@tanstack/react-query.gen.ts"
 import type { OfferFormResult } from "./OfferFormDrawer.tsx"
 import Big from "big.js"
@@ -79,7 +80,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
     onSuccess: () => {
       toast.success("Payment request has been created.")
       void queryClient.invalidateQueries({
-        queryKey: ["bill_id", billId],
+        queryKey: getEbillOptions({ path: { bid: billId } }).queryKey,
       })
     },
   })
