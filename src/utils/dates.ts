@@ -76,3 +76,22 @@ export const formatMonthYear = (date: Date, locale: string): string => {
 export const formatYearNumeric = (date: Date, locale: string): string => {
   return new Intl.DateTimeFormat(locale, { year: "numeric" }).format(date)
 }
+
+/**
+ * Calculate a smart default deadline based on maturity date.
+ * Returns maturity + 2 days if maturity is in the future, otherwise today + 2 days.
+ */
+export const getDefaultDeadline = (maturityDate?: string | null): Date => {
+  const twoDays = 2 * 24 * 60 * 60 * 1000
+  const today = new Date()
+
+  if (maturityDate) {
+    const maturity = new Date(maturityDate)
+    if (maturity > today) {
+      return new Date(maturity.getTime() + twoDays)
+    }
+  }
+
+  return new Date(Date.now() + twoDays)
+}
+

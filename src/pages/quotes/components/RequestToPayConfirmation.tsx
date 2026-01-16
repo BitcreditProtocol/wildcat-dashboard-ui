@@ -5,6 +5,7 @@ import { LoaderIcon } from "lucide-react"
 import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import { useQuery } from "@tanstack/react-query"
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { getDefaultDeadline } from "@/utils/dates"
 
 interface RequestToPayConfirmationProps {
   open: boolean
@@ -33,29 +34,17 @@ export function RequestToPayConfirmation({
     ...getEbillOptions({ path: { bid: billId } }),
     enabled: true,
     retry: 0,
-    refetchInterval: 2000,
+    refetchInterval: (query) => {
+      return query.state.data ? false : 2000
+    },
     refetchIntervalInBackground: true,
   })
 
   const ebillAvailable = !ebillQuery.isLoading && !ebillQuery.error && !!ebillQuery.data
 
-  const getDefaultDeadline = () => {
-    const twoDays = 2 * 24 * 60 * 60 * 1000
-    const today = new Date()
-
-    if (maturityDate) {
-      const maturity = new Date(maturityDate)
-      if (maturity > today) {
-        return new Date(maturity.getTime() + twoDays)
-      }
-    }
-
-    return new Date(Date.now() + twoDays)
-  }
-
   useEffect(() => {
     if (!validUntilDate) {
-      setValidUntilDate(getDefaultDeadline())
+      setValidUntilDate(getDefaultDeadline(maturityDate))
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -68,11 +57,11 @@ export function RequestToPayConfirmation({
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
           if (isOpen) {
-            setValidUntilDate(getDefaultDeadline())
+            setValidUntilDate(getDefaultDeadline(maturityDate))
           }
         }}
         onSubmit={() => {
-          const deadline = validUntilDate ?? getDefaultDeadline()
+          const deadline = validUntilDate ?? getDefaultDeadline(maturityDate)
           onSubmit(deadline)
         }}
         submitButtonText="Yes, request to pay"

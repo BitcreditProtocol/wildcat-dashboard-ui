@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ConfirmDrawer } from "@/components/Drawers.tsx"
 import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import Big from "big.js"
 import type { OfferFormResult } from "./OfferFormDrawer.tsx"
+import { getDefaultDeadline } from "@/utils/dates"
 
 interface OfferConfirmationProps {
   offerFormData?: OfferFormResult
@@ -23,19 +24,11 @@ export function OfferConfirmation({
   const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false)
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
 
-  const getDefaultValidUntil = () => {
-    const twoDays = 2 * 24 * 60 * 60 * 1000
-    const today = new Date()
-
-    if (maturityDate) {
-      const maturity = new Date(maturityDate)
-      if (maturity > today) {
-        return new Date(maturity.getTime() + twoDays)
-      }
+  useEffect(() => {
+    if (!validUntilDate) {
+      setValidUntilDate(getDefaultDeadline(maturityDate))
     }
-
-    return new Date(Date.now() + twoDays)
-  }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const effectiveDiscount = offerFormData
     ? new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
@@ -50,7 +43,7 @@ export function OfferConfirmation({
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
           if (isOpen) {
-            setValidUntilDate(getDefaultValidUntil())
+            setValidUntilDate(getDefaultDeadline(maturityDate))
           }
         }}
         onSubmit={() => {
