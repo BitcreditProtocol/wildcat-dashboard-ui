@@ -30,7 +30,7 @@ const data = {
           url: "/quotes/offered",
         },
         {
-          title: "Offer Expired",
+          title: "Offer expired",
           url: "/quotes/offerexpired",
         },
         {

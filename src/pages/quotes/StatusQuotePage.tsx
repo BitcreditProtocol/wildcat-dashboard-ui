@@ -7,7 +7,7 @@ import { listQuotesOptions, getQuoteOptions } from "@/generated/client/@tanstack
 import { useQuery, useQueries } from "@tanstack/react-query"
 import { LoaderIcon, ArrowUp, ArrowDown } from "lucide-react"
 import { Link, useNavigate } from "react-router"
-import { formatNumber, truncateString } from "@/utils/strings"
+import { formatNumber, truncateString, formatStatusLabel } from "@/utils/strings"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { LightInfo } from "@/generated/client/types.gen"
@@ -101,7 +101,7 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
             <HighlightText text={`${formatNumber("en", quote.sum)} sat`} highlight={searchQuery} />
           </div>
           <Badge variant={getStatusVariant(quote.status)}>
-            <HighlightText text={quote.status} highlight={searchQuery} />
+            <HighlightText text={formatStatusLabel(quote.status)} highlight={searchQuery} />
           </Badge>
         </div>
       </div>
@@ -325,7 +325,7 @@ function PageBody({ status }: { status?: QuoteStatus }) {
 }
 
 export default function StatusQuotePage({ status }: StatusQuotePageProps) {
-  const pageTitle = status ? `${status} Quotes` : "All Quotes"
+  const pageTitle = status ? `${formatStatusLabel(status)} quotes` : "All quotes"
 
   return (
     <>
@@ -340,7 +340,7 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
             : undefined
         }
       >
-        {status ?? "Quotes"}
+        {status ? formatStatusLabel(status) : "Quotes"}
       </Breadcrumbs>
 
       <PageTitle>{pageTitle}</PageTitle>
