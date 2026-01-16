@@ -137,6 +137,7 @@ export function QuoteActions({
           }}
         />
 
+        {/* TODO disabled label and minting button connection */}
         {value.status === "Accepted" && "keyset_id" in value && (
           <ConfirmDrawer
             title="Confirm enabling minting"

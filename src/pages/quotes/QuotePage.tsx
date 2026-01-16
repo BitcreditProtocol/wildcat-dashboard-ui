@@ -113,6 +113,17 @@ function PageBody({ id }: { id: string }) {
                 <span className="text-sm font-semibold w-32">Status:</span>
                 <Badge variant={getStatusVariant(quote.status)}>{quote.status}</Badge>
               </div>
+              {(quote.status === "Accepted" || quote.status === "Minting") && "keyset_id" in quote && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold w-32">Minting:</span>
+                  <Badge
+                    variant={quote.status === "Minting" ? "default" : "destructive"}
+                    className={quote.status === "Minting" ? "bg-blue-500" : "bg-red-500"}
+                  >
+                    {quote.status === "Minting" ? "Enabled" : "Disabled"}
+                  </Badge>
+                </div>
+              )}
               {(ebillPaid || requestedToPay || isInMempool) && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Payment:</span>
@@ -132,34 +143,48 @@ function PageBody({ id }: { id: string }) {
                 </div>
               )}
             </div>
-
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Sum:</span>
               <span className="text-lg font-bold">{bill.sum} sat</span>
             </div>
-
+            {"discounted" in quote && quote.discounted && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold w-32">Discounted:</span>
+                <span className="text-lg font-bold">{quote.discounted} sat</span>
+              </div>
+            )}
+            {quote.status === "Minting" && "fee" in quote && (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold w-32">Fee amount:</span>
+                  <span className="text-sm font-mono">{quote.fee} sat</span>
+                </div>
+                {/* TODO fee token when minting works
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold w-32">Fee token:</span>
+                    <span className="text-sm font-mono">{quote.token}</span>
+                  </div>
+                */}
+              </>
+            )}
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Maturity date:</span>
               <span className="text-sm">
                 {bill.maturity_date} ({maturityLabel})
               </span>
             </div>
-
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Participants:</span>
               <ParticipantsOverviewCard drawee={bill.drawee} drawer={bill.drawer} payee={bill.payee} />
             </div>
-
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Drawee:</span>
               <ParticipantDetail participant={bill.drawee} />
             </div>
-
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Drawer:</span>
               <ParticipantDetail participant={bill.drawer} />
             </div>
-
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Payee:</span>
               <ParticipantDetail participant={bill.payee} />
