@@ -95,11 +95,7 @@ export function QuoteActions({
               setDenyConfirmDrawerOpen(false)
             }}
           >
-            <Button
-              className="flex-1 max-w-sm"
-              disabled={isFetching || denyQuote.isPending}
-              variant="destructive"
-            >
+            <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
               Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </DenyConfirmDrawer>
@@ -118,10 +114,7 @@ export function QuoteActions({
               setOfferFormDrawerOpen(false)
             }}
           >
-            <Button
-              className="flex-1 max-w-sm"
-              disabled={isFetching || offerQuote.isPending}
-            >
+            <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
               Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </OfferFormDrawer>
@@ -136,13 +129,14 @@ export function QuoteActions({
             handleOfferQuote(finalData)
             setOfferConfirmDrawerOpen(false)
           }}
+          maturityDate={value.bill.maturity_date}
         />
 
         {value.status === "Accepted" && "keyset_id" in value && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex-1">
+                <div className="flex-1 max-w-sm">
                   <ConfirmDrawer
                     title="Confirm enabling minting"
                     description="Are you sure you want to enable minting for this quote?"
@@ -159,7 +153,8 @@ export function QuoteActions({
                         disabled={isFetching || enableMintingMutation.isPending || mintingEnabled}
                         variant="default"
                       >
-                        Enable Minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                        Enable minting{" "}
+                        {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
                       </Button>
                     }
                   />
@@ -174,21 +169,20 @@ export function QuoteActions({
           </TooltipProvider>
         )}
 
-        {value.status === "Accepted" &&
-          "keyset_id" in value &&
-          !ebillPaidEff &&
-          !requestedToPayEff && (
-            <RequestToPayConfirmation
-              open={requestToPayConfirmDrawerOpen}
-              onOpenChange={setRequestToPayConfirmDrawerOpen}
-              onSubmit={(deadline) => {
-                handleRequestToPay(value.bill.sum, deadline)
-                setRequestToPayConfirmDrawerOpen(false)
-              }}
-              isFetching={isFetching}
-              isPending={requestToPayMutation.isPending}
-            />
-          )}
+        {value.status === "Accepted" && "keyset_id" in value && !ebillPaidEff && !requestedToPayEff && (
+          <RequestToPayConfirmation
+            open={requestToPayConfirmDrawerOpen}
+            onOpenChange={setRequestToPayConfirmDrawerOpen}
+            onSubmit={(deadline) => {
+              handleRequestToPay(value.bill.sum, deadline)
+              setRequestToPayConfirmDrawerOpen(false)
+            }}
+            isFetching={isFetching}
+            isPending={requestToPayMutation.isPending}
+            maturityDate={value.bill.maturity_date}
+            billId={value.bill.id}
+          />
+        )}
       </div>
 
       {requestedToPayEff && (addressToPay ?? linkToPay) && (

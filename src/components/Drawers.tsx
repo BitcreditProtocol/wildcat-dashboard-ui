@@ -39,6 +39,7 @@ type ConfirmDrawerProps = BaseDrawerProps & {
   cancelButtonText?: string
   submitButtonText?: string
   submitButtonVariant?: VariantProps<typeof buttonVariants>["variant"]
+  submitButtonDisabled?: boolean
   onSubmit: () => void
 }
 
@@ -46,6 +47,7 @@ export function ConfirmDrawer({
   cancelButtonText = "Cancel",
   submitButtonText = "Confirm",
   submitButtonVariant,
+  submitButtonDisabled = false,
   onSubmit,
   children,
   ...drawerProps
@@ -55,7 +57,7 @@ export function ConfirmDrawer({
       {children}
       <DrawerFooter>
         <div className="gap-2">
-          <Button className="w-full mb-2 max-w-sm" variant={submitButtonVariant} size="lg" onClick={onSubmit}>
+          <Button className="w-full mb-2 max-w-sm" variant={submitButtonVariant} size="lg" onClick={onSubmit} disabled={submitButtonDisabled}>
             {submitButtonText}
           </Button>
           <DrawerClose asChild>

@@ -41,25 +41,25 @@ export function OfferFormDrawer({
   onSubmit,
   children,
 }: OfferFormDrawerProps) {
+  const addDays = 30 * 24 * 60 * 60 * 1000
+
   const handleFormSubmit = (values: {
     days: number
     discountRate: Big
     net: { value: Big; currency: string }
     gross: { value: Big; currency: string }
   }) => {
-    const now = new Date()
-    const ttl = new Date(now.getTime() + values.days * 24 * 60 * 60 * 1000)
+    const endDate = value.status === "Pending" ? new Date(value.suggested_expiration) : new Date(Date.now() + addDays)
 
     const result: OfferFormResult = {
       discount: values,
-      ttl: { ttl },
+      ttl: { ttl: endDate },
     }
 
     onSubmit(result)
   }
 
   const startDate = value.status === "Pending" ? new Date(value.submitted) : new Date()
-  const addDays = 30 * 24 * 60 * 60 * 1000
   const endDate = value.status === "Pending" ? new Date(value.suggested_expiration) : new Date(Date.now() + addDays)
 
   return (

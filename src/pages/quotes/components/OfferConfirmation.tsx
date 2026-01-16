@@ -9,6 +9,7 @@ interface OfferConfirmationProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: OfferFormResult) => void
+  maturityDate?: string | null
 }
 
 export function OfferConfirmation({
@@ -16,10 +17,25 @@ export function OfferConfirmation({
   open,
   onOpenChange,
   onSubmit,
+  maturityDate,
 }: OfferConfirmationProps) {
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
   const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false)
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
+
+  const getDefaultValidUntil = () => {
+    const twoDays = 2 * 24 * 60 * 60 * 1000
+    const today = new Date()
+
+    if (maturityDate) {
+      const maturity = new Date(maturityDate)
+      if (maturity > today) {
+        return new Date(maturity.getTime() + twoDays)
+      }
+    }
+
+    return new Date(Date.now() + twoDays)
+  }
 
   const effectiveDiscount = offerFormData
     ? new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
@@ -33,8 +49,8 @@ export function OfferConfirmation({
         open={open}
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
-          if (isOpen && offerFormData) {
-            setValidUntilDate(offerFormData.ttl.ttl)
+          if (isOpen) {
+            setValidUntilDate(getDefaultValidUntil())
           }
         }}
         onSubmit={() => {

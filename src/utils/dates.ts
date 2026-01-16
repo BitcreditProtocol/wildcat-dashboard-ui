@@ -35,8 +35,8 @@ export function humanReadableDuration(locale: string, from: Date, until = new Da
 export function humanReadableDurationDays(locale: string, from: Date, until = new Date(Date.now())) {
   const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
 
-  const diffMillis = from.getTime() - until.getTime()
-  return relativeTimeFormatter.format(Math.round(diffMillis / (1000 * 60 * 60 * 24)), "day")
+  const diffDays = differenceInCalendarDays(from, until)
+  return relativeTimeFormatter.format(diffDays, "day")
 }
 
 export const formatDate = (locale: string, date: Date): string => {

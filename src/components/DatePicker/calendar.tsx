@@ -11,6 +11,8 @@ import { format, isSameDay } from "date-fns";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { YearPicker } from "./yearPicker";
+import { MonthPicker } from "./monthPicker";
 
 export type CalendarProps = Omit<DayPickerRangeProps, "mode" | "onSelect" | "selected"> & {
   mode: "single" | "range"
@@ -108,6 +110,8 @@ function Calendar({
     selected.from
   );
   const [month, setMonth] = useState<Date>(selected.from ?? new Date());
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   useEffect(() => {
     if (mode === "single") {
@@ -202,7 +206,6 @@ function Calendar({
 
   const canGoForward = disableFutureNavigation ? !isAtOrBeyondCurrentMonth(month) : true;
 
-  // Custom navigation component rendered separately
   const NavigationHeader = () => (
     <div className="flex justify-center relative items-center mb-4">
       <button
@@ -217,18 +220,63 @@ function Calendar({
       </button>
       <div
         className={cn(
-          "flex justify-between items-center gap-2",
-          onCaptionLabelClicked && "cursor-pointer hover:bg-accent rounded-md px-3 py-1"
+          "flex justify-between items-center gap-2 cursor-pointer hover:bg-accent rounded-md px-3 py-1"
         )}
-        onClick={onCaptionLabelClicked}
-        role={onCaptionLabelClicked ? "button" : undefined}
-        tabIndex={onCaptionLabelClicked ? 0 : undefined}
+        role="button"
+        tabIndex={0}
       >
         {mode === "single" && selectedDate && (
-          <span className="text-sm font-medium">{format(month, "MMM dd, yyyy")}</span>
+          <span
+            className="text-sm font-medium flex gap-1"
+            onClick={() => {
+              setShowYearPicker(!showYearPicker)
+              setShowMonthPicker(false)
+              if (onCaptionLabelClicked) {
+                onCaptionLabelClicked()
+              }
+            }}
+          >
+            <span>{format(month, "MMM dd,")}</span>
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowYearPicker(!showYearPicker)
+                setShowMonthPicker(false)
+                if (onCaptionLabelClicked) {
+                  onCaptionLabelClicked()
+                }
+              }}
+            >
+              {format(month, "yyyy")}
+            </span>
+          </span>
         )}
         {mode === "range" && (
-          <span className="text-sm font-medium">{format(month, "MMM yyyy")}</span>
+          <span
+            className="text-sm font-medium flex gap-1"
+            onClick={() => {
+              setShowYearPicker(!showYearPicker)
+              setShowMonthPicker(false)
+              if (onCaptionLabelClicked) {
+                onCaptionLabelClicked()
+              }
+            }}
+          >
+            <span>{format(month, "MMM")}</span>
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowYearPicker(!showYearPicker)
+                setShowMonthPicker(false)
+                if (onCaptionLabelClicked) {
+                  onCaptionLabelClicked()
+                }
+              }}
+              className="hover:underline"
+            >
+              {format(month, "yyyy")}
+            </span>
+          </span>
         )}
         {onCaptionLabelClicked && <ChevronDown strokeWidth={3} size={15} />}
       </div>
@@ -268,8 +316,41 @@ function Calendar({
       onTouchEnd={handleTouchEnd}
       style={{ touchAction: "pan-y" }}
     >
-      <NavigationHeader />
-      {mode === "single" ? (
+      {!showYearPicker && !showMonthPicker && <NavigationHeader />}
+      {showYearPicker ? (
+        <YearPicker
+          value={month}
+          onChange={(newDate) => {
+            setMonth(newDate)
+            if (mode === "single") {
+              setSelectedDate(newDate)
+              handleOnSelectSingle(newDate, newDate, {}, {} as React.MouseEvent<Element>)
+            }
+            setShowYearPicker(false)
+            setShowMonthPicker(true)
+          }}
+          onCaptionLabelClicked={() => {
+            setShowYearPicker(false)
+          }}
+          disableFutureNavigation={disableFutureNavigation}
+        />
+      ) : showMonthPicker ? (
+        <MonthPicker
+          value={month}
+          onChange={(newDate) => {
+            setMonth(newDate)
+            if (mode === "single") {
+              setSelectedDate(newDate)
+              handleOnSelectSingle(newDate, newDate, {}, {} as React.MouseEvent<Element>)
+            }
+            setShowMonthPicker(false)
+          }}
+          onCaptionLabelClicked={() => {
+            setShowMonthPicker(false)
+          }}
+          disableFutureNavigation={disableFutureNavigation}
+        />
+      ) : mode === "single" ? (
         <DayPicker
           {...pickerProps}
           mode="single"
