@@ -385,7 +385,12 @@ const GrossToNetDiscountForm = ({
         </div>
 
         {submitButtonText && (
-          <Button type="submit" size="sm" className="my-4" disabled={!isValid}>
+          <Button
+            type="submit"
+            size="sm"
+            className="my-4 max-w-sm"
+            disabled={!isValid}
+          >
             {submitButtonText}
           </Button>
         )}
@@ -393,7 +398,7 @@ const GrossToNetDiscountForm = ({
 
       <DrawerFooter className="pt-4">
         <Button
-          className="w-full mb-1"
+          className="w-full mb-1 max-w-sm"
           size="sm"
           type="button"
           onClick={(e) => {
@@ -411,7 +416,7 @@ const GrossToNetDiscountForm = ({
         </Button>
         <DrawerClose asChild>
           <Button
-            className="w-full"
+            className="w-full max-w-sm"
             variant="outline"
             size="sm"
           >

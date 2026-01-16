@@ -73,7 +73,7 @@ function PageBody() {
   return (
     <div className="my-4">
       <Link to="/earnings/cashflow">
-        <Button>
+        <Button className="max-w-sm">
           <ChartColumnIncreasingIcon /> CashFlow
         </Button>
       </Link>

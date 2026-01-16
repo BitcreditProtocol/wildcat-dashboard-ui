@@ -231,6 +231,7 @@ export default function QuotePage() {
           <Button
             variant="outline"
             size="sm"
+            className="max-w-sm"
             asChild
           >
             <Link to={fromPath ?? "/keysets"}>

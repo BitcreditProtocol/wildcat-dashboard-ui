@@ -109,7 +109,7 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
       </div>
       <div className="flex justify-between items-center gap-4 px-4 py-2">
         <div>
-          <Button size="sm" disabled={isLoading} onClick={handleQuoteClick}>
+          <Button size="sm" className="max-w-sm px-12" disabled={isLoading} onClick={handleQuoteClick}>
             View
           </Button>
         </div>
@@ -259,7 +259,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             variant={sortBy.startsWith("sum") ? "default" : "outline"}
             onClick={() => toggleSort("sum")}
             title={sortBy.startsWith("sum") ? (sortBy.endsWith("asc") ? "Amount Ascending" : "Amount Descending") : "Sort by Amount"}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 max-w-sm"
           >
             Amount {getSortIcon("sum")}
           </Button>
@@ -268,7 +268,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             variant={sortBy.startsWith("maturity") ? "default" : "outline"}
             onClick={() => toggleSort("maturity")}
             title={sortBy.startsWith("maturity") ? (sortBy.endsWith("asc") ? "Maturity Date Ascending" : "Maturity Date Descending") : "Sort by Maturity Date"}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 max-w-sm"
           >
             Maturity {getSortIcon("maturity")}
           </Button>
@@ -277,7 +277,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             variant={sortBy.startsWith("status") ? "default" : "outline"}
             onClick={() => toggleSort("status")}
             title={sortBy.startsWith("status") ? (sortBy.endsWith("asc") ? "Status Ascending" : "Status Descending") : "Sort by Status"}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 max-w-sm"
           >
             Status {getSortIcon("status")}
           </Button>

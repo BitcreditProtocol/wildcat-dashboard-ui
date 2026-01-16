@@ -108,7 +108,7 @@ function PageBody() {
             variant="outline"
             onClick={() => setSortBy(sortBy === "expired-first" ? "date-order" : "expired-first")}
             title={sortBy === "expired-first" ? "Expired First" : "Date Order"}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 max-w-sm"
           >
             {sortBy === "expired-first" ? (
               <ArrowUp className="h-4 w-4" />
@@ -159,7 +159,7 @@ function PageBody() {
                 </CardHeader>
 
                 <CardContent>
-                  <Button size="sm" variant="default" asChild>
+                  <Button size="sm" variant="default" className="max-w-sm px-12" asChild>
                     <Link to={`/keysets/${keyset.id}`}>View</Link>
                   </Button>
                 </CardContent>

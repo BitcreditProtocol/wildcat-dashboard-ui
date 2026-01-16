@@ -55,11 +55,11 @@ export function ConfirmDrawer({
       {children}
       <DrawerFooter>
         <div className="gap-2">
-          <Button className="w-full mb-2" variant={submitButtonVariant} size="lg" onClick={onSubmit}>
+          <Button className="w-full mb-2 max-w-sm" variant={submitButtonVariant} size="lg" onClick={onSubmit}>
             {submitButtonText}
           </Button>
           <DrawerClose asChild>
-            <Button className="w-full" variant="outline" size="lg">
+            <Button className="w-full max-w-sm" variant="outline" size="lg">
               {cancelButtonText}
             </Button>
           </DrawerClose>

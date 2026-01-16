@@ -229,7 +229,7 @@ export function QuoteActions({
             }}
           >
             <Button
-              className="flex-1"
+              className="flex-1 max-w-sm"
               disabled={isFetching || denyQuote.isPending || value.status !== "Pending"}
               variant={value.status !== "Pending" ? "outline" : "destructive"}
             >
@@ -252,7 +252,7 @@ export function QuoteActions({
               setOfferFormDrawerOpen(false)
             }}
           >
-            <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "Pending"}>
+            <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending || value.status !== "Pending"}>
               Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </OfferFormDrawer>
@@ -368,7 +368,7 @@ export function QuoteActions({
 
               <div className="flex gap-2 items-center mt-auto">
                 <Button
-                  className="w-full border-text-300"
+                  className="w-full border-text-300 max-w-sm"
                   variant="outline"
                   size="sm"
                   type="button"
@@ -381,7 +381,7 @@ export function QuoteActions({
                   Cancel
                 </Button>
                 <Button
-                  className="w-full"
+                  className="w-full max-w-sm"
                   size="sm"
                   type="button"
                   disabled={!draftValidUntilDate}
@@ -413,7 +413,7 @@ export function QuoteActions({
             submitButtonText="Yes, enable minting"
             trigger={
               <Button
-                className="flex-1"
+                className="flex-1 max-w-sm"
                 disabled={isFetching || enableMintingMutation.isPending || mintingEnabled}
                 variant="default"
               >
@@ -446,7 +446,7 @@ export function QuoteActions({
             }}
             submitButtonText="Yes, request to pay"
             trigger={
-              <Button className="flex-1" disabled={isFetching || requestToPayMutation.isPending} variant="default">
+              <Button className="flex-1 max-w-sm" disabled={isFetching || requestToPayMutation.isPending} variant="default">
                 Request to Pay {requestToPayMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
               </Button>
             }
@@ -519,7 +519,7 @@ export function QuoteActions({
 
               <div className="flex gap-2 items-center mt-auto">
                 <Button
-                  className="w-full border-text-300"
+                  className="w-full border-text-300 max-w-sm"
                   variant="outline"
                   size="sm"
                   type="button"
@@ -532,7 +532,7 @@ export function QuoteActions({
                   Cancel
                 </Button>
                 <Button
-                  className="w-full"
+                  className="w-full max-w-sm"
                   size="sm"
                   type="button"
                   disabled={!draftValidUntilDate}

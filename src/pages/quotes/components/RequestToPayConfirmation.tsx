@@ -42,7 +42,7 @@ export function RequestToPayConfirmation({
         }}
         submitButtonText="Yes, request to pay"
         trigger={
-          <Button className="flex-1" disabled={isFetching || isPending} variant="default">
+          <Button className="flex-1 max-w-sm" disabled={isFetching || isPending} variant="default">
             Request to Pay {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
           </Button>
         }
