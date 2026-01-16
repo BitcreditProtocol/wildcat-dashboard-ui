@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import Big from "big.js"
 import { parseFloatSafe, parseIntSafe } from "@/utils/numbers"
 import { daysBetween } from "@/utils/dates"
 import { Act360 } from "@/utils/discount-util"
 import { Button } from "./ui/button"
-import { InputContainer } from "./InputContainer"
 import { DrawerFooter, DrawerClose } from "./ui/drawer"
 import { setItem, getItem } from "@/utils/local-storage" // , removeItem
 
@@ -66,6 +65,71 @@ const GrossToNetDiscountForm = ({
     mode: "all",
   })
 
+  const blockDecimalInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ([".", ",", "e", "E", "+", "-", "^"].includes(e.key)) {
+      e.preventDefault()
+      return
+    }
+  }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const allowed = new Set([
+      "Backspace",
+      "Delete",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown",
+      "Tab",
+      "Home",
+      "End",
+    ])
+    if (e.key === "Enter") {
+      e.preventDefault()
+      e.currentTarget.blur()
+      return
+    }
+    if (allowed.has(e.key)) {
+      return
+    }
+    if (e.key >= "0" && e.key <= "9") {
+      return
+    }
+    e.preventDefault()
+  }
+  const blockNonDigitInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const native = e.nativeEvent as InputEvent
+    const data = native.data
+    if (native.type === "beforeinput") {
+      if ((native.inputType === "insertText" || native.inputType === "insertCompositionText") && data && /\D/.test(data)) {
+        e.preventDefault()
+      }
+    }
+  }
+
+  const handlePasteDigits = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    const text = e.clipboardData.getData("text") || ""
+    const digits = text.replace(/[^\d]/g, "")
+    const input = e.currentTarget
+    const start = input.selectionStart ?? input.value.length
+    const end = input.selectionEnd ?? input.value.length
+    const before = input.value.slice(0, start)
+    const after = input.value.slice(end)
+    const next = (before + digits + after).replace(/[^\d]/g, "")
+    input.value = next
+    setValue("daysInput", next, { shouldValidate: true, shouldDirty: true })
+    const caret = (before + digits).length
+    try {
+      input.setSelectionRange(caret, caret)
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLInputElement>) => {
+    e.preventDefault()
+  }
+
   const { daysInput, discountRateInput } = watch()
 
   const days = useMemo<number | undefined>(() => {
@@ -113,8 +177,13 @@ const GrossToNetDiscountForm = ({
         shouldDirty: true,
         shouldTouch: true,
       })
-      setHasSetInitialDays(true)
     }
+
+    setValue("discountRateInput", "0", {
+      shouldValidate: true,
+    })
+
+    setHasSetInitialDays(true)
   }, [startDate, endDate, setValue, localStorageKey, hasSetInitialDays])
 
   useEffect(() => {
@@ -156,124 +225,199 @@ const GrossToNetDiscountForm = ({
     })
   }
 
+  const handleIntegerInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const input = e.currentTarget
+    const cleaned = input.value.replace(/[^\d]/g, "")
+    if (input.value !== cleaned) {
+      const caret = input.selectionStart ?? cleaned.length
+      input.value = cleaned
+      setValue("daysInput", cleaned, { shouldValidate: true, shouldDirty: true })
+      const pos = Math.min(caret, cleaned.length)
+      try {
+        input.setSelectionRange(pos, pos)
+      } catch {
+        // ignore unsupported setSelectionRange
+      }
+    }
+  }
+
+  const parseDigitsToInt = (value: unknown) => {
+    let str = ""
+    if (typeof value === "string" || typeof value === "number") {
+      str = String(value)
+    }
+    return str.replace(/[^\d]/g, "")
+  }
+
+  const validateMinInteger = (min: number, label: string) => (value?: string) => {
+    if (value == null || value === "") return `${label} is required`
+    if (!/^\d+$/.test(value)) return `${label} must be a whole number`
+    const n = parseInt(value, 10)
+    if (Number.isNaN(n)) return `${label} is invalid`
+    if (n < min) return `${label} must be at least ${min}`
+    if (n > INPUT_DAYS_MAX_VALUE) return `${label} must be at most ${INPUT_DAYS_MAX_VALUE}`
+    return true
+  }
+
   return (
     <>
       <form
-        className="flex flex-col gap-2 min-w-[8rem] px-4"
+        className="flex flex-col gap-6 min-w-[8rem] px-4"
         onSubmit={(e) => {
           handleSubmit(handleFormSubmit)(e).catch((err) => {
             console.error("Submit failed:", err)
           })
         }}
       >
-        <div className="flex flex-col">
-          <InputContainer htmlFor="daysInput" label={<>Days</>}>
-            <input
-              id="daysInput"
-              step="1"
-              type="number"
-              className="bg-transparent text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              {...register("daysInput", {
-                required: true,
-                min: INPUT_DAYS_MIN_VALUE,
-                max: INPUT_DAYS_MAX_VALUE,
-              })}
-            />
-          </InputContainer>
-          {errors.daysInput && (
-            <div className="text-[10px] text-signal-error">
-              <>
-                Please enter a valid value between {INPUT_DAYS_MIN_VALUE} and {INPUT_DAYS_MAX_VALUE}.
-              </>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col">
-          <InputContainer htmlFor="discountRateInput" label={<>Discount rate</>}>
-            <div className="flex gap-0.5">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <label htmlFor="daysInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Days
+              </label>
               <input
-                id="discountRateInput"
-                step="0.0001"
+                id="daysInput"
+                step="1"
                 type="number"
-                className="bg-transparent text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                {...register("discountRateInput", {
+                inputMode="numeric"
+                className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-gray-900 dark:text-gray-100 w-24"
+                onKeyDown={(e) => {
+                  blockDecimalInput(e)
+                  handleKeyDown(e)
+                }}
+                onInput={handleIntegerInput}
+                onBeforeInput={blockNonDigitInput}
+                onPaste={handlePasteDigits}
+                onDrop={handleDrop}
+                enterKeyHint="next"
+                {...register("daysInput", {
                   required: true,
-                  min: 0,
-                  max: 99.9999,
+                  min: INPUT_DAYS_MIN_VALUE,
+                  max: INPUT_DAYS_MAX_VALUE,
+                  setValueAs: parseDigitsToInt,
+                  validate: validateMinInteger(INPUT_DAYS_MIN_VALUE, "Days"),
                 })}
               />
-              %
             </div>
-          </InputContainer>
-          {errors.discountRateInput && (
-            <div className="text-[10px] text-signal-error">
-              <>
+            {errors.daysInput && (
+              <div className="text-xs text-red-500">
+                Please enter a valid value between {INPUT_DAYS_MIN_VALUE} and {INPUT_DAYS_MAX_VALUE}.
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <label htmlFor="discountRateInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Discount rate
+              </label>
+              <div className="flex gap-1 items-center">
+                <input
+                  id="discountRateInput"
+                  step="0.0001"
+                  type="number"
+                  inputMode="numeric"
+                  className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-gray-900 dark:text-gray-100 w-20"
+                  {...register("discountRateInput", {
+                    required: true,
+                    min: 0,
+                    max: 99.9999,
+                  })}
+                  onFocus={(e) => {
+                    if (e.target.value === "0") {
+                      e.target.value = ""
+                      setValue("discountRateInput", "", { shouldValidate: true })
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value === "" || e.target.value === ".") {
+                      setValue("discountRateInput", "0", { shouldValidate: true })
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      e.currentTarget.blur()
+                    }
+                  }}
+                />
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">%</span>
+              </div>
+            </div>
+            {errors.discountRateInput && (
+              <div className="text-xs text-red-500">
                 Please enter a valid value between {0}% and {99.9999}%.
-              </>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Net amount</span>
+            <div className="flex gap-1 items-center">
+              <span className="text-lg font-semibold text-green-600 dark:text-green-400">
+                {net === undefined ? "?" : net.value.toNumber()}
+              </span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                {net?.currency ?? gross.currency}
+              </span>
             </div>
-          )}
-        </div>
-
-        <div className="mt-1 flex justify-between items-center text-sm text-text-200 font-medium">
-          <>Gross amount</>
-
-          <div className="flex gap-1 items-center">
-            {gross.value.toNumber()}
-            <span className="text-[10px] text-text-200 leading-3">{gross.currency}</span>
           </div>
         </div>
 
-        <div className="flex justify-between text-sm text-text-200 font-medium">
-          <>Discount</>
-
-          <div className="flex gap-1 items-center">
-            {discount === undefined ? <>?</> : <>{discount.value.toNumber()}</>}
-            <span className="text-[10px] text-text-200 leading-3">{discount?.currency}</span>
+        <div className="flex flex-col gap-3 px-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600 dark:text-gray-400">Mark up</span>
+            <div className="flex gap-1 items-center">
+              <span className="text-gray-600 dark:text-gray-400">
+                {discount === undefined ? "0.00" : Math.abs(discount.value.toNumber()).toFixed(2)}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-500">{discount?.currency ?? gross.currency}</span>
+            </div>
           </div>
-        </div>
 
-        <div className="flex justify-between items-center text-md text-text-300 font-semibold">
-          <>Net amount</>
-
-          <div className="flex gap-1 items-center">
-            {net === undefined ? <>?</> : <>{net.value.toNumber()}</>}
-            <span className="font-medium text-[10px] text-text-200 leading-3">{net?.currency}</span>
+          <div className="flex justify-between items-center text-base font-semibold">
+            <span className="text-gray-900 dark:text-gray-100">Gross amount</span>
+            <div className="flex gap-1 items-center">
+              <span className="text-green-600 dark:text-green-400">+{gross.value.toNumber().toFixed(2)}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-500">{gross.currency}</span>
+            </div>
           </div>
         </div>
 
         {submitButtonText && (
-          <Button type="submit" size="sm" className="my-[16px]" disabled={!isValid}>
+          <Button type="submit" size="sm" className="my-4" disabled={!isValid}>
             {submitButtonText}
           </Button>
         )}
       </form>
 
-      <DrawerFooter>
-        <div className="gap-2">
+      <DrawerFooter className="pt-4">
+        <Button
+          className="w-full mb-1"
+          size="sm"
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            void (async () => {
+              await handleSubmit(handleFormSubmit)()
+            })().catch((err) => {
+              console.error("Submit failed:", err)
+            })
+          }}
+          disabled={!isValid || net === undefined || discountRate === undefined || days === undefined}
+        >
+          Confirm
+        </Button>
+        <DrawerClose asChild>
           <Button
-            className="w-full mb-2"
-            size="lg"
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              void (async () => {
-                await handleSubmit(handleFormSubmit)()
-              })().catch((err) => {
-                console.error("Submit failed:", err)
-              })
-            }}
-            disabled={!isValid || net === undefined || discountRate === undefined || days === undefined}
+            className="w-full"
+            variant="outline"
+            size="sm"
           >
-            Next
+            Cancel
           </Button>
-          <DrawerClose asChild>
-            <Button className="w-full" variant="outline" size="lg">
-              Cancel
-            </Button>
-          </DrawerClose>
-        </div>
+        </DrawerClose>
       </DrawerFooter>
     </>
   )
