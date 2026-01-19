@@ -33,8 +33,12 @@ export function useKeycloak(): UseKeycloakReturn {
       if (keycloak.authenticated) {
         setIsAuthenticated(true)
         setUser({
-          name: (keycloak.profile as KeycloakProfile)?.username ?? (keycloak.tokenParsed as KeycloakTokenParsed)?.preferred_username ?? 'Unknown User',
-          email: (keycloak.profile as KeycloakProfile)?.email ?? (keycloak.tokenParsed as KeycloakTokenParsed)?.email ?? '',
+          name:
+            (keycloak.profile as KeycloakProfile)?.username ??
+            (keycloak.tokenParsed as KeycloakTokenParsed)?.preferred_username ??
+            "Unknown User",
+          email:
+            (keycloak.profile as KeycloakProfile)?.email ?? (keycloak.tokenParsed as KeycloakTokenParsed)?.email ?? "",
           avatar: "",
         })
       } else {

@@ -6,6 +6,8 @@ import { daysBetween } from "@/utils/dates"
 import { Act360 } from "@/utils/discount-util"
 import { Button } from "./ui/button"
 import { InputContainer } from "./InputContainer"
+import { DrawerFooter, DrawerClose } from "./ui/drawer"
+import { setItem, getItem } from "@/utils/local-storage" // , removeItem
 
 interface CurrencyAmount {
   value: Big
@@ -21,6 +23,8 @@ interface CommonDiscountFormProps {
 type GrossToNetProps = CommonDiscountFormProps & {
   gross: CurrencyAmount
   submitButtonText?: string
+  onConfirm?: () => void
+  quoteId?: string
 }
 
 interface FormResult {
@@ -37,6 +41,7 @@ interface FormValues {
 
 const INPUT_DAYS_MIN_VALUE = 1
 const INPUT_DAYS_MAX_VALUE = 360
+const LOCAL_STORAGE_KEY_PREFIX = "offer-form-"
 
 type GrossToNetFormValues = FormValues
 
@@ -45,8 +50,12 @@ const GrossToNetDiscountForm = ({
   endDate,
   gross,
   onSubmit,
-  submitButtonText = "Submit",
+  submitButtonText,
+  quoteId,
 }: GrossToNetProps) => {
+  const [hasSetInitialDays, setHasSetInitialDays] = useState(false)
+
+  const localStorageKey = quoteId ? `${LOCAL_STORAGE_KEY_PREFIX}${quoteId}` : null
   const {
     watch,
     register,
@@ -80,13 +89,46 @@ const GrossToNetDiscountForm = ({
   }, [gross, net])
 
   useEffect(() => {
-    if (startDate === undefined) return
-    setValue("daysInput", String(Math.min(Math.max(1, daysBetween(startDate, endDate)), INPUT_DAYS_MAX_VALUE)), {
-      shouldValidate: true,
-      shouldDirty: true,
-      shouldTouch: true,
-    })
-  }, [startDate, endDate, setValue])
+    if (hasSetInitialDays) {
+      return
+    }
+
+    if (localStorageKey) {
+      const savedData = getItem<{ daysInput: string; discountRateInput: string }>(localStorageKey)
+      if (savedData) {
+        if (savedData.daysInput) {
+          setValue("daysInput", savedData.daysInput, { shouldValidate: true })
+        }
+        if (savedData.discountRateInput) {
+          setValue("discountRateInput", savedData.discountRateInput, { shouldValidate: true })
+        }
+        setHasSetInitialDays(true)
+        return
+      }
+    }
+
+    if (startDate !== undefined) {
+      setValue("daysInput", String(Math.min(Math.max(1, daysBetween(startDate, endDate)), INPUT_DAYS_MAX_VALUE)), {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      })
+      setHasSetInitialDays(true)
+    }
+  }, [startDate, endDate, setValue, localStorageKey, hasSetInitialDays])
+
+  useEffect(() => {
+    if (!localStorageKey || !hasSetInitialDays) {
+      return
+    }
+
+    if (daysInput || discountRateInput) {
+      setItem(localStorageKey, {
+        daysInput: daysInput ?? "",
+        discountRateInput: discountRateInput ?? "",
+      })
+    }
+  }, [localStorageKey, daysInput, discountRateInput, hasSetInitialDays])
 
   useEffect(() => {
     if (!isValid || discountRate === undefined || days === undefined) {
@@ -94,110 +136,146 @@ const GrossToNetDiscountForm = ({
       return
     }
 
+    const netValue = Act360.grossToNet(gross.value, discountRate, days)
     setNet({
-      value: Act360.grossToNet(gross.value, discountRate, days),
+      value: netValue,
       currency: gross.currency,
     })
   }, [isValid, gross, days, discountRate])
 
+  const handleFormSubmit = () => {
+    if (net === undefined || discountRate === undefined || days === undefined) {
+      return
+    }
+
+    onSubmit({
+      days,
+      discountRate,
+      net,
+      gross,
+    })
+  }
+
   return (
-    <form
-      className="flex flex-col gap-2 min-w-[8rem]"
-      onSubmit={(e) => {
-        handleSubmit(() => {
-          if (net === undefined || discountRate === undefined || days === undefined) return
-
-          onSubmit({
-            days,
-            discountRate,
-            net,
-            gross,
+    <>
+      <form
+        className="flex flex-col gap-2 min-w-[8rem] px-4"
+        onSubmit={(e) => {
+          handleSubmit(handleFormSubmit)(e).catch((err) => {
+            console.error("Submit failed:", err)
           })
-        })(e).catch(() => {
-          // TODO
-        })
-      }}
-    >
-      <div className="flex flex-col">
-        <InputContainer htmlFor="daysInput" label={<>Days</>}>
-          <input
-            id="daysInput"
-            step="1"
-            type="number"
-            className="bg-transparent text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            {...register("daysInput", {
-              required: true,
-              min: INPUT_DAYS_MIN_VALUE,
-              max: INPUT_DAYS_MAX_VALUE,
-            })}
-          />
-        </InputContainer>
-        {errors.daysInput && (
-          <div className="text-[10px] text-signal-error">
-            <>
-              Please enter a valid value between {INPUT_DAYS_MIN_VALUE} and {INPUT_DAYS_MAX_VALUE}.
-            </>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col">
-        <InputContainer htmlFor="discountRateInput" label={<>Discount rate</>}>
-          <div className="flex gap-0.5">
+        }}
+      >
+        <div className="flex flex-col">
+          <InputContainer htmlFor="daysInput" label={<>Days</>}>
             <input
-              id="discountRateInput"
-              step="0.0001"
+              id="daysInput"
+              step="1"
               type="number"
               className="bg-transparent text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              {...register("discountRateInput", {
+              {...register("daysInput", {
                 required: true,
-                min: 0,
-                max: 99.9999,
+                min: INPUT_DAYS_MIN_VALUE,
+                max: INPUT_DAYS_MAX_VALUE,
               })}
             />
-            %
+          </InputContainer>
+          {errors.daysInput && (
+            <div className="text-[10px] text-signal-error">
+              <>
+                Please enter a valid value between {INPUT_DAYS_MIN_VALUE} and {INPUT_DAYS_MAX_VALUE}.
+              </>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col">
+          <InputContainer htmlFor="discountRateInput" label={<>Discount rate</>}>
+            <div className="flex gap-0.5">
+              <input
+                id="discountRateInput"
+                step="0.0001"
+                type="number"
+                className="bg-transparent text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                {...register("discountRateInput", {
+                  required: true,
+                  min: 0,
+                  max: 99.9999,
+                })}
+              />
+              %
+            </div>
+          </InputContainer>
+          {errors.discountRateInput && (
+            <div className="text-[10px] text-signal-error">
+              <>
+                Please enter a valid value between {0}% and {99.9999}%.
+              </>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-1 flex justify-between items-center text-sm text-text-200 font-medium">
+          <>Gross amount</>
+
+          <div className="flex gap-1 items-center">
+            {gross.value.toNumber()}
+            <span className="text-[10px] text-text-200 leading-3">{gross.currency}</span>
           </div>
-        </InputContainer>
-        {errors.discountRateInput && (
-          <div className="text-[10px] text-signal-error">
-            <>
-              Please enter a valid value between {0}% and {99.9999}%.
-            </>
+        </div>
+
+        <div className="flex justify-between text-sm text-text-200 font-medium">
+          <>Discount</>
+
+          <div className="flex gap-1 items-center">
+            {discount === undefined ? <>?</> : <>{discount.value.toNumber()}</>}
+            <span className="text-[10px] text-text-200 leading-3">{discount?.currency}</span>
           </div>
+        </div>
+
+        <div className="flex justify-between items-center text-md text-text-300 font-semibold">
+          <>Net amount</>
+
+          <div className="flex gap-1 items-center">
+            {net === undefined ? <>?</> : <>{net.value.toNumber()}</>}
+            <span className="font-medium text-[10px] text-text-200 leading-3">{net?.currency}</span>
+          </div>
+        </div>
+
+        {submitButtonText && (
+          <Button type="submit" size="sm" className="my-[16px]" disabled={!isValid}>
+            {submitButtonText}
+          </Button>
         )}
-      </div>
+      </form>
 
-      <div className="mt-1 flex justify-between items-center text-sm text-text-200 font-medium">
-        <>Gross amount</>
-
-        <div className="flex gap-1 items-center">
-          {gross.value.toNumber()}
-          <span className="text-[10px] text-text-200 leading-3">{gross.currency}</span>
+      <DrawerFooter>
+        <div className="gap-2">
+          <Button
+            className="w-full mb-2"
+            size="lg"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              void (async () => {
+                await handleSubmit(handleFormSubmit)()
+              })().catch((err) => {
+                console.error("Submit failed:", err)
+              })
+            }}
+            disabled={!isValid || net === undefined || discountRate === undefined || days === undefined}
+          >
+            Next
+          </Button>
+          <DrawerClose asChild>
+            <Button className="w-full" variant="outline" size="lg">
+              Cancel
+            </Button>
+          </DrawerClose>
         </div>
-      </div>
-
-      <div className="flex justify-between text-sm text-text-200 font-medium">
-        <>Discount</>
-
-        <div className="flex gap-1 items-center">
-          {discount === undefined ? <>?</> : <>{discount.value.toNumber()}</>}
-          <span className="text-[10px] text-text-200 leading-3">{discount?.currency}</span>
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center text-md text-text-300 font-semibold">
-        <>Net amount</>
-
-        <div className="flex gap-1 items-center">
-          {net === undefined ? <>?</> : <>{net.value.toNumber()}</>}
-          <span className="font-medium text-[10px] text-text-200 leading-3">{net?.currency}</span>
-        </div>
-      </div>
-
-      <Button type="submit" size="sm" className="my-[16px]" disabled={!isValid}>
-        {submitButtonText}
-      </Button>
-    </form>
+      </DrawerFooter>
+    </>
   )
 }
 

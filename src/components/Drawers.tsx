@@ -54,15 +54,15 @@ export function ConfirmDrawer({
     <BaseDrawer {...drawerProps}>
       {children}
       <DrawerFooter>
-        <div className="flex gap-2">
+        <div className="gap-2">
+          <Button className="w-full mb-2" variant={submitButtonVariant} size="lg" onClick={onSubmit}>
+            {submitButtonText}
+          </Button>
           <DrawerClose asChild>
-            <Button className="flex-1" variant="outline" size="lg">
+            <Button className="w-full" variant="outline" size="lg">
               {cancelButtonText}
             </Button>
           </DrawerClose>
-          <Button className="flex-1" variant={submitButtonVariant} size="lg" onClick={onSubmit}>
-            {submitButtonText}
-          </Button>
         </div>
       </DrawerFooter>
     </BaseDrawer>
