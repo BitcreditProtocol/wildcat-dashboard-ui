@@ -14,8 +14,8 @@ function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?
   const backgroundColor = getDeterministicColor(value?.node_id)
 
   const avatar = (
-    <Avatar className="h-8 w-8">
-      <AvatarFallback className="text-white font-semibold text-sm" style={{ backgroundColor }}>
+    <Avatar className="h-8 w-8 rounded-full">
+      <AvatarFallback className="text-white font-semibold text-sm bg-transparent" style={{ backgroundColor }}>
         {initials}
       </AvatarFallback>
     </Avatar>
@@ -36,10 +36,12 @@ function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?
 function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
   const initials = getInitials(value?.name)
   const backgroundColor = getDeterministicColor(value?.name ?? value?.node_id)
+  const isCompany = (value?.type as unknown as number) === 1
+  const shapeClass = isCompany ? "rounded-lg" : "rounded-full"
 
   const avatar = (
-    <Avatar className="h-8 w-8">
-      <AvatarFallback className="text-white font-semibold text-sm" style={{ backgroundColor }}>
+    <Avatar className={cn("h-8 w-8", shapeClass)}>
+      <AvatarFallback className={cn("text-white font-semibold text-sm bg-transparent", shapeClass)} style={{ backgroundColor }}>
         {initials}
       </AvatarFallback>
     </Avatar>
