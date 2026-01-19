@@ -46,12 +46,14 @@ interface StatusQuotePageProps {
 
 function Loader() {
   return (
-    <div className="flex flex-col gap-1.5 my-2">
-      <Skeleton className="h-4 rounded-lg" />
-      <Skeleton className="h-29 rounded-lg mt-1" />
-      <Skeleton className="h-29 rounded-lg" />
-      <Skeleton className="h-29 rounded-lg" />
-      <Skeleton className="h-29 rounded-lg" />
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex flex-col gap-1.5 my-2 w-full">
+        <Skeleton className="h-4 rounded-lg" />
+        <Skeleton className="h-29 rounded-lg mt-1" />
+        <Skeleton className="h-29 rounded-lg" />
+        <Skeleton className="h-29 rounded-lg" />
+        <Skeleton className="h-29 rounded-lg" />
+      </div>
     </div>
   )
 }
@@ -154,8 +156,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     }))
   })
 
-  const statusText = status ? status.toLowerCase() : "all"
-  const noQuotesMessage = `No ${statusText} quotes.`
+  const noQuotesMessage = `No quotes available.`
 
   if (error) {
     return (
