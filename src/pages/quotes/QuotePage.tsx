@@ -13,6 +13,7 @@ import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { QuoteActions } from "./QuoteActionsRefactored"
 import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
 import { ArrowLeft } from "lucide-react"
+import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx"
 
 interface LocationState {
   from?: string
@@ -106,8 +107,12 @@ function PageBody({ id }: { id: string }) {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">ID:</span>
+                <span className="text-sm font-semibold w-32">Quote ID:</span>
                 <span className="font-mono text-sm">{quote.id}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold w-32">Bill ID:</span>
+                <span className="font-mono text-sm">{quote.bill.id}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold w-32">Status:</span>
@@ -157,14 +162,12 @@ function PageBody({ id }: { id: string }) {
               <>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Fee amount:</span>
-                  <span className="text-sm font-mono">{quote.fee} sat</span>
+                  <span className="text-sm font-mono">{bill.sum - quote.discounted} sat</span>
                 </div>
-                {/* TODO fee token when minting works
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold w-32">Fee token:</span>
-                    <span className="text-sm font-mono">{quote.token}</span>
-                  </div>
-                */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold w-32">Fee token:</span>
+                  <TruncatedTextPopover text={quote.fee} maxLength={64} className="font-mono text-sm" showCopyButton={true} />
+                </div>
               </>
             )}
             <div className="flex items-center gap-2">
