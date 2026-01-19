@@ -16,10 +16,9 @@ import {
   getEbillOptions,
 } from "@/generated/client/@tanstack/react-query.gen"
 import type { InfoReply, PostEbillReqtopayResponse, BillWaitingStatePaymentData } from "@/generated/client/types.gen"
-import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer.tsx"
-import { DenyConfirmDrawer } from "./components/DenyConfirmDrawer.tsx"
+import { OfferFormDrawer, type OfferFormResult } from "./OfferFormDrawer"
+import { DenyConfirmDrawer } from "./DenyConfirmDrawer"
 import { removeItem } from "@/utils/local-storage"
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover"
 
 interface QuoteActionsProps {
   value: InfoReply
@@ -31,7 +30,6 @@ interface QuoteActionsProps {
   timeOfRequestToPay?: number | null
 }
 
-// TODO delete this component later and rename QuoteActionsRefactored to QuoteActions after testing
 export function QuoteActions({
   value,
   isFetching,
@@ -59,8 +57,19 @@ export function QuoteActions({
   const ebillPaidEff = Boolean(ebillPaid || paymentStatus?.paid)
   const effectiveRequestTime = timeOfRequestToPay ?? paymentStatus?.time_of_request_to_pay ?? waitingPaymentData?.time_of_request ?? null
   const effectiveDeadlineTs = paymentDeadlineTs ?? paymentStatus?.payment_deadline_timestamp ?? waitingPaymentData?.payment_deadline ?? null
-  const linkToPay: string | undefined = waitingPaymentData?.mempool_link_for_address_to_pay
+  const rawLinkToPay = waitingPaymentData?.link_to_pay
+  let linkToPay: string | undefined
+  if(rawLinkToPay) {
+    try {
+      const url = new URL(rawLinkToPay)
+      linkToPay = url.href.split("&")[0]
+    } catch {
+      linkToPay = rawLinkToPay
+    }
+  }
   const addressToPay: string | undefined = waitingPaymentData?.address_to_pay
+  // const mempoolLink: string | undefined = waitingPaymentData?.mempool_link_for_address_to_pay
+  // const hasPayRef = linkToPay ?? addressToPay
 
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>()
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
@@ -323,10 +332,11 @@ export function QuoteActions({
           </div>
         </ConfirmDrawer>
 
+        {/* Calendar Modal Overlay for Valid Until */}
         <div
           className={cn(
             "fixed inset-0 bg-black/30 transition-opacity duration-300 z-40",
-            showValidUntilCalendar ? "opacity-100" : "opacity-0 pointer-events-none",
+            showValidUntilCalendar ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={() => {
             setShowValidUntilCalendar(false)
@@ -337,7 +347,7 @@ export function QuoteActions({
         <div
           className={cn(
             "fixed bottom-0 z-40 left-0 right-0 w-full bg-white dark:bg-gray-900 transition-transform duration-300 ease-in-out rounded-t-2xl",
-            showValidUntilCalendar ? "translate-y-0" : "translate-y-full",
+            showValidUntilCalendar ? "translate-y-0" : "translate-y-full"
           )}
         >
           <div
@@ -345,58 +355,58 @@ export function QuoteActions({
             className="mx-auto max-w-[375px] w-full h-auto max-h-[62.5vh] p-3 justify-center overflow-y-auto"
           >
             <div className="flex flex-col gap-4 min-h-full">
-              <div className="text-xs text-text-200">Selected date</div>
-              <div className="text-base">{draftValidUntilDate?.toDateString() ?? "-"}</div>
+            <div className="text-xs text-text-200">Selected date</div>
+            <div className="text-base">{draftValidUntilDate?.toDateString() ?? "-"}</div>
 
-              <Calendar
-                mode="single"
-                selected={{ from: draftValidUntilDate ?? validUntilDate ?? offerFormData?.ttl.ttl }}
-                onSelect={(range) => {
-                  if (range?.from) {
-                    setDraftValidUntilDate(range.from)
+            <Calendar
+              mode="single"
+              selected={{ from: draftValidUntilDate ?? validUntilDate ?? offerFormData?.ttl.ttl }}
+              onSelect={(range) => {
+                if (range?.from) {
+                  setDraftValidUntilDate(range.from)
+                }
+              }}
+              disabled={{ before: addDays(new Date(Date.now()), 1) }}
+              modifiers={{
+                saved: (d) => !!validUntilDate && isSameDay(d, validUntilDate),
+              }}
+              modifiersClassNames={{
+                saved:
+                  "relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
+              }}
+            />
+
+            <div className="flex gap-2 items-center mt-auto">
+              <Button
+                className="w-full border-text-300"
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setShowValidUntilCalendar(false)
+                  setDraftValidUntilDate(undefined)
+                  setOfferConfirmDrawerOpen(true)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="w-full"
+                size="sm"
+                type="button"
+                disabled={!draftValidUntilDate}
+                onClick={() => {
+                  if (draftValidUntilDate) {
+                    setValidUntilDate(draftValidUntilDate)
                   }
+                  setShowValidUntilCalendar(false)
+                  setOfferConfirmDrawerOpen(true)
                 }}
-                disabled={{ before: addDays(new Date(Date.now()), 1) }}
-                modifiers={{
-                  saved: (d) => !!validUntilDate && isSameDay(d, validUntilDate),
-                }}
-                modifiersClassNames={{
-                  saved:
-                    "relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
-                }}
-              />
-
-              <div className="flex gap-2 items-center mt-auto">
-                <Button
-                  className="w-full border-text-300"
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={() => {
-                    setShowValidUntilCalendar(false)
-                    setDraftValidUntilDate(undefined)
-                    setOfferConfirmDrawerOpen(true)
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="w-full"
-                  size="sm"
-                  type="button"
-                  disabled={!draftValidUntilDate}
-                  onClick={() => {
-                    if (draftValidUntilDate) {
-                      setValidUntilDate(draftValidUntilDate)
-                    }
-                    setShowValidUntilCalendar(false)
-                    setOfferConfirmDrawerOpen(true)
-                  }}
-                >
-                  Confirm
-                </Button>
-              </div>
+              >
+                Confirm
+              </Button>
             </div>
+          </div>
           </div>
         </div>
 
@@ -477,7 +487,7 @@ export function QuoteActions({
         <div
           className={cn(
             "fixed inset-0 bg-black/30 transition-opacity duration-300 z-40",
-            showPaymentCalendar ? "opacity-100" : "opacity-0 pointer-events-none",
+            showPaymentCalendar ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={() => {
             setShowPaymentCalendar(false)
@@ -488,7 +498,7 @@ export function QuoteActions({
         <div
           className={cn(
             "fixed bottom-0 z-40 left-0 right-0 w-full bg-white dark:bg-gray-900 transition-transform duration-300 ease-in-out rounded-t-2xl",
-            showPaymentCalendar ? "translate-y-0" : "translate-y-full",
+            showPaymentCalendar ? "translate-y-0" : "translate-y-full"
           )}
         >
           <div
@@ -496,101 +506,125 @@ export function QuoteActions({
             className="mx-auto max-w-[375px] w-full h-auto max-h-[62.5vh] p-3 justify-center overflow-y-auto"
           >
             <div className="flex flex-col gap-4 min-h-full">
-              <div className="text-xs text-text-200">Payment deadline</div>
-              <div className="text-base">{draftValidUntilDate?.toDateString() ?? "-"}</div>
+            <div className="text-xs text-text-200">Payment deadline</div>
+            <div className="text-base">{draftValidUntilDate?.toDateString() ?? "-"}</div>
 
-              <Calendar
-                mode="single"
-                selected={{ from: draftValidUntilDate ?? validUntilDate }}
-                onSelect={(range) => {
-                  if (range?.from) {
-                    setDraftValidUntilDate(range.from)
+            <Calendar
+              mode="single"
+              selected={{ from: draftValidUntilDate ?? validUntilDate }}
+              onSelect={(range) => {
+                if (range?.from) {
+                  setDraftValidUntilDate(range.from)
+                }
+              }}
+              disabled={{ before: addDays(new Date(Date.now()), 1) }}
+              modifiers={{
+                saved: (d) => !!validUntilDate && isSameDay(d, validUntilDate),
+              }}
+              modifiersClassNames={{
+                saved:
+                  "relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
+              }}
+            />
+
+            <div className="flex gap-2 items-center mt-auto">
+              <Button
+                className="w-full border-text-300"
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setShowPaymentCalendar(false)
+                  setDraftValidUntilDate(undefined)
+                  setRequestToPayConfirmDrawerOpen(true)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="w-full"
+                size="sm"
+                type="button"
+                disabled={!draftValidUntilDate}
+                onClick={() => {
+                  if (draftValidUntilDate) {
+                    setValidUntilDate(draftValidUntilDate)
                   }
+                  setShowPaymentCalendar(false)
+                  setRequestToPayConfirmDrawerOpen(true)
                 }}
-                disabled={{ before: addDays(new Date(Date.now()), 1) }}
-                modifiers={{
-                  saved: (d) => !!validUntilDate && isSameDay(d, validUntilDate),
-                }}
-                modifiersClassNames={{
-                  saved:
-                    "relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
-                }}
-              />
-
-              <div className="flex gap-2 items-center mt-auto">
-                <Button
-                  className="w-full border-text-300"
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={() => {
-                    setShowPaymentCalendar(false)
-                    setDraftValidUntilDate(undefined)
-                    setRequestToPayConfirmDrawerOpen(true)
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="w-full"
-                  size="sm"
-                  type="button"
-                  disabled={!draftValidUntilDate}
-                  onClick={() => {
-                    if (draftValidUntilDate) {
-                      setValidUntilDate(draftValidUntilDate)
-                    }
-                    setShowPaymentCalendar(false)
-                    setRequestToPayConfirmDrawerOpen(true)
-                  }}
-                >
-                  Confirm
-                </Button>
-              </div>
+              >
+                Confirm
+              </Button>
             </div>
+          </div>
           </div>
         </div>
       </div>
 
-      {(payRequestResponse ?? requestedToPayEff) && !ebillPaidEff && (addressToPay ?? linkToPay) && (
+      {((payRequestResponse ?? requestedToPayEff) || requestedToPayEff) && !ebillPaidEff && (
         <div className="mt-4 p-4 bg-white rounded border">
-          <h2 className="text-2xl font-extrabold tracking-tight mb-3">Payment request</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight mb-3">Payment Request</h2>
           <div className="space-y-1">
-            {addressToPay && (
+            {payRequestResponse && (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold w-32">ID</span>
+                  <span className="font-mono text-sm">{payRequestResponse.request_id}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold w-32">Details</span>
+                  <span className="font-mono text-sm break-all">{payRequestResponse.request}</span>
+                </div>
+              </>
+            )}
+            {!payRequestResponse && addressToPay && (
               <div className="flex items-center gap-2">
-                <span className="font-bold w-32">Address to pay</span>
-                <TruncatedTextPopover text={addressToPay} maxLength={64} className="font-mono text-sm" />
+                <span className="font-bold w-32">ID</span>
+                <span className="font-mono text-sm">{addressToPay}</span>
               </div>
             )}
-            {linkToPay && (
+            {!payRequestResponse && linkToPay && (
               <div className="flex items-center gap-2">
-                <span className="font-bold w-32">Link to mempool</span>
-                <a
-                  href={linkToPay}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline flex items-center"
-                >
-                  <TruncatedTextPopover text={linkToPay} maxLength={48} className="font-mono text-sm" />
-                </a>
+                <span className="font-bold w-32">Details</span>
+                <span className="font-mono text-sm">{linkToPay}</span>
               </div>
             )}
-            {effectiveRequestTime && (
+            <div className="flex items-center gap-2">
+              <span className="font-bold w-32">Requested at</span>
+              <span className="text-sm">
+                {effectiveRequestTime ? new Date(effectiveRequestTime * 1000).toLocaleString() : "Unknown"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold w-32">Deadline</span>
+              <span className="text-sm">
+                {effectiveDeadlineTs ? new Date(effectiveDeadlineTs * 1000).toLocaleString() : "Unknown"}
+              </span>
+            </div>
+            {/* TODO mempool & qr code
+            {hasPayRef && (
               <div className="flex items-center gap-2">
-                <span className="font-bold w-32">Requested at</span>
-                <span className="text-sm">
-                  {effectiveRequestTime ? new Date(effectiveRequestTime * 1000).toLocaleString() : "Unknown"}
+                <span className="font-bold w-32">Pay</span>
+                <span className="text-sm break-all">
+                  {linkToPay ? (
+                    <a className="underline" href={linkToPay} target="_blank" rel="noreferrer">
+                      {linkToPay}
+                    </a>
+                  ) : (
+                    addressToPay
+                  )}
+                  {mempoolLink && (
+                    <>
+                      {" "}
+                      <a className="underline" href={mempoolLink} target="_blank" rel="noreferrer">
+                        mempool
+                      </a>
+                    </>
+                  )}
                 </span>
-              </div>
             )}
-            {effectiveDeadlineTs && (
-              <div className="flex items-center gap-2">
-                <span className="font-bold w-32">Deadline</span>
-                <span className="text-sm">
-                  {effectiveDeadlineTs ? new Date(effectiveDeadlineTs * 1000).toLocaleString() : "Unknown"}
-                </span>
-              </div>
-            )}
+            */}
           </div>
         </div>
       )}
