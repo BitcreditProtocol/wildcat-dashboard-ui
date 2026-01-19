@@ -2,6 +2,9 @@ import * as React from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { truncateString } from "@/utils/strings"
+import { Copy, Check } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 
 interface TruncatedTextPopoverProps {
   text: React.ReactNode
@@ -11,6 +14,7 @@ interface TruncatedTextPopoverProps {
   contentClassName?: string
   title?: string
   as?: "button" | "span"
+  showCopyButton?: boolean
 }
 
 function useResponsiveMaxLength(maxLength: number, showFullOnDesktop: boolean): number {
@@ -91,17 +95,31 @@ export function TruncatedTextPopover({
   contentClassName,
   title,
   as = "button",
+  showCopyButton = false,
 }: TruncatedTextPopoverProps) {
   const effectiveMaxLength = useResponsiveMaxLength(maxLength, showFullOnDesktop)
+  const [copied, setCopied] = React.useState(false)
 
   const textStr = extractTextFromNode(text)
   const rawLines = textStr.split(/\r?\n/)
   const lines = rawLines.map((l) => l.replace(/\s+$/g, ""))
   const needsTruncation = lines.some((line) => line.length > effectiveMaxLength)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(textStr)
+      setCopied(true)
+      toast.success("Copied to clipboard")
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error("Failed to copy text:", err)
+      toast.error("Failed to copy to clipboard")
+    }
+  }
   const flatLabel = lines.join(", ")
   const truncatedLines = needsTruncation ? lines.map((line) => truncateString(line, effectiveMaxLength)) : lines
 
-  if (!needsTruncation) {
+  if (!needsTruncation && !showCopyButton) {
     return (
       <span className={cn("whitespace-pre-line", className)} title={title ?? flatLabel}>
         {text}
@@ -111,23 +129,28 @@ export function TruncatedTextPopover({
 
   const TriggerTag = as
 
-  return (
+  const popoverContent = (
     <Popover>
       <PopoverTrigger asChild>
         <TriggerTag
           {...(as === "button" ? { type: "button" as const } : {})}
           className={cn(
-            "cursor-pointer text-left truncate hover:underline focus:outline-none bg-transparent !text-inherit leading-none",
+            "cursor-pointer text-left hover:underline focus:outline-none bg-transparent !text-inherit leading-none",
+            needsTruncation && "truncate",
             className,
           )}
           title={title ?? flatLabel}
           aria-label={title ?? flatLabel}
         >
-          {truncatedLines.map((line, i) => (
-            <span key={i} className="truncate block w-full">
-              {line}
-            </span>
-          ))}
+          {needsTruncation ? (
+            truncatedLines.map((line, i) => (
+              <span key={i} className="truncate block w-full">
+                {line}
+              </span>
+            ))
+          ) : (
+            <span className="whitespace-pre-line">{text}</span>
+          )}
         </TriggerTag>
       </PopoverTrigger>
 
@@ -144,4 +167,28 @@ export function TruncatedTextPopover({
       </PopoverContent>
     </Popover>
   )
+
+  if (showCopyButton) {
+    return (
+      <div className="flex items-center gap-2">
+        {popoverContent}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => void handleCopy()}
+          className="h-6 w-6 shrink-0"
+          title={copied ? "Copied!" : "Copy to clipboard"}
+        >
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    )
+  }
+
+  return popoverContent
 }
