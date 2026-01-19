@@ -116,7 +116,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
           {keyset.active && (
             <div className="w-full my-4">
               <Button
-                className="w-full"
+                className="w-full max-w-sm"
                 size="sm"
                 variant="default"
                 disabled={redemptionMutation.isPending}

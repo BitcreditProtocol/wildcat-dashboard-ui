@@ -385,7 +385,12 @@ const GrossToNetDiscountForm = ({
         </div>
 
         {submitButtonText && (
-          <Button type="submit" size="sm" className="my-4" disabled={!isValid}>
+          <Button
+            type="submit"
+            size="sm"
+            className="my-4"
+            disabled={!isValid}
+          >
             {submitButtonText}
           </Button>
         )}

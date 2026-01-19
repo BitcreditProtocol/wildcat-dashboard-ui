@@ -69,7 +69,7 @@ export function CalendarModal({
 
             <div className="flex gap-2 items-center mt-auto">
               <Button
-                className="w-full border-text-300"
+                className="w-full border-text-300 max-w-sm"
                 variant="outline"
                 size="sm"
                 type="button"
@@ -78,7 +78,7 @@ export function CalendarModal({
                 Cancel
               </Button>
               <Button
-                className="w-full"
+                className="w-full max-w-sm"
                 size="sm"
                 type="button"
                 disabled={!draftDate}
