@@ -95,7 +95,11 @@ export function QuoteActions({
               setDenyConfirmDrawerOpen(false)
             }}
           >
-            <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
+            <Button
+              className="flex-1 max-w-sm"
+              disabled={isFetching || denyQuote.isPending}
+              variant="destructive"
+            >
               Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </DenyConfirmDrawer>
@@ -114,7 +118,10 @@ export function QuoteActions({
               setOfferFormDrawerOpen(false)
             }}
           >
-            <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
+            <Button
+              className="flex-1 max-w-sm"
+              disabled={isFetching || offerQuote.isPending}
+            >
               Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </OfferFormDrawer>
@@ -169,7 +176,10 @@ export function QuoteActions({
           </TooltipProvider>
         )}
 
-        {value.status === "Accepted" && "keyset_id" in value && !ebillPaidEff && !requestedToPayEff && (
+        {value.status === "Accepted" &&
+          "keyset_id" in value &&
+          !ebillPaidEff &&
+          !requestedToPayEff && (
           <RequestToPayConfirmation
             open={requestToPayConfirmDrawerOpen}
             onOpenChange={setRequestToPayConfirmDrawerOpen}
