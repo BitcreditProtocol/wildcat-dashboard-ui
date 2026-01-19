@@ -1,0 +1,2035 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "bcr-wdc-admin-aggregator",
+    "description": "",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "version": "0.5.0-alpha"
+  },
+  "paths": {
+    "/v1/admin/keysets/{kid}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_keyset_info",
+        "parameters": [
+          {
+            "name": "kid",
+            "in": "path",
+            "description": "the keyset id of the information",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeySetInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "keyset id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/keysets": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "list_keyset_infos",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KeySetInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/mint_op_status/{qid}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_mintop_status",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "the quote id this minting operation is associated with",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Amount"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "resource id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/mint_ops/{kid}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "list_mintops",
+        "parameters": [
+          {
+            "name": "kid",
+            "in": "path",
+            "description": "the keyset id the minting operations are associated with",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "keyset id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/enable_redemption": {
+      "post": {
+        "tags": ["admin"],
+        "operationId": "post_enable_redemption",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeactivateKeysetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeactivateKeysetResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "keyset id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/quote/{qid}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_quote",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "the quote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeySetInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "quote id not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["admin"],
+        "operationId": "update_quote",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateQuoteResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "quote id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/quote": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "list_quotes",
+        "parameters": [
+          {
+            "name": "bill_maturity_date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"],
+              "format": "date"
+            }
+          },
+          {
+            "name": "bill_maturity_date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"],
+              "format": "date"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/StatusReplyDiscriminants"
+                }
+              ]
+            }
+          },
+          {
+            "name": "bill_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          },
+          {
+            "name": "bill_drawee_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          },
+          {
+            "name": "bill_drawer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          },
+          {
+            "name": "bill_payer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          },
+          {
+            "name": "bill_holder_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/ListSort"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListReplyLight"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/quote/enable_mint/{qid}": {
+      "post": {
+        "tags": ["admin"],
+        "operationId": "post_enable_quote_minting",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnableMintingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "quote id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/identity": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_identity",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/bills/{bid}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_ebill",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BitcreditBill"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "bill id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/bills": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "list_ebills",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BitcreditBill"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/endorsements/{bid}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_ebill_endorsements",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Endorsement"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "bill id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/attachments/{bid}/{fname}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_ebill_attachment",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fname",
+            "in": "path",
+            "description": "the file name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "404": {
+            "description": "bill-id/filename not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/reqtopay": {
+      "post": {
+        "tags": ["admin"],
+        "operationId": "post_ebill_reqtopay",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestToPayBitcreditBillPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "404": {
+            "description": "bill id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/alphas": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_clowder_alphas",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectedMintsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/betas": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_clowder_betas",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectedMintsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/status": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_clowder_mystatus",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerceivedState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/status/{pk}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_clowder_status",
+        "parameters": [
+          {
+            "name": "pk",
+            "in": "path",
+            "description": "the public key of the mint to get the status for",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlphaStateResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "public key not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlphaState": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Last seen timestamp",
+            "required": ["Online"],
+            "properties": {
+              "Online": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Last seen timestamp",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Last seen timestamp",
+            "required": ["Offline"],
+            "properties": {
+              "Offline": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Last seen timestamp",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Pre Rabid",
+            "required": ["Rabid"],
+            "properties": {
+              "Rabid": {
+                "$ref": "#/components/schemas/RabidReason",
+                "description": "Pre Rabid"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Post Rabid",
+            "required": ["ConfiscatedRabid"],
+            "properties": {
+              "ConfiscatedRabid": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                },
+                "description": "Post Rabid",
+                "maxItems": 2,
+                "minItems": 2
+              }
+            }
+          }
+        ],
+        "description": "--------------------------- Alpha State"
+      },
+      "AlphaStateResponse": {
+        "type": "object",
+        "required": ["state"],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/AlphaState"
+          }
+        }
+      },
+      "Amount": {
+        "type": "integer",
+        "format": "int64",
+        "description": "Amount can be any unit",
+        "minimum": 0
+      },
+      "BillAcceptanceStatus": {
+        "type": "object",
+        "required": ["requested_to_accept", "accepted", "request_to_accept_timed_out", "rejected_to_accept"],
+        "properties": {
+          "time_of_request_to_accept": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          },
+          "requested_to_accept": {
+            "type": "boolean"
+          },
+          "accepted": {
+            "type": "boolean"
+          },
+          "request_to_accept_timed_out": {
+            "type": "boolean"
+          },
+          "rejected_to_accept": {
+            "type": "boolean"
+          },
+          "acceptance_deadline_timestamp": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "BillAnonParticipant": {
+        "type": "object",
+        "required": ["node_id", "nostr_relays"],
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "nostr_relays": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BillCurrentWaitingState": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["Sell"],
+            "properties": {
+              "Sell": {
+                "$ref": "#/components/schemas/BillWaitingForSellState"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["Payment"],
+            "properties": {
+              "Payment": {
+                "$ref": "#/components/schemas/BillWaitingForPaymentState"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["Recourse"],
+            "properties": {
+              "Recourse": {
+                "$ref": "#/components/schemas/BillWaitingForRecourseState"
+              }
+            }
+          }
+        ]
+      },
+      "BillData": {
+        "type": "object",
+        "required": [
+          "time_of_drawing",
+          "issue_date",
+          "time_of_maturity",
+          "maturity_date",
+          "country_of_issuing",
+          "city_of_issuing",
+          "country_of_payment",
+          "city_of_payment",
+          "currency",
+          "sum",
+          "files"
+        ],
+        "properties": {
+          "time_of_drawing": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "issue_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "time_of_maturity": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "maturity_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "country_of_issuing": {
+            "type": "string"
+          },
+          "city_of_issuing": {
+            "type": "string"
+          },
+          "country_of_payment": {
+            "type": "string"
+          },
+          "city_of_payment": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "sum": {
+            "type": "string"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/File"
+            }
+          },
+          "active_notification": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Notification"
+              }
+            ]
+          }
+        }
+      },
+      "BillIdentParticipant": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PostalAddress"
+          },
+          {
+            "type": "object",
+            "required": ["type", "node_id", "name", "nostr_relays"],
+            "properties": {
+              "type": {
+                "$ref": "#/components/schemas/ContactType"
+              },
+              "node_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": ["string", "null"]
+              },
+              "nostr_relays": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BillMintStatus": {
+        "type": "object",
+        "required": ["has_mint_requests"],
+        "properties": {
+          "has_mint_requests": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BillParticipant": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["Anon"],
+            "properties": {
+              "Anon": {
+                "$ref": "#/components/schemas/BillAnonParticipant"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["Ident"],
+            "properties": {
+              "Ident": {
+                "$ref": "#/components/schemas/BillIdentParticipant"
+              }
+            }
+          }
+        ]
+      },
+      "BillParticipants": {
+        "type": "object",
+        "required": ["drawee", "drawer", "payee", "endorsements", "endorsements_count", "all_participant_node_ids"],
+        "properties": {
+          "drawee": {
+            "$ref": "#/components/schemas/BillIdentParticipant"
+          },
+          "drawer": {
+            "$ref": "#/components/schemas/BillIdentParticipant"
+          },
+          "payee": {
+            "$ref": "#/components/schemas/BillParticipant"
+          },
+          "endorsee": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillParticipant"
+              }
+            ]
+          },
+          "endorsements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Endorsement"
+            }
+          },
+          "endorsements_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "all_participant_node_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BillPaymentStatus": {
+        "type": "object",
+        "required": ["requested_to_pay", "paid", "request_to_pay_timed_out", "rejected_to_pay"],
+        "properties": {
+          "time_of_request_to_pay": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          },
+          "requested_to_pay": {
+            "type": "boolean"
+          },
+          "paid": {
+            "type": "boolean"
+          },
+          "request_to_pay_timed_out": {
+            "type": "boolean"
+          },
+          "rejected_to_pay": {
+            "type": "boolean"
+          },
+          "payment_deadline_timestamp": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "BillRecourseStatus": {
+        "type": "object",
+        "required": [
+          "recoursed",
+          "requested_to_recourse",
+          "request_to_recourse_timed_out",
+          "rejected_request_to_recourse"
+        ],
+        "properties": {
+          "time_of_last_request_to_recourse": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          },
+          "recoursed": {
+            "type": "boolean"
+          },
+          "requested_to_recourse": {
+            "type": "boolean"
+          },
+          "request_to_recourse_timed_out": {
+            "type": "boolean"
+          },
+          "rejected_request_to_recourse": {
+            "type": "boolean"
+          },
+          "recourse_deadline_timestamp": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "BillSellStatus": {
+        "type": "object",
+        "required": ["sold", "offered_to_sell", "offer_to_sell_timed_out", "rejected_offer_to_sell"],
+        "properties": {
+          "time_of_last_offer_to_sell": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          },
+          "sold": {
+            "type": "boolean"
+          },
+          "offered_to_sell": {
+            "type": "boolean"
+          },
+          "offer_to_sell_timed_out": {
+            "type": "boolean"
+          },
+          "rejected_offer_to_sell": {
+            "type": "boolean"
+          },
+          "buying_deadline_timestamp": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "BillStatus": {
+        "type": "object",
+        "required": [
+          "acceptance",
+          "payment",
+          "sell",
+          "recourse",
+          "mint",
+          "redeemed_funds_available",
+          "has_requested_funds",
+          "last_block_time"
+        ],
+        "properties": {
+          "acceptance": {
+            "$ref": "#/components/schemas/BillAcceptanceStatus"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/BillPaymentStatus"
+          },
+          "sell": {
+            "$ref": "#/components/schemas/BillSellStatus"
+          },
+          "recourse": {
+            "$ref": "#/components/schemas/BillRecourseStatus"
+          },
+          "mint": {
+            "$ref": "#/components/schemas/BillMintStatus"
+          },
+          "redeemed_funds_available": {
+            "type": "boolean"
+          },
+          "has_requested_funds": {
+            "type": "boolean"
+          },
+          "last_block_time": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "BillWaitingForPaymentState": {
+        "type": "object",
+        "required": ["payer", "payee", "payment_data"],
+        "properties": {
+          "payer": {
+            "$ref": "#/components/schemas/BillIdentParticipant"
+          },
+          "payee": {
+            "$ref": "#/components/schemas/BillParticipant"
+          },
+          "payment_data": {
+            "$ref": "#/components/schemas/BillWaitingStatePaymentData"
+          }
+        }
+      },
+      "BillWaitingForRecourseState": {
+        "type": "object",
+        "required": ["recourser", "recoursee", "payment_data"],
+        "properties": {
+          "recourser": {
+            "$ref": "#/components/schemas/BillParticipant"
+          },
+          "recoursee": {
+            "$ref": "#/components/schemas/BillIdentParticipant"
+          },
+          "payment_data": {
+            "$ref": "#/components/schemas/BillWaitingStatePaymentData"
+          }
+        }
+      },
+      "BillWaitingForSellState": {
+        "type": "object",
+        "required": ["buyer", "seller", "payment_data"],
+        "properties": {
+          "buyer": {
+            "$ref": "#/components/schemas/BillParticipant"
+          },
+          "seller": {
+            "$ref": "#/components/schemas/BillParticipant"
+          },
+          "payment_data": {
+            "$ref": "#/components/schemas/BillWaitingStatePaymentData"
+          }
+        }
+      },
+      "BillWaitingStatePaymentData": {
+        "type": "object",
+        "required": [
+          "time_of_request",
+          "currency",
+          "sum",
+          "link_to_pay",
+          "address_to_pay",
+          "mempool_link_for_address_to_pay",
+          "in_mempool",
+          "confirmations"
+        ],
+        "properties": {
+          "time_of_request": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string"
+          },
+          "sum": {
+            "type": "string"
+          },
+          "link_to_pay": {
+            "type": "string"
+          },
+          "address_to_pay": {
+            "type": "string"
+          },
+          "mempool_link_for_address_to_pay": {
+            "type": "string"
+          },
+          "tx_id": {
+            "type": ["string", "null"]
+          },
+          "in_mempool": {
+            "type": "boolean"
+          },
+          "confirmations": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "payment_deadline": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "BitcreditBill": {
+        "type": "object",
+        "required": ["id", "participants", "data", "status"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "participants": {
+            "$ref": "#/components/schemas/BillParticipants"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BillData"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BillStatus"
+          },
+          "current_waiting_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillCurrentWaitingState"
+              }
+            ]
+          }
+        }
+      },
+      "ConnectedMintResponse": {
+        "type": "object",
+        "description": "--------------------------- Connected Mint",
+        "required": ["mint", "clowder", "node_id"],
+        "properties": {
+          "mint": {
+            "type": "string"
+          },
+          "clowder": {
+            "type": "string",
+            "format": "uri"
+          },
+          "node_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ConnectedMintsResponse": {
+        "type": "object",
+        "required": ["mints"],
+        "properties": {
+          "mints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConnectedMintResponse"
+            }
+          }
+        }
+      },
+      "ContactType": {
+        "type": "string",
+        "enum": ["Person", "Company", "Anon"]
+      },
+      "CurrencyUnit": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Sat",
+            "enum": ["Sat"]
+          },
+          {
+            "type": "string",
+            "description": "Msat",
+            "enum": ["Msat"]
+          },
+          {
+            "type": "string",
+            "description": "Usd",
+            "enum": ["Usd"]
+          },
+          {
+            "type": "string",
+            "description": "Euro",
+            "enum": ["Eur"]
+          },
+          {
+            "type": "string",
+            "description": "Auth",
+            "enum": ["Auth"]
+          },
+          {
+            "type": "object",
+            "description": "Custom currency unit",
+            "required": ["Custom"],
+            "properties": {
+              "Custom": {
+                "type": "string",
+                "description": "Custom currency unit"
+              }
+            }
+          }
+        ],
+        "description": "Currency Unit"
+      },
+      "DeactivateKeysetRequest": {
+        "type": "object",
+        "description": "--------------------------- Deactivate keyset",
+        "required": ["kid"],
+        "properties": {
+          "kid": {
+            "$ref": "#/components/schemas/Id"
+          }
+        }
+      },
+      "DeactivateKeysetResponse": {
+        "type": "object",
+        "required": ["kid"],
+        "properties": {
+          "kid": {
+            "$ref": "#/components/schemas/Id"
+          }
+        }
+      },
+      "EnableMintingResponse": {
+        "type": "object"
+      },
+      "Endorsement": {
+        "type": "object",
+        "required": ["pay_to_the_order_of", "signed", "signing_timestamp"],
+        "properties": {
+          "pay_to_the_order_of": {
+            "$ref": "#/components/schemas/LightBillParticipant"
+          },
+          "signed": {
+            "$ref": "#/components/schemas/LightSignedBy"
+          },
+          "signing_timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "signing_address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PostalAddress"
+              }
+            ]
+          }
+        }
+      },
+      "File": {
+        "type": "object",
+        "required": ["name", "hash", "nostr_hash"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "nostr_hash": {
+            "type": "string"
+          }
+        }
+      },
+      "Id": {
+        "type": "object",
+        "description": "A keyset ID is an identifier for a specific keyset. It can be derived by\nanyone who knows the set of public keys of a mint. The keyset ID **CAN**\nbe stored in a Cashu token such that the token can be used to identify\nwhich mint or keyset it was generated from.",
+        "required": ["version", "id"],
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/KeySetVersion"
+          },
+          "id": {
+            "$ref": "#/components/schemas/IdBytes"
+          }
+        }
+      },
+      "IdBytes": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Bytes for v1",
+            "required": ["V1"],
+            "properties": {
+              "V1": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0
+                },
+                "description": "Bytes for v1"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Bytes for v2",
+            "required": ["V2"],
+            "properties": {
+              "V2": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0
+                },
+                "description": "Bytes for v2"
+              }
+            }
+          }
+        ],
+        "description": "Keyset ID bytes"
+      },
+      "Identity": {
+        "type": "object",
+        "required": ["node_id", "name", "bitcoin_public_key", "npub", "postal_address", "nostr_relays"],
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": ["string", "null"]
+          },
+          "bitcoin_public_key": {
+            "type": "string"
+          },
+          "npub": {
+            "type": "string"
+          },
+          "postal_address": {
+            "$ref": "#/components/schemas/OptionalPostalAddress"
+          },
+          "date_of_birth": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "country_of_birth": {
+            "type": ["string", "null"]
+          },
+          "city_of_birth": {
+            "type": ["string", "null"]
+          },
+          "identification_number": {
+            "type": ["string", "null"]
+          },
+          "profile_picture_file": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/File"
+              }
+            ]
+          },
+          "identity_document_file": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/File"
+              }
+            ]
+          },
+          "nostr_relays": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      },
+      "KeySetInfo": {
+        "type": "object",
+        "description": "KeySetInfo",
+        "required": ["id", "unit", "active"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Keyset [`Id`]"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/CurrencyUnit",
+            "description": "Keyset [`CurrencyUnit`]"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Keyset state\nMint will only sign from an active keyset"
+          },
+          "input_fee_ppk": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Input Fee PPK",
+            "minimum": 0
+          },
+          "final_expiry": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Expiry of the keyset",
+            "minimum": 0
+          }
+        }
+      },
+      "KeySetVersion": {
+        "type": "string",
+        "description": "Keyset version",
+        "enum": ["Version00", "Version01"]
+      },
+      "LightBillAnonParticipant": {
+        "type": "object",
+        "required": ["node_id"],
+        "properties": {
+          "node_id": {
+            "type": "string"
+          }
+        }
+      },
+      "LightBillIdentParticipant": {
+        "type": "object",
+        "required": ["type", "name", "node_id"],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ContactType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "node_id": {
+            "type": "string"
+          }
+        }
+      },
+      "LightBillIdentParticipantWithAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PostalAddress"
+          },
+          {
+            "type": "object",
+            "required": ["type", "name", "node_id"],
+            "properties": {
+              "type": {
+                "$ref": "#/components/schemas/ContactType"
+              },
+              "name": {
+                "type": "string"
+              },
+              "node_id": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "LightBillParticipant": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["Anon"],
+            "properties": {
+              "Anon": {
+                "$ref": "#/components/schemas/LightBillAnonParticipant"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["Ident"],
+            "properties": {
+              "Ident": {
+                "$ref": "#/components/schemas/LightBillIdentParticipantWithAddress"
+              }
+            }
+          }
+        ]
+      },
+      "LightInfo": {
+        "type": "object",
+        "required": ["id", "status", "sum"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusReplyDiscriminants"
+          },
+          "sum": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "LightSignedBy": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LightBillParticipant"
+          },
+          "signatory": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LightBillIdentParticipant"
+              }
+            ]
+          }
+        }
+      },
+      "ListReplyLight": {
+        "type": "object",
+        "required": ["quotes"],
+        "properties": {
+          "quotes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LightInfo"
+            }
+          }
+        }
+      },
+      "MintOperationStatus": {
+        "type": "object",
+        "description": "--------------------------- Mint operation status",
+        "required": ["kid", "quote_id", "target", "current"],
+        "properties": {
+          "kid": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "quote_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "target": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "current": {
+            "$ref": "#/components/schemas/Amount"
+          }
+        }
+      },
+      "MintState": {
+        "type": "string",
+        "description": "--------------------------- Perceived State",
+        "enum": ["Online", "Offline", "Interim", "Rabid"]
+      },
+      "MintingStatus": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["Disabled"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["minted", "status"],
+            "properties": {
+              "minted": {
+                "$ref": "#/components/schemas/Amount"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["Enabled"]
+              }
+            }
+          }
+        ],
+        "description": "--------------------------- Look up quote"
+      },
+      "Notification": {
+        "type": "object",
+        "required": ["id", "notification_type", "description", "datetime", "active"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "node_id": {
+            "type": ["string", "null"]
+          },
+          "notification_type": {
+            "$ref": "#/components/schemas/NotificationType"
+          },
+          "reference_id": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "payload": {}
+        }
+      },
+      "NotificationType": {
+        "type": "string",
+        "enum": ["General", "Company", "Bill", "Contact"]
+      },
+      "OptionalPostalAddress": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": ["string", "null"]
+          },
+          "city": {
+            "type": ["string", "null"]
+          },
+          "zip": {
+            "type": ["string", "null"]
+          },
+          "address": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PerceivedState": {
+        "type": "object",
+        "description": "Reflects what the majority of Beta mints think about the current Alpha mint",
+        "required": ["alpha_state"],
+        "properties": {
+          "substitute_beta": {
+            "type": ["string", "null"]
+          },
+          "alpha_state": {
+            "$ref": "#/components/schemas/MintState"
+          }
+        }
+      },
+      "PostalAddress": {
+        "type": "object",
+        "required": ["country", "city", "address"],
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "zip": {
+            "type": ["string", "null"]
+          },
+          "address": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicKey": {
+        "type": "object",
+        "description": "PublicKey",
+        "required": ["inner"],
+        "properties": {
+          "inner": {
+            "type": "string"
+          }
+        }
+      },
+      "RabidReason": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["Forked"],
+            "properties": {
+              "Forked": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                },
+                "maxItems": 3,
+                "minItems": 3
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["HashSeqDiscrepancy"],
+            "properties": {
+              "HashSeqDiscrepancy": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                },
+                "maxItems": 3,
+                "minItems": 3
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["Offline"],
+            "properties": {
+              "Offline": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["InvalidBurn"],
+            "properties": {
+              "InvalidBurn": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "description": "--------------------------- Rabid Reason"
+      },
+      "RequestToPayBitcreditBillPayload": {
+        "type": "object",
+        "required": ["bill_id", "currency", "deadline"],
+        "properties": {
+          "bill_id": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "StatusReply": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["Pending"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["tstamp", "status"],
+            "properties": {
+              "tstamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["Canceled"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["tstamp", "status"],
+            "properties": {
+              "tstamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["Denied"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["keyset_id", "expiration_date", "discounted", "minting_pubkey", "status"],
+            "properties": {
+              "keyset_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "expiration_date": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "discounted": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "minting_pubkey": {
+                "$ref": "#/components/schemas/PublicKey"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["Offered"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["tstamp", "discounted", "status"],
+            "properties": {
+              "tstamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "discounted": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "status": {
+                "type": "string",
+                "enum": ["OfferExpired"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["keyset_id", "discounted", "minting_pubkey", "minting_status", "status"],
+            "properties": {
+              "keyset_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "discounted": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "minting_pubkey": {
+                "$ref": "#/components/schemas/PublicKey"
+              },
+              "minting_status": {
+                "$ref": "#/components/schemas/MintingStatus"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["Accepted"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["tstamp", "discounted", "status"],
+            "properties": {
+              "tstamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "discounted": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "status": {
+                "type": "string",
+                "enum": ["Rejected"]
+              }
+            }
+          }
+        ]
+      },
+      "StatusReplyDiscriminants": {
+        "type": "string",
+        "enum": ["Pending", "Canceled", "Denied", "Offered", "OfferExpired", "Accepted", "Rejected"]
+      },
+      "UpdateQuoteRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["action"],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": ["Deny"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["discounted", "action"],
+            "properties": {
+              "discounted": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "ttl": {
+                "type": ["string", "null"],
+                "format": "date-time"
+              },
+              "action": {
+                "type": "string",
+                "enum": ["Offer"]
+              }
+            }
+          }
+        ],
+        "description": "--------------------------- Update quote status request"
+      },
+      "UpdateQuoteResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["Denied"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["discounted", "ttl", "status"],
+            "properties": {
+              "discounted": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "ttl": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["Offered"]
+              }
+            }
+          }
+        ]
+      },
+      "ListSort": {
+        "type": "string",
+        "enum": ["asc", "desc"],
+        "description": "Sort order for list queries"
+      }
+    }
+  }
+}

@@ -15,6 +15,8 @@ import EarningsPage from "./pages/balances/EarningsPage"
 import CashFlowPage from "./pages/balances/CashFlowPage"
 import { initKeycloak } from "./keycloak"
 import "./lib/api-client"
+import KeysetsPage from "@/pages/keysets/KeysetsPage"
+import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage"
 
 const queryClient = new QueryClient()
 
@@ -41,6 +43,8 @@ function App() {
             <Route path="quotes/denied" element={<StatusQuotePage status="Denied" />} />
             <Route path="quotes/rejected" element={<StatusQuotePage status="Rejected" />} />
             <Route path="quotes/:id" element={<QuotePage />} />
+            <Route path="keysets" element={<KeysetsPage />} />
+            <Route path="keysets/:keysetId" element={<KeysetDetailPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="info" element={<InfoPage />} />
           </Route>
