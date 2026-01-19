@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDrawer } from "@/components/Drawers"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
 import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen"
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer.tsx"
@@ -138,26 +139,39 @@ export function QuoteActions({
         />
 
         {value.status === "Accepted" && "keyset_id" in value && (
-          <ConfirmDrawer
-            title="Confirm enabling minting"
-            description="Are you sure you want to enable minting for this quote?"
-            open={enableMintingConfirmDrawerOpen}
-            onOpenChange={setEnableMintingConfirmDrawerOpen}
-            onSubmit={() => {
-              handleEnableMinting()
-              setEnableMintingConfirmDrawerOpen(false)
-            }}
-            submitButtonText="Yes, enable minting"
-            trigger={
-              <Button
-                className="flex-1"
-                disabled={isFetching || enableMintingMutation.isPending || mintingEnabled}
-                variant="default"
-              >
-                Enable Minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-              </Button>
-            }
-          />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex-1">
+                  <ConfirmDrawer
+                    title="Confirm enabling minting"
+                    description="Are you sure you want to enable minting for this quote?"
+                    open={enableMintingConfirmDrawerOpen}
+                    onOpenChange={setEnableMintingConfirmDrawerOpen}
+                    onSubmit={() => {
+                      handleEnableMinting()
+                      setEnableMintingConfirmDrawerOpen(false)
+                    }}
+                    submitButtonText="Yes, enable minting"
+                    trigger={
+                      <Button
+                        className="w-full"
+                        disabled={isFetching || enableMintingMutation.isPending || mintingEnabled}
+                        variant="default"
+                      >
+                        Enable Minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                      </Button>
+                    }
+                  />
+                </div>
+              </TooltipTrigger>
+              {mintingEnabled && (
+                <TooltipContent>
+                  <p>Minting is already enabled for this quote</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         )}
 
         {value.status === "Accepted" &&
