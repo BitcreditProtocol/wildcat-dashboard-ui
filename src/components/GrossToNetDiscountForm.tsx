@@ -366,7 +366,7 @@ const GrossToNetDiscountForm = ({
 
         <div className="flex flex-col gap-3 px-2">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">Mark up</span>
+            <span className="text-gray-600 dark:text-gray-400">Annual discount</span>
             <div className="flex gap-1 items-center">
               <span className="text-gray-600 dark:text-gray-400">
                 {discount === undefined ? "0.00" : Math.abs(discount.value.toNumber()).toFixed(2)}
