@@ -14,6 +14,7 @@ import { QuoteActions } from "./QuoteActionsRefactored"
 import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
 import { ArrowLeft } from "lucide-react"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx"
+import { FilePreview } from "@/components/FilePreview.tsx"
 
 interface LocationState {
   from?: string
@@ -92,6 +93,8 @@ function PageBody({ id }: { id: string }) {
 
   const cws = ebillQuery.data?.current_waiting_state
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
+
+  const billFiles = bill?.file_urls ?? []
 
   if (!quote || !bill) {
     return <div className="p-4 text-muted-foreground">No quote data available</div>
@@ -205,6 +208,10 @@ function PageBody({ id }: { id: string }) {
         paymentDeadlineTs={paymentDeadlineTs}
         timeOfRequestToPay={timeOfRequestToPay}
       />
+
+      {billFiles.length > 0 && (
+        <FilePreview billId={bill.id} fileUrls={billFiles} />
+      )}
     </div>
   )
 }
