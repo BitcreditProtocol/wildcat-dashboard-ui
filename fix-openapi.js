@@ -10,13 +10,12 @@ if (!spec.components.schemas.ListSort) {
         enum: ['asc', 'desc'],
         description: 'Sort order for list queries'
     };
-    console.log('✅ Added missing ListSort schema');
+    console.log('Added missing ListSort schema');
 } else {
-    console.log('ℹ️  ListSort schema already exists');
+    console.log('ListSort schema already exists');
 }
 
 // Write back with proper formatting
 fs.writeFileSync('opt/wildcat/openapi.json', JSON.stringify(spec, null, 2));
 
-console.log('✅ OpenAPI spec fixed and saved');
-
+console.log('OpenAPI spec fixed and saved');
