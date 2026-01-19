@@ -11,7 +11,7 @@ import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { QuoteActions } from "./QuoteActionsRefactored"
-import { truncateString } from "@/utils/strings.ts"
+import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
 import { ArrowLeft } from "lucide-react"
 
 interface LocationState {
@@ -111,7 +111,7 @@ function PageBody({ id }: { id: string }) {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold w-32">Status:</span>
-                <Badge variant={getStatusVariant(quote.status)}>{quote.status}</Badge>
+                <Badge variant={getStatusVariant(quote.status)}>{formatStatusLabel(quote.status)}</Badge>
               </div>
               {(quote.status === "Accepted" || quote.status === "Minting") && "keyset_id" in quote && (
                 <div className="flex items-center gap-2">

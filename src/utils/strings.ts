@@ -37,3 +37,11 @@ export const getDeterministicColor = (seed?: string): string => {
 
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`
 }
+
+/**
+ * Formats a status label for display to users.
+ * Converts "OfferExpired" to "Offer Expired" with proper spacing.
+ */
+export const formatStatusLabel = (status: string): string => {
+  return status === "OfferExpired" ? "Offer expired" : status
+}

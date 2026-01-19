@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
-import { truncateString } from "@/utils/strings"
+import { truncateString, formatStatusLabel } from "@/utils/strings"
 import { toast } from "sonner"
 
 function Loader() {
@@ -177,7 +177,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                             </Link>
                           </td>
                           <td className="p-2">
-                            <Badge variant="outline">{quote.status}</Badge>
+                            <Badge variant="outline">{formatStatusLabel(quote.status)}</Badge>
                           </td>
                           <td className="p-2">
                             {ebill ? (
