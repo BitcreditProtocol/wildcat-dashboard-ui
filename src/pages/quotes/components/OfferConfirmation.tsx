@@ -1,14 +1,16 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ConfirmDrawer } from "@/components/Drawers.tsx"
 import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import Big from "big.js"
 import type { OfferFormResult } from "./OfferFormDrawer.tsx"
+import { getDefaultDeadline } from "@/utils/dates"
 
 interface OfferConfirmationProps {
   offerFormData?: OfferFormResult
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: OfferFormResult) => void
+  maturityDate?: string | null
 }
 
 export function OfferConfirmation({
@@ -16,10 +18,17 @@ export function OfferConfirmation({
   open,
   onOpenChange,
   onSubmit,
+  maturityDate,
 }: OfferConfirmationProps) {
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
   const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false)
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
+
+  useEffect(() => {
+    if (!validUntilDate) {
+      setValidUntilDate(getDefaultDeadline(maturityDate))
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const effectiveDiscount = offerFormData
     ? new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
@@ -33,8 +42,8 @@ export function OfferConfirmation({
         open={open}
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
-          if (isOpen && offerFormData) {
-            setValidUntilDate(offerFormData.ttl.ttl)
+          if (isOpen) {
+            setValidUntilDate(getDefaultDeadline(maturityDate))
           }
         }}
         onSubmit={() => {

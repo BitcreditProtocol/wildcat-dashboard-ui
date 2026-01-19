@@ -104,10 +104,12 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex-1 flex gap-1.5 justify-start items-center bg-elevation-200 text-sm font-medium h-[46px] rounded-lg border border-divider-50 px-4 hover:bg-elevation-300"
+      className="w-full cursor-pointer flex gap-2 justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
     >
-      <CalendarIcon className="text-text-300 w-5 h-5" strokeWidth={1} />
-      <span>{date?.toDateString()}</span>
+      <CalendarIcon className="text-gray-500 dark:text-gray-400 w-5 h-5" strokeWidth={1.5} />
+      <span className="text-gray-900 dark:text-gray-100">
+        {date?.toDateString() ?? "Select date"}
+      </span>
     </button>
   )
 }

@@ -417,7 +417,7 @@ export function QuoteActions({
                 disabled={isFetching || enableMintingMutation.isPending || mintingEnabled}
                 variant="default"
               >
-                Enable Minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                Enable minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
               </Button>
             }
           />
@@ -447,7 +447,7 @@ export function QuoteActions({
             submitButtonText="Yes, request to pay"
             trigger={
               <Button className="flex-1 max-w-sm" disabled={isFetching || requestToPayMutation.isPending} variant="default">
-                Request to Pay {requestToPayMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                Request to pay {requestToPayMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
               </Button>
             }
           >
