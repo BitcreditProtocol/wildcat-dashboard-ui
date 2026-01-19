@@ -139,7 +139,7 @@ export function QuoteActions({
           maturityDate={value.bill.maturity_date}
         />
 
-        {value.status === "Accepted" && "keyset_id" in value && (
+        {value.status === "Accepted" && "keyset_id" in value && ebill && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
