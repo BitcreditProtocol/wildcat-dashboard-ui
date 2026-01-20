@@ -1,16 +1,13 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronDown, ChevronUp, Clock, CheckCircle2, PencilLine, AlertTriangle, XCircle, Coins, DollarSign } from "lucide-react"
-import type { BillIdentParticipant, BillParticipant, Endorsement, LightBillParticipant } from "@/generated/client/types.gen"
+import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover"
 
 interface EndorsementChainProps {
-  drawer: BillIdentParticipant
-  payee: BillParticipant
-  endorsees: BillParticipant[]
   endorsements?: Endorsement[]
   isLoading?: boolean
   issueDate?: string

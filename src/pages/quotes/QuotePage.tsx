@@ -220,9 +220,6 @@ function PageBody({ id }: { id: string }) {
 
       {/* Endorsement Chain & Bill History */}
       <EndorsementChain
-        drawer={bill.drawer}
-        payee={bill.payee}
-        endorsees={bill.endorsees}
         endorsements={endorsementsQuery.data}
         isLoading={endorsementsQuery.isLoading}
         issueDate={ebillQuery.data?.data?.issue_date}
