@@ -5,7 +5,7 @@ import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from 
 import { cn } from "@/lib/utils"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover"
 import { UserAnonymousIcon } from "@/components/icons/UserAnonymous"
-import React from "react"
+import type React from "react"
 
 type IdentityPublicData = BillIdentParticipant
 type AnonPublicData = BillAnonParticipant
@@ -127,7 +127,7 @@ export function ParticipantDetail({
   if ("Anon" in participant) {
     return (
       <div className="flex items-start gap-3">
-        <UserAnonymousIcon className="h-5 w-5 text-muted-foreground" />
+        <UserAnonymousIcon className="h-8 w-8 text-muted-foreground" />
         <div className="flex flex-col gap-1">
           <div className="text-sm text-muted-foreground">Bearer</div>
         </div>
