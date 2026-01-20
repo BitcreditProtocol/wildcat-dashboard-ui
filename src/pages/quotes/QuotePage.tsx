@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview"
-import { getQuoteOptions, getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { getQuoteOptions, getEbillOptions, getEbillEndorsementsOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { useQuery } from "@tanstack/react-query"
 import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
@@ -14,6 +14,7 @@ import { QuoteActions } from "./QuoteActionsRefactored"
 import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
 import { ArrowLeft } from "lucide-react"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx"
+import { EndorsementChain } from "@/components/EndorsementChain"
 
 interface LocationState {
   from?: string
@@ -62,6 +63,12 @@ function PageBody({ id }: { id: string }) {
   const billId = quoteData?.bill?.id
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId ?? "" } }),
+    retry: 1,
+    enabled: !!billId,
+  })
+
+  const endorsementsQuery = useQuery({
+    ...getEbillEndorsementsOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
     enabled: !!billId,
   })
@@ -166,7 +173,12 @@ function PageBody({ id }: { id: string }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Fee token:</span>
-                  <TruncatedTextPopover text={quote.fee} maxLength={64} className="font-mono text-sm" showCopyButton={true} />
+                  <TruncatedTextPopover
+                    text={quote.fee}
+                    maxLength={64}
+                    className="font-mono text-sm"
+                    showCopyButton={true}
+                  />
                 </div>
               </>
             )}
@@ -204,6 +216,37 @@ function PageBody({ id }: { id: string }) {
         requestedToPay={requestedToPay}
         paymentDeadlineTs={paymentDeadlineTs}
         timeOfRequestToPay={timeOfRequestToPay}
+      />
+
+      {/* Endorsement Chain & Bill History */}
+      <EndorsementChain
+        endorsements={endorsementsQuery.data}
+        isLoading={endorsementsQuery.isLoading}
+        issueDate={ebillQuery.data?.data?.issue_date}
+        maturityDate={bill.maturity_date}
+        requestToPayTimestamp={ebillQuery.data?.status?.payment?.time_of_request_to_pay ?? undefined}
+        paymentTimestamp={
+          ebillQuery.data?.status?.payment?.paid ? (ebillQuery.data?.status?.last_block_time ?? undefined) : undefined
+        }
+        acceptanceTimestamp={
+          ebillQuery.data?.status?.acceptance?.accepted
+            ? (ebillQuery.data?.status?.acceptance?.time_of_request_to_accept ?? undefined)
+            : undefined
+        }
+        rejectionTimestamp={
+          ebillQuery.data?.status?.acceptance?.rejected_to_accept
+            ? (ebillQuery.data?.status?.last_block_time ?? undefined)
+            : undefined
+        }
+        mintingEnabled={quote.status === "Minting"}
+        quoteOffered={quote.status === "Offered" || quote.status === "Accepted" || quote.status === "Minting"}
+        offeredTimestamp={
+          "submitted" in quote
+            ? Math.floor(new Date(quote.submitted).getTime() / 1000)
+            : "tstamp" in quote
+            ? Math.floor(new Date(quote.tstamp).getTime() / 1000)
+            : undefined
+        }
       />
     </div>
   )
