@@ -181,7 +181,11 @@ export function TruncatedTextPopover({
           title={copied ? "Copied!" : "Copy to clipboard"}
           aria-label={copied ? "Copied!" : "Copy to clipboard"}
         >
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
         </Button>
       </div>
     )
