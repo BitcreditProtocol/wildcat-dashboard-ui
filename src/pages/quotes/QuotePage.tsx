@@ -15,6 +15,7 @@ import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
 import { ArrowLeft } from "lucide-react"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx"
 import { FilePreview } from "@/components/FilePreview.tsx"
+import type { AttachmentItem } from "@/components/FilePreview"
 
 interface LocationState {
   from?: string
@@ -94,7 +95,22 @@ function PageBody({ id }: { id: string }) {
   const cws = ebillQuery.data?.current_waiting_state
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
 
-  const billFiles = bill?.file_urls ?? []
+  const ebillFiles = ebillQuery.data?.data?.files ?? []
+  let billFiles: AttachmentItem[]
+  if (ebillFiles.length > 0) {
+    billFiles = ebillFiles.map((f) => ({ name: f.name, hash: f.hash }))
+  } else {
+    const urls = bill?.file_urls ?? []
+    billFiles = urls.map((url) => {
+      try {
+        const u = new URL(url)
+        const hash = u.pathname.split("/").pop() ?? url
+        return { name: hash, hash, url }
+      } catch {
+        return { name: url, url }
+      }
+    })
+  }
 
   if (!quote || !bill) {
     return <div className="p-4 text-muted-foreground">No quote data available</div>
@@ -210,7 +226,7 @@ function PageBody({ id }: { id: string }) {
       />
 
       {billFiles.length > 0 && (
-        <FilePreview billId={bill.id} fileUrls={billFiles} />
+        <FilePreview files={billFiles} />
       )}
     </div>
   )
