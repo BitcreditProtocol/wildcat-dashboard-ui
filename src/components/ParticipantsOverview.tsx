@@ -4,6 +4,8 @@ import { getDeterministicColor, getInitials } from "@/utils/strings"
 import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from "@/generated/client/types.gen"
 import { cn } from "@/lib/utils"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover"
+import { UserAnonymousIcon } from "@/components/icons/UserAnonymous"
+import React from "react"
 
 type IdentityPublicData = BillIdentParticipant
 type AnonPublicData = BillAnonParticipant
@@ -123,14 +125,11 @@ export function ParticipantDetail({
   let avatar: React.ReactNode
 
   if ("Anon" in participant) {
-    avatar = <AnonPublicAvatar value={participant.Anon} />
     return (
       <div className="flex items-start gap-3">
-        {avatar}
+        <UserAnonymousIcon className="h-5 w-5 text-muted-foreground" />
         <div className="flex flex-col gap-1">
-          <div className="text-sm text-muted-foreground">
-            Node: <span className="font-mono text-xs">{participant.Anon.node_id.slice(0, 24)}...</span>
-          </div>
+          <div className="text-sm text-muted-foreground">Bearer</div>
         </div>
       </div>
     )
