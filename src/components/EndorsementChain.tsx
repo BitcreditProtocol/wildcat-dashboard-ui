@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronDown, ChevronUp, Clock, CheckCircle2, PencilLine, AlertTriangle, XCircle, Coins, DollarSign } from "lucide-react"
+import { ChevronDown, ChevronUp, Clock, CheckCircle2, PencilLine, AlertTriangle, XCircle, Coins, DollarSign, ArrowUpDown } from "lucide-react"
 import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
@@ -122,6 +122,7 @@ export function EndorsementChain({
   offeredTimestamp?: number
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [sortByTimestamp, setSortByTimestamp] = useState(false)
 
   if (isLoading) {
     return (
@@ -237,6 +238,9 @@ export function EndorsementChain({
   }
 
   events.sort((a, b) => {
+    if (!sortByTimestamp) {
+      return typePriority[a.type] - typePriority[b.type]
+    }
     return typePriority[b.type] - typePriority[a.type]
   })
 
@@ -248,25 +252,36 @@ export function EndorsementChain({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle>Bill history</CardTitle>
-            <span className="text-sm text-muted-foreground">({eventCount} event{eventCount !== 1 ? 's' : ''})</span>
+            <span className="text-sm text-muted-foreground">
+              ({eventCount} event{eventCount !== 1 ? "s" : ""})
+            </span>
           </div>
           <Button variant="ghost" size="sm" className="h-8 px-2 py-0 gap-1">
             <span className="text-xs text-muted-foreground">{isExpanded ? "Hide history" : "Show history"}</span>
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
         </div>
       </CardHeader>
 
       {isExpanded && (
         <CardContent>
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                setSortByTimestamp(!sortByTimestamp)
+              }}
+              className="gap-2"
+            >
+              <ArrowUpDown className="h-3 w-3" />
+              <span className="text-xs">{sortByTimestamp ? "Descending" : "Ascending"}</span>
+            </Button>
+          </div>
+
           {events.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-4">
-              No history events available
-            </div>
+            <div className="text-sm text-muted-foreground text-center py-4">No history events available</div>
           ) : (
             <div className="flex flex-col gap-4">
               {events.map((event, index) => {
@@ -330,8 +345,10 @@ export function EndorsementChain({
                                 text={[
                                   event.data.signing_address.address,
                                   event.data.signing_address.city,
-                                  event.data.signing_address.country
-                                ].filter(Boolean).join(", ")}
+                                  event.data.signing_address.country,
+                                ]
+                                  .filter(Boolean)
+                                  .join(", ")}
                                 maxLength={50}
                                 className="inline"
                               />
@@ -341,9 +358,7 @@ export function EndorsementChain({
                       )}
                     </div>
 
-                    {index < events.length - 1 && (
-                      <Separator className="my-2" />
-                    )}
+                    {index < events.length - 1 && <Separator className="my-2" />}
                   </div>
                 )
               })}
