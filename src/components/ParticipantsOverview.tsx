@@ -90,7 +90,7 @@ export function ParticipantsOverviewCard({
 }: {
   drawee?: IdentityPublicData
   drawer?: IdentityPublicData
-  holder?: PayeePublicData
+  holder?: PayeePublicData[]
   payee?: PayeePublicData
   className?: string
 }) {
@@ -156,9 +156,9 @@ export function ParticipantsOverviewCard({
           <PayeePublicDataAvatar value={payee} tooltip={getPayeeTooltip(payee, "Payee")} />
         </div>
       )}
-      {holder && (
+      {holder && holder.length > 0 && (
         <div>
-          <PayeePublicDataAvatar value={holder} tooltip={getPayeeTooltip(holder, "Holder")} />
+          <PayeePublicDataAvatar value={holder[0]} tooltip={getPayeeTooltip(holder[0], "Holder")} />
         </div>
       )}
     </span>

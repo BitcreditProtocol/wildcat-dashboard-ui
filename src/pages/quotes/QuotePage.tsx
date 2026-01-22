@@ -185,7 +185,7 @@ function PageBody({ id }: { id: string }) {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Effective discount (relative):</span>
                   <span className="text-sm font-mono">
-                    {((bill.sum - quote.discounted) / bill.sum * 100).toFixed(4)}%
+                    {(((bill.sum - quote.discounted) / bill.sum) * 100).toFixed(4)}%
                   </span>
                 </div>
               </>
@@ -209,7 +209,12 @@ function PageBody({ id }: { id: string }) {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Participants:</span>
-              <ParticipantsOverviewCard drawee={bill.drawee} drawer={bill.drawer} payee={bill.payee} />
+              <ParticipantsOverviewCard
+                drawee={bill.drawee}
+                drawer={bill.drawer}
+                payee={bill.payee}
+                holder={bill.endorsees}
+              />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Drawee:</span>
@@ -223,6 +228,15 @@ function PageBody({ id }: { id: string }) {
               <span className="text-sm font-semibold w-32">Payee:</span>
               <ParticipantDetail participant={bill.payee} />
             </div>
+
+            {bill.endorsees && bill.endorsees.length > 0 && (
+              <span className="flex items-center gap-2">
+                <span className="text-sm font-semibold w-32">Holder{bill.endorsees.length > 1 ? "s" : ""}:</span>
+                {bill.endorsees.map((endorsee, index) => (
+                  <ParticipantDetail key={index} participant={endorsee} />
+                ))}
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>

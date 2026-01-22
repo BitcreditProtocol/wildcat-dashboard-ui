@@ -126,7 +126,7 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
             drawee={bill.drawee}
             drawer={bill.drawer}
             payee={bill.payee}
-            holder={bill.endorsees?.[0] ?? undefined}
+            holder={bill.endorsees}
           />
         )}
         {!isLoadingDetails && !detailsError && !bill && (
