@@ -125,11 +125,23 @@ export function ParticipantDetail({
   let avatar: React.ReactNode
 
   if ("Anon" in participant) {
+    const anonData = participant.Anon
     return (
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
         <UserAnonymousIcon className="h-8 w-8 text-muted-foreground" />
         <div className="flex flex-col gap-1">
           <div className="text-sm text-muted-foreground">Bearer</div>
+          {anonData?.node_id && (
+            <div className="text-xs text-muted-foreground font-mono break-all">
+              <TruncatedTextPopover
+                text={anonData.node_id}
+                maxLength={50}
+                className="text-sm font-medium"
+                as="span"
+                showFullOnDesktop
+              />
+            </div>
+          )}
         </div>
       </div>
     )
