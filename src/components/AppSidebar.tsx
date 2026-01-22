@@ -1,8 +1,8 @@
 import { Bitcoin, Home, Inbox, Key } from "lucide-react"
-import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
-import { NavUser } from "./nav/NavUser"
+import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar" // SidebarFooter,
+// import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain"
-import { useKeycloak } from "../lib/keycloak-user"
+// import { useKeycloak } from "../lib/keycloak-user"
 
 const data = {
   navMain: [
@@ -60,14 +60,16 @@ const data = {
 }
 
 export function AppSidebar() {
-  const { user, isLoading } = useKeycloak()
+  // const { user, isLoading } = useKeycloak()
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <SidebarFooter>{!isLoading && user && <NavUser user={user} />}</SidebarFooter>
+      {/* https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/131
+        <SidebarFooter>{!isLoading && user && <NavUser user={user} />}</SidebarFooter>
+      */}
       <SidebarRail />
     </Sidebar>
   )
