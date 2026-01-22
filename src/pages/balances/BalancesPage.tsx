@@ -225,7 +225,7 @@ function PageBodyWithDevSection() {
         {/*
           TODO Charts display mock data - will be updated when historical data endpoint is available
           TODO Mint fees display pending - endpoint TBD
-        */}
+          https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/129
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="py-4">
             <BitcoinBalanceChart />
@@ -234,6 +234,7 @@ function PageBodyWithDevSection() {
             <OtherBalanceChart />
           </Card>
         </div>
+        */}
       </div>
     </>
   )
