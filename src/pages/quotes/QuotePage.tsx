@@ -136,6 +136,19 @@ function PageBody({ id }: { id: string }) {
                   </Badge>
                 </div>
               )}
+
+              {quote.status === "Pending" && "suggested_expiration" in quote && quote.suggested_expiration && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold w-32">Deadline:</span>
+                  <span>{new Date(quote.suggested_expiration).toISOString().split("T")[0]}</span>
+                </div>
+              )}
+              {quote.status === "Offered" && "ttl" in quote && quote.ttl && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold w-32">Deadline:</span>
+                  <span>{new Date(quote.ttl).toISOString().split("T")[0]}</span>
+                </div>
+              )}
               {(ebillPaid || requestedToPay || isInMempool) && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Payment:</span>
@@ -160,27 +173,33 @@ function PageBody({ id }: { id: string }) {
               <span className="text-lg font-bold">{bill.sum} sat</span>
             </div>
             {"discounted" in quote && quote.discounted && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">Discounted:</span>
-                <span className="text-lg font-bold">{quote.discounted} sat</span>
-              </div>
-            )}
-            {quote.status === "Minting" && "fee" in quote && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold w-32">Fee amount:</span>
+                  <span className="text-sm font-semibold w-32">Discounted:</span>
+                  <span className="text-lg font-bold">{quote.discounted} sat</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold w-32">Effective discount (absolute):</span>
                   <span className="text-sm font-mono">{bill.sum - quote.discounted} sat</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold w-32">Fee token:</span>
-                  <TruncatedTextPopover
-                    text={quote.fee}
-                    maxLength={64}
-                    className="font-mono text-sm"
-                    showCopyButton={true}
-                  />
+                  <span className="text-sm font-semibold w-32">Effective discount (relative):</span>
+                  <span className="text-sm font-mono">
+                    {((bill.sum - quote.discounted) / bill.sum * 100).toFixed(4)}%
+                  </span>
                 </div>
               </>
+            )}
+            {quote.status === "Minting" && "fee" in quote && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold w-32">Fee token:</span>
+                <TruncatedTextPopover
+                  text={quote.fee}
+                  maxLength={64}
+                  className="font-mono text-sm"
+                  showCopyButton={true}
+                />
+              </div>
             )}
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold w-32">Maturity date:</span>
@@ -244,8 +263,8 @@ function PageBody({ id }: { id: string }) {
           "submitted" in quote
             ? Math.floor(new Date(quote.submitted).getTime() / 1000)
             : "tstamp" in quote
-            ? Math.floor(new Date(quote.tstamp).getTime() / 1000)
-            : undefined
+              ? Math.floor(new Date(quote.tstamp).getTime() / 1000)
+              : undefined
         }
       />
     </div>
