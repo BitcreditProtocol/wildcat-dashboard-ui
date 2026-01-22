@@ -132,7 +132,7 @@ function PageBody({ id }: { id: string }) {
                     variant={quote.status === "Minting" ? "default" : "destructive"}
                     className={quote.status === "Minting" ? "bg-blue-500" : "bg-red-500"}
                   >
-                    {quote.status === "Minting" ? "Enabled" : "Disabled"}
+                    {quote.status === "Minting" ? "Active" : "Inactive"}
                   </Badge>
                 </div>
               )}
