@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Link } from "react-router"
 import { useState } from "react"
 import SearchComponent, { HighlightText } from "@/components/ui/search"
-import { ArrowUp, ArrowDown } from "lucide-react"
+import { SortButtons } from "@/components/SortButtons.tsx"
 
 function Loader() {
   return (
@@ -20,10 +20,12 @@ function Loader() {
   )
 }
 
+type SortBy = "maturity-asc" | "maturity-desc" | "status-asc" | "status-desc" | "currency-asc" | "currency-desc"
+
 function PageBody() {
   const { data: keysets, isLoading: keysetsLoading } = useQuery(listKeysetInfosOptions())
   const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<"expired-first" | "date-order">("expired-first")
+  const [sortBy, setSortBy] = useState<SortBy>("maturity-asc")
 
   if (keysetsLoading) {
     return <Loader />
@@ -59,36 +61,76 @@ function PageBody() {
   })
 
   const sortedKeysets = [...filteredKeysets].sort((a, b) => {
-    const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null
-    const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null
+    let comparison = 0
 
-    if (!aExpiry && !bExpiry) {
-      return 0
-    }
-    if (!aExpiry) {
-      return sortBy === "expired-first" ? 1 : -1
-    }
-    if (!bExpiry) {
-      return sortBy === "expired-first" ? -1 : 1
-    }
+    switch (sortBy) {
+      case "maturity-asc":
+      case "maturity-desc": {
+        const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null
+        const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null
 
-    if (sortBy === "expired-first") {
-      const now = new Date()
-      const aIsExpired = aExpiry < now
-      const bIsExpired = bExpiry < now
+        if (!aExpiry && !bExpiry) {
+          comparison = 0
+        } else if (!aExpiry) {
+          comparison = 1
+        } else if (!bExpiry) {
+          comparison = -1
+        } else {
+          const now = new Date()
+          const aIsExpired = aExpiry < now
+          const bIsExpired = bExpiry < now
 
-      if (aIsExpired && !bIsExpired) {
-        return -1
+          if (aIsExpired && !bIsExpired) {
+            comparison = -1
+          } else if (!aIsExpired && bIsExpired) {
+            comparison = 1
+          } else {
+            comparison = aExpiry.getTime() - bExpiry.getTime()
+          }
+        }
+        if (sortBy === "maturity-desc") {
+          comparison = -comparison
+        }
+        break
       }
-      if (!aIsExpired && bIsExpired) {
-        return 1
+      case "status-asc":
+      case "status-desc": {
+        const aStatus = a.active ? 1 : 0
+        const bStatus = b.active ? 1 : 0
+        comparison = bStatus - aStatus
+        if (sortBy === "status-desc") {
+          comparison = -comparison
+        }
+        break
       }
-
-      return aExpiry.getTime() - bExpiry.getTime()
-    } else {
-      return bExpiry.getTime() - aExpiry.getTime()
+      case "currency-asc":
+      case "currency-desc": {
+        const aCurrency = typeof a.unit === "string" ? a.unit : a.unit.Custom
+        const bCurrency = typeof b.unit === "string" ? b.unit : b.unit.Custom
+        comparison = aCurrency.localeCompare(bCurrency)
+        if (sortBy === "currency-desc") {
+          comparison = -comparison
+        }
+        break
+      }
     }
+
+    return comparison
   })
+
+  const toggleSort = (field: "maturity" | "status" | "currency") => {
+    if (sortBy.startsWith(field)) {
+      setSortBy(sortBy.endsWith("asc") ? `${field}-desc` as SortBy : `${field}-asc` as SortBy)
+    } else {
+      setSortBy(`${field}-asc` as SortBy)
+    }
+  }
+
+  const sortOptions = [
+    { field: "currency" as const, label: "Currency" },
+    { field: "maturity" as const, label: "Maturity" },
+    { field: "status" as const, label: "Status" },
+  ]
 
   return (
     <div className="space-y-4">
@@ -101,22 +143,11 @@ function PageBody() {
           onChange={setSearchQuery}
           size="sm"
         />
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Sort by:</span>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setSortBy(sortBy === "expired-first" ? "date-order" : "expired-first")}
-            title={sortBy === "expired-first" ? "Expired First" : "Date Order"}
-            className="flex items-center gap-1 max-w-sm"
-          >
-            {sortBy === "expired-first" ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : (
-              <ArrowDown className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+        <SortButtons
+          sortBy={sortBy}
+          onSortChange={toggleSort}
+          options={sortOptions}
+        />
       </div>
 
       {sortedKeysets.length === 0 ? (
