@@ -23,9 +23,11 @@ function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?
     </Avatar>
   )
 
-  return !tooltip ? (
-    avatar
-  ) : (
+  if (!tooltip) {
+    return avatar
+  }
+
+  return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>{avatar}</TooltipTrigger>
@@ -49,9 +51,11 @@ function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; 
     </Avatar>
   )
 
-  return !tooltip ? (
-    avatar
-  ) : (
+  if (!tooltip) {
+    return avatar
+  }
+
+  return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>{avatar}</TooltipTrigger>
@@ -62,7 +66,9 @@ function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; 
 }
 
 function PayeePublicDataAvatar({ value, tooltip }: { value?: PayeePublicData; tooltip?: React.ReactNode }) {
-  if (!value) return null
+  if (!value) {
+    return null
+  }
 
   if ("Ident" in value) {
     const identData = value.Ident
@@ -88,26 +94,71 @@ export function ParticipantsOverviewCard({
   payee?: PayeePublicData
   className?: string
 }) {
+  const getIdentTooltip = (data: IdentityPublicData | undefined, role: string) => {
+    if (!data) {
+      return role
+    }
+    return (
+      <div className="flex flex-col gap-1 max-w-xs">
+        <div className="font-semibold break-words">{role}</div>
+        <div className="break-words">{data.name}</div>
+        {data.email && <div className="text-xs break-words">{data.email}</div>}
+        {data.city && data.country && <div className="text-xs break-words">{data.city}, {data.country}</div>}
+        <div className="text-xs font-mono break-all">{data.node_id}</div>
+      </div>
+    )
+  }
+
+  const getPayeeTooltip = (data: PayeePublicData | undefined, role: string) => {
+    if (!data) {
+      return role
+    }
+
+    if ("Ident" in data) {
+      const identData = data.Ident
+      return (
+        <div className="flex flex-col gap-1 max-w-xs">
+          <div className="font-semibold break-words">{role}</div>
+          <div className="break-words">{identData.name}</div>
+          {identData.email && <div className="text-xs break-words">{identData.email}</div>}
+          {identData.city && identData.country && <div className="text-xs break-words">{identData.city}, {identData.country}</div>}
+          <div className="text-xs font-mono break-all">{identData.node_id}</div>
+        </div>
+      )
+    } else if ("Anon" in data) {
+      const anonData = data.Anon
+      return (
+        <div className="flex flex-col gap-1 max-w-xs">
+          <div className="font-semibold break-words">{role}</div>
+          <div className="break-words">Bearer</div>
+          {anonData?.node_id && <div className="text-xs font-mono break-all">{anonData.node_id}</div>}
+        </div>
+      )
+    }
+
+    return role
+  }
+
   return (
     <span className={cn("flex gap-1 items-center", className)}>
       {drawee && (
         <div>
-          <IdentityPublicAvatar value={drawee} tooltip="Drawee" />
+          <IdentityPublicAvatar value={drawee} tooltip={getIdentTooltip(drawee, "Drawee")} />
         </div>
       )}
       {drawer && (
         <div>
-          <IdentityPublicAvatar value={drawer} tooltip="Drawer" />
+          <IdentityPublicAvatar value={drawer} tooltip={getIdentTooltip(drawer, "Drawer")} />
         </div>
       )}
       {payee && (
         <div>
-          <PayeePublicDataAvatar value={payee} tooltip="Payee" />
+          <PayeePublicDataAvatar value={payee} tooltip={getPayeeTooltip(payee, "Payee")} />
         </div>
       )}
       {holder && (
         <div>
-          <PayeePublicDataAvatar value={holder} tooltip="Holder" />
+          <PayeePublicDataAvatar value={holder} tooltip={getPayeeTooltip(holder, "Holder")} />
         </div>
       )}
     </span>
@@ -119,7 +170,9 @@ export function ParticipantDetail({
 }: {
   participant: BillIdentParticipant | BillParticipant | undefined
 }) {
-  if (!participant) return null
+  if (!participant) {
+    return null
+  }
 
   let data: BillIdentParticipant | undefined
   let avatar: React.ReactNode

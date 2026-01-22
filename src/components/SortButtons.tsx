@@ -1,17 +1,17 @@
 import { Button } from "@/components/ui/button"
 import { ArrowUp, ArrowDown } from "lucide-react"
 
-export type SortConfig<T extends string> = {
+export interface SortConfig<T extends string> {
   field: T
   direction: "asc" | "desc"
 }
 
-type SortOption<T extends string> = {
+interface SortOption<T extends string> {
   field: T
   label: string
 }
 
-type SortButtonsProps<T extends string> = {
+interface SortButtonsProps<T extends string> {
   sortBy: string
   onSortChange: (field: T) => void
   options: SortOption<T>[]
