@@ -3,6 +3,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getIdentity /* , getClowderMystatus, listKeysetInfos */ } from "@/generated/client/sdk.gen"
 import { useQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
+import { Copy } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 
 function Loader() {
   return (
@@ -81,23 +84,71 @@ function PageBody() {
                 <h4 className="text-md font-semibold mb-4">Keys</h4>
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Node ID</span>
+                    <div className="flex items-center">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Node ID</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(identityData.node_id).then(() => {
+                            toast.success("Node ID copied to clipboard")
+                          }).catch(() => {
+                            toast.error("Failed to copy Node ID")
+                          })
+                        }}
+                        className="h-6 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
                       {identityData.node_id}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      Bitcoin Public Key
-                    </span>
+                    <div className="flex items-center">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                        Bitcoin Public Key
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(identityData.bitcoin_public_key).then(() => {
+                            toast.success("Bitcoin Public Key copied to clipboard")
+                          }).catch(() => {
+                            toast.error("Failed to copy Bitcoin Public Key")
+                          })
+                        }}
+                        className="h-6 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
                       {identityData.bitcoin_public_key}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      Nostr Public Key
-                    </span>
+                    <div className="flex items-center">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                        Nostr Public Key
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(identityData.npub).then(() => {
+                            toast.success("Nostr Public Key copied to clipboard")
+                          }).catch(() => {
+                            toast.error("Failed to copy Nostr Public Key")
+                          })
+                        }}
+                        className="h-6 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
                       {identityData.npub}
                     </span>
