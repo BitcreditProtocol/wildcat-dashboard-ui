@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getIdentity /* , getClowderMystatus, listKeysetInfos */ } from "@/generated/client/sdk.gen"
 import { useQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
+import { CopyButton } from "@/components/CopyButton"
 
 function Loader() {
   return (
@@ -81,23 +82,32 @@ function PageBody() {
                 <h4 className="text-md font-semibold mb-4">Keys</h4>
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Node ID</span>
+                    <div className="flex items-center">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Node ID</span>
+                      <CopyButton value={identityData.node_id} label="Node ID" />
+                    </div>
                     <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
                       {identityData.node_id}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      Bitcoin Public Key
-                    </span>
+                    <div className="flex items-center">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                        Bitcoin Public Key
+                      </span>
+                      <CopyButton value={identityData.bitcoin_public_key} label="Bitcoin Public Key" />
+                    </div>
                     <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
                       {identityData.bitcoin_public_key}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      Nostr Public Key
-                    </span>
+                    <div className="flex items-center">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                        Nostr Public Key
+                      </span>
+                      <CopyButton value={identityData.npub} label="Nostr Public Key" />
+                    </div>
                     <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
                       {identityData.npub}
                     </span>
