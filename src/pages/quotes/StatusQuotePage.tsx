@@ -5,7 +5,7 @@ import { Card, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { listQuotesOptions, getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { useQuery, useQueries } from "@tanstack/react-query"
-import { LoaderIcon, ArrowUp, ArrowDown } from "lucide-react"
+import { LoaderIcon } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 import { formatNumber, truncateString, formatStatusLabel } from "@/utils/strings"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +17,7 @@ import * as React from "react"
 import SearchComponent, { HighlightText } from "@/components/ui/search"
 import { useState } from "react"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
+import { SortButtons } from "@/components/SortButtons"
 
 type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "Minting"
 type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc"
@@ -234,12 +235,11 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     }
   }
 
-  const getSortIcon = (field: "status" | "sum" | "maturity") => {
-    if (!sortBy.startsWith(field)) {
-      return null
-    }
-    return sortBy.endsWith("asc") ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-  }
+  const sortOptions = [
+    { field: "sum" as const, label: "Amount" },
+    { field: "maturity" as const, label: "Maturity" },
+    { field: "status" as const, label: "Status" },
+  ]
 
   return (
     <>
@@ -252,36 +252,11 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           onChange={setSearchQuery}
           size="sm"
         />
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Sort by:</span>
-          <Button
-            size="sm"
-            variant={sortBy.startsWith("sum") ? "default" : "outline"}
-            onClick={() => toggleSort("sum")}
-            title={sortBy.startsWith("sum") ? (sortBy.endsWith("asc") ? "Amount Ascending" : "Amount Descending") : "Sort by Amount"}
-            className="flex items-center gap-1 max-w-sm"
-          >
-            Amount {getSortIcon("sum")}
-          </Button>
-          <Button
-            size="sm"
-            variant={sortBy.startsWith("maturity") ? "default" : "outline"}
-            onClick={() => toggleSort("maturity")}
-            title={sortBy.startsWith("maturity") ? (sortBy.endsWith("asc") ? "Maturity Date Ascending" : "Maturity Date Descending") : "Sort by Maturity Date"}
-            className="flex items-center gap-1 max-w-sm"
-          >
-            Maturity {getSortIcon("maturity")}
-          </Button>
-          <Button
-            size="sm"
-            variant={sortBy.startsWith("status") ? "default" : "outline"}
-            onClick={() => toggleSort("status")}
-            title={sortBy.startsWith("status") ? (sortBy.endsWith("asc") ? "Status Ascending" : "Status Descending") : "Sort by Status"}
-            className="flex items-center gap-1 max-w-sm"
-          >
-            Status {getSortIcon("status")}
-          </Button>
-        </div>
+        <SortButtons
+          sortBy={sortBy}
+          onSortChange={toggleSort}
+          options={sortOptions}
+        />
       </div>
 
       <div className="flex items-center gap-1">

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Link } from "react-router"
 import { useState } from "react"
 import SearchComponent, { HighlightText } from "@/components/ui/search"
-import { ArrowUp, ArrowDown } from "lucide-react"
+import { SortButtons } from "@/components/SortButtons.tsx"
 
 function Loader() {
   return (
@@ -126,12 +126,11 @@ function PageBody() {
     }
   }
 
-  const getSortIcon = (field: "maturity" | "status" | "currency") => {
-    if (!sortBy.startsWith(field)) {
-      return null
-    }
-    return sortBy.endsWith("asc") ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-  }
+  const sortOptions = [
+    { field: "currency" as const, label: "Currency" },
+    { field: "maturity" as const, label: "Maturity" },
+    { field: "status" as const, label: "Status" },
+  ]
 
   return (
     <div className="space-y-4">
@@ -144,36 +143,11 @@ function PageBody() {
           onChange={setSearchQuery}
           size="sm"
         />
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Sort by:</span>
-          <Button
-            size="sm"
-            variant={sortBy.startsWith("currency") ? "default" : "outline"}
-            onClick={() => toggleSort("currency")}
-            title={sortBy.startsWith("currency") ? (sortBy.endsWith("asc") ? "Currency Ascending" : "Currency Descending") : "Sort by Currency"}
-            className="flex items-center gap-1 max-w-sm"
-          >
-            Currency {getSortIcon("currency")}
-          </Button>
-          <Button
-            size="sm"
-            variant={sortBy.startsWith("maturity") ? "default" : "outline"}
-            onClick={() => toggleSort("maturity")}
-            title={sortBy.startsWith("maturity") ? (sortBy.endsWith("asc") ? "Maturity Date Ascending" : "Maturity Date Descending") : "Sort by Maturity Date"}
-            className="flex items-center gap-1 max-w-sm"
-          >
-            Maturity {getSortIcon("maturity")}
-          </Button>
-          <Button
-            size="sm"
-            variant={sortBy.startsWith("status") ? "default" : "outline"}
-            onClick={() => toggleSort("status")}
-            title={sortBy.startsWith("status") ? (sortBy.endsWith("asc") ? "Status Ascending" : "Status Descending") : "Sort by Status"}
-            className="flex items-center gap-1 max-w-sm"
-          >
-            Status {getSortIcon("status")}
-          </Button>
-        </div>
+        <SortButtons
+          sortBy={sortBy}
+          onSortChange={toggleSort}
+          options={sortOptions}
+        />
       </div>
 
       {sortedKeysets.length === 0 ? (
