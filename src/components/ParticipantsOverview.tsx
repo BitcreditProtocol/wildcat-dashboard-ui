@@ -9,7 +9,7 @@ import type React from "react"
 
 type IdentityPublicData = BillIdentParticipant
 type AnonPublicData = BillAnonParticipant
-type PayeePublicData = BillParticipant
+type IdentOrAnonParticipant = BillParticipant
 
 function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?: React.ReactNode }) {
   const initials = "?"
@@ -65,7 +65,7 @@ function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; 
   )
 }
 
-function PayeePublicDataAvatar({ value, tooltip }: { value?: PayeePublicData; tooltip?: React.ReactNode }) {
+function IdentOrAnonAvatar({ value, tooltip }: { value?: IdentOrAnonParticipant; tooltip?: React.ReactNode }) {
   if (!value) {
     return null
   }
@@ -90,8 +90,8 @@ export function ParticipantsOverviewCard({
 }: {
   drawee?: IdentityPublicData
   drawer?: IdentityPublicData
-  holder?: PayeePublicData[]
-  payee?: PayeePublicData
+  holder?: IdentOrAnonParticipant[]
+  payee?: IdentOrAnonParticipant
   className?: string
 }) {
   const getIdentTooltip = (data: IdentityPublicData | undefined, role: string) => {
@@ -103,13 +103,17 @@ export function ParticipantsOverviewCard({
         <div className="font-semibold break-words">{role}</div>
         <div className="break-words">{data.name}</div>
         {data.email && <div className="text-xs break-words">{data.email}</div>}
-        {data.city && data.country && <div className="text-xs break-words">{data.city}, {data.country}</div>}
+        {data.city && data.country && (
+          <div className="text-xs break-words">
+            {data.city}, {data.country}
+          </div>
+        )}
         <div className="text-xs font-mono break-all">{data.node_id}</div>
       </div>
     )
   }
 
-  const getPayeeTooltip = (data: PayeePublicData | undefined, role: string) => {
+  const getIdentOrAnonTooltip = (data: IdentOrAnonParticipant | undefined, role: string) => {
     if (!data) {
       return role
     }
@@ -121,7 +125,11 @@ export function ParticipantsOverviewCard({
           <div className="font-semibold break-words">{role}</div>
           <div className="break-words">{identData.name}</div>
           {identData.email && <div className="text-xs break-words">{identData.email}</div>}
-          {identData.city && identData.country && <div className="text-xs break-words">{identData.city}, {identData.country}</div>}
+          {identData.city && identData.country && (
+            <div className="text-xs break-words">
+              {identData.city}, {identData.country}
+            </div>
+          )}
           <div className="text-xs font-mono break-all">{identData.node_id}</div>
         </div>
       )
@@ -153,12 +161,12 @@ export function ParticipantsOverviewCard({
       )}
       {payee && (
         <div>
-          <PayeePublicDataAvatar value={payee} tooltip={getPayeeTooltip(payee, "Payee")} />
+          <IdentOrAnonAvatar value={payee} tooltip={getIdentOrAnonTooltip(payee, "Payee")} />
         </div>
       )}
       {holder && holder.length > 0 && (
         <div>
-          <PayeePublicDataAvatar value={holder[0]} tooltip={getPayeeTooltip(holder[0], "Holder")} />
+          <IdentOrAnonAvatar value={holder[0]} tooltip={getIdentOrAnonTooltip(holder[0], "Holder")} />
         </div>
       )}
     </span>
