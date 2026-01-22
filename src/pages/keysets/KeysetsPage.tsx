@@ -20,10 +20,12 @@ function Loader() {
   )
 }
 
+type SortBy = "maturity-asc" | "maturity-desc" | "status-asc" | "status-desc" | "currency-asc" | "currency-desc"
+
 function PageBody() {
   const { data: keysets, isLoading: keysetsLoading } = useQuery(listKeysetInfosOptions())
   const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<"expired-first" | "date-order">("expired-first")
+  const [sortBy, setSortBy] = useState<SortBy>("maturity-asc")
 
   if (keysetsLoading) {
     return <Loader />
@@ -59,36 +61,77 @@ function PageBody() {
   })
 
   const sortedKeysets = [...filteredKeysets].sort((a, b) => {
-    const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null
-    const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null
+    let comparison = 0
 
-    if (!aExpiry && !bExpiry) {
-      return 0
-    }
-    if (!aExpiry) {
-      return sortBy === "expired-first" ? 1 : -1
-    }
-    if (!bExpiry) {
-      return sortBy === "expired-first" ? -1 : 1
-    }
+    switch (sortBy) {
+      case "maturity-asc":
+      case "maturity-desc": {
+        const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null
+        const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null
 
-    if (sortBy === "expired-first") {
-      const now = new Date()
-      const aIsExpired = aExpiry < now
-      const bIsExpired = bExpiry < now
+        if (!aExpiry && !bExpiry) {
+          comparison = 0
+        } else if (!aExpiry) {
+          comparison = 1
+        } else if (!bExpiry) {
+          comparison = -1
+        } else {
+          const now = new Date()
+          const aIsExpired = aExpiry < now
+          const bIsExpired = bExpiry < now
 
-      if (aIsExpired && !bIsExpired) {
-        return -1
+          if (aIsExpired && !bIsExpired) {
+            comparison = -1
+          } else if (!aIsExpired && bIsExpired) {
+            comparison = 1
+          } else {
+            comparison = aExpiry.getTime() - bExpiry.getTime()
+          }
+        }
+        if (sortBy === "maturity-desc") {
+          comparison = -comparison
+        }
+        break
       }
-      if (!aIsExpired && bIsExpired) {
-        return 1
+      case "status-asc":
+      case "status-desc": {
+        const aStatus = a.active ? 1 : 0
+        const bStatus = b.active ? 1 : 0
+        comparison = bStatus - aStatus
+        if (sortBy === "status-desc") {
+          comparison = -comparison
+        }
+        break
       }
-
-      return aExpiry.getTime() - bExpiry.getTime()
-    } else {
-      return bExpiry.getTime() - aExpiry.getTime()
+      case "currency-asc":
+      case "currency-desc": {
+        const aCurrency = typeof a.unit === "string" ? a.unit : a.unit.Custom
+        const bCurrency = typeof b.unit === "string" ? b.unit : b.unit.Custom
+        comparison = aCurrency.localeCompare(bCurrency)
+        if (sortBy === "currency-desc") {
+          comparison = -comparison
+        }
+        break
+      }
     }
+
+    return comparison
   })
+
+  const toggleSort = (field: "maturity" | "status" | "currency") => {
+    if (sortBy.startsWith(field)) {
+      setSortBy(sortBy.endsWith("asc") ? `${field}-desc` as SortBy : `${field}-asc` as SortBy)
+    } else {
+      setSortBy(`${field}-asc` as SortBy)
+    }
+  }
+
+  const getSortIcon = (field: "maturity" | "status" | "currency") => {
+    if (!sortBy.startsWith(field)) {
+      return null
+    }
+    return sortBy.endsWith("asc") ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+  }
 
   return (
     <div className="space-y-4">
@@ -105,16 +148,30 @@ function PageBody() {
           <span className="text-sm font-medium">Sort by:</span>
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => setSortBy(sortBy === "expired-first" ? "date-order" : "expired-first")}
-            title={sortBy === "expired-first" ? "Expired First" : "Date Order"}
+            variant={sortBy.startsWith("currency") ? "default" : "outline"}
+            onClick={() => toggleSort("currency")}
+            title={sortBy.startsWith("currency") ? (sortBy.endsWith("asc") ? "Currency Ascending" : "Currency Descending") : "Sort by Currency"}
             className="flex items-center gap-1 max-w-sm"
           >
-            {sortBy === "expired-first" ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : (
-              <ArrowDown className="h-4 w-4" />
-            )}
+            Currency {getSortIcon("currency")}
+          </Button>
+          <Button
+            size="sm"
+            variant={sortBy.startsWith("maturity") ? "default" : "outline"}
+            onClick={() => toggleSort("maturity")}
+            title={sortBy.startsWith("maturity") ? (sortBy.endsWith("asc") ? "Maturity Date Ascending" : "Maturity Date Descending") : "Sort by Maturity Date"}
+            className="flex items-center gap-1 max-w-sm"
+          >
+            Maturity {getSortIcon("maturity")}
+          </Button>
+          <Button
+            size="sm"
+            variant={sortBy.startsWith("status") ? "default" : "outline"}
+            onClick={() => toggleSort("status")}
+            title={sortBy.startsWith("status") ? (sortBy.endsWith("asc") ? "Status Ascending" : "Status Descending") : "Sort by Status"}
+            className="flex items-center gap-1 max-w-sm"
+          >
+            Status {getSortIcon("status")}
           </Button>
         </div>
       </div>
