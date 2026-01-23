@@ -163,6 +163,17 @@ export type BitcreditBill = {
 };
 
 /**
+ * --------------------------- Clowder Node Information
+ */
+export type ClowderNodeInfo = {
+    change_address: string;
+    node_id: PublicKey;
+    uptime_timestamp: number;
+    version: string;
+    network: string;
+};
+
+/**
  * --------------------------- Connected Mint
  */
 export type ConnectedMintResponse = {
@@ -215,6 +226,13 @@ export type DeactivateKeysetResponse = {
 export type ECashBalance = {
     amount: Amount;
     unit: CurrencyUnit;
+};
+
+/**
+ * --------------------------- ebill minting completed
+ */
+export type EbillMintingComplete = {
+    complete: boolean;
 };
 
 export type EnableMintingResponse = {
@@ -401,6 +419,8 @@ export type ListReplyLight = {
     quotes: Array<LightInfo>;
 };
 
+export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc';
+
 /**
  * --------------------------- Mint operation status
  */
@@ -462,6 +482,13 @@ export type PostalAddress = {
 };
 
 /**
+ * PublicKey
+ */
+export type PublicKey = {
+    inner: string;
+};
+
+/**
  * --------------------------- request to pay ebill
  */
 export type RequestToMintFromEBillRequest = {
@@ -507,6 +534,11 @@ export type SimpleAlphaState = {
     ];
 };
 
+export type SimplifiedBillPaymentStatus = {
+    payment_status: BillPaymentStatus;
+    payment_details?: null | BillWaitingForPaymentState;
+};
+
 /**
  * --------------------------- Update quote status request
  */
@@ -525,11 +557,6 @@ export type UpdateQuoteResponse = {
     ttl: string;
     status: 'Offered';
 };
-
-/**
- * Sort order for list queries
- */
-export type ListSort = 'asc' | 'desc';
 
 export type GetHealthData = {
     body?: never;
@@ -896,6 +923,50 @@ export type GetEbillAttachmentResponses = {
     200: unknown;
 };
 
+export type GetEbillPaymentstatusData = {
+    body?: never;
+    path: {
+        /**
+         * the ebill id
+         */
+        bid: string;
+    };
+    query?: never;
+    url: '/v1/admin/ebill/payment_status/{bid}';
+};
+
+export type GetEbillPaymentstatusErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type GetEbillPaymentstatusResponses = {
+    /**
+     * Successful response
+     */
+    200: SimplifiedBillPaymentStatus;
+};
+
+export type GetEbillPaymentstatusResponse = GetEbillPaymentstatusResponses[keyof GetEbillPaymentstatusResponses];
+
+export type GetClowderInfoData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/info';
+};
+
+export type GetClowderInfoResponses = {
+    /**
+     * Successful response
+     */
+    200: ClowderNodeInfo;
+};
+
+export type GetClowderInfoResponse = GetClowderInfoResponses[keyof GetClowderInfoResponses];
+
 export type GetClowderAlphasData = {
     body?: never;
     path?: never;
@@ -1020,7 +1091,7 @@ export type PostEbillReqtopayData = {
     body: RequestToMintFromEBillRequest;
     path?: never;
     query?: never;
-    url: '/v1/admin/ebill/reqtopay';
+    url: '/v1/admin/treasury/ebill/reqtopay';
 };
 
 export type PostEbillReqtopayErrors = {
@@ -1054,6 +1125,34 @@ export type GetSatBalanceResponses = {
 };
 
 export type GetSatBalanceResponse = GetSatBalanceResponses[keyof GetSatBalanceResponses];
+
+export type GetEbillMintCompleteData = {
+    body?: never;
+    path: {
+        /**
+         * the ebill id
+         */
+        bid: string;
+    };
+    query?: never;
+    url: '/v1/admin/treasury/ebill/mint_complete/{bid}';
+};
+
+export type GetEbillMintCompleteErrors = {
+    /**
+     * bill id not found
+     */
+    404: unknown;
+};
+
+export type GetEbillMintCompleteResponses = {
+    /**
+     * Successful response
+     */
+    200: EbillMintingComplete;
+};
+
+export type GetEbillMintCompleteResponse = GetEbillMintCompleteResponses[keyof GetEbillMintCompleteResponses];
 
 export type ClientOptions = {
     baseUrl: `${string}://opt` | (string & {});
