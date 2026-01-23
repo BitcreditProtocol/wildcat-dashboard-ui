@@ -249,10 +249,8 @@ function PageBody({ id }: { id: string }) {
 
             {bill.endorsees && bill.endorsees.length > 0 && (
               <span className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">Holder{bill.endorsees.length > 1 ? "s" : ""}:</span>
-                {bill.endorsees.map((endorsee, index) => (
-                  <ParticipantDetail key={index} participant={endorsee} />
-                ))}
+                <span className="text-sm font-semibold w-32">Holder:</span>
+                <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
               </span>
             )}
           </div>
