@@ -150,7 +150,7 @@ function PageBody({ id }: { id: string }) {
                   <span>{new Date(quote.ttl).toISOString().split("T")[0]}</span>
                 </div>
               )}
-              {(rejectedToPay ?? requestedToPay ?? isInMempool ?? ebillPaid) && (
+              {(rejectedToPay || (isInMempool ?? requestedToPay) || ebillPaid) && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Payment:</span>
                   {ebillPaid ? (
