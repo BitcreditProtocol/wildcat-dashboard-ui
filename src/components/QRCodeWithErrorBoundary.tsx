@@ -4,13 +4,31 @@ import { AlertTriangle, QrCode } from "lucide-react"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 
+/**
+ * Generic QR Code Components
+ *
+ * Usage:
+ *
+ * 1. Inline QR Code:
+ *    <QRCode value="data to encode" size={200} label="Scan me" />
+ *
+ * 2. QR Code in Modal:
+ *    <QRCodeModal
+ *      value="data to encode"
+ *      title="My QR Code"
+ *      label="Scan to access"
+ *    />
+ *
+ * 3. Fee Token QR Code (convenience wrapper):
+ *    <FeeTokenQRCodeModal feeToken={token} />
+ */
+
 interface QRCodeErrorBoundaryProps {
   children: ReactNode
 }
 
 interface QRCodeErrorBoundaryState {
   hasError: boolean
-  error?: Error
 }
 
 class QRCodeErrorBoundary extends Component<QRCodeErrorBoundaryProps, QRCodeErrorBoundaryState> {
@@ -19,8 +37,8 @@ class QRCodeErrorBoundary extends Component<QRCodeErrorBoundaryProps, QRCodeErro
     this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError(error: Error): QRCodeErrorBoundaryState {
-    return { hasError: true, error }
+  static getDerivedStateFromError(): QRCodeErrorBoundaryState {
+    return { hasError: true }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -41,9 +59,16 @@ class QRCodeErrorBoundary extends Component<QRCodeErrorBoundaryProps, QRCodeErro
   }
 }
 
-interface FeeTokenQRCodeProps {
-  feeToken: string
+interface QRCodeProps {
+  value: string
   size?: number
+  label?: string
+  className?: string
+}
+
+interface QRCodeModalProps extends QRCodeProps {
+  title?: string
+  triggerLabel?: string
 }
 
 const QR_CODE_MAX_LENGTH = 2956
@@ -52,33 +77,44 @@ export function canGenerateQRCode(text: string): boolean {
   return text.length <= QR_CODE_MAX_LENGTH
 }
 
-export function FeeTokenQRCode({ feeToken, size = 200 }: FeeTokenQRCodeProps) {
-  if (feeToken.length > QR_CODE_MAX_LENGTH) {
+export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
+  if (value.length > QR_CODE_MAX_LENGTH) {
     return (
       <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
         <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-        <span>Fee token too large for QR code ({feeToken.length} characters, max {QR_CODE_MAX_LENGTH})</span>
+        <span>Data too large for QR code ({value.length} characters, max {QR_CODE_MAX_LENGTH})</span>
       </div>
     )
   }
 
   return (
     <QRCodeErrorBoundary>
-      <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg">
+      <div className={`flex flex-col gap-2 p-4 bg-white border rounded-lg ${className ?? ""}`}>
         <QRCodeSVG
-          value={feeToken}
+          value={value}
           size={size}
           level="M"
         />
+        {label && (
+          <span className="text-xs text-muted-foreground text-center">
+            {label}
+          </span>
+        )}
       </div>
     </QRCodeErrorBoundary>
   )
 }
 
-export function FeeTokenQRCodeModal({ feeToken, size = 768 }: FeeTokenQRCodeProps) {
+export function QRCodeModal({
+  value,
+  size = 768,
+  label,
+  title = "QR Code",
+  triggerLabel = "Show QR code"
+}: QRCodeModalProps) {
   const [open, setOpen] = useState(false)
 
-  if (!canGenerateQRCode) {
+  if (!canGenerateQRCode(value)) {
     return null
   }
 
@@ -89,30 +125,44 @@ export function FeeTokenQRCodeModal({ feeToken, size = 768 }: FeeTokenQRCodeProp
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          aria-label="Show QR code for fee token"
+          aria-label={triggerLabel}
         >
           <QrCode className="h-4 w-4" />
         </Button>
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>Fee Token QR Code</DrawerTitle>
+          <DrawerTitle>{title}</DrawerTitle>
         </DrawerHeader>
         <div className="flex flex-col items-center gap-4 p-6">
           <QRCodeErrorBoundary>
             <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg">
               <QRCodeSVG
-                value={feeToken}
+                value={value}
                 size={size}
                 level="M"
               />
-              <span className="text-xs text-muted-foreground text-center">
-                Scan to use fee token
-              </span>
+              {label && (
+                <span className="text-xs text-muted-foreground text-center">
+                  {label}
+                </span>
+              )}
             </div>
           </QRCodeErrorBoundary>
         </div>
       </DrawerContent>
     </Drawer>
+  )
+}
+
+export function FeeTokenQRCodeModal({ feeToken, size = 768 }: { feeToken: string; size?: number }) {
+  return (
+    <QRCodeModal
+      value={feeToken}
+      size={size}
+      label="Scan to use fee token"
+      title="Fee Token QR Code"
+      triggerLabel="Show QR code for fee token"
+    />
   )
 }

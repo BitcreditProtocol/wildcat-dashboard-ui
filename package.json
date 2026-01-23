@@ -70,7 +70,6 @@
     "@types/big.js": "^6.2.2",
     "@types/date-fns": "^2.5.3",
     "@types/node": "^22.13.10",
-    "@types/qrcode.react": "^3.0.0",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
