@@ -18,6 +18,7 @@ interface QuoteActionsProps {
   isFetching: boolean
   mintingEnabled: boolean
   ebillPaid: boolean
+  isMintComplete: boolean
   requestedToPay: boolean
   paymentDeadlineTs?: number | null
   timeOfRequestToPay?: number | null
@@ -28,11 +29,13 @@ export function QuoteActions({
   isFetching,
   mintingEnabled,
   ebillPaid,
+  isMintComplete,
   requestedToPay,
   paymentDeadlineTs,
   timeOfRequestToPay,
 }: QuoteActionsProps) {
   const billId = value.bill.id
+
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
     retry: 1,
@@ -49,7 +52,7 @@ export function QuoteActions({
   }
 
   const requestedToPayEff = Boolean(requestedToPay || paymentStatus?.requested_to_pay)
-  const ebillPaidEff = Boolean(ebillPaid || paymentStatus?.paid)
+  const ebillPaidEff = Boolean((ebillPaid || paymentStatus?.paid) && isMintComplete)
   const effectiveRequestTime =
     timeOfRequestToPay ??
     paymentStatus?.time_of_request_to_pay ??
