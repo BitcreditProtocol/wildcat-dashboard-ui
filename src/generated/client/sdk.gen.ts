@@ -181,7 +181,7 @@ export const getClowderStatus = <ThrowOnError extends boolean = false>(options: 
 
 export const postEbillReqtopay = <ThrowOnError extends boolean = false>(options: Options<PostEbillReqtopayData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<PostEbillReqtopayResponse, unknown, ThrowOnError>({
-        url: '/v1/admin/ebill/reqtopay',
+        url: '/v1/admin/treasury/ebill/reqtopay',
         ...options,
         headers: {
             'Content-Type': 'application/json',

@@ -1020,7 +1020,7 @@ export type PostEbillReqtopayData = {
     body: RequestToMintFromEBillRequest;
     path?: never;
     query?: never;
-    url: '/v1/admin/ebill/reqtopay';
+    url: '/v1/admin/treasury/ebill/reqtopay';
 };
 
 export type PostEbillReqtopayErrors = {
