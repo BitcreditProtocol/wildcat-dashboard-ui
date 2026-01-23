@@ -10,11 +10,12 @@ import { useQuery } from "@tanstack/react-query"
 import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
-import { QuoteActions } from "./QuoteActionsRefactored"
+import { QuoteActions } from "./QuoteActions.tsx"
 import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
 import { ArrowLeft } from "lucide-react"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx"
 import { EndorsementChain } from "@/components/EndorsementChain"
+import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary"
 
 interface LocationState {
   from?: string
@@ -199,6 +200,7 @@ function PageBody({ id }: { id: string }) {
                   className="font-mono text-sm"
                   showCopyButton={true}
                 />
+                <FeeTokenQRCodeModal feeToken={quote.fee} />
               </div>
             )}
             <div className="flex items-center gap-2">
