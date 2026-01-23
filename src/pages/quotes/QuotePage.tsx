@@ -94,6 +94,7 @@ function PageBody({ id }: { id: string }) {
   const paymentStatus = billStatus?.payment
   const ebillPaid = Boolean(paymentStatus?.paid)
   const requestedToPay = Boolean(paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds)
+  const rejectedToPay = Boolean(paymentStatus?.rejected_to_pay)
   const paymentDeadlineTs = paymentStatus?.payment_deadline_timestamp ?? null
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
 
@@ -149,12 +150,16 @@ function PageBody({ id }: { id: string }) {
                   <span>{new Date(quote.ttl).toISOString().split("T")[0]}</span>
                 </div>
               )}
-              {(ebillPaid || requestedToPay || isInMempool) && (
+              {(ebillPaid ?? requestedToPay ?? isInMempool ?? rejectedToPay) && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Payment:</span>
                   {ebillPaid ? (
                     <Badge variant="default" className="bg-green-600">
                       Paid
+                    </Badge>
+                  ) : rejectedToPay ? (
+                    <Badge variant="destructive" className="bg-red-600">
+                      Rejected to pay
                     </Badge>
                   ) : isInMempool ? (
                     <Badge variant="default" className="bg-orange-500">
