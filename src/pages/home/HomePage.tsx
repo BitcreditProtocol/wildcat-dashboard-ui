@@ -20,9 +20,9 @@ function PageBody() {
     gcTime: Infinity,
   })
 
-  const { data: clowderData } = useQuery({
+  const { data: clowderData, isLoading: clowderLoading, isError: clowderError } = useQuery({
     ...getClowderInfoOptions(),
-    staleTime: 60000,
+    staleTime: 60_000,
   })
 
   return (
@@ -111,7 +111,11 @@ function PageBody() {
 
         <div className="bg-card text-card-foreground rounded-lg border p-6">
           <h3 className="text-lg font-semibold mb-4">Clowder</h3>
-          {clowderData ? (
+          {clowderLoading ? (
+            <div className="text-center text-muted-foreground">Loading clowder information...</div>
+          ) : clowderError ? (
+            <div className="text-center text-muted-foreground">Failed to load clowder information</div>
+          ) : clowderData ? (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center">
@@ -138,13 +142,11 @@ function PageBody() {
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                     Change Address
                   </span>
-                  <CopyButton value={clowderData.node_id as unknown as string} label="Clowder Node ID" />
+                  <CopyButton value={clowderData.change_address} label="Change Address" />
                 </div>
-                <div className="flex items-center">
-                  <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground flex-1">
-                    {clowderData.change_address}
-                  </span>
-                </div>
+                <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
+                  {clowderData.change_address}
+                </span>
               </div>
 
               {clowderData.uptime_timestamp && (
