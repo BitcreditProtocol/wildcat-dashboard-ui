@@ -1,9 +1,9 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getIdentity /* , getClowderMystatus, listKeysetInfos */ } from "@/generated/client/sdk.gen"
 import { useQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 import { CopyButton } from "@/components/CopyButton"
+import { getIdentityOptions, getClowderInfoOptions } from "@/generated/client/@tanstack/react-query.gen"
 
 function Loader() {
   return (
@@ -15,42 +15,15 @@ function Loader() {
 
 function PageBody() {
   const { data: identityData } = useQuery({
-    queryKey: ["identity-detail"],
-    queryFn: async () => {
-      const response = await getIdentity()
-      return response.data ?? null
-    },
+    ...getIdentityOptions(),
     staleTime: Infinity,
     gcTime: Infinity,
-    throwOnError: false,
   })
 
-  // Mint info: the previous mintInfo() function no longer exists in the generated client.
-  // Check for alternatives before removing. Potential endpoints:
-  // - listKeysetInfos(): returns keyset metadata (unit, active, expiry) but not mint name/version/description.
-  // - getClowderMystatus(): returns overall clowder status, not detailed mint info fields.
-  // If a dedicated endpoint is added later (e.g., /v1/admin/mint/info), re-enable the query below.
-  /*
-  const { data: mintData } = useQuery({
-    queryKey: ["mint-info"],
-    queryFn: async () => {
-      const response = await mintInfo()
-      return response.data ?? null
-    },
-    staleTime: Infinity,
-    gcTime: Infinity,
-    throwOnError: false,
+  const { data: clowderData } = useQuery({
+    ...getClowderInfoOptions(),
+    staleTime: 60000,
   })
-
-  const mintData = null as unknown as {
-    name?: string
-    version?: string
-    description?: string
-    description_long?: string
-    pubkey?: string
-    contact?: string[]
-  } | null
-  */
 
   return (
     <div className="flex flex-col gap-4">
@@ -136,63 +109,55 @@ function PageBody() {
           )}
         </div>
 
-        {/* Mint Information Section
         <div className="bg-card text-card-foreground rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4">Mint Information</h3>
-          {mintData ? (
+          <h3 className="text-lg font-semibold mb-4">Clowder</h3>
+          {clowderData ? (
             <div className="flex flex-col gap-4">
-              {mintData.name && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Name</span>
-                  <span className="font-semibold text-base">{mintData.name}</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Node ID</span>
+                  <CopyButton value={clowderData.node_id as unknown as string} label="Clowder Node ID" />
                 </div>
-              )}
-              {mintData.version && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Version</span>
-                  <span className="text-sm">{mintData.version}</span>
-                </div>
-              )}
-              {mintData.description && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Description</span>
-                  <span className="text-sm">{mintData.description}</span>
-                </div>
-              )}
-              {mintData.description_long && (
-                <div className="flex flex-col gap-1">
+                <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
+                  {clowderData.node_id as unknown as string}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Version</span>
+                <span className="text-sm">{clowderData.version}</span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Network</span>
+                <span className="text-sm capitalize">{clowderData.network}</span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    Long Description
+                    Change Address
                   </span>
-                  <span className="text-sm whitespace-pre-line">{mintData.description_long}</span>
+                  <CopyButton value={clowderData.node_id as unknown as string} label="Clowder Node ID" />
                 </div>
-              )}
-              {mintData.pubkey && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Public Key</span>
-                  <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
-                    {mintData.pubkey}
+                <div className="flex items-center">
+                  <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground flex-1">
+                    {clowderData.change_address}
                   </span>
                 </div>
-              )}
-              {mintData.contact && mintData.contact.length > 0 && (
+              </div>
+
+              {clowderData.uptime_timestamp && (
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Contact</span>
-                  <div className="flex flex-wrap gap-2">
-                    {mintData.contact.map((contact) => (
-                      <span key={contact} className="text-sm bg-muted px-2 py-1 rounded">
-                        {contact}
-                      </span>
-                    ))}
-                  </div>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Started At</span>
+                  <span className="text-sm">{new Date(clowderData.uptime_timestamp * 1000).toLocaleString()}</span>
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-center text-muted-foreground">No mint information available</div>
+            <div className="text-center text-muted-foreground">No clowder information available</div>
           )}
         </div>
-        */}
       </div>
     </div>
   )
