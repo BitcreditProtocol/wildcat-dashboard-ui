@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDrawer } from "@/components/Drawers"
-import { getEbillOptions, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
 import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen"
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer.tsx"
 import { DenyConfirmDrawer } from "./components/DenyConfirmDrawer.tsx"
@@ -18,6 +18,7 @@ interface QuoteActionsProps {
   isFetching: boolean
   mintingEnabled: boolean
   ebillPaid: boolean
+  isMintComplete: boolean
   requestedToPay: boolean
   paymentDeadlineTs?: number | null
   timeOfRequestToPay?: number | null
@@ -28,32 +29,17 @@ export function QuoteActions({
   isFetching,
   mintingEnabled,
   ebillPaid,
+  isMintComplete,
   requestedToPay,
   paymentDeadlineTs,
   timeOfRequestToPay,
 }: QuoteActionsProps) {
   const billId = value.bill.id
-  const quoteStatus = value.status
-  const shouldCheckMintComplete = quoteStatus === "Accepted" || quoteStatus === "Minting"
 
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
     retry: 1,
     enabled: !!billId,
-  })
-
-  const mintCompleteQuery = useQuery({
-    ...getEbillMintCompleteOptions({ path: { bid: billId } }),
-    retry: 1,
-    enabled: !!billId && shouldCheckMintComplete,
-    refetchInterval: (query) => {
-      if (!shouldCheckMintComplete) {
-        return false
-      }
-
-      const data = query.state.data
-      return data?.complete === false ? 60000 : false
-    },
   })
 
   const ebill = ebillQuery.data
@@ -65,7 +51,6 @@ export function QuoteActions({
     waitingPaymentData = cws.Payment.payment_data
   }
 
-  const isMintComplete = mintCompleteQuery.data?.complete ?? false
   const requestedToPayEff = Boolean(requestedToPay || paymentStatus?.requested_to_pay)
   const ebillPaidEff = Boolean((ebillPaid || paymentStatus?.paid) && isMintComplete)
   const effectiveRequestTime =

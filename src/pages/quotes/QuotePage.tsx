@@ -264,6 +264,7 @@ function PageBody({ id }: { id: string }) {
         isFetching={isFetching}
         mintingEnabled={quote.status === "Minting"}
         ebillPaid={ebillPaid}
+        isMintComplete={isMintComplete}
         requestedToPay={requestedToPay}
         paymentDeadlineTs={paymentDeadlineTs}
         timeOfRequestToPay={timeOfRequestToPay}
