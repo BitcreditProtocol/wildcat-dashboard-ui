@@ -148,19 +148,12 @@ export function EndorsementChain({
     })
   }
 
-  if (offeredTimestamp !== undefined) {
+  if (quoteOffered) {
     events.push({
       type: "offered",
-      timestamp: offeredTimestamp,
+      timestamp: offeredTimestamp ?? undefined,
       data: null,
-      label: "Quote offered"
-    })
-  } else if (quoteOffered) {
-    events.push({
-      type: "offered",
-      timestamp: undefined,
-      data: null,
-      label: "Quote offered"
+      label: "Quote offered",
     })
   }
 
