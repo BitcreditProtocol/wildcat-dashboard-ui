@@ -18,6 +18,7 @@ interface QuoteActionsProps {
   isFetching: boolean
   mintingEnabled: boolean
   ebillPaid: boolean
+  isMintComplete: boolean
   requestedToPay: boolean
   paymentDeadlineTs?: number | null
   timeOfRequestToPay?: number | null
@@ -28,6 +29,7 @@ export function QuoteActions({
   isFetching,
   mintingEnabled,
   ebillPaid,
+  isMintComplete,
   requestedToPay,
   paymentDeadlineTs,
   timeOfRequestToPay,
@@ -49,17 +51,11 @@ export function QuoteActions({
   }
 
   const requestedToPayEff = Boolean(requestedToPay || paymentStatus?.requested_to_pay)
-  const ebillPaidEff = Boolean(ebillPaid || paymentStatus?.paid)
+  const ebillPaidEff = Boolean(ebillPaid || (paymentStatus?.paid && isMintComplete))
   const effectiveRequestTime =
-    timeOfRequestToPay ??
-    paymentStatus?.time_of_request_to_pay ??
-    waitingPaymentData?.time_of_request ??
-    null
+    timeOfRequestToPay ?? paymentStatus?.time_of_request_to_pay ?? waitingPaymentData?.time_of_request ?? null
   const effectiveDeadlineTs =
-    paymentDeadlineTs ??
-    paymentStatus?.payment_deadline_timestamp ??
-    waitingPaymentData?.payment_deadline ??
-    null
+    paymentDeadlineTs ?? paymentStatus?.payment_deadline_timestamp ?? waitingPaymentData?.payment_deadline ?? null
   const linkToPay: string | undefined = waitingPaymentData?.mempool_link_for_address_to_pay
   const addressToPay: string | undefined = waitingPaymentData?.address_to_pay
 
@@ -94,11 +90,7 @@ export function QuoteActions({
               setDenyConfirmDrawerOpen(false)
             }}
           >
-            <Button
-              className="flex-1 max-w-sm"
-              disabled={isFetching || denyQuote.isPending}
-              variant="destructive"
-            >
+            <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
               Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </DenyConfirmDrawer>
@@ -117,10 +109,7 @@ export function QuoteActions({
               setOfferFormDrawerOpen(false)
             }}
           >
-            <Button
-              className="flex-1 max-w-sm"
-              disabled={isFetching || offerQuote.isPending}
-            >
+            <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
               Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </OfferFormDrawer>
@@ -156,8 +145,7 @@ export function QuoteActions({
                   disabled={isFetching || enableMintingMutation.isPending}
                   variant="default"
                 >
-                  Enable minting{" "}
-                  {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                  Enable minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
                 </Button>
               }
             />
@@ -168,19 +156,19 @@ export function QuoteActions({
           ebill &&
           !ebillPaidEff &&
           !requestedToPayEff && (
-          <RequestToPayConfirmation
-            open={requestToPayConfirmDrawerOpen}
-            onOpenChange={setRequestToPayConfirmDrawerOpen}
-            onSubmit={(deadline) => {
-              handleRequestToPay(value.bill.sum, deadline)
-              setRequestToPayConfirmDrawerOpen(false)
-            }}
-            isFetching={isFetching}
-            isPending={requestToPayMutation.isPending}
-            maturityDate={value.bill.maturity_date}
-            billId={value.bill.id}
-          />
-        )}
+            <RequestToPayConfirmation
+              open={requestToPayConfirmDrawerOpen}
+              onOpenChange={setRequestToPayConfirmDrawerOpen}
+              onSubmit={(deadline) => {
+                handleRequestToPay(value.bill.sum, deadline)
+                setRequestToPayConfirmDrawerOpen(false)
+              }}
+              isFetching={isFetching}
+              isPending={requestToPayMutation.isPending}
+              maturityDate={value.bill.maturity_date}
+              billId={value.bill.id}
+            />
+          )}
       </div>
 
       {requestedToPayEff && (addressToPay ?? linkToPay) && (

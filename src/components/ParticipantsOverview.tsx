@@ -166,7 +166,10 @@ export function ParticipantsOverviewCard({
       )}
       {holder && holder.length > 0 && (
         <div>
-          <IdentOrAnonAvatar value={holder[0]} tooltip={getIdentOrAnonTooltip(holder[0], "Holder")} />
+          <IdentOrAnonAvatar
+            value={holder[holder.length - 1]}
+            tooltip={getIdentOrAnonTooltip(holder[holder.length - 1], "Holder")}
+          />
         </div>
       )}
     </span>

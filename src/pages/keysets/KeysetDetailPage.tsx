@@ -1,7 +1,7 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useParams, Link } from "react-router"
-import { useQuery, useQueries, useMutation } from "@tanstack/react-query"
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query"
 import { listKeysetInfosOptions, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation } from "@/generated/client/@tanstack/react-query.gen"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -22,6 +22,7 @@ function Loader() {
 }
 
 function PageBody({ keysetId }: { keysetId: string }) {
+  const queryClient = useQueryClient()
   const { data: keysets, isLoading: keysetsLoading } = useQuery(listKeysetInfosOptions())
   const { data: allQuotesData, isLoading: quotesLoading } = useQuery(listQuotesOptions())
   const allQuotes = allQuotesData?.quotes ?? []
@@ -31,6 +32,10 @@ function PageBody({ keysetId }: { keysetId: string }) {
     ...postEnableRedemptionMutation(),
     onSuccess: () => {
       toast.success("Redemption enabled successfully")
+      void queryClient.invalidateQueries({
+        queryKey: [{ _id: 'listKeysetInfos' }],
+        exact: false
+      })
     },
     onError: (error) => {
       toast.error(`Failed to enable redemption: ${error.message}`)

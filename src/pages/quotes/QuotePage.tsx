@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview"
-import { getQuoteOptions, getEbillOptions, getEbillEndorsementsOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { getQuoteOptions, getEbillOptions, getEbillEndorsementsOptions, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { useQuery } from "@tanstack/react-query"
 import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
@@ -62,6 +62,9 @@ function PageBody({ id }: { id: string }) {
   })
 
   const billId = quoteData?.bill?.id
+  const quoteStatus = quoteData?.status
+  const shouldCheckMintComplete = quoteStatus === "Accepted" || quoteStatus === "Minting"
+
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
@@ -72,6 +75,20 @@ function PageBody({ id }: { id: string }) {
     ...getEbillEndorsementsOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
     enabled: !!billId,
+  })
+
+  const mintCompleteQuery = useQuery({
+    ...getEbillMintCompleteOptions({ path: { bid: billId ?? "" } }),
+    retry: 1,
+    enabled: !!billId && shouldCheckMintComplete,
+    refetchInterval: (query) => {
+      if (!shouldCheckMintComplete) {
+        return false
+      }
+
+      const data = query.state.data
+      return data?.complete === false ? 60000 : false
+    },
   })
 
   if (error) {
@@ -93,7 +110,8 @@ function PageBody({ id }: { id: string }) {
 
   const billStatus = ebillQuery.data?.status
   const paymentStatus = billStatus?.payment
-  const ebillPaid = Boolean(paymentStatus?.paid)
+  const isMintComplete = mintCompleteQuery.data?.complete ?? false
+  const ebillPaid = Boolean(paymentStatus?.paid && isMintComplete)
   const requestedToPay = Boolean(paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds)
   const paymentDeadlineTs = paymentStatus?.payment_deadline_timestamp ?? null
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
@@ -233,10 +251,8 @@ function PageBody({ id }: { id: string }) {
 
             {bill.endorsees && bill.endorsees.length > 0 && (
               <span className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">Holder{bill.endorsees.length > 1 ? "s" : ""}:</span>
-                {bill.endorsees.map((endorsee, index) => (
-                  <ParticipantDetail key={index} participant={endorsee} />
-                ))}
+                <span className="text-sm font-semibold w-32">Holder:</span>
+                <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
               </span>
             )}
           </div>
@@ -248,6 +264,7 @@ function PageBody({ id }: { id: string }) {
         isFetching={isFetching}
         mintingEnabled={quote.status === "Minting"}
         ebillPaid={ebillPaid}
+        isMintComplete={isMintComplete}
         requestedToPay={requestedToPay}
         paymentDeadlineTs={paymentDeadlineTs}
         timeOfRequestToPay={timeOfRequestToPay}
