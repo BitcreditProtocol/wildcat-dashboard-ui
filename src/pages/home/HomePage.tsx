@@ -42,14 +42,6 @@ function PageBody() {
                   <span className="font-mono text-sm text-muted-foreground">{identityData.email}</span>
                 </div>
               )}
-              {identityData.date_of_birth && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    Date of Birth
-                  </span>
-                  <span className="text-sm">{identityData.date_of_birth}</span>
-                </div>
-              )}
 
               <div className="border-t pt-4 mt-4">
                 <h4 className="text-md font-semibold mb-4">Keys</h4>
