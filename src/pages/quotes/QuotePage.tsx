@@ -157,12 +157,6 @@ function PageBody({ id }: { id: string }) {
                 </div>
               )}
 
-              {quote.status === "Pending" && "suggested_expiration" in quote && quote.suggested_expiration && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold w-32">Deadline:</span>
-                  <span>{new Date(quote.suggested_expiration).toISOString().split("T")[0]}</span>
-                </div>
-              )}
               {quote.status === "Offered" && "ttl" in quote && quote.ttl && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Deadline:</span>
