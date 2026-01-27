@@ -11,6 +11,24 @@ import { ArrowRight } from "lucide-react"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { truncateString, formatStatusLabel } from "@/utils/strings"
 import { toast } from "sonner"
+import { useMemo } from "react"
+
+/**
+ * Check if a bill's maturity date matches a keyset's final expiry date
+ * @param keysetFinalExpiry - Keyset final expiry timestamp (seconds)
+ * @param billMaturityDate - Bill maturity date string (YYYY-MM-DD)
+ * @returns true if dates match (year, month, day)
+ */
+function doesBillMatchKeysetMaturity(keysetFinalExpiry: number, billMaturityDate: string): boolean {
+  const keysetDate = new Date(keysetFinalExpiry * 1000)
+  const billDate = new Date(billMaturityDate)
+
+  return (
+    keysetDate.getFullYear() === billDate.getFullYear() &&
+    keysetDate.getMonth() === billDate.getMonth() &&
+    keysetDate.getDate() === billDate.getDate()
+  )
+}
 
 function Loader() {
   return (
@@ -25,7 +43,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
   const queryClient = useQueryClient()
   const { data: keysets, isLoading: keysetsLoading } = useQuery(listKeysetInfosOptions())
   const { data: allQuotesData, isLoading: quotesLoading } = useQuery(listQuotesOptions())
-  const allQuotes = allQuotesData?.quotes ?? []
+  const allQuotes = useMemo(() => allQuotesData?.quotes ?? [], [allQuotesData?.quotes])
   const { data: ebills } = useQuery(listEbillsOptions())
 
   const keyset = keysets?.find((k) => k.id === keysetId)
@@ -52,9 +70,26 @@ function PageBody({ keysetId }: { keysetId: string }) {
     ),
   })
 
-  const matchingBillIds: string[] = []
-  if (keyset?.final_expiry) {
+  const quoteDetailsLoading = quoteDetailsQueries.some((q) => q.isLoading)
+
+  const quoteDetailsDepsKey = useMemo(
+    () => quoteDetailsQueries.map((q) => `${q.data?.bill?.id ?? ''}|${q.data?.bill?.maturity_date ?? ''}`).join(','),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [quoteDetailsQueries.map((q) => q.data?.bill?.id).join(','), quoteDetailsQueries.map((q) => q.data?.bill?.maturity_date).join(',')]
+  )
+
+  // Build list of bill IDs that match THIS keyset's maturity date (not all bills from system)
+  // Memoized to prevent unnecessary recalculations and query recreations
+  // Returns empty array if keyset not loaded, has no final_expiry, or quote details still loading
+  const matchingBillIds = useMemo(() => {
+    const billIds: string[] = []
+
+    if (!keyset?.final_expiry || quoteDetailsLoading) {
+      return billIds
+    }
+
     const keysetFinalExpiry = keyset.final_expiry
+
     allQuotes.forEach((_quote, index) => {
       const quoteDetails = quoteDetailsQueries[index]?.data
       const billMaturityDate = quoteDetails?.bill?.maturity_date
@@ -64,27 +99,31 @@ function PageBody({ keysetId }: { keysetId: string }) {
         return
       }
 
-      const keysetDate = new Date(keysetFinalExpiry * 1000)
-      const billDate = new Date(billMaturityDate)
-
-      if (
-        keysetDate.getFullYear() === billDate.getFullYear() &&
-        keysetDate.getMonth() === billDate.getMonth() &&
-        keysetDate.getDate() === billDate.getDate()
-      ) {
-        matchingBillIds.push(billId)
+      if (doesBillMatchKeysetMaturity(keysetFinalExpiry, billMaturityDate)) {
+        billIds.push(billId)
       }
     })
-  }
+
+    return billIds
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyset?.final_expiry, allQuotes, quoteDetailsDepsKey, quoteDetailsLoading])
+
+  const MINT_COMPLETE_POLL_INTERVAL_MS = 60_000
+  const MINT_COMPLETE_RETRY_COUNT = 3
+  const MINT_COMPLETE_RETRY_DELAY_MS = 30_000
 
   const mintCompleteQueries = useQueries({
     queries: matchingBillIds.map((billId) => ({
       ...getEbillMintCompleteOptions({
         path: { bid: billId },
       }),
-      refetchInterval: (query: { state: { data?: { complete?: boolean } } }) => {
-        return query.state.data?.complete === false ? 60000 : false
+      refetchInterval: (query: { state: { data?: { complete?: boolean }; error?: unknown } }) => {
+        if (query.state.error) return false
+        return query.state.data?.complete === false ? MINT_COMPLETE_POLL_INTERVAL_MS : false
       },
+      retry: MINT_COMPLETE_RETRY_COUNT,
+      retryDelay: MINT_COMPLETE_RETRY_DELAY_MS,
+      refetchOnWindowFocus: false,
     })),
   })
 
@@ -98,6 +137,8 @@ function PageBody({ keysetId }: { keysetId: string }) {
 
   const canEnableRedemption = allBillsPaid && allMintComplete
   const anyMintCompleteLoading = mintCompleteQueries.some((query) => query.isLoading)
+
+  const hasNoMatchingBills = matchingBillIds.length === 0
 
   if (keysetsLoading) {
     return <Loader />
@@ -140,14 +181,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
       return false
     }
 
-    const keysetDate = new Date(keyset.final_expiry * 1000)
-    const billDate = new Date(billMaturityDate)
-
-    return (
-      keysetDate.getFullYear() === billDate.getFullYear() &&
-      keysetDate.getMonth() === billDate.getMonth() &&
-      keysetDate.getDate() === billDate.getDate()
-    )
+    return doesBillMatchKeysetMaturity(keyset.final_expiry, billMaturityDate)
   })
 
   return (
@@ -171,7 +205,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                 className="w-full max-w-sm"
                 size="sm"
                 variant="default"
-                disabled={redemptionMutation.isPending || !canEnableRedemption || anyMintCompleteLoading}
+                disabled={redemptionMutation.isPending || !canEnableRedemption || anyMintCompleteLoading || hasNoMatchingBills}
                 onClick={() => {
                   redemptionMutation.mutate({
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
@@ -181,10 +215,12 @@ function PageBody({ keysetId }: { keysetId: string }) {
               >
                 {redemptionMutation.isPending
                   ? "Enabling redemption..."
-                  : anyMintCompleteLoading
-                  ? "Checking mint status..."
+                  : hasNoMatchingBills
+                  ? "No matching bills found"
                   : !allBillsPaid
                   ? "Waiting for e-bill payments..."
+                  : anyMintCompleteLoading
+                  ? "Checking mint status..."
                   : !allMintComplete
                   ? "Waiting for mint completion..."
                   : "Redeem"}
@@ -220,8 +256,8 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       const ebill = billId ? billIdToEbillMap.get(billId) : null
                       const isPaid = ebill?.status?.payment?.paid === true
 
-                      const billIdIndex = matchingBillIds.indexOf(billId ?? "")
-                      const mintCompleteQuery = billIdIndex >= 0 ? mintCompleteQueries[billIdIndex] : null
+                      const billIdIndex = billId ? matchingBillIds.indexOf(billId) : -1
+                      const mintCompleteQuery = billId && billIdIndex >= 0 ? mintCompleteQueries[billIdIndex] : null
                       const isMintComplete = mintCompleteQuery?.data?.complete === true
                       const isMintLoading = mintCompleteQuery?.isLoading
 

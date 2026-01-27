@@ -793,7 +793,7 @@
           {
             "name": "bid",
             "in": "path",
-            "description": "the bill id to check mint completion status",
+            "description": "the ebill id to check mint completion status",
             "required": true,
             "schema": {
               "type": "string"
