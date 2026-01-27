@@ -530,6 +530,56 @@
         }
       }
     },
+    "/v1/admin/ebill/payment_status/{bid}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_ebill_paymentstatus",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimplifiedBillPaymentStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/info": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_clowder_info",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClowderNodeInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/clowder/alphas": {
       "get": {
         "tags": ["admin"],
@@ -668,7 +718,7 @@
         }
       }
     },
-    "/v1/admin/ebill/reqtopay": {
+    "/v1/admin/treasury/ebill/reqtopay": {
       "post": {
         "tags": ["admin"],
         "operationId": "post_ebill_reqtopay",
@@ -713,6 +763,38 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/admin/treasury/ebill/mint_complete/{bid}": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_ebill_mint_complete",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EbillMintingComplete"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "bill id not found"
           }
         }
       }
@@ -1276,6 +1358,30 @@
           }
         }
       },
+      "ClowderNodeInfo": {
+        "type": "object",
+        "description": "--------------------------- Clowder Node Information",
+        "required": ["change_address", "node_id", "uptime_timestamp", "version", "network"],
+        "properties": {
+          "change_address": {
+            "type": "string"
+          },
+          "node_id": {
+            "$ref": "#/components/schemas/PublicKey"
+          },
+          "uptime_timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "version": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          }
+        }
+      },
       "ConnectedMintResponse": {
         "type": "object",
         "description": "--------------------------- Connected Mint",
@@ -1413,6 +1519,16 @@
           },
           "unit": {
             "$ref": "#/components/schemas/CurrencyUnit"
+          }
+        }
+      },
+      "EbillMintingComplete": {
+        "type": "object",
+        "description": "--------------------------- ebill minting completed",
+        "required": ["complete"],
+        "properties": {
+          "complete": {
+            "type": "boolean"
           }
         }
       },
@@ -1941,6 +2057,10 @@
           }
         }
       },
+      "ListSort": {
+        "type": "string",
+        "enum": ["bill_maturity_date_desc", "bill_maturity_date_asc"]
+      },
       "MintOperationStatus": {
         "type": "object",
         "description": "--------------------------- Mint operation status",
@@ -2075,6 +2195,16 @@
           }
         }
       },
+      "PublicKey": {
+        "type": "object",
+        "description": "PublicKey",
+        "required": ["inner"],
+        "properties": {
+          "inner": {
+            "type": "string"
+          }
+        }
+      },
       "RequestToMintFromEBillRequest": {
         "type": "object",
         "description": "--------------------------- request to pay ebill",
@@ -2164,6 +2294,25 @@
         ],
         "description": "--------------------------- Alpha State"
       },
+      "SimplifiedBillPaymentStatus": {
+        "type": "object",
+        "required": ["payment_status"],
+        "properties": {
+          "payment_status": {
+            "$ref": "#/components/schemas/BillPaymentStatus"
+          },
+          "payment_details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillWaitingForPaymentState"
+              }
+            ]
+          }
+        }
+      },
       "UpdateQuoteRequest": {
         "oneOf": [
           {
@@ -2230,11 +2379,6 @@
             }
           }
         ]
-      },
-      "ListSort": {
-        "type": "string",
-        "enum": ["asc", "desc"],
-        "description": "Sort order for list queries"
       }
     }
   }

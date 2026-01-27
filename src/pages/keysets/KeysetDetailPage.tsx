@@ -2,7 +2,7 @@ import { PageTitle } from "@/components/PageTitle"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useParams, Link } from "react-router"
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query"
-import { listKeysetInfosOptions, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation } from "@/generated/client/@tanstack/react-query.gen"
+import { listKeysetInfosOptions, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,8 @@ function PageBody({ keysetId }: { keysetId: string }) {
   const allQuotes = allQuotesData?.quotes ?? []
   const { data: ebills } = useQuery(listEbillsOptions())
 
+  const keyset = keysets?.find((k) => k.id === keysetId)
+
   const redemptionMutation = useMutation({
     ...postEnableRedemptionMutation(),
     onSuccess: () => {
@@ -50,11 +52,50 @@ function PageBody({ keysetId }: { keysetId: string }) {
     ),
   })
 
+  const matchingBillIds: string[] = []
+  if (keyset?.final_expiry) {
+    const keysetFinalExpiry = keyset.final_expiry
+    allQuotes.forEach((_quote, index) => {
+      const quoteDetails = quoteDetailsQueries[index]?.data
+      const billMaturityDate = quoteDetails?.bill?.maturity_date
+      const billId = quoteDetails?.bill?.id
+
+      if (!billMaturityDate || !billId) {
+        return
+      }
+
+      const keysetDate = new Date(keysetFinalExpiry * 1000)
+      const billDate = new Date(billMaturityDate)
+
+      if (
+        keysetDate.getFullYear() === billDate.getFullYear() &&
+        keysetDate.getMonth() === billDate.getMonth() &&
+        keysetDate.getDate() === billDate.getDate()
+      ) {
+        matchingBillIds.push(billId)
+      }
+    })
+  }
+
+  const mintCompleteQueries = useQueries({
+    queries: matchingBillIds.map((billId) => ({
+      ...getEbillMintCompleteOptions({
+        path: { bid: billId },
+      }),
+      refetchInterval: (query: { state: { data?: { complete?: boolean } } }) => {
+        return query.state.data?.complete === false ? 10000 : false
+      },
+    })),
+  })
+
+  const allMintComplete = matchingBillIds.length > 0 &&
+    mintCompleteQueries.every((query) => query.data?.complete === true)
+
+  const anyMintCompleteLoading = mintCompleteQueries.some((query) => query.isLoading)
+
   if (keysetsLoading) {
     return <Loader />
   }
-
-  const keyset = keysets?.find((k) => k.id === keysetId)
 
   if (!keyset) {
     return (
@@ -124,7 +165,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                 className="w-full max-w-sm"
                 size="sm"
                 variant="default"
-                disabled={redemptionMutation.isPending}
+                disabled={redemptionMutation.isPending || !allMintComplete || anyMintCompleteLoading}
                 onClick={() => {
                   redemptionMutation.mutate({
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
@@ -132,7 +173,13 @@ function PageBody({ keysetId }: { keysetId: string }) {
                   })
                 }}
               >
-                {redemptionMutation.isPending ? "Enabling redemption..." : "Redeem"}
+                {redemptionMutation.isPending
+                  ? "Enabling redemption..."
+                  : anyMintCompleteLoading
+                  ? "Checking mint status..."
+                  : !allMintComplete
+                  ? "Waiting for mint completion..."
+                  : "Redeem"}
               </Button>
             </div>
           )}
@@ -151,6 +198,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       <th className="text-left p-2 font-semibold">Quote ID</th>
                       <th className="text-left p-2 font-semibold">Quote status</th>
                       <th className="text-left p-2 font-semibold">Payment status</th>
+                      <th className="text-left p-2 font-semibold">Mint status</th>
                       <th className="text-left p-2 font-semibold">Payment address</th>
                       <th className="text-right p-2 font-semibold">Sum</th>
                       <th className="text-right p-2 font-semibold"></th>
@@ -163,6 +211,11 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       const billId = quoteDetails?.bill?.id
                       const ebill = billId ? billIdToEbillMap.get(billId) : null
                       const isPaid = ebill?.status?.payment?.paid === true
+
+                      const billIdIndex = matchingBillIds.indexOf(billId ?? "")
+                      const mintCompleteQuery = billIdIndex >= 0 ? mintCompleteQueries[billIdIndex] : null
+                      const isMintComplete = mintCompleteQuery?.data?.complete === true
+                      const isMintLoading = mintCompleteQuery?.isLoading
 
                       const cws = ebill?.current_waiting_state
                       let paymentAddress: string | undefined
@@ -195,6 +248,26 @@ function PageBody({ keysetId }: { keysetId: string }) {
                                 }
                               >
                                 {isPaid ? "Paid" : "Unpaid"}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">N/A</span>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            {isMintLoading ? (
+                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                                Checking...
+                              </Badge>
+                            ) : billId && mintCompleteQuery ? (
+                              <Badge
+                                variant="outline"
+                                className={
+                                  isMintComplete
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                }
+                              >
+                                {isMintComplete ? "Complete" : "Pending"}
                               </Badge>
                             ) : (
                               <span className="text-muted-foreground text-xs">N/A</span>

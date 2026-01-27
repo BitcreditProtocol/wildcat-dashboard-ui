@@ -24,6 +24,24 @@
         }
       }
     },
+    "/v1/admin/mint/info": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_mint_info",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WildcatInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/keysets/{kid}": {
       "get": {
         "tags": ["admin"],
@@ -775,7 +793,7 @@
           {
             "name": "bid",
             "in": "path",
-            "description": "the ebill id",
+            "description": "the bill id to check mint completion status",
             "required": true,
             "schema": {
               "type": "string"
@@ -2379,6 +2397,69 @@
             }
           }
         ]
+      },
+      "VersionInfo": {
+        "type": "object",
+        "description": "Version information for the mint",
+        "required": ["wildcat", "bcr_ebill_core", "cdk_mintd", "clowder"],
+        "properties": {
+          "wildcat": {
+            "type": "string",
+            "description": "Wildcat version"
+          },
+          "bcr_ebill_core": {
+            "type": "string",
+            "description": "bcr-ebill-core version"
+          },
+          "cdk_mintd": {
+            "type": "string",
+            "description": "cdk-mintd version"
+          },
+          "clowder": {
+            "type": "string",
+            "description": "Clowder version"
+          }
+        }
+      },
+      "WildcatInfo": {
+        "type": "object",
+        "description": "Mint information including network, build time, versions, and uptime",
+        "required": [
+          "network",
+          "build_time",
+          "uptime_timestamp",
+          "versions",
+          "clowder_node_id",
+          "clowder_change_address"
+        ],
+        "properties": {
+          "network": {
+            "type": "string",
+            "description": "Bitcoin network (mainnet, testnet, signet, regtest)"
+          },
+          "build_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Build timestamp"
+          },
+          "uptime_timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Service uptime, last started"
+          },
+          "versions": {
+            "$ref": "#/components/schemas/VersionInfo",
+            "description": "Version information"
+          },
+          "clowder_node_id": {
+            "type": "string",
+            "description": "Clowder node id"
+          },
+          "clowder_change_address": {
+            "type": "string",
+            "description": "Clowder change address"
+          }
+        }
       }
     }
   }
