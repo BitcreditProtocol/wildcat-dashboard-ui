@@ -223,7 +223,9 @@ function PageBody({ id }: { id: string }) {
                   className="font-mono text-sm"
                   showCopyButton={true}
                 />
-                <FeeTokenQRCodeModal feeToken={quote.fee} />
+                {typeof quote.fee === "string" && quote.fee.length <= 2956 ? (
+                  <FeeTokenQRCodeModal feeToken={quote.fee} />
+                ) : null}
               </div>
             )}
             <div className="flex items-center gap-2">
