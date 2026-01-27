@@ -83,14 +83,20 @@ function PageBody({ keysetId }: { keysetId: string }) {
         path: { bid: billId },
       }),
       refetchInterval: (query: { state: { data?: { complete?: boolean } } }) => {
-        return query.state.data?.complete === false ? 10000 : false
+        return query.state.data?.complete === false ? 60000 : false
       },
     })),
+  })
+
+  const allBillsPaid = matchingBillIds.length > 0 && matchingBillIds.every((billId) => {
+    const ebill = ebills?.find((e) => e.id === billId)
+    return ebill?.status?.payment?.paid === true
   })
 
   const allMintComplete = matchingBillIds.length > 0 &&
     mintCompleteQueries.every((query) => query.data?.complete === true)
 
+  const canEnableRedemption = allBillsPaid && allMintComplete
   const anyMintCompleteLoading = mintCompleteQueries.some((query) => query.isLoading)
 
   if (keysetsLoading) {
@@ -165,7 +171,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                 className="w-full max-w-sm"
                 size="sm"
                 variant="default"
-                disabled={redemptionMutation.isPending || !allMintComplete || anyMintCompleteLoading}
+                disabled={redemptionMutation.isPending || !canEnableRedemption || anyMintCompleteLoading}
                 onClick={() => {
                   redemptionMutation.mutate({
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
@@ -177,6 +183,8 @@ function PageBody({ keysetId }: { keysetId: string }) {
                   ? "Enabling redemption..."
                   : anyMintCompleteLoading
                   ? "Checking mint status..."
+                  : !allBillsPaid
+                  ? "Waiting for e-bill payments..."
                   : !allMintComplete
                   ? "Waiting for mint completion..."
                   : "Redeem"}
