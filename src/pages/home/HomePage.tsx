@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 import { CopyButton } from "@/components/CopyButton"
-import { getIdentityOptions, getClowderInfoOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { getIdentityOptions, getClowderInfoOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen"
 
 function Loader() {
   return (
@@ -20,6 +20,11 @@ function PageBody() {
     gcTime: Infinity,
   })
 
+  const { data: mintData, isLoading: mintLoading, isError: mintError } = useQuery({
+    ...getMintInfoOptions(),
+    staleTime: 60_000,
+  })
+
   const { data: clowderData, isLoading: clowderLoading, isError: clowderError } = useQuery({
     ...getClowderInfoOptions(),
     staleTime: 60_000,
@@ -27,7 +32,7 @@ function PageBody() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <div className="bg-card text-card-foreground rounded-lg border p-6">
           <h3 className="text-lg font-semibold mb-4">Identity</h3>
           {identityData ? (
@@ -150,6 +155,91 @@ function PageBody() {
             </div>
           ) : (
             <div className="text-center text-muted-foreground">No clowder information available</div>
+          )}
+        </div>
+
+        <div className="bg-card text-card-foreground rounded-lg border p-6">
+          <h3 className="text-lg font-semibold mb-4">Mint Info</h3>
+          {mintLoading ? (
+            <div className="text-center text-muted-foreground">Loading mint information...</div>
+          ) : mintError ? (
+            <div className="text-center text-muted-foreground">Failed to load mint information</div>
+          ) : mintData ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Network</span>
+                <span className="text-sm capitalize">{mintData.network}</span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                    Clowder Node ID
+                  </span>
+                  <CopyButton value={mintData.clowder_node_id} label="Clowder Node ID" />
+                </div>
+                <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
+                  {mintData.clowder_node_id}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                    Clowder Change Address
+                  </span>
+                  <CopyButton value={mintData.clowder_change_address} label="Clowder Change Address" />
+                </div>
+                <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
+                  {mintData.clowder_change_address}
+                </span>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-md font-semibold mb-4">Versions</h4>
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Wildcat</span>
+                    <span className="text-sm font-mono">{mintData.versions.wildcat}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                      BCR eBill Core
+                    </span>
+                    <span className="text-sm font-mono">{mintData.versions.bcr_ebill_core}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">CDK Mintd</span>
+                    <span className="text-sm font-mono">{mintData.versions.cdk_mintd}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Clowder</span>
+                    <span className="text-sm font-mono">{mintData.versions.clowder}</span>
+                  </div>
+                </div>
+              </div>
+
+              {mintData.uptime_timestamp && (
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                      Started At
+                    </span>
+                    <span className="text-sm">{new Date(mintData.uptime_timestamp).toLocaleString()}</span>
+                  </div>
+                  {mintData.build_time && (
+                    <div className="flex flex-col gap-1 mt-3">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                        Build Time
+                      </span>
+                      <span className="text-sm">{new Date(mintData.build_time).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground">No mint information available</div>
           )}
         </div>
       </div>
