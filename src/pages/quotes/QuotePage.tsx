@@ -12,10 +12,10 @@ import { humanReadableDurationDays } from "@/utils/dates"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { QuoteActions } from "./QuoteActions.tsx"
 import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
-import { ArrowLeft } from "lucide-react"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx"
 import { EndorsementChain } from "@/components/EndorsementChain"
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary"
+import { serializeKeysetId } from "@/utils/keyset"
 
 interface LocationState {
   from?: string
@@ -315,8 +315,17 @@ export default function QuotePage() {
   const location = useLocation()
   const state = location.state as LocationState | null
   const fromPath = state?.from
-  const fromKeyset = fromPath?.startsWith("/keysets")
   const keysetId = fromPath?.startsWith("/keysets/") ? fromPath.split("/keysets/")[1] : null
+
+  const { data: quoteData } = useQuery({
+    ...getQuoteOptions({
+      path: { qid: quoteId },
+    }),
+    retry: 1,
+  })
+
+  const hasKeysetId =
+    quoteData && (quoteData.status === "Accepted" || quoteData.status === "Minting") && "keyset_id" in quoteData
 
   return (
     <>
@@ -329,30 +338,19 @@ export default function QuotePage() {
       >
         {quoteId}
       </Breadcrumbs>
-      {fromKeyset && (
-        <div className="mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            className="max-w-sm"
-            asChild
-          >
-            <Link to={fromPath ?? "/keysets"}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {keysetId ? (
-                <>
-                  Back to keyset <span className="font-mono">{truncateString(keysetId, 16)}</span>
-                </>
-              ) : (
-                "Back to keysets"
-              )}
+
+      <div className="flex items-center justify-between">
+        <PageTitle>
+          Quote <span className="font-mono">{truncateString(quoteId, 16)}</span>
+        </PageTitle>
+        {hasKeysetId && keysetId && (
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
+              Go to keyset <span className="font-mono">{truncateString(keysetId, 16)}</span>
             </Link>
           </Button>
-        </div>
-      )}
-      <PageTitle>
-        Quote <span className="font-mono">{truncateString(quoteId, 16)}</span>
-      </PageTitle>
+        )}
+      </div>
       <PageBody id={quoteId} />
     </>
   )
