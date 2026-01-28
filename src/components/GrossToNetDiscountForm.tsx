@@ -179,10 +179,6 @@ const GrossToNetDiscountForm = ({
       })
     }
 
-    setValue("discountRateInput", "0", {
-      shouldValidate: true,
-    })
-
     setHasSetInitialDays(true)
   }, [startDate, endDate, setValue, localStorageKey, hasSetInitialDays])
 
@@ -323,17 +319,6 @@ const GrossToNetDiscountForm = ({
                     min: 0,
                     max: 99.9999,
                   })}
-                  onFocus={(e) => {
-                    if (e.target.value === "0") {
-                      e.target.value = ""
-                      setValue("discountRateInput", "", { shouldValidate: true })
-                    }
-                  }}
-                  onBlur={(e) => {
-                    if (e.target.value === "" || e.target.value === ".") {
-                      setValue("discountRateInput", "0", { shouldValidate: true })
-                    }
-                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault()
