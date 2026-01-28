@@ -72,15 +72,20 @@ function PageBody({ keysetId }: { keysetId: string }) {
 
   const quoteDetailsLoading = quoteDetailsQueries.some((q) => q.isLoading)
 
-  const quoteDetailsDepsKey = useMemo(
-    () => quoteDetailsQueries.map((q) => `${q.data?.bill?.id ?? ''}|${q.data?.bill?.maturity_date ?? ''}`).join(','),
+  const quoteDetailsDepsKey = useMemo(() => {
+    const billKeys = quoteDetailsQueries.map((query) => {
+      const billId = query.data?.bill?.id ?? ''
+      const maturityDate = query.data?.bill?.maturity_date ?? ''
+      return `${billId}|${maturityDate}`
+    })
+    return billKeys.join(',')
+  }, [
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [quoteDetailsQueries.map((q) => q.data?.bill?.id).join(','), quoteDetailsQueries.map((q) => q.data?.bill?.maturity_date).join(',')]
-  )
+    quoteDetailsQueries.map((q) => q.data?.bill?.id).join(','),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    quoteDetailsQueries.map((q) => q.data?.bill?.maturity_date).join(',')
+  ])
 
-  // Build list of bill IDs that match THIS keyset's maturity date (not all bills from system)
-  // Memoized to prevent unnecessary recalculations and query recreations
-  // Returns empty array if keyset not loaded, has no final_expiry, or quote details still loading
   const matchingBillIds = useMemo(() => {
     const billIds: string[] = []
 
