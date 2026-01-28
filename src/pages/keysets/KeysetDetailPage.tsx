@@ -1,6 +1,6 @@
 import { PageTitle } from "@/components/PageTitle"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { useParams, Link } from "react-router"
+import { useParams, Link, useLocation } from "react-router"
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query"
 import { listKeysetInfosOptions, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation } from "@/generated/client/@tanstack/react-query.gen"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,10 @@ import { ArrowRight } from "lucide-react"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { truncateString, formatStatusLabel } from "@/utils/strings"
 import { toast } from "sonner"
+
+interface LocationState {
+  from?: string
+}
 
 function Loader() {
   return (
@@ -233,6 +237,11 @@ function PageBody({ keysetId }: { keysetId: string }) {
 
 export default function KeysetDetailPage() {
   const { keysetId } = useParams<{ keysetId: string }>()
+  const location = useLocation()
+  const state = location.state as LocationState | null
+  const fromPath = state?.from
+  const fromQuote = fromPath?.startsWith("/quotes/")
+  const quoteId = fromQuote && fromPath ? fromPath.split("/quotes/")[1] : null
 
   if (!keysetId) {
     return (
@@ -257,9 +266,18 @@ export default function KeysetDetailPage() {
       >
         {keysetId}
       </Breadcrumbs>
-      <PageTitle>
-        Keyset <span className="font-mono">{truncateString(keysetId, 16)}</span>
-      </PageTitle>
+      <div className="flex items-center justify-between">
+        <PageTitle>
+          Keyset <span className="font-mono">{truncateString(keysetId, 16)}</span>
+        </PageTitle>
+        {fromQuote && quoteId && (
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }}>
+              Back to quote <span className="font-mono">{truncateString(quoteId, 16)}</span>
+            </Link>
+          </Button>
+        )}
+      </div>
       <PageBody keysetId={keysetId} />
     </>
   )
