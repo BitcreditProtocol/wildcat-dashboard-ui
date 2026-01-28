@@ -558,6 +558,58 @@ export type UpdateQuoteResponse = {
     status: 'Offered';
 };
 
+/**
+ * Version information for the mint
+ */
+export type VersionInfo = {
+    /**
+     * Wildcat version
+     */
+    wildcat: string;
+    /**
+     * bcr-ebill-core version
+     */
+    bcr_ebill_core: string;
+    /**
+     * cdk-mintd version
+     */
+    cdk_mintd: string;
+    /**
+     * Clowder version
+     */
+    clowder: string;
+};
+
+/**
+ * Mint information including network, build time, versions, and uptime
+ */
+export type WildcatInfo = {
+    /**
+     * Bitcoin network (mainnet, testnet, signet, regtest)
+     */
+    network: string;
+    /**
+     * Build timestamp
+     */
+    build_time: string;
+    /**
+     * Service uptime, last started
+     */
+    uptime_timestamp: string;
+    /**
+     * Version information
+     */
+    versions: VersionInfo;
+    /**
+     * Clowder node id
+     */
+    clowder_node_id: string;
+    /**
+     * Clowder change address
+     */
+    clowder_change_address: string;
+};
+
 export type GetHealthData = {
     body?: never;
     path?: never;
@@ -571,6 +623,22 @@ export type GetHealthResponses = {
      */
     200: unknown;
 };
+
+export type GetMintInfoData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/mint/info';
+};
+
+export type GetMintInfoResponses = {
+    /**
+     * Successful response
+     */
+    200: WildcatInfo;
+};
+
+export type GetMintInfoResponse = GetMintInfoResponses[keyof GetMintInfoResponses];
 
 export type GetKeysetInfoData = {
     body?: never;
@@ -1130,7 +1198,7 @@ export type GetEbillMintCompleteData = {
     body?: never;
     path: {
         /**
-         * the ebill id
+         * the bill id to check mint completion status
          */
         bid: string;
     };
