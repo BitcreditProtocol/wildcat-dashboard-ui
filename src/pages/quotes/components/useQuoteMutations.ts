@@ -19,7 +19,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-deny`)
     },
     onError: (error) => {
-      toast.error("Error while denying quote: " + error.message)
+      toast.error("Error while denying quote: " + error)
       console.warn(error)
     },
     onSuccess: () => {
@@ -36,7 +36,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-offer`)
     },
     onError: (error) => {
-      toast.error("Error while offering quote: " + error.message)
+      toast.error("Error while offering quote: " + error)
       console.warn(error)
     },
     onSuccess: () => {
@@ -56,7 +56,8 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-enable-minting`)
     },
     onError: (error) => {
-      toast.error("Error while enabling minting: " + error.message)
+      // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+      toast.error("Error while enabling minting: " + error)
       console.warn(error)
     },
     onSuccess: () => {
@@ -74,7 +75,8 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-request-to-pay`)
     },
     onError: (error) => {
-      toast.error("Error while requesting to pay")
+      // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+      toast.error("Error while requesting to pay: " + error)
       console.warn(error)
     },
     onSuccess: () => {

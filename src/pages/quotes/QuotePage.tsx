@@ -92,10 +92,11 @@ function PageBody({ id }: { id: string }) {
   })
 
   if (error) {
+    const errorMessage = error.message || String(error)
     return (
       <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
         <div className="text-red-800 font-semibold">Failed to load quote</div>
-        <div className="text-red-600 text-sm">{error.message || "Unknown error occurred"}</div>
+        <div className="text-red-600 text-sm">{errorMessage || "Unknown error occurred"}</div>
         <div className="text-xs text-red-500">Check if the API server is running and accessible</div>
       </div>
     )
@@ -276,6 +277,11 @@ function PageBody({ id }: { id: string }) {
         issueDate={ebillQuery.data?.data?.issue_date}
         maturityDate={bill.maturity_date}
         requestToPayTimestamp={ebillQuery.data?.status?.payment?.time_of_request_to_pay ?? undefined}
+        rejectedToPayTimestamp={
+          ebillQuery.data?.status?.payment?.rejected_to_pay
+            ? (ebillQuery.data?.status?.last_block_time ?? undefined)
+            : undefined
+        }
         paymentTimestamp={
           ebillQuery.data?.status?.payment?.paid ? (ebillQuery.data?.status?.last_block_time ?? undefined) : undefined
         }

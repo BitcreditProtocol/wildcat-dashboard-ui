@@ -76,8 +76,9 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
   const handleQuoteClick = (e: React.MouseEvent) => {
     if (detailsError) {
       e.preventDefault()
+      const errorMessage = detailsError.message || String(detailsError)
       toast.error(`Cannot load quote`, {
-        description: `Quote ${truncateString(quote.id, 12)} is unavailable. ${detailsError.message || "Please try again later."}`,
+        description: `Quote ${truncateString(quote.id, 12)} is unavailable. ${errorMessage || "Please try again later."}`,
         id: `quote-error-${quote.id}`,
         duration: 5000,
       })
@@ -160,10 +161,11 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const noQuotesMessage = `No quotes available.`
 
   if (error) {
+    const errorMessage = error.message || String(error)
     return (
       <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
         <div className="text-red-800 font-semibold">Failed to load quotes</div>
-        <div className="text-red-600 text-sm">{error.message || "Unknown error occurred"}</div>
+        <div className="text-red-600 text-sm">{errorMessage || "Unknown error occurred"}</div>
         <div className="text-xs text-red-500">Check if the API server is running and accessible</div>
       </div>
     )

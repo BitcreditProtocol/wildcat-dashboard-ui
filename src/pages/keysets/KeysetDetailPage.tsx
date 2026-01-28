@@ -38,7 +38,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
       })
     },
     onError: (error) => {
-      toast.error(`Failed to enable redemption: ${error.message}`)
+      toast.error(`Failed to enable redemption: ${error}`)
     },
   })
 
