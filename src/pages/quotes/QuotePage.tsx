@@ -315,7 +315,8 @@ export default function QuotePage() {
   const location = useLocation()
   const state = location.state as LocationState | null
   const fromPath = state?.from
-  const keysetId = fromPath?.startsWith("/keysets/") ? fromPath.split("/keysets/")[1] : null
+  const fromKeyset = fromPath?.startsWith("/keysets/")
+  const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null
 
   const { data: quoteData } = useQuery({
     ...getQuoteOptions({
@@ -343,13 +344,19 @@ export default function QuotePage() {
         <PageTitle>
           Quote <span className="font-mono">{truncateString(quoteId, 16)}</span>
         </PageTitle>
-        {hasKeysetId && keysetId && (
+        {fromKeyset && keysetIdFromState ? (
           <Button variant="outline" size="sm" asChild>
-            <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
-              Go to keyset <span className="font-mono">{truncateString(keysetId, 16)}</span>
+            <Link to={`/keysets/${keysetIdFromState}`} state={{ from: `/quotes/${quoteId}` }}>
+              Back to keyset <span className="font-mono">{truncateString(keysetIdFromState, 16)}</span>
             </Link>
           </Button>
-        )}
+        ) : hasKeysetId ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
+              Go to keyset <span className="font-mono">{truncateString(serializeKeysetId(quoteData.keyset_id), 16)}</span>
+            </Link>
+          </Button>
+        ) : null}
       </div>
       <PageBody id={quoteId} />
     </>
