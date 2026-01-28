@@ -63,7 +63,6 @@ function PageBody({ id }: { id: string }) {
 
   const billId = quoteData?.bill?.id
   const quoteStatus = quoteData?.status
-  const shouldCheckMintComplete = quoteStatus === "Accepted" || quoteStatus === "Minting"
 
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId ?? "" } }),
@@ -76,6 +75,9 @@ function PageBody({ id }: { id: string }) {
     retry: 1,
     enabled: !!billId,
   })
+
+  const isPaid = ebillQuery.data?.status?.payment?.paid === true
+  const shouldCheckMintComplete = (quoteStatus === "Accepted" || quoteStatus === "Minting") || isPaid
 
   const mintCompleteQuery = useQuery({
     ...getEbillMintCompleteOptions({ path: { bid: billId ?? "" } }),
@@ -110,14 +112,17 @@ function PageBody({ id }: { id: string }) {
 
   const billStatus = ebillQuery.data?.status
   const paymentStatus = billStatus?.payment
+  const cws = ebillQuery.data?.current_waiting_state
   const isMintComplete = mintCompleteQuery.data?.complete ?? false
   const ebillPaid = Boolean(paymentStatus?.paid && isMintComplete)
-  const requestedToPay = Boolean(paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds)
+  const hasPaymentRequestInWaitingState = Boolean(cws && "Payment" in cws)
+  const requestedToPay = Boolean(
+    paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds ?? hasPaymentRequestInWaitingState,
+  )
   const rejectedToPay = Boolean(paymentStatus?.rejected_to_pay)
   const paymentDeadlineTs = paymentStatus?.payment_deadline_timestamp ?? null
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
 
-  const cws = ebillQuery.data?.current_waiting_state
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
 
   if (!quote || !bill) {
@@ -163,7 +168,7 @@ function PageBody({ id }: { id: string }) {
                   <span>{new Date(quote.ttl).toISOString().split("T")[0]}</span>
                 </div>
               )}
-              {(rejectedToPay || (isInMempool ?? requestedToPay) || ebillPaid) && (
+              {(rejectedToPay || isInMempool || requestedToPay || ebillPaid) && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Payment:</span>
                   {ebillPaid ? (
