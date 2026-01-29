@@ -161,11 +161,11 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const noQuotesMessage = `No quotes available.`
 
   if (error) {
-    const errorMessage = error.message || String(error)
+    const errorMessage = (error as { message?: string }).message ?? String(error)
     return (
       <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <div className="text-red-800 font-semibold">Failed to load quotes</div>
-        <div className="text-red-600 text-sm">{errorMessage || "Unknown error occurred"}</div>
+        <div className="text-red-800 font-semibold">Failed to load quote</div>
+        <div className="text-red-600 text-sm">{"Unknown error occurred: " + errorMessage}</div>
         <div className="text-xs text-red-500">Check if the API server is running and accessible</div>
       </div>
     )

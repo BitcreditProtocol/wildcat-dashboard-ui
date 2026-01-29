@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 
-import { useLanguage } from "@/context/language/LanguageContext";
+import { LanguageContext } from "@/context/language/LanguageContext";
 import { cn } from "@/lib/utils";
 import { formatMonthLong, formatMonthYear } from "@/utils/dates";
 
@@ -20,7 +20,7 @@ const MonthPicker = ({
   onCaptionLabelClicked,
   disableFutureNavigation = false,
 }: MonthPickerProps) => {
-  const lang = useLanguage();
+  const lang = useContext(LanguageContext);
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
