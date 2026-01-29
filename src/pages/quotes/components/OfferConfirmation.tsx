@@ -48,6 +48,8 @@ export function OfferConfirmation({
     const parsed = new Date(stored)
     if (!Number.isNaN(parsed.getTime()) && parsed >= minDate && parsed <= maxDate) {
       setValidUntilDate(parsed)
+    } else {
+      window.localStorage.removeItem(storageKey)
     }
   }, [open, validUntilDate, storageKey, minDate, maxDate])
 
