@@ -134,13 +134,14 @@ export function QRCodeModal({
         <DrawerHeader>
           <DrawerTitle>{title}</DrawerTitle>
         </DrawerHeader>
-        <div className="flex flex-col items-center gap-4 p-6">
+        <div className="flex flex-col items-center gap-4 p-0 sm:p-6">
           <QRCodeErrorBoundary>
-            <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg">
+            <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg w-full" style={{ maxWidth: size }}>
               <QRCodeSVG
                 value={value}
                 size={size}
                 level="M"
+                className="w-full h-auto"
               />
               {label && (
                 <span className="text-xs text-muted-foreground text-center">
