@@ -152,12 +152,14 @@ export function QRCodeModal({
 
 export function FeeTokenQRCodeModal({ feeToken, size = 768 }: { feeToken: string; size?: number }) {
   return (
-    <QRCodeModal
-      value={feeToken}
-      size={size}
-      label="Scan to use fee token"
-      title="Fee Token QR Code"
-      triggerLabel="Show QR code for fee token"
-    />
+    <QRCodeErrorBoundary>
+      <QRCodeModal
+        value={feeToken}
+        size={size}
+        label="Scan to use fee token"
+        title="Fee Token QR Code"
+        triggerLabel="Show QR code for fee token"
+      />
+    </QRCodeErrorBoundary>
   )
 }
