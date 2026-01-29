@@ -120,6 +120,7 @@ function PageBody({ id }: { id: string }) {
 
   const cws = ebillQuery.data?.current_waiting_state
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
+  const showPayment = rejectedToPay === true || (isInMempool ?? requestedToPay) === true || ebillPaid === true
 
   if (!quote || !bill) {
     return <div className="p-4 text-muted-foreground">No quote data available</div>
@@ -164,7 +165,7 @@ function PageBody({ id }: { id: string }) {
                   <span>{new Date(quote.ttl).toISOString().split("T")[0]}</span>
                 </div>
               )}
-              {(rejectedToPay || (isInMempool ?? requestedToPay) || ebillPaid) && (
+              {showPayment && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">Payment:</span>
                   {ebillPaid ? (
