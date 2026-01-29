@@ -6,6 +6,7 @@ import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import { useQuery } from "@tanstack/react-query"
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { addDays } from "date-fns"
+import { getItem, setItem } from "@/utils/local-storage"
 
 interface RequestToPayConfirmationProps {
   open: boolean
@@ -63,7 +64,7 @@ export function RequestToPayConfirmation({
       return
     }
 
-    const stored = window.localStorage.getItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY)
+    const stored = getItem<string>(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY)
     if (!stored) {
       return
     }
@@ -143,7 +144,7 @@ export function RequestToPayConfirmation({
           if (draftValidUntilDate) {
             const utcDeadline = toUtcEndOfDay(draftValidUntilDate)
             setValidUntilDate(utcDeadline)
-            window.localStorage.setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, utcDeadline.toISOString())
+            setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, utcDeadline.toISOString())
           }
           setShowPaymentCalendar(false)
           onOpenChange(true)
