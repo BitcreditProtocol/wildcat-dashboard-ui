@@ -17,6 +17,7 @@ import { initKeycloak } from "./keycloak"
 import "./lib/api-client"
 import KeysetsPage from "@/pages/keysets/KeysetsPage"
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage"
+import { LanguageProvider } from "@/context/language/LanguageProvider"
 
 const queryClient = new QueryClient()
 
@@ -57,8 +58,10 @@ function App() {
 void prepare().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <App />
-      <Toaster />
+      <LanguageProvider>
+        <App />
+        <Toaster />
+      </LanguageProvider>
     </StrictMode>,
   )
 })

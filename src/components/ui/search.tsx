@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cva } from "class-variance-authority";
 import { SearchIcon, XIcon } from "lucide-react";
+import { useIntl } from "react-intl";
 
 import { cn } from "@/lib/utils";
 
@@ -46,9 +47,14 @@ function Search({
   enableDebounce = true,
   debounceMs = 300,
 }: SearchProps) {
+  const intl = useIntl();
   const searchFieldRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<number | null>(null);
   const [internalValue, setInternalValue] = useState<string>(value ?? "");
+  const clearLabel = intl.formatMessage({
+    id: "ui.search.clear",
+    defaultMessage: "Clear search",
+  });
 
   useEffect(() => {
     if (value !== undefined) {
@@ -146,7 +152,7 @@ function Search({
           "transition-opacity duration-200 ease-out",
           hasValue ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
-        aria-label="Clear search"
+        aria-label={clearLabel}
         tabIndex={hasValue ? 0 : -1}
       >
         <XIcon

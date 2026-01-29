@@ -3,6 +3,7 @@ import { Calendar } from "@/components/DatePicker/calendar.tsx"
 import { CalendarIcon } from "lucide-react"
 import { addDays, isSameDay } from "date-fns"
 import { cn } from "@/lib/utils.ts"
+import { useIntl } from "react-intl"
 
 interface CalendarModalProps {
   isOpen: boolean
@@ -25,6 +26,13 @@ export function CalendarModal({
   onConfirm,
   onCancel,
 }: CalendarModalProps) {
+<<<<<<< Updated upstream
+=======
+  const intl = useIntl()
+  const disabledBefore = minDate ?? addDays(new Date(Date.now()), 1)
+  const disabledAfter = maxDate
+
+>>>>>>> Stashed changes
   return (
     <>
       <div
@@ -47,7 +55,9 @@ export function CalendarModal({
         >
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
-            <div className="text-base">{draftDate?.toDateString() ?? "-"}</div>
+            <div className="text-base">
+              {draftDate ? draftDate.toLocaleDateString(intl.locale) : "-"}
+            </div>
 
             <Calendar
               mode="single"
@@ -75,7 +85,10 @@ export function CalendarModal({
                 type="button"
                 onClick={onCancel}
               >
-                Cancel
+                {intl.formatMessage({
+                  id: "Cancel",
+                  defaultMessage: "Cancel"
+                })}
               </Button>
               <Button
                 className="w-full max-w-sm"
@@ -84,7 +97,10 @@ export function CalendarModal({
                 disabled={!draftDate}
                 onClick={onConfirm}
               >
-                Confirm
+                {intl.formatMessage({
+                  id: "Confirm",
+                  defaultMessage: "Confirm"
+                })}
               </Button>
             </div>
           </div>
@@ -100,6 +116,7 @@ interface DatePickerButtonProps {
 }
 
 export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
+  const intl = useIntl()
   return (
     <button
       type="button"
@@ -108,7 +125,11 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
     >
       <CalendarIcon className="text-gray-500 dark:text-gray-400 w-5 h-5" strokeWidth={1.5} />
       <span className="text-gray-900 dark:text-gray-100">
-        {date?.toDateString() ?? "Select date"}
+        {date?.toLocaleDateString(intl.locale) ??
+          intl.formatMessage({
+            id: "quotes.calendar.selectDate",
+            defaultMessage: "Select date",
+          })}
       </span>
     </button>
   )

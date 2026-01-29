@@ -70,7 +70,10 @@ export function DateRangeDropdown({
             <div
               role="button"
               tabIndex={0}
-              aria-label="Clear preset range"
+              aria-label={intl.formatMessage({
+                id: "dropdown.clearPresetRange",
+                defaultMessage: "Clear preset range",
+              })}
               aria-pressed="false"
               onPointerDown={(e) => {
                 e.preventDefault();
@@ -97,7 +100,12 @@ export function DateRangeDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64 bg-elevation-200">
-        <DropdownMenuLabel>Select Range</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          {intl.formatMessage({
+            id: "dropdown.label.selectRange",
+            defaultMessage: "Select Range",
+          })}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup
           value={String(value)}

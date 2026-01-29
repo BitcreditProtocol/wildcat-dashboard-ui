@@ -7,6 +7,7 @@ import { Act360 } from "@/utils/discount-util"
 import { Button } from "./ui/button"
 import { DrawerFooter, DrawerClose } from "./ui/drawer"
 import { setItem, getItem } from "@/utils/local-storage" // , removeItem
+import { useIntl } from "react-intl"
 
 interface CurrencyAmount {
   value: Big
@@ -52,7 +53,119 @@ const GrossToNetDiscountForm = ({
   submitButtonText,
   quoteId,
 }: GrossToNetProps) => {
+  const intl = useIntl()
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false)
+<<<<<<< Updated upstream
+=======
+  const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null)
+  const isSat = gross.currency === "sat"
+  const daysLabel = intl.formatMessage({ id: "discountForm.days", defaultMessage: "Days" })
+  const discountRateLabel = intl.formatMessage({
+    id: "discountForm.discountRate",
+    defaultMessage: "Discount rate",
+  })
+  const netAmountLabel = intl.formatMessage({
+    id: "discountForm.netAmount",
+    defaultMessage: "Net amount",
+  })
+  const annualDiscountLabel = intl.formatMessage({
+    id: "discountForm.annualDiscount",
+    defaultMessage: "Annual discount",
+  })
+  const grossAmountLabel = intl.formatMessage({
+    id: "discountForm.grossAmount",
+    defaultMessage: "Gross amount",
+  })
+
+  const parseDigitsToInt = (value: unknown) => {
+    let str = ""
+    if (typeof value === "string" || typeof value === "number") {
+      str = String(value)
+    }
+    return str.replace(/[^\d]/g, "")
+  }
+
+  const validateNetAmount = (value?: string) => {
+    if (value == null || value === "") {
+      return intl.formatMessage({
+        id: "discountForm.validation.net.required",
+        defaultMessage: "Net amount is required",
+      })
+    }
+    const parsed = isSat ? parseIntSafe(value) : parseFloatSafe(value)
+    if (parsed === undefined || Number.isNaN(parsed)) {
+      return intl.formatMessage({
+        id: "discountForm.validation.net.invalid",
+        defaultMessage: "Net amount is invalid",
+      })
+    }
+    if (parsed < 1) {
+      return intl.formatMessage(
+        { id: "discountForm.validation.net.min",
+          defaultMessage: "Net amount must be at least {min}"
+        },
+        { min: 1 }
+      )
+    }
+    if (new Big(parsed).gt(gross.value)) {
+      return intl.formatMessage({
+        id: "discountForm.validation.net.maxGross",
+        defaultMessage: "Net amount cannot exceed gross amount",
+      })
+    }
+    return true
+  }
+
+  const validateMinInteger = (min: number, label: string) => (value?: string) => {
+    if (value == null || value === "") {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.required",
+          defaultMessage: "{label} is required"
+        },
+        { label }
+      )
+    }
+    if (!/^\d+$/.test(value)) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.wholeNumber",
+          defaultMessage: "{label} must be a whole number"
+        },
+        { label }
+      )
+    }
+    const n = parseInt(value, 10)
+    if (Number.isNaN(n)) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.invalid",
+          defaultMessage: "{label} is invalid"
+        },
+        { label }
+      )
+    }
+    if (n < min) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.min",
+          defaultMessage: "{label} must be at least {min}"
+        },
+        { label, min }
+      )
+    }
+    if (n > INPUT_DAYS_MAX_VALUE) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.max",
+          defaultMessage: "{label} must be at most {max}"
+        },
+        { label, max: INPUT_DAYS_MAX_VALUE }
+      )
+    }
+    return true
+  }
+>>>>>>> Stashed changes
 
   const localStorageKey = quoteId ? `${LOCAL_STORAGE_KEY_PREFIX}${quoteId}` : null
   const {
@@ -255,21 +368,28 @@ const GrossToNetDiscountForm = ({
     return true
   }
 
+  const handleFormSubmitEvent: React.FormEventHandler<HTMLFormElement> = (e) => {
+    void handleSubmit(handleFormSubmit)(e).catch((err) => {
+      console.error("Submit failed:", err)
+    })
+  }
+
+  const handleConfirmClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    void handleSubmit(handleFormSubmit)().catch((err) => {
+      console.error("Submit failed:", err)
+    })
+  }
+
   return (
     <>
-      <form
-        className="flex flex-col gap-6 min-w-[8rem] px-4"
-        onSubmit={(e) => {
-          handleSubmit(handleFormSubmit)(e).catch((err) => {
-            console.error("Submit failed:", err)
-          })
-        }}
-      >
+      <form className="flex flex-col gap-6 min-w-[8rem] px-4" onSubmit={handleFormSubmitEvent}>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <label htmlFor="daysInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Days
+                {daysLabel}
               </label>
               <input
                 id="daysInput"
@@ -291,13 +411,19 @@ const GrossToNetDiscountForm = ({
                   min: INPUT_DAYS_MIN_VALUE,
                   max: INPUT_DAYS_MAX_VALUE,
                   setValueAs: parseDigitsToInt,
-                  validate: validateMinInteger(INPUT_DAYS_MIN_VALUE, "Days"),
+                  validate: validateMinInteger(INPUT_DAYS_MIN_VALUE, daysLabel),
                 })}
               />
             </div>
             {errors.daysInput && (
               <div className="text-xs text-red-500">
-                Please enter a valid value between {INPUT_DAYS_MIN_VALUE} and {INPUT_DAYS_MAX_VALUE}.
+                {intl.formatMessage(
+                  {
+                    id: "discountForm.validation.range",
+                    defaultMessage: "Please enter a valid value between {min} and {max}.",
+                  },
+                  { min: INPUT_DAYS_MIN_VALUE, max: INPUT_DAYS_MAX_VALUE },
+                )}
               </div>
             )}
           </div>
@@ -305,7 +431,7 @@ const GrossToNetDiscountForm = ({
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <label htmlFor="discountRateInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Discount rate
+                {discountRateLabel}
               </label>
               <div className="flex gap-1 items-center">
                 <input
@@ -325,17 +451,31 @@ const GrossToNetDiscountForm = ({
                       e.currentTarget.blur()
                     }
                   }}
+<<<<<<< Updated upstream
+=======
+                  onChange={(e) => {
+                    void discountRateRegister.onChange(e)
+                    setLastEdited("rate")
+                  }}
+>>>>>>> Stashed changes
                 />
                 <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">%</span>
               </div>
             </div>
             {errors.discountRateInput && (
               <div className="text-xs text-red-500">
-                Please enter a valid value between {0}% and {99.9999}%.
+                {intl.formatMessage(
+                  {
+                    id: "discountForm.validation.rateRange",
+                    defaultMessage: "Please enter a valid value between {min}% and {max}%.",
+                  },
+                  { min: 0, max: 99.9999 },
+                )}
               </div>
             )}
           </div>
 
+<<<<<<< Updated upstream
           <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Net amount</span>
             <div className="flex gap-1 items-center">
@@ -346,12 +486,49 @@ const GrossToNetDiscountForm = ({
                 {net?.currency ?? gross.currency}
               </span>
             </div>
+=======
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <label htmlFor="netInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {netAmountLabel}
+              </label>
+              <div className="flex gap-1 items-center">
+                <input
+                  id="netInput"
+                  step={isSat ? "1" : "0.01"}
+                  type="number"
+                  inputMode={isSat ? "numeric" : "decimal"}
+                  className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-green-600 dark:text-green-400 w-28"
+                  {...netInputRegister}
+                  onKeyDown={(e) => {
+                    if (isSat) {
+                      blockDecimalInput(e)
+                      handleKeyDown(e)
+                    } else if (e.key === "Enter") {
+                      e.preventDefault()
+                      e.currentTarget.blur()
+                    }
+                  }}
+                  onInput={isSat ? handleIntegerInputFor("netInput") : undefined}
+                  onBeforeInput={isSat ? blockNonDigitInput : undefined}
+                  onPaste={isSat ? handlePasteDigitsFor("netInput") : undefined}
+                  onDrop={handleDrop}
+                  onChange={(e) => {
+                    void netInputRegister.onChange(e)
+                    setLastEdited("net")
+                  }}
+                />
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{gross.currency}</span>
+              </div>
+            </div>
+            {errors.netInput && <div className="text-xs text-red-500">{errors.netInput.message}</div>}
+>>>>>>> Stashed changes
           </div>
         </div>
 
         <div className="flex flex-col gap-3 px-2">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">Annual discount</span>
+            <span className="text-gray-600 dark:text-gray-400">{annualDiscountLabel}</span>
             <div className="flex gap-1 items-center">
               <span className="text-gray-600 dark:text-gray-400">
                 {discount === undefined ? "0.00" : Math.abs(discount.value.toNumber()).toFixed(2)}
@@ -361,7 +538,7 @@ const GrossToNetDiscountForm = ({
           </div>
 
           <div className="flex justify-between items-center text-base font-semibold">
-            <span className="text-gray-900 dark:text-gray-100">Gross amount</span>
+            <span className="text-gray-900 dark:text-gray-100">{grossAmountLabel}</span>
             <div className="flex gap-1 items-center">
               <span className="text-green-600 dark:text-green-400">+{gross.value.toNumber().toFixed(2)}</span>
               <span className="text-xs text-gray-500 dark:text-gray-500">{gross.currency}</span>
@@ -370,12 +547,7 @@ const GrossToNetDiscountForm = ({
         </div>
 
         {submitButtonText && (
-          <Button
-            type="submit"
-            size="sm"
-            className="my-4"
-            disabled={!isValid}
-          >
+          <Button type="submit" size="sm" className="my-4" disabled={!isValid}>
             {submitButtonText}
           </Button>
         )}
@@ -386,26 +558,20 @@ const GrossToNetDiscountForm = ({
           className="w-full mb-1"
           size="sm"
           type="button"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            void (async () => {
-              await handleSubmit(handleFormSubmit)()
-            })().catch((err) => {
-              console.error("Submit failed:", err)
-            })
-          }}
+          onClick={handleConfirmClick}
           disabled={!isValid || net === undefined || discountRate === undefined || days === undefined}
         >
-          Confirm
+          {intl.formatMessage({
+            id: "Confirm",
+            defaultMessage: "Confirm",
+          })}
         </Button>
         <DrawerClose asChild>
-          <Button
-            className="w-full"
-            variant="outline"
-            size="sm"
-          >
-            Cancel
+          <Button className="w-full" variant="outline" size="sm">
+            {intl.formatMessage({
+              id: "Cancel",
+              defaultMessage: "Cancel",
+            })}
           </Button>
         </DrawerClose>
       </DrawerFooter>

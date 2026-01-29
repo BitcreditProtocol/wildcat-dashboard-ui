@@ -10,6 +10,7 @@ import { Link } from "react-router"
 import { useState } from "react"
 import SearchComponent, { HighlightText } from "@/components/ui/search"
 import { SortButtons } from "@/components/SortButtons.tsx"
+import { FormattedMessage, useIntl } from "react-intl"
 
 function Loader() {
   return (
@@ -26,13 +27,25 @@ function PageBody() {
   const { data: keysets, isLoading: keysetsLoading } = useQuery(listKeysetInfosOptions())
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc")
+  const intl = useIntl()
+  const noExpiryText = intl.formatMessage({
+    id: "keysets.noExpiry",
+    defaultMessage: "No expiry",
+  })
 
   if (keysetsLoading) {
     return <Loader />
   }
 
   if (!keysets || keysets.length === 0) {
-    return <div className="p-4 text-muted-foreground">No keysets found</div>
+    return (
+      <div className="p-4 text-muted-foreground">
+        <FormattedMessage
+          id="keysets.empty"
+          defaultMessage="No keysets found"
+        />
+      </div>
+    )
   }
 
   const filteredKeysets = keysets.filter((keyset) => {
@@ -49,8 +62,10 @@ function PageBody() {
           month: "short",
           year: "numeric",
         }).replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3").toLowerCase()
-      : "no expiry"
-    const status = keyset.active ? "active" : "inactive"
+      : noExpiryText.toLowerCase()
+    const status = keyset.active
+      ? intl.formatMessage({ id: "keysets.status.active", defaultMessage: "Active" }).toLowerCase()
+      : intl.formatMessage({ id: "keysets.status.inactive", defaultMessage: "Inactive" }).toLowerCase()
 
     return (
       keysetId.includes(query) ||
@@ -127,9 +142,27 @@ function PageBody() {
   }
 
   const sortOptions = [
-    { field: "currency" as const, label: "Currency" },
-    { field: "maturity" as const, label: "Maturity" },
-    { field: "status" as const, label: "Status" },
+    {
+      field: "currency" as const,
+      label: intl.formatMessage({
+        id: "keysets.sort.currency",
+        defaultMessage: "Currency"
+      }),
+    },
+    {
+      field: "maturity" as const,
+      label: intl.formatMessage({
+        id: "keysets.sort.maturity",
+        defaultMessage: "Maturity"
+      }),
+    },
+    {
+      field: "status" as const,
+      label: intl.formatMessage({
+        id: "keysets.sort.status",
+        defaultMessage: "Status"
+      }),
+    },
   ]
 
   return (
@@ -138,7 +171,10 @@ function PageBody() {
         <SearchComponent
           value={searchQuery}
           className="flex-1 max-w-md"
-          placeholder="Search by keyset ID, currency, maturity date, or status..."
+          placeholder={intl.formatMessage({
+            id: "keysets.search.placeholder",
+            defaultMessage: "Search by keyset ID, currency, maturity date, or status...",
+          })}
           onSearch={setSearchQuery}
           onChange={setSearchQuery}
           size="sm"
@@ -152,7 +188,10 @@ function PageBody() {
 
       {sortedKeysets.length === 0 ? (
         <div className="p-4 text-muted-foreground text-center">
-          No keysets match your search criteria
+          <FormattedMessage
+            id="keysets.search.noMatch"
+            defaultMessage="No keysets match your search criteria"
+          />
         </div>
       ) : (
         <>
@@ -163,9 +202,17 @@ function PageBody() {
                   month: "short",
                   year: "numeric",
                 }).replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
-              : "No expiry"
+              : noExpiryText
             const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
-            const statusText = keyset.active ? "Active" : "Inactive"
+            const statusText = keyset.active
+              ? intl.formatMessage({
+                  id: "keysets.status.active",
+                  defaultMessage: "Active",
+                })
+              : intl.formatMessage({
+                  id: "keysets.status.inactive",
+                  defaultMessage: "Inactive",
+                })
 
             return (
               <Card key={keyset.id} className="hover:shadow-lg transition-shadow">
@@ -178,7 +225,14 @@ function PageBody() {
                         </CardTitle>
                       </Link>
                       <CardDescription className="mt-1">
-                        Currency: <HighlightText text={currencyUnit} highlight={searchQuery} /> | Maturity date: <HighlightText text={finalExpiryDate} highlight={searchQuery} />
+                        <FormattedMessage
+                          id="keysets.card.meta"
+                          defaultMessage="Currency: {currency} | Maturity date: {maturityDate}"
+                          values={{
+                            currency: <HighlightText text={currencyUnit} highlight={searchQuery} />,
+                            maturityDate: <HighlightText text={finalExpiryDate} highlight={searchQuery} />,
+                          }}
+                        />
                       </CardDescription>
                     </div>
                     <div className="flex gap-2 items-center">
@@ -191,7 +245,12 @@ function PageBody() {
 
                 <CardContent>
                   <Button size="sm" variant="default" className="max-w-sm px-12" asChild>
-                    <Link to={`/keysets/${keyset.id}`}>View</Link>
+                    <Link to={`/keysets/${keyset.id}`}>
+                      <FormattedMessage
+                        id="keysets.view"
+                        defaultMessage="View"
+                      />
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -206,8 +265,18 @@ function PageBody() {
 export default function KeysetsPage() {
   return (
     <>
-      <Breadcrumbs>Keysets</Breadcrumbs>
-      <PageTitle>Keysets</PageTitle>
+      <Breadcrumbs>
+        <FormattedMessage
+          id="keysets.page.title"
+          defaultMessage="Keysets"
+        />
+      </Breadcrumbs>
+      <PageTitle>
+        <FormattedMessage
+          id="keysets.page.title"
+          defaultMessage="Keysets"
+        />
+      </PageTitle>
       <PageBody />
     </>
   )

@@ -9,6 +9,7 @@ import {
 } from "react-day-picker";
 import { format, isSameDay } from "date-fns";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useIntl } from "react-intl";
 
 import { cn } from "@/lib/utils";
 import { YearPicker } from "./yearPicker";
@@ -106,6 +107,7 @@ function Calendar({
                     modifiersClassNames,
                     ...restProps
                   }: CalendarProps) {
+  const intl = useIntl();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     selected.from
   );
@@ -214,7 +216,10 @@ function Calendar({
           goToOffsetMonth(-1);
         }}
         className="absolute left-1 bg-transparent hover:bg-accent rounded-md p-2"
-        aria-label="Go to previous month"
+        aria-label={intl.formatMessage({
+          id: "calendar.nav.prevMonth",
+          defaultMessage: "Go to previous month",
+        })}
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
@@ -290,7 +295,10 @@ function Calendar({
           "absolute right-1 bg-transparent hover:bg-accent rounded-md p-2",
           !canGoForward && "opacity-40 pointer-events-none"
         )}
-        aria-label="Go to next month"
+        aria-label={intl.formatMessage({
+          id: "calendar.nav.nextMonth",
+          defaultMessage: "Go to next month",
+        })}
       >
         <ChevronRight className="h-4 w-4" />
       </button>

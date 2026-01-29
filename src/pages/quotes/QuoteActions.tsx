@@ -12,6 +12,7 @@ import { PaymentRequestCard } from "./components/PaymentRequestCard.tsx"
 import { OfferConfirmation } from "./components/OfferConfirmation.tsx"
 import { RequestToPayConfirmation } from "./components/RequestToPayConfirmation.tsx"
 import { useQuoteMutations } from "./components/useQuoteMutations.ts"
+import { useIntl } from "react-intl"
 
 interface QuoteActionsProps {
   value: InfoReply
@@ -34,6 +35,7 @@ export function QuoteActions({
   paymentDeadlineTs,
   timeOfRequestToPay,
 }: QuoteActionsProps) {
+  const intl = useIntl()
   const billId = value.bill.id
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
@@ -66,6 +68,43 @@ export function QuoteActions({
   const [enableMintingConfirmDrawerOpen, setEnableMintingConfirmDrawerOpen] = useState(false)
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false)
 
+  const denyTitle = intl.formatMessage({
+    id: "quotes.actions.deny.title",
+    defaultMessage: "Confirm denying quote",
+  })
+  const denyButtonLabel = intl.formatMessage({
+    id: "quotes.actions.deny.button",
+    defaultMessage: "Deny",
+  })
+  const offerTitle = intl.formatMessage({
+    id: "quotes.actions.offer.title",
+    defaultMessage: "Offer quote",
+  })
+  const offerDescription = intl.formatMessage({
+    id: "quotes.actions.offer.description",
+    defaultMessage: "Make an offer to the current holder of this bill",
+  })
+  const offerButtonLabel = intl.formatMessage({
+    id: "quotes.actions.offer.button",
+    defaultMessage: "Offer",
+  })
+  const enableMintingTitle = intl.formatMessage({
+    id: "quotes.actions.enableMinting.title",
+    defaultMessage: "Confirm enabling minting",
+  })
+  const enableMintingDescription = intl.formatMessage({
+    id: "quotes.actions.enableMinting.description",
+    defaultMessage: "Are you sure you want to enable minting for this quote?",
+  })
+  const enableMintingConfirmLabel = intl.formatMessage({
+    id: "quotes.actions.enableMinting.confirmButton",
+    defaultMessage: "Yes, enable minting",
+  })
+  const enableMintingButtonLabel = intl.formatMessage({
+    id: "quotes.actions.enableMinting.button",
+    defaultMessage: "Enable minting",
+  })
+
   const {
     denyQuote,
     offerQuote,
@@ -82,7 +121,7 @@ export function QuoteActions({
       <div className="flex items-center gap-2">
         {value.status === "Pending" && (
           <DenyConfirmDrawer
-            title="Confirm denying quote"
+            title={denyTitle}
             open={denyConfirmDrawerOpen}
             onOpenChange={setDenyConfirmDrawerOpen}
             onSubmit={() => {
@@ -91,15 +130,15 @@ export function QuoteActions({
             }}
           >
             <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
-              Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+              {denyButtonLabel} {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </DenyConfirmDrawer>
         )}
 
         {value.status === "Pending" && (
           <OfferFormDrawer
-            title="Offer quote"
-            description="Make an offer to the current holder of this bill"
+            title={offerTitle}
+            description={offerDescription}
             value={value}
             open={offerFormDrawerOpen}
             onOpenChange={setOfferFormDrawerOpen}
@@ -110,7 +149,7 @@ export function QuoteActions({
             }}
           >
             <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
-              Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+              {offerButtonLabel} {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </OfferFormDrawer>
         )}
@@ -130,22 +169,22 @@ export function QuoteActions({
         {value.status === "Accepted" && "keyset_id" in value && ebill && !mintingEnabled && (
           <div className="flex-1 max-w-sm">
             <ConfirmDrawer
-              title="Confirm enabling minting"
-              description="Are you sure you want to enable minting for this quote?"
+              title={enableMintingTitle}
+              description={enableMintingDescription}
               open={enableMintingConfirmDrawerOpen}
               onOpenChange={setEnableMintingConfirmDrawerOpen}
               onSubmit={() => {
                 handleEnableMinting()
                 setEnableMintingConfirmDrawerOpen(false)
               }}
-              submitButtonText="Yes, enable minting"
+              submitButtonText={enableMintingConfirmLabel}
               trigger={
                 <Button
                   className="w-full max-w-sm"
                   disabled={isFetching || enableMintingMutation.isPending}
                   variant="default"
                 >
-                  Enable minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                  {enableMintingButtonLabel} {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
                 </Button>
               }
             />

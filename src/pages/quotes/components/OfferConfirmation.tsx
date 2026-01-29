@@ -3,7 +3,13 @@ import { ConfirmDrawer } from "@/components/Drawers.tsx"
 import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import Big from "big.js"
 import type { OfferFormResult } from "./OfferFormDrawer.tsx"
+<<<<<<< Updated upstream
 import { getDefaultDeadline } from "@/utils/dates"
+=======
+import { addDays, addYears } from "date-fns"
+import { getItem, removeItem, setItem } from "@/utils/local-storage"
+import { useIntl } from "react-intl"
+>>>>>>> Stashed changes
 
 interface OfferConfirmationProps {
   offerFormData?: OfferFormResult
@@ -20,6 +26,7 @@ export function OfferConfirmation({
   onSubmit,
   maturityDate,
 }: OfferConfirmationProps) {
+  const intl = useIntl()
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
   const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false)
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
@@ -37,8 +44,14 @@ export function OfferConfirmation({
   return (
     <>
       <ConfirmDrawer
-        title="Confirm offering quote"
-        description="Review your inputs and confirm the offer"
+        title={intl.formatMessage({
+          id: "quotes.offer.confirmTitle",
+          defaultMessage: "Confirm offering quote",
+        })}
+        description={intl.formatMessage({
+          id: "quotes.offer.confirmDescription",
+          defaultMessage: "Review your inputs and confirm the offer",
+        })}
         open={open}
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
@@ -60,24 +73,44 @@ export function OfferConfirmation({
       >
         <div className="flex flex-col gap-4 px-4 py-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold w-48">Effective discount (relative):</span>
+            <span className="text-sm font-semibold w-48">
+              {intl.formatMessage({
+                id: "quotes.detail.discount.relative",
+                defaultMessage: "Effective discount (relative):",
+              })}
+            </span>
             <span className="text-sm text-right">{effectiveDiscount?.mul(new Big("100")).toFixed(2)}%</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold w-48">Effective discount (absolute):</span>
+            <span className="text-sm font-semibold w-48">
+              {intl.formatMessage({
+                id: "quotes.detail.discount.absolute",
+                defaultMessage: "Effective discount (absolute):",
+              })}
+            </span>
             <span className="text-sm text-right">
               {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
               {offerFormData?.discount.net.currency}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold w-48">Net amount:</span>
+            <span className="text-sm font-semibold w-48">
+              {intl.formatMessage({
+                id: "quotes.offer.netAmount",
+                defaultMessage: "Net amount:"
+              })}
+            </span>
             <span className="text-sm text-right">
               {offerFormData?.discount.net.value.round(0).toFixed(0)} {offerFormData?.discount.net.currency}
             </span>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold w-32">Valid until:</span>
+            <span className="text-sm font-semibold w-32">
+              {intl.formatMessage({
+                id: "quotes.offer.validUntil",
+                defaultMessage: "Valid until:"
+              })}
+            </span>
             <DatePickerButton
               date={validUntilDate ?? offerFormData?.ttl.ttl}
               onClick={() => {
@@ -94,7 +127,16 @@ export function OfferConfirmation({
         isOpen={showValidUntilCalendar}
         selectedDate={validUntilDate}
         draftDate={draftValidUntilDate}
+<<<<<<< Updated upstream
         title="Selected date"
+=======
+        title={intl.formatMessage({
+          id: "quotes.calendar.selectedDate",
+          defaultMessage: "Selected date",
+        })}
+        minDate={minDate}
+        maxDate={maxDate}
+>>>>>>> Stashed changes
         onClose={() => {
           setShowValidUntilCalendar(false)
           onOpenChange(true)

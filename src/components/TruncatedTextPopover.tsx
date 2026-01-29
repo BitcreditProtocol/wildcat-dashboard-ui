@@ -5,6 +5,7 @@ import { truncateString } from "@/utils/strings"
 import { Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { useIntl } from "react-intl"
 
 interface TruncatedTextPopoverProps {
   text: React.ReactNode
@@ -97,6 +98,7 @@ export function TruncatedTextPopover({
   as = "button",
   showCopyButton = false,
 }: TruncatedTextPopoverProps) {
+  const intl = useIntl()
   const effectiveMaxLength = useResponsiveMaxLength(maxLength, showFullOnDesktop)
   const [copied, setCopied] = React.useState(false)
 
@@ -109,11 +111,21 @@ export function TruncatedTextPopover({
     try {
       await navigator.clipboard.writeText(textStr)
       setCopied(true)
-      toast.success("Copied to clipboard")
+      toast.success(
+        intl.formatMessage({
+          id: "truncatedTextPopover.copied",
+          defaultMessage: "Copied to clipboard",
+        })
+      )
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
       console.error("Failed to copy text:", err)
-      toast.error("Failed to copy to clipboard")
+      toast.error(
+        intl.formatMessage({
+          id: "truncatedTextPopover.copyFailed",
+          defaultMessage: "Failed to copy to clipboard",
+        })
+      )
     }
   }
   const flatLabel = lines.join(", ")
@@ -178,8 +190,28 @@ export function TruncatedTextPopover({
           size="icon"
           onClick={() => void handleCopy()}
           className="h-6 w-6 shrink-0"
-          title={copied ? "Copied!" : "Copy to clipboard"}
-          aria-label={copied ? "Copied!" : "Copy to clipboard"}
+          title={
+            copied
+              ? intl.formatMessage({
+                id: "truncatedTextPopover.copiedShort",
+                defaultMessage: "Copied!"
+              })
+              : intl.formatMessage({
+                id: "truncatedTextPopover.copyAction",
+                defaultMessage: "Copy to clipboard"
+              })
+          }
+          aria-label={
+            copied
+              ? intl.formatMessage({
+                id: "truncatedTextPopover.copiedShort",
+                defaultMessage: "Copied!"
+              })
+              : intl.formatMessage({
+                id: "truncatedTextPopover.copyAction",
+                defaultMessage: "Copy to clipboard"
+              })
+          }
         >
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         </Button>

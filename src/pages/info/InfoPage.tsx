@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { fetchInfo } from "@/lib/api"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
+import { FormattedMessage } from "react-intl"
 
 function Loader() {
   return (
@@ -31,8 +32,18 @@ function PageBody() {
 export default function InfoPage() {
   return (
     <>
-      <Breadcrumbs>Info</Breadcrumbs>
-      <PageTitle>Info</PageTitle>
+      <Breadcrumbs>
+        <FormattedMessage
+          id="info.page.title"
+          defaultMessage="Info"
+        />
+      </Breadcrumbs>
+      <PageTitle>
+        <FormattedMessage
+          id="info.page.title"
+          defaultMessage="Info"
+        />
+      </PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody />
       </Suspense>

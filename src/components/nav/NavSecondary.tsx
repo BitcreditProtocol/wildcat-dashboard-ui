@@ -9,31 +9,44 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Link } from "react-router"
+import { useIntl } from "react-intl"
 
 export function NavSecondary({
   items,
   ...props
 }: {
   items: {
+    titleId?: string
+    titleDefaultMessage?: string
     title: string
     url: string
     icon: LucideIcon
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
+  const intl = useIntl()
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild size="sm" tooltip={item.title}>
+          {items.map((item) => {
+            const title = item.titleId
+              ? intl.formatMessage({
+                  id: item.titleId,
+                  defaultMessage: item.titleDefaultMessage ?? item.title,
+                })
+              : item.title
+
+            return (
+              <SidebarMenuItem key={item.titleId ?? item.title}>
+                <SidebarMenuButton asChild size="sm" tooltip={title}>
                 <Link to={item.url}>
                   <item.icon />
-                  <span>{item.title}</span>
+                  <span>{title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          ))}
+            )
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
