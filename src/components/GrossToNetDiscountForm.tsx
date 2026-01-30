@@ -100,7 +100,7 @@ const GrossToNetDiscountForm = ({
     if (parsed === undefined || Number.isNaN(parsed)) {
       return intl.formatMessage({
         id: "discountForm.validation.net.invalid",
-        defaultMessage: "Net amount is required",
+        defaultMessage: "Net amount must be a valid number",
       })
     }
     if (parsed < 1) {

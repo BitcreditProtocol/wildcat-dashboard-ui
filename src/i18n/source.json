@@ -107,8 +107,7 @@
   "earnings.timeframe.lastYear": "Last year",
   "earnings.empty": "No accepted quotes for the selected timeframe.",
   "earnings.cashflow": "CashFlow",
-  "cashflow.page.title": "CashFlow"
-  ,
+  "cashflow.page.title": "CashFlow",
   "info.page.title": "Info",
   "keysets.page.title": "Keysets",
   "keysets.empty": "No keysets found",
@@ -184,7 +183,7 @@
   "discountForm.annualDiscount": "Annual discount",
   "discountForm.grossAmount": "Gross amount",
   "discountForm.validation.net.required": "Net amount is required",
-  "discountForm.validation.net.invalid": "Net amount is invalid",
+  "discountForm.validation.net.invalid": "Net amount must be a valid number",
   "discountForm.validation.net.min": "Net amount must be at least {min}",
   "discountForm.validation.net.maxGross": "Net amount cannot exceed gross amount",
   "discountForm.validation.required": "{label} is required",

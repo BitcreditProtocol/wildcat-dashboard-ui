@@ -107,8 +107,7 @@
   "earnings.timeframe.lastYear": "Last year",
   "earnings.empty": "No accepted quotes for the selected timeframe.",
   "earnings.cashflow": "CashFlow",
-  "cashflow.page.title": "CashFlow"
-  ,
+  "cashflow.page.title": "CashFlow",
   "info.page.title": "Info",
   "keysets.page.title": "Keysets",
   "keysets.empty": "No keysets found",
