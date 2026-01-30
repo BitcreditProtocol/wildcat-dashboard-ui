@@ -105,7 +105,8 @@ const EVENT_CONFIG = {
   rejectedToPay: {
     icon: XCircle,
     color: "text-red-500",
-    label: "Payment rejected",
+    labelId: "endorsement.event.rejectedToPay",
+    defaultLabel: "Payment rejected",
   },
   payment: {
     icon: DollarSign,
@@ -201,7 +202,6 @@ export function EndorsementChain({
       type: "rejectedToPay",
       timestamp: rejectedToPayTimestamp,
       data: null,
-      label: "Payment rejected"
     })
   }
 
