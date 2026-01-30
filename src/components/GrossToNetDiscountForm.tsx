@@ -423,7 +423,7 @@ const GrossToNetDiscountForm = ({
                     }
                   }}
                   onChange={(e) => {
-                    discountRateRegister.onChange(e)
+                    void discountRateRegister.onChange(e)
                     setLastEdited("rate")
                   }}
                 />
@@ -464,7 +464,7 @@ const GrossToNetDiscountForm = ({
                   onPaste={isSat ? handlePasteDigitsFor("netInput") : undefined}
                   onDrop={handleDrop}
                   onChange={(e) => {
-                    netInputRegister.onChange(e)
+                    void netInputRegister.onChange(e)
                     setLastEdited("net")
                   }}
                 />
