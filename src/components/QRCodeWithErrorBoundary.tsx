@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { AlertTriangle, QrCode } from "lucide-react"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
+import { canGenerateQRCode, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils.ts"
 
 /**
  * Generic QR Code Components
@@ -69,12 +70,6 @@ interface QRCodeProps {
 interface QRCodeModalProps extends QRCodeProps {
   title?: string
   triggerLabel?: string
-}
-
-const QR_CODE_MAX_LENGTH = 2956
-
-export function canGenerateQRCode(text: string): boolean {
-  return text.length <= QR_CODE_MAX_LENGTH
 }
 
 export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
