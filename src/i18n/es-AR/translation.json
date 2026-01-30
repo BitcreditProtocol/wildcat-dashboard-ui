@@ -135,7 +135,7 @@
   "keyset.detail.table.quoteId": "Quote ID",
   "keyset.detail.table.quoteStatus": "Quote status",
   "keyset.detail.table.paymentStatus": "Payment status",
-  "keyset.detail.table.mintStatus": "Mint status",
+  "keyset.detail.table.mintStatus": "Redemption status",
   "keyset.detail.table.paymentAddress": "Payment address",
   "keyset.detail.table.sum": "Sum",
   "keyset.detail.table.paid": "Paid",
