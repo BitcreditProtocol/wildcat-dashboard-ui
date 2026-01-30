@@ -37,6 +37,7 @@ interface FormResult {
 interface FormValues {
   daysInput?: string
   discountRateInput?: string
+  netInput?: string
 }
 
 const INPUT_DAYS_MIN_VALUE = 1
@@ -55,8 +56,6 @@ const GrossToNetDiscountForm = ({
 }: GrossToNetProps) => {
   const intl = useIntl()
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false)
-<<<<<<< Updated upstream
-=======
   const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null)
   const isSat = gross.currency === "sat"
   const daysLabel = intl.formatMessage({ id: "discountForm.days", defaultMessage: "Days" })
@@ -165,7 +164,6 @@ const GrossToNetDiscountForm = ({
     }
     return true
   }
->>>>>>> Stashed changes
 
   const localStorageKey = quoteId ? `${LOCAL_STORAGE_KEY_PREFIX}${quoteId}` : null
   const {
@@ -243,7 +241,7 @@ const GrossToNetDiscountForm = ({
     e.preventDefault()
   }
 
-  const { daysInput, discountRateInput } = watch()
+  const { daysInput, discountRateInput, netInput } = watch()
 
   const days = useMemo<number | undefined>(() => {
     return parseIntSafe(daysInput)
@@ -253,6 +251,16 @@ const GrossToNetDiscountForm = ({
     const parsed = parseFloatSafe(discountRateInput)
     return parsed === undefined ? undefined : new Big(parsed).div(new Big("100"))
   }, [discountRateInput])
+
+  const netFromInput = useMemo<CurrencyAmount | undefined>(() => {
+    if (!netInput) return undefined
+    const parsed = isSat ? parseIntSafe(netInput) : parseFloatSafe(netInput)
+    if (parsed === undefined) return undefined
+    return {
+      value: new Big(parsed),
+      currency: gross.currency,
+    }
+  }, [netInput, isSat, gross.currency])
 
   const [net, setNet] = useState<CurrencyAmount>()
 
@@ -309,17 +317,28 @@ const GrossToNetDiscountForm = ({
   }, [localStorageKey, daysInput, discountRateInput, hasSetInitialDays])
 
   useEffect(() => {
+    if (lastEdited === "net" && netFromInput !== undefined) {
+      setNet(netFromInput)
+      return
+    }
+
     if (!isValid || discountRate === undefined || days === undefined) {
       setNet(undefined)
       return
     }
 
     const netValue = Act360.grossToNet(gross.value, discountRate, days)
-    setNet({
+    const calculatedNet = {
       value: netValue,
       currency: gross.currency,
-    })
-  }, [isValid, gross, days, discountRate])
+    }
+    setNet(calculatedNet)
+
+    if (lastEdited !== "net") {
+      const displayValue = isSat ? netValue.toFixed(0) : netValue.toFixed(2)
+      setValue("netInput", displayValue, { shouldValidate: true })
+    }
+  }, [isValid, gross, days, discountRate, lastEdited, netFromInput, isSat, setValue])
 
   const handleFormSubmit = () => {
     if (net === undefined || discountRate === undefined || days === undefined) {
@@ -350,22 +369,40 @@ const GrossToNetDiscountForm = ({
     }
   }
 
-  const parseDigitsToInt = (value: unknown) => {
-    let str = ""
-    if (typeof value === "string" || typeof value === "number") {
-      str = String(value)
+  const handleIntegerInputFor = (fieldName: "netInput") => (e: React.FormEvent<HTMLInputElement>) => {
+    const input = e.currentTarget
+    const cleaned = input.value.replace(/[^\d]/g, "")
+    if (input.value !== cleaned) {
+      const caret = input.selectionStart ?? cleaned.length
+      input.value = cleaned
+      setValue(fieldName, cleaned, { shouldValidate: true, shouldDirty: true })
+      const pos = Math.min(caret, cleaned.length)
+      try {
+        input.setSelectionRange(pos, pos)
+      } catch {
+        // ignore unsupported setSelectionRange
+      }
     }
-    return str.replace(/[^\d]/g, "")
   }
 
-  const validateMinInteger = (min: number, label: string) => (value?: string) => {
-    if (value == null || value === "") return `${label} is required`
-    if (!/^\d+$/.test(value)) return `${label} must be a whole number`
-    const n = parseInt(value, 10)
-    if (Number.isNaN(n)) return `${label} is invalid`
-    if (n < min) return `${label} must be at least ${min}`
-    if (n > INPUT_DAYS_MAX_VALUE) return `${label} must be at most ${INPUT_DAYS_MAX_VALUE}`
-    return true
+  const handlePasteDigitsFor = (fieldName: "netInput") => (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    const text = e.clipboardData.getData("text") || ""
+    const digits = text.replace(/[^\d]/g, "")
+    const input = e.currentTarget
+    const start = input.selectionStart ?? input.value.length
+    const end = input.selectionEnd ?? input.value.length
+    const before = input.value.slice(0, start)
+    const after = input.value.slice(end)
+    const next = (before + digits + after).replace(/[^\d]/g, "")
+    input.value = next
+    setValue(fieldName, next, { shouldValidate: true, shouldDirty: true })
+    const caret = (before + digits).length
+    try {
+      input.setSelectionRange(caret, caret)
+    } catch {
+      // ignore
+    }
   }
 
   const handleFormSubmitEvent: React.FormEventHandler<HTMLFormElement> = (e) => {
@@ -451,13 +488,6 @@ const GrossToNetDiscountForm = ({
                       e.currentTarget.blur()
                     }
                   }}
-<<<<<<< Updated upstream
-=======
-                  onChange={(e) => {
-                    void discountRateRegister.onChange(e)
-                    setLastEdited("rate")
-                  }}
->>>>>>> Stashed changes
                 />
                 <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">%</span>
               </div>
@@ -475,18 +505,6 @@ const GrossToNetDiscountForm = ({
             )}
           </div>
 
-<<<<<<< Updated upstream
-          <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Net amount</span>
-            <div className="flex gap-1 items-center">
-              <span className="text-lg font-semibold text-green-600 dark:text-green-400">
-                {net === undefined ? "?" : net.value.toNumber()}
-              </span>
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {net?.currency ?? gross.currency}
-              </span>
-            </div>
-=======
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <label htmlFor="netInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -499,7 +517,11 @@ const GrossToNetDiscountForm = ({
                   type="number"
                   inputMode={isSat ? "numeric" : "decimal"}
                   className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-green-600 dark:text-green-400 w-28"
-                  {...netInputRegister}
+                  {...register("netInput", {
+                    required: true,
+                    validate: validateNetAmount,
+                    setValueAs: (value: string) => (isSat ? parseDigitsToInt(value) : value),
+                  })}
                   onKeyDown={(e) => {
                     if (isSat) {
                       blockDecimalInput(e)
@@ -513,8 +535,7 @@ const GrossToNetDiscountForm = ({
                   onBeforeInput={isSat ? blockNonDigitInput : undefined}
                   onPaste={isSat ? handlePasteDigitsFor("netInput") : undefined}
                   onDrop={handleDrop}
-                  onChange={(e) => {
-                    void netInputRegister.onChange(e)
+                  onChange={() => {
                     setLastEdited("net")
                   }}
                 />
@@ -522,7 +543,6 @@ const GrossToNetDiscountForm = ({
               </div>
             </div>
             {errors.netInput && <div className="text-xs text-red-500">{errors.netInput.message}</div>}
->>>>>>> Stashed changes
           </div>
         </div>
 

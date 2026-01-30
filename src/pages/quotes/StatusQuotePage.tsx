@@ -78,6 +78,7 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
   const handleQuoteClick = (e: React.MouseEvent) => {
     if (detailsError) {
       e.preventDefault()
+      const errorMessage = detailsError.message || String(detailsError)
       toast.error(intl.formatMessage({ id: "quotes.card.error.title", defaultMessage: "Cannot load quote" }), {
         description: intl.formatMessage(
           {
@@ -87,7 +88,7 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
           {
             id: truncateString(quote.id, 12),
             message:
-              detailsError.message ||
+              errorMessage ||
               intl.formatMessage({ id: "quotes.error.tryAgain", defaultMessage: "Please try again later." }),
           }
         ),
@@ -201,6 +202,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   })
 
   if (error) {
+    const errorMessage = (error as { message?: string }).message ?? String(error)
     return (
       <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
         <div className="text-red-800 font-semibold">
@@ -210,7 +212,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           })}
         </div>
         <div className="text-red-600 text-sm">
-          {error.message ||
+          {errorMessage ||
             intl.formatMessage({
               id: "quotes.error.unknown",
               defaultMessage: "Unknown error occurred"
@@ -295,15 +297,24 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const sortOptions = [
     {
       field: "sum" as const,
-      label: intl.formatMessage({ id: "quotes.sort.amount", defaultMessage: "Amount" }),
+      label: intl.formatMessage({
+        id: "quotes.sort.amount",
+        defaultMessage: "Amount"
+      }),
     },
     {
       field: "maturity" as const,
-      label: intl.formatMessage({ id: "quotes.sort.maturity", defaultMessage: "Maturity" }),
+      label: intl.formatMessage({
+        id: "quotes.sort.maturity",
+        defaultMessage: "Maturity"
+      }),
     },
     {
       field: "status" as const,
-      label: intl.formatMessage({ id: "quotes.sort.status", defaultMessage: "Status" }),
+      label: intl.formatMessage({
+        id: "quotes.sort.status",
+        defaultMessage: "Status"
+      }),
     },
   ]
 

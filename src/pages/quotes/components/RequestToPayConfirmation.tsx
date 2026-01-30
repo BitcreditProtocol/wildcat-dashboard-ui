@@ -5,13 +5,8 @@ import { LoaderIcon } from "lucide-react"
 import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import { useQuery } from "@tanstack/react-query"
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
-<<<<<<< Updated upstream
 import { getDefaultDeadline } from "@/utils/dates"
-=======
-import { addDays } from "date-fns"
-import { getItem, setItem } from "@/utils/local-storage"
 import { useIntl } from "react-intl"
->>>>>>> Stashed changes
 
 interface RequestToPayConfirmationProps {
   open: boolean
@@ -137,15 +132,11 @@ export function RequestToPayConfirmation({
         isOpen={showPaymentCalendar}
         selectedDate={validUntilDate}
         draftDate={draftValidUntilDate}
-<<<<<<< Updated upstream
-        title="Payment deadline"
-=======
         title={intl.formatMessage({
           id: "quotes.requestToPay.deadlineTitle",
           defaultMessage: "Payment deadline",
         })}
         minDate={minSelectableDate}
->>>>>>> Stashed changes
         onClose={() => {
           setShowPaymentCalendar(false)
           onOpenChange(true)

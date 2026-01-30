@@ -54,7 +54,7 @@ function LightParticipantInfo({ participant }: { participant: LightBillParticipa
 }
 
 interface HistoryEvent {
-  type: "issue" | "offered" | "endorsement" | "requestToPay" | "payment" | "acceptance" | "rejection" | "minting"
+  type: "issue" | "offered" | "endorsement" | "requestToPay" | "payment" | "acceptance" | "rejection" | "minting" | "rejectedToPay"
   timestamp?: number
   data: Endorsement | null
 }
@@ -102,6 +102,11 @@ const EVENT_CONFIG = {
     labelId: "endorsement.event.requestToPay",
     defaultLabel: "Request to pay",
   },
+  rejectedToPay: {
+    icon: XCircle,
+    color: "text-red-500",
+    label: "Payment rejected",
+  },
   payment: {
     icon: DollarSign,
     color: "text-green-600",
@@ -116,6 +121,7 @@ export function EndorsementChain({
   issueDate,
   maturityDate,
   requestToPayTimestamp,
+  rejectedToPayTimestamp,
   paymentTimestamp,
   acceptanceTimestamp,
   rejectionTimestamp,
@@ -125,6 +131,7 @@ export function EndorsementChain({
   offeredTimestamp,
 }: EndorsementChainProps & {
   requestToPayTimestamp?: number
+  rejectedToPayTimestamp?: number
   paymentTimestamp?: number
   acceptanceTimestamp?: number
   rejectionTimestamp?: number
@@ -189,6 +196,15 @@ export function EndorsementChain({
     })
   }
 
+  if (rejectedToPayTimestamp) {
+    events.push({
+      type: "rejectedToPay",
+      timestamp: rejectedToPayTimestamp,
+      data: null,
+      label: "Payment rejected"
+    })
+  }
+
   if (paymentTimestamp) {
     events.push({
       type: "payment",
@@ -235,7 +251,8 @@ export function EndorsementChain({
     endorsement: 3,
     minting: 4,
     requestToPay: 5,
-    payment: 6,
+    rejectedToPay: 6,
+    payment: 7,
   }
 
   events.sort((a, b) => {

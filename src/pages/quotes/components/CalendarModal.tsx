@@ -26,13 +26,10 @@ export function CalendarModal({
   onConfirm,
   onCancel,
 }: CalendarModalProps) {
-<<<<<<< Updated upstream
-=======
   const intl = useIntl()
   const disabledBefore = minDate ?? addDays(new Date(Date.now()), 1)
   const disabledAfter = maxDate
 
->>>>>>> Stashed changes
   return (
     <>
       <div
