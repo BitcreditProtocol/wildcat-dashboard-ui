@@ -43,6 +43,7 @@ interface FormValues {
 const INPUT_DAYS_MIN_VALUE = 1
 const INPUT_DAYS_MAX_VALUE = 360
 const LOCAL_STORAGE_KEY_PREFIX = "offer-form-"
+const NET_INPUT_DECIMALS = 2
 
 type GrossToNetFormValues = FormValues
 
@@ -58,7 +59,10 @@ const GrossToNetDiscountForm = ({
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false)
   const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null)
   const isSat = gross.currency === "sat"
-  const daysLabel = intl.formatMessage({ id: "discountForm.days", defaultMessage: "Days" })
+  const daysLabel = intl.formatMessage({
+    id: "discountForm.days",
+    defaultMessage: "Days"
+  })
   const discountRateLabel = intl.formatMessage({
     id: "discountForm.discountRate",
     defaultMessage: "Discount rate",
@@ -91,11 +95,12 @@ const GrossToNetDiscountForm = ({
         defaultMessage: "Net amount is required",
       })
     }
+
     const parsed = isSat ? parseIntSafe(value) : parseFloatSafe(value)
     if (parsed === undefined || Number.isNaN(parsed)) {
       return intl.formatMessage({
         id: "discountForm.validation.net.invalid",
-        defaultMessage: "Net amount is invalid",
+        defaultMessage: "Net amount is required",
       })
     }
     if (parsed < 1) {
@@ -112,6 +117,7 @@ const GrossToNetDiscountForm = ({
         defaultMessage: "Net amount cannot exceed gross amount",
       })
     }
+
     return true
   }
 
@@ -134,6 +140,7 @@ const GrossToNetDiscountForm = ({
         { label }
       )
     }
+
     const n = parseInt(value, 10)
     if (Number.isNaN(n)) {
       return intl.formatMessage(
@@ -162,6 +169,7 @@ const GrossToNetDiscountForm = ({
         { label, max: INPUT_DAYS_MAX_VALUE }
       )
     }
+
     return true
   }
 
@@ -174,6 +182,16 @@ const GrossToNetDiscountForm = ({
     formState: { isValid, errors },
   } = useForm<GrossToNetFormValues>({
     mode: "all",
+  })
+  const discountRateRegister = register("discountRateInput", {
+    required: true,
+    min: 0,
+    max: 99.9999,
+  })
+  const netInputRegister = register("netInput", {
+    required: true,
+    setValueAs: isSat ? parseDigitsToInt : undefined,
+    validate: validateNetAmount,
   })
 
   const blockDecimalInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -217,7 +235,7 @@ const GrossToNetDiscountForm = ({
     }
   }
 
-  const handlePasteDigits = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePasteDigitsFor = (field: "daysInput" | "netInput") => (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault()
     const text = e.clipboardData.getData("text") || ""
     const digits = text.replace(/[^\d]/g, "")
@@ -228,7 +246,10 @@ const GrossToNetDiscountForm = ({
     const after = input.value.slice(end)
     const next = (before + digits + after).replace(/[^\d]/g, "")
     input.value = next
-    setValue("daysInput", next, { shouldValidate: true, shouldDirty: true })
+    setValue(field, next, { shouldValidate: true, shouldDirty: true })
+    if (field === "netInput") {
+      setLastEdited("net")
+    }
     const caret = (before + digits).length
     try {
       input.setSelectionRange(caret, caret)
@@ -252,17 +273,19 @@ const GrossToNetDiscountForm = ({
     return parsed === undefined ? undefined : new Big(parsed).div(new Big("100"))
   }, [discountRateInput])
 
-  const netFromInput = useMemo<CurrencyAmount | undefined>(() => {
-    if (!netInput) return undefined
-    const parsed = isSat ? parseIntSafe(netInput) : parseFloatSafe(netInput)
-    if (parsed === undefined) return undefined
-    return {
-      value: new Big(parsed),
-      currency: gross.currency,
-    }
-  }, [netInput, isSat, gross.currency])
-
   const [net, setNet] = useState<CurrencyAmount>()
+
+  const netInputValue = useMemo<Big | undefined>(() => {
+    if (netInput == null || netInput === "") {
+      return undefined
+    }
+    if (isSat) {
+      const parsed = parseIntSafe(netInput)
+      return parsed === undefined ? undefined : new Big(parsed)
+    }
+    const parsed = parseFloatSafe(netInput)
+    return parsed === undefined ? undefined : new Big(parsed)
+  }, [netInput, isSat])
 
   const discount = useMemo<CurrencyAmount | undefined>(() => {
     return net === undefined
@@ -273,19 +296,30 @@ const GrossToNetDiscountForm = ({
         }
   }, [gross, net])
 
+  const formatAmount = (value: Big, currency: string) => {
+    if (currency === "sat") {
+      return value.round(0, Big.roundDown).toFixed(0)
+    }
+    return value.toFixed(NET_INPUT_DECIMALS)
+  }
+
   useEffect(() => {
     if (hasSetInitialDays) {
       return
     }
 
     if (localStorageKey) {
-      const savedData = getItem<{ daysInput: string; discountRateInput: string }>(localStorageKey)
+      const savedData = getItem<{ daysInput: string; discountRateInput: string; netInput?: string }>(localStorageKey)
       if (savedData) {
         if (savedData.daysInput) {
           setValue("daysInput", savedData.daysInput, { shouldValidate: true })
         }
         if (savedData.discountRateInput) {
           setValue("discountRateInput", savedData.discountRateInput, { shouldValidate: true })
+        }
+        if (savedData.netInput) {
+          setValue("netInput", savedData.netInput, { shouldValidate: true })
+          setLastEdited("net")
         }
         setHasSetInitialDays(true)
         return
@@ -308,37 +342,68 @@ const GrossToNetDiscountForm = ({
       return
     }
 
-    if (daysInput || discountRateInput) {
+    if (daysInput || discountRateInput || netInput) {
       setItem(localStorageKey, {
         daysInput: daysInput ?? "",
         discountRateInput: discountRateInput ?? "",
+        netInput: netInput ?? "",
       })
     }
-  }, [localStorageKey, daysInput, discountRateInput, hasSetInitialDays])
+  }, [localStorageKey, daysInput, discountRateInput, netInput, hasSetInitialDays])
 
   useEffect(() => {
-    if (lastEdited === "net" && netFromInput !== undefined) {
-      setNet(netFromInput)
-      return
-    }
-
-    if (!isValid || discountRate === undefined || days === undefined) {
+    if (discountRate === undefined || days === undefined) {
       setNet(undefined)
       return
     }
 
+    if (lastEdited === "net") {
+      return
+    }
+
     const netValue = Act360.grossToNet(gross.value, discountRate, days)
-    const calculatedNet = {
+    setNet({
       value: netValue,
       currency: gross.currency,
-    }
-    setNet(calculatedNet)
+    })
+    setValue("netInput", formatAmount(netValue, gross.currency), { shouldValidate: true })
+  }, [gross, days, discountRate, lastEdited, setValue])
 
+  useEffect(() => {
     if (lastEdited !== "net") {
-      const displayValue = isSat ? netValue.toFixed(0) : netValue.toFixed(2)
-      setValue("netInput", displayValue, { shouldValidate: true })
+      return
     }
-  }, [isValid, gross, days, discountRate, lastEdited, netFromInput, isSat, setValue])
+    if (days === undefined || netInputValue === undefined) {
+      setNet(undefined)
+      return
+    }
+    if (netInputValue.lt(0)) {
+      setNet(undefined)
+      return
+    }
+    if (netInputValue.gt(gross.value)) {
+      setNet(undefined)
+      return
+    }
+
+    setNet({
+      value: netInputValue,
+      currency: gross.currency,
+    })
+
+    const grossValue = gross.value
+    if (grossValue.eq(0)) {
+      return
+    }
+
+    const ratio = new Big(1).minus(netInputValue.div(grossValue))
+    const rate = ratio.times(360).div(days)
+    if (rate.lt(0) || rate.gt(1)) {
+      return
+    }
+    const ratePercent = rate.times(100)
+    setValue("discountRateInput", ratePercent.toFixed(4), { shouldValidate: true })
+  }, [lastEdited, days, netInputValue, gross, setValue])
 
   const handleFormSubmit = () => {
     if (net === undefined || discountRate === undefined || days === undefined) {
@@ -353,13 +418,16 @@ const GrossToNetDiscountForm = ({
     })
   }
 
-  const handleIntegerInput = (e: React.FormEvent<HTMLInputElement>) => {
+  const handleIntegerInputFor = (field: "daysInput" | "netInput") => (e: React.FormEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const cleaned = input.value.replace(/[^\d]/g, "")
     if (input.value !== cleaned) {
       const caret = input.selectionStart ?? cleaned.length
       input.value = cleaned
-      setValue("daysInput", cleaned, { shouldValidate: true, shouldDirty: true })
+      setValue(field, cleaned, { shouldValidate: true, shouldDirty: true })
+      if (field === "netInput") {
+        setLastEdited("net")
+      }
       const pos = Math.min(caret, cleaned.length)
       try {
         input.setSelectionRange(pos, pos)
@@ -367,48 +435,6 @@ const GrossToNetDiscountForm = ({
         // ignore unsupported setSelectionRange
       }
     }
-  }
-
-  const handleIntegerInputFor = (fieldName: "netInput") => (e: React.FormEvent<HTMLInputElement>) => {
-    const input = e.currentTarget
-    const cleaned = input.value.replace(/[^\d]/g, "")
-    if (input.value !== cleaned) {
-      const caret = input.selectionStart ?? cleaned.length
-      input.value = cleaned
-      setValue(fieldName, cleaned, { shouldValidate: true, shouldDirty: true })
-      const pos = Math.min(caret, cleaned.length)
-      try {
-        input.setSelectionRange(pos, pos)
-      } catch {
-        // ignore unsupported setSelectionRange
-      }
-    }
-  }
-
-  const handlePasteDigitsFor = (fieldName: "netInput") => (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    const text = e.clipboardData.getData("text") || ""
-    const digits = text.replace(/[^\d]/g, "")
-    const input = e.currentTarget
-    const start = input.selectionStart ?? input.value.length
-    const end = input.selectionEnd ?? input.value.length
-    const before = input.value.slice(0, start)
-    const after = input.value.slice(end)
-    const next = (before + digits + after).replace(/[^\d]/g, "")
-    input.value = next
-    setValue(fieldName, next, { shouldValidate: true, shouldDirty: true })
-    const caret = (before + digits).length
-    try {
-      input.setSelectionRange(caret, caret)
-    } catch {
-      // ignore
-    }
-  }
-
-  const handleFormSubmitEvent: React.FormEventHandler<HTMLFormElement> = (e) => {
-    void handleSubmit(handleFormSubmit)(e).catch((err) => {
-      console.error("Submit failed:", err)
-    })
   }
 
   const handleConfirmClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
@@ -421,7 +447,14 @@ const GrossToNetDiscountForm = ({
 
   return (
     <>
-      <form className="flex flex-col gap-6 min-w-[8rem] px-4" onSubmit={handleFormSubmitEvent}>
+      <form
+        className="flex flex-col gap-6 min-w-[8rem] px-4"
+        onSubmit={(e) => {
+          handleSubmit(handleFormSubmit)(e).catch((err) => {
+            console.error("Submit failed:", err)
+          })
+        }}
+      >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
@@ -438,9 +471,9 @@ const GrossToNetDiscountForm = ({
                   blockDecimalInput(e)
                   handleKeyDown(e)
                 }}
-                onInput={handleIntegerInput}
+                onInput={handleIntegerInputFor("daysInput")}
                 onBeforeInput={blockNonDigitInput}
-                onPaste={handlePasteDigits}
+                onPaste={handlePasteDigitsFor("daysInput")}
                 onDrop={handleDrop}
                 enterKeyHint="next"
                 {...register("daysInput", {
@@ -477,16 +510,16 @@ const GrossToNetDiscountForm = ({
                   type="number"
                   inputMode="numeric"
                   className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-gray-900 dark:text-gray-100 w-20"
-                  {...register("discountRateInput", {
-                    required: true,
-                    min: 0,
-                    max: 99.9999,
-                  })}
+                  {...discountRateRegister}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault()
                       e.currentTarget.blur()
                     }
+                  }}
+                  onChange={(e) => {
+                    void discountRateRegister.onChange(e)
+                    setLastEdited("rate")
                   }}
                 />
                 <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">%</span>
@@ -517,11 +550,7 @@ const GrossToNetDiscountForm = ({
                   type="number"
                   inputMode={isSat ? "numeric" : "decimal"}
                   className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-green-600 dark:text-green-400 w-28"
-                  {...register("netInput", {
-                    required: true,
-                    validate: validateNetAmount,
-                    setValueAs: (value: string) => (isSat ? parseDigitsToInt(value) : value),
-                  })}
+                  {...netInputRegister}
                   onKeyDown={(e) => {
                     if (isSat) {
                       blockDecimalInput(e)
@@ -535,14 +564,19 @@ const GrossToNetDiscountForm = ({
                   onBeforeInput={isSat ? blockNonDigitInput : undefined}
                   onPaste={isSat ? handlePasteDigitsFor("netInput") : undefined}
                   onDrop={handleDrop}
-                  onChange={() => {
+                  onChange={(e) => {
+                    void netInputRegister.onChange(e)
                     setLastEdited("net")
                   }}
                 />
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{gross.currency}</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {gross.currency}
+                </span>
               </div>
             </div>
-            {errors.netInput && <div className="text-xs text-red-500">{errors.netInput.message}</div>}
+            {errors.netInput && (
+              <div className="text-xs text-red-500">{errors.netInput.message}</div>
+            )}
           </div>
         </div>
 
@@ -551,7 +585,7 @@ const GrossToNetDiscountForm = ({
             <span className="text-gray-600 dark:text-gray-400">{annualDiscountLabel}</span>
             <div className="flex gap-1 items-center">
               <span className="text-gray-600 dark:text-gray-400">
-                {discount === undefined ? "0.00" : Math.abs(discount.value.toNumber()).toFixed(2)}
+                {discount === undefined ? (isSat ? "0" : "0.00") : formatAmount(discount.value.abs(), gross.currency)}
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-500">{discount?.currency ?? gross.currency}</span>
             </div>
@@ -560,14 +594,19 @@ const GrossToNetDiscountForm = ({
           <div className="flex justify-between items-center text-base font-semibold">
             <span className="text-gray-900 dark:text-gray-100">{grossAmountLabel}</span>
             <div className="flex gap-1 items-center">
-              <span className="text-green-600 dark:text-green-400">+{gross.value.toNumber().toFixed(2)}</span>
+              <span className="text-green-600 dark:text-green-400">+{formatAmount(gross.value, gross.currency)}</span>
               <span className="text-xs text-gray-500 dark:text-gray-500">{gross.currency}</span>
             </div>
           </div>
         </div>
 
         {submitButtonText && (
-          <Button type="submit" size="sm" className="my-4" disabled={!isValid}>
+          <Button
+            type="submit"
+            size="sm"
+            className="my-4"
+            disabled={!isValid}
+          >
             {submitButtonText}
           </Button>
         )}
@@ -587,7 +626,11 @@ const GrossToNetDiscountForm = ({
           })}
         </Button>
         <DrawerClose asChild>
-          <Button className="w-full" variant="outline" size="sm">
+          <Button
+            className="w-full"
+            variant="outline"
+            size="sm"
+          >
             {intl.formatMessage({
               id: "Cancel",
               defaultMessage: "Cancel",

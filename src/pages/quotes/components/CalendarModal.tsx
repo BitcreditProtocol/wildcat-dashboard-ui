@@ -10,6 +10,8 @@ interface CalendarModalProps {
   selectedDate?: Date
   draftDate?: Date
   title: string
+  minDate?: Date
+  maxDate?: Date
   onClose: () => void
   onDateChange: (date: Date) => void
   onConfirm: () => void
@@ -21,6 +23,8 @@ export function CalendarModal({
   selectedDate,
   draftDate,
   title,
+  minDate,
+  maxDate,
   onClose,
   onDateChange,
   onConfirm,
@@ -64,7 +68,7 @@ export function CalendarModal({
                   onDateChange(range.from)
                 }
               }}
-              disabled={{ before: addDays(new Date(Date.now()), 1) }}
+              disabled={{ before: disabledBefore, after: disabledAfter }}
               modifiers={{
                 saved: (d) => !!selectedDate && isSameDay(d, selectedDate),
               }}
@@ -114,6 +118,7 @@ interface DatePickerButtonProps {
 
 export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
   const intl = useIntl()
+
   return (
     <button
       type="button"
