@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button.tsx"
 import { Calendar } from "@/components/DatePicker/calendar.tsx"
 import { CalendarIcon } from "lucide-react"
-import { addDays, isSameDay } from "date-fns"
+import { addDays, format, isSameDay } from "date-fns"
 import { cn } from "@/lib/utils.ts"
 import { useIntl } from "react-intl"
 
@@ -57,7 +57,7 @@ export function CalendarModal({
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
             <div className="text-base">
-              {draftDate ? draftDate.toLocaleDateString(intl.locale) : "-"}
+              {draftDate ? format(draftDate, "MMM dd, yyyy") : "-"}
             </div>
 
             <Calendar

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { DateRange, isMatch, type Matcher } from "react-day-picker";
+import { DateRange, dateMatchModifiers, type Matcher } from "react-day-picker"
 import { FormattedMessage } from "react-intl";
-import { addDays, differenceInCalendarDays, isSameDay } from "date-fns";
+import { addDays, differenceInCalendarDays, format, isSameDay } from "date-fns";
 import { ArrowRight, CalendarIcon } from "lucide-react";
 
 import { Calendar } from "@/components/DatePicker/calendar";
@@ -49,6 +49,7 @@ export function DatePicker({
   onDateFilterTypeChange,
 }: DatePickerProps) {
   const lang = useContext(LanguageContext);
+  const formatDateMmmDdYyyy = (date: Date) => format(date, "MMM dd, yyyy")
   const [canSelect, setCanSelect] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
@@ -145,9 +146,7 @@ export function DatePicker({
 
     // single mode
     if (mode === "single") {
-      const isDisabled = disabled
-        ? isMatch(draft.from, [disabled as Matcher])
-        : false;
+      const isDisabled = disabled ? dateMatchModifiers(draft.from, [disabled as Matcher]) : false
       setCanSelect(!isDisabled);
     }
 
@@ -157,12 +156,8 @@ export function DatePicker({
         setCanSelect(false);
         return;
       }
-      const isDisabledFrom = disabled
-        ? isMatch(draft.from, [disabled as Matcher])
-        : false;
-      const isDisabledTo = disabled
-        ? isMatch(draft.to, [disabled as Matcher])
-        : false;
+      const isDisabledFrom = disabled ? dateMatchModifiers(draft.from, [disabled as Matcher]) : false
+      const isDisabledTo = disabled ? dateMatchModifiers(draft.to, [disabled as Matcher]) : false
       setCanSelect(!isDisabledFrom && !isDisabledTo);
     }
   }, [draft, disabled, mode]);
@@ -354,7 +349,7 @@ export function DatePicker({
                     </div>
                   )}
                 </div>
-                <div className="text-base">{current.from ? formatDateShort(current.from, lang.locale) : "-"}</div>
+                <div className="text-base">{current.from ? formatDateMmmDdYyyy(current.from) : "-"}</div>
               </div>
             )}
           </div>

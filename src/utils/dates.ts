@@ -101,4 +101,3 @@ export const getDefaultDeadline = (maturityDate?: string | null): Date => {
   deadline.setUTCHours(23, 59, 59, 999)
   return deadline
 }
-

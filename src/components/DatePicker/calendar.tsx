@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  DateRange,
-  DayPicker,
-  DayPickerRangeProps,
-  isMatch,
-  SelectRangeEventHandler,
-  SelectSingleEventHandler,
-} from "react-day-picker";
+import { dateMatchModifiers, DateRange, DayPicker, DayPickerProps, OnSelectHandler } from "react-day-picker"
 import { format, isSameDay } from "date-fns";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useIntl } from "react-intl";
@@ -15,9 +8,9 @@ import { cn } from "@/lib/utils";
 import { YearPicker } from "./yearPicker";
 import { MonthPicker } from "./monthPicker";
 
-export type CalendarProps = Omit<DayPickerRangeProps, "mode" | "onSelect" | "selected"> & {
+export type CalendarProps = Omit<DayPickerProps, "mode" | "onSelect" | "selected"> & {
   mode: "single" | "range"
-  onSelect?: SelectRangeEventHandler
+  onSelect?: OnSelectHandler<DateRange | undefined>
   selected: DateRange
   onCaptionLabelClicked?: () => void
   disableFutureNavigation?: boolean
@@ -33,21 +26,23 @@ export type CalendarProps = Omit<DayPickerRangeProps, "mode" | "onSelect" | "sel
 
 const classNames = {
   root: "w-full",
-  months: "",
-  month_grid: "w-full border-collapse space-y-2",
-  month: "w-full",
-  weekday: "h-10 w-10 text-center",
-  caption: "flex justify-center relative items-center hidden",
-  caption_label: "text-sm font-medium hidden",
+  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+  month: "space-y-4 w-full",
+  month_caption: "flex justify-center relative items-center",
+  // Hide default DayPicker caption label; we render our own header.
+  caption_label: "sr-only",
   nav: "space-x-1 flex items-center",
-  nav_button: "",
-  nav_button_previous: "absolute left-1 bg-transparent!",
-  nav_button_next: "absolute right-1 bg-transparent!",
-  table: "w-full h-full border-collapse space-y-1",
-  head_row: "flex justify-around",
-  head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-  row: "flex w-full mt-1 justify-around",
-  day_button: "h-10 w-10 text-center text-sm p-0 relative cursor-pointer hover:bg-accent/50 disabled:cursor-not-allowed disabled:opacity-50 [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+  button_previous: "absolute left-1 bg-transparent!",
+  button_next: "absolute right-1 bg-transparent!",
+  month_grid: "w-full h-full border-collapse space-y-1",
+  weekdays: "flex justify-around",
+  weekday: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+  week: "flex w-full mt-1 justify-around",
+  day: "h-10 w-10 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+  day_button:
+    "h-10 w-10 text-center text-sm p-0 relative cursor-pointer hover:bg-accent/50 disabled:cursor-not-allowed disabled:opacity-50 [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+  range_end: "day-range-end",
+  range_start: "day-range-start",
   selected: "bg-elevation-200 hover:bg-elevation-200 border border-divider-100",
   today: "bg-accent text-accent-foreground",
   outside: "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
@@ -132,41 +127,29 @@ function Calendar({
     }
   }, [selected, mode]);
 
-  const handleOnSelectRange: SelectRangeEventHandler = (
-    range,
-    selectedDay,
-    modifiers,
-    e
-  ) => {
+  const handleOnSelectRange: OnSelectHandler<DateRange | undefined> = (range, selectedDay, modifiers, e) => {
     if (mode === "single") {
-      setSelectedDate(selectedDay);
+      setSelectedDate(selectedDay)
     }
     if (onSelect) {
-      onSelect(range, selectedDay, modifiers, e);
+      onSelect(range, selectedDay, modifiers, e)
     }
-  };
+  }
 
-  const handleOnSelectSingle: SelectSingleEventHandler = (
-    day,
-    selectedDay,
-    modifiers,
-    e
-  ) => {
-    handleOnSelectRange({ from: day }, selectedDay, modifiers, e);
-  };
+  const handleOnSelectSingle: OnSelectHandler<Date | undefined> = (day, selectedDay, modifiers, e) => {
+    handleOnSelectRange(day ? { from: day } : undefined, selectedDay, modifiers, e)
+  }
+
+  const matchesDisabled = (date: Date, disabledMatchers: CalendarProps["disabled"]) => {
+    if (!disabledMatchers) {
+      return false
+    }
+    return dateMatchModifiers(date, disabledMatchers)
+  }
 
   const goToOffsetMonth = useCallback((offset: number) => {
     const disabledMatchers = restProps.disabled;
-    const isDisabled = (date: Date) => {
-      if (!disabledMatchers) {
-        return false;
-      }
-      if (Array.isArray(disabledMatchers)) {
-        return disabledMatchers.some((m) => isMatch(date, [m]));
-      }
-
-      return isMatch(date, [disabledMatchers]);
-    };
+    const isDisabled = (date: Date) => matchesDisabled(date, disabledMatchers)
 
     const newDate = getNextDate(month, offset, isDisabled);
     if (!newDate) {
@@ -213,7 +196,7 @@ function Calendar({
       <button
         type="button"
         onClick={() => {
-          goToOffsetMonth(-1);
+          goToOffsetMonth(-1)
         }}
         className="absolute left-1 bg-transparent hover:bg-accent rounded-md p-2"
         aria-label={intl.formatMessage({
@@ -224,13 +207,11 @@ function Calendar({
         <ChevronLeft className="h-4 w-4" />
       </button>
       <div
-        className={cn(
-          "flex justify-between items-center gap-2 cursor-pointer hover:bg-accent rounded-md px-3 py-1"
-        )}
+        className={cn("flex justify-between items-center gap-2 cursor-pointer hover:bg-accent rounded-md px-3 py-1")}
         role="button"
         tabIndex={0}
       >
-        {mode === "single" && selectedDate && (
+        {mode === "single" && selectedDate ? (
           <span
             className="text-sm font-medium flex gap-1"
             onClick={() => {
@@ -242,6 +223,31 @@ function Calendar({
             }}
           >
             <span>{format(month, "MMM dd,")}</span>
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowYearPicker(!showYearPicker)
+                setShowMonthPicker(false)
+                if (onCaptionLabelClicked) {
+                  onCaptionLabelClicked()
+                }
+              }}
+            >
+              {format(month, "yyyy")}
+            </span>
+          </span>
+        ) : (
+          <span
+            className="text-sm font-medium flex gap-1"
+            onClick={() => {
+              setShowYearPicker(!showYearPicker)
+              setShowMonthPicker(false)
+              if (onCaptionLabelClicked) {
+                onCaptionLabelClicked()
+              }
+            }}
+          >
+            <span>{format(month, "MMM ")}</span>
             <span
               onClick={(e) => {
                 e.stopPropagation()
@@ -288,12 +294,12 @@ function Calendar({
       <button
         type="button"
         onClick={() => {
-          goToOffsetMonth(1);
+          goToOffsetMonth(1)
         }}
         disabled={!canGoForward}
         className={cn(
           "absolute right-1 bg-transparent hover:bg-accent rounded-md p-2",
-          !canGoForward && "opacity-40 pointer-events-none"
+          !canGoForward && "opacity-40 pointer-events-none",
         )}
         aria-label={intl.formatMessage({
           id: "calendar.nav.nextMonth",
@@ -303,7 +309,7 @@ function Calendar({
         <ChevronRight className="h-4 w-4" />
       </button>
     </div>
-  );
+  )
 
   const pickerProps = {
     ...restProps,
