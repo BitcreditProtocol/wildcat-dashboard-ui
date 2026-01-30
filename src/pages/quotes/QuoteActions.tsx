@@ -124,7 +124,7 @@ export function QuoteActions({
             handleOfferQuote(finalData)
             setOfferConfirmDrawerOpen(false)
           }}
-          maturityDate={value.bill.maturity_date}
+          quoteId={value.id}
         />
 
         {value.status === "Accepted" && "keyset_id" in value && ebill && !mintingEnabled && (

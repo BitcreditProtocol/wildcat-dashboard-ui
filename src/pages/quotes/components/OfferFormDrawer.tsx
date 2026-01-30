@@ -59,8 +59,8 @@ export function OfferFormDrawer({
     onSubmit(result)
   }
 
-  const startDate = value.status === "Pending" ? new Date(value.submitted) : new Date()
-  const endDate = value.status === "Pending" ? new Date(value.suggested_expiration) : new Date(Date.now() + addDays)
+  const startDate = new Date()
+  const endDate = value.bill.maturity_date ? new Date(value.bill.maturity_date) : new Date()
 
   return (
     <BaseDrawer title={title} description={description} open={open} onOpenChange={onOpenChange} trigger={children}>
