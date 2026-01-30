@@ -22,7 +22,7 @@ export const initKeycloak = async (): Promise<boolean> => {
 
     return authenticated
   } catch (error: unknown) {
-    console.error("Failed to initialize adapter:", error instanceof Error ? error.message : String(error))
+    console.error("Failed to initialize adapter:", error instanceof Error ? error : String(error))
     return false
   }
 }

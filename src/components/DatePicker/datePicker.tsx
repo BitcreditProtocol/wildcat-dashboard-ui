@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { DateRange, isMatch, type Matcher } from "react-day-picker";
 import { FormattedMessage } from "react-intl";
 import { addDays, differenceInCalendarDays, isSameDay } from "date-fns";
@@ -7,7 +7,7 @@ import { ArrowRight, CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/DatePicker/calendar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLanguage } from "@/context/language/LanguageContext";
+import { LanguageContext } from "@/context/language/LanguageContext";
 import { cn } from "@/lib/utils";
 import { formatDateLong, formatDateShort } from "@/utils/dates";
 
@@ -48,7 +48,7 @@ export function DatePicker({
   dateFilterType = "issue",
   onDateFilterTypeChange,
 }: DatePickerProps) {
-  const lang = useLanguage();
+  const lang = useContext(LanguageContext);
   const [canSelect, setCanSelect] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
