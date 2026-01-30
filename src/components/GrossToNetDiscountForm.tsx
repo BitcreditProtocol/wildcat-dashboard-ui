@@ -355,7 +355,6 @@ const GrossToNetDiscountForm = ({
     }
   }
 
-
   return (
     <>
       <form

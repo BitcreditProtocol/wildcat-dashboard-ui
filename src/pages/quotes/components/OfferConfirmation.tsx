@@ -4,6 +4,7 @@ import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import Big from "big.js"
 import type { OfferFormResult } from "./OfferFormDrawer.tsx"
 import { addDays, addYears } from "date-fns"
+import { getItem, removeItem, setItem } from "@/utils/local-storage"
 
 interface OfferConfirmationProps {
   offerFormData?: OfferFormResult
@@ -41,13 +42,15 @@ export function OfferConfirmation({
     if (!open || validUntilDate || !storageKey) {
       return
     }
-    const stored = window.localStorage.getItem(storageKey)
+    const stored = getItem<string>(storageKey)
     if (!stored) {
       return
     }
     const parsed = new Date(stored)
     if (!Number.isNaN(parsed.getTime()) && parsed >= minDate && parsed <= maxDate) {
       setValidUntilDate(parsed)
+    } else {
+      removeItem(storageKey)
     }
   }, [open, validUntilDate, storageKey, minDate, maxDate])
 
@@ -123,7 +126,7 @@ export function OfferConfirmation({
           if (draftValidUntilDate) {
             setValidUntilDate(draftValidUntilDate)
             if (storageKey) {
-              window.localStorage.setItem(storageKey, draftValidUntilDate.toISOString())
+              setItem(storageKey, draftValidUntilDate.toISOString())
             }
           }
           setShowValidUntilCalendar(false)
