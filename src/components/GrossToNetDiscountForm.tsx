@@ -36,11 +36,13 @@ interface FormResult {
 interface FormValues {
   daysInput?: string
   discountRateInput?: string
+  netInput?: string
 }
 
 const INPUT_DAYS_MIN_VALUE = 1
 const INPUT_DAYS_MAX_VALUE = 360
 const LOCAL_STORAGE_KEY_PREFIX = "offer-form-"
+const NET_INPUT_DECIMALS = 2
 
 type GrossToNetFormValues = FormValues
 
@@ -53,6 +55,41 @@ const GrossToNetDiscountForm = ({
   quoteId,
 }: GrossToNetProps) => {
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false)
+  const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null)
+  const isSat = gross.currency === "sat"
+
+  const parseDigitsToInt = (value: unknown) => {
+    let str = ""
+    if (typeof value === "string" || typeof value === "number") {
+      str = String(value)
+    }
+    return str.replace(/[^\d]/g, "")
+  }
+
+  const validateNetAmount = (value?: string) => {
+    if (value == null || value === "") return "Net amount is required"
+    const parsed = isSat ? parseIntSafe(value) : parseFloatSafe(value)
+    if (parsed === undefined || Number.isNaN(parsed)) {
+      return "Net amount is invalid"
+    }
+    if (parsed < 1) {
+      return "Net amount must be at least 1"
+    }
+    if (new Big(parsed).gt(gross.value)) {
+      return "Net amount cannot exceed gross amount"
+    }
+    return true
+  }
+
+  const validateMinInteger = (min: number, label: string) => (value?: string) => {
+    if (value == null || value === "") return `${label} is required`
+    if (!/^\d+$/.test(value)) return `${label} must be a whole number`
+    const n = parseInt(value, 10)
+    if (Number.isNaN(n)) return `${label} is invalid`
+    if (n < min) return `${label} must be at least ${min}`
+    if (n > INPUT_DAYS_MAX_VALUE) return `${label} must be at most ${INPUT_DAYS_MAX_VALUE}`
+    return true
+  }
 
   const localStorageKey = quoteId ? `${LOCAL_STORAGE_KEY_PREFIX}${quoteId}` : null
   const {
@@ -63,6 +100,16 @@ const GrossToNetDiscountForm = ({
     formState: { isValid, errors },
   } = useForm<GrossToNetFormValues>({
     mode: "all",
+  })
+  const discountRateRegister = register("discountRateInput", {
+    required: true,
+    min: 0,
+    max: 99.9999,
+  })
+  const netInputRegister = register("netInput", {
+    required: true,
+    setValueAs: isSat ? parseDigitsToInt : undefined,
+    validate: validateNetAmount,
   })
 
   const blockDecimalInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -106,7 +153,7 @@ const GrossToNetDiscountForm = ({
     }
   }
 
-  const handlePasteDigits = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePasteDigitsFor = (field: "daysInput" | "netInput") => (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault()
     const text = e.clipboardData.getData("text") || ""
     const digits = text.replace(/[^\d]/g, "")
@@ -117,7 +164,10 @@ const GrossToNetDiscountForm = ({
     const after = input.value.slice(end)
     const next = (before + digits + after).replace(/[^\d]/g, "")
     input.value = next
-    setValue("daysInput", next, { shouldValidate: true, shouldDirty: true })
+    setValue(field, next, { shouldValidate: true, shouldDirty: true })
+    if (field === "netInput") {
+      setLastEdited("net")
+    }
     const caret = (before + digits).length
     try {
       input.setSelectionRange(caret, caret)
@@ -130,7 +180,7 @@ const GrossToNetDiscountForm = ({
     e.preventDefault()
   }
 
-  const { daysInput, discountRateInput } = watch()
+  const { daysInput, discountRateInput, netInput } = watch()
 
   const days = useMemo<number | undefined>(() => {
     return parseIntSafe(daysInput)
@@ -143,6 +193,18 @@ const GrossToNetDiscountForm = ({
 
   const [net, setNet] = useState<CurrencyAmount>()
 
+  const netInputValue = useMemo<Big | undefined>(() => {
+    if (netInput == null || netInput === "") {
+      return undefined
+    }
+    if (isSat) {
+      const parsed = parseIntSafe(netInput)
+      return parsed === undefined ? undefined : new Big(parsed)
+    }
+    const parsed = parseFloatSafe(netInput)
+    return parsed === undefined ? undefined : new Big(parsed)
+  }, [netInput, isSat])
+
   const discount = useMemo<CurrencyAmount | undefined>(() => {
     return net === undefined
       ? undefined
@@ -152,19 +214,30 @@ const GrossToNetDiscountForm = ({
         }
   }, [gross, net])
 
+  const formatAmount = (value: Big, currency: string) => {
+    if (currency === "sat") {
+      return value.round(0, Big.roundDown).toFixed(0)
+    }
+    return value.toFixed(NET_INPUT_DECIMALS)
+  }
+
   useEffect(() => {
     if (hasSetInitialDays) {
       return
     }
 
     if (localStorageKey) {
-      const savedData = getItem<{ daysInput: string; discountRateInput: string }>(localStorageKey)
+      const savedData = getItem<{ daysInput: string; discountRateInput: string; netInput?: string }>(localStorageKey)
       if (savedData) {
         if (savedData.daysInput) {
           setValue("daysInput", savedData.daysInput, { shouldValidate: true })
         }
         if (savedData.discountRateInput) {
           setValue("discountRateInput", savedData.discountRateInput, { shouldValidate: true })
+        }
+        if (savedData.netInput) {
+          setValue("netInput", savedData.netInput, { shouldValidate: true })
+          setLastEdited("net")
         }
         setHasSetInitialDays(true)
         return
@@ -187,17 +260,22 @@ const GrossToNetDiscountForm = ({
       return
     }
 
-    if (daysInput || discountRateInput) {
+    if (daysInput || discountRateInput || netInput) {
       setItem(localStorageKey, {
         daysInput: daysInput ?? "",
         discountRateInput: discountRateInput ?? "",
+        netInput: netInput ?? "",
       })
     }
-  }, [localStorageKey, daysInput, discountRateInput, hasSetInitialDays])
+  }, [localStorageKey, daysInput, discountRateInput, netInput, hasSetInitialDays])
 
   useEffect(() => {
-    if (!isValid || discountRate === undefined || days === undefined) {
+    if (discountRate === undefined || days === undefined) {
       setNet(undefined)
+      return
+    }
+
+    if (lastEdited === "net") {
       return
     }
 
@@ -206,7 +284,44 @@ const GrossToNetDiscountForm = ({
       value: netValue,
       currency: gross.currency,
     })
-  }, [isValid, gross, days, discountRate])
+    setValue("netInput", formatAmount(netValue, gross.currency), { shouldValidate: true })
+  }, [gross, days, discountRate, lastEdited, setValue])
+
+  useEffect(() => {
+    if (lastEdited !== "net") {
+      return
+    }
+    if (days === undefined || netInputValue === undefined) {
+      setNet(undefined)
+      return
+    }
+    if (netInputValue.lt(0)) {
+      setNet(undefined)
+      return
+    }
+    if (netInputValue.gt(gross.value)) {
+      setNet(undefined)
+      return
+    }
+
+    setNet({
+      value: netInputValue,
+      currency: gross.currency,
+    })
+
+    const grossValue = gross.value
+    if (grossValue.eq(0)) {
+      return
+    }
+
+    const ratio = new Big(1).minus(netInputValue.div(grossValue))
+    const rate = ratio.times(360).div(days)
+    if (rate.lt(0) || rate.gt(1)) {
+      return
+    }
+    const ratePercent = rate.times(100)
+    setValue("discountRateInput", ratePercent.toFixed(4), { shouldValidate: true })
+  }, [lastEdited, days, netInputValue, gross, setValue])
 
   const handleFormSubmit = () => {
     if (net === undefined || discountRate === undefined || days === undefined) {
@@ -221,13 +336,16 @@ const GrossToNetDiscountForm = ({
     })
   }
 
-  const handleIntegerInput = (e: React.FormEvent<HTMLInputElement>) => {
+  const handleIntegerInputFor = (field: "daysInput" | "netInput") => (e: React.FormEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const cleaned = input.value.replace(/[^\d]/g, "")
     if (input.value !== cleaned) {
       const caret = input.selectionStart ?? cleaned.length
       input.value = cleaned
-      setValue("daysInput", cleaned, { shouldValidate: true, shouldDirty: true })
+      setValue(field, cleaned, { shouldValidate: true, shouldDirty: true })
+      if (field === "netInput") {
+        setLastEdited("net")
+      }
       const pos = Math.min(caret, cleaned.length)
       try {
         input.setSelectionRange(pos, pos)
@@ -235,24 +353,6 @@ const GrossToNetDiscountForm = ({
         // ignore unsupported setSelectionRange
       }
     }
-  }
-
-  const parseDigitsToInt = (value: unknown) => {
-    let str = ""
-    if (typeof value === "string" || typeof value === "number") {
-      str = String(value)
-    }
-    return str.replace(/[^\d]/g, "")
-  }
-
-  const validateMinInteger = (min: number, label: string) => (value?: string) => {
-    if (value == null || value === "") return `${label} is required`
-    if (!/^\d+$/.test(value)) return `${label} must be a whole number`
-    const n = parseInt(value, 10)
-    if (Number.isNaN(n)) return `${label} is invalid`
-    if (n < min) return `${label} must be at least ${min}`
-    if (n > INPUT_DAYS_MAX_VALUE) return `${label} must be at most ${INPUT_DAYS_MAX_VALUE}`
-    return true
   }
 
   return (
@@ -281,9 +381,9 @@ const GrossToNetDiscountForm = ({
                   blockDecimalInput(e)
                   handleKeyDown(e)
                 }}
-                onInput={handleIntegerInput}
+                onInput={handleIntegerInputFor("daysInput")}
                 onBeforeInput={blockNonDigitInput}
-                onPaste={handlePasteDigits}
+                onPaste={handlePasteDigitsFor("daysInput")}
                 onDrop={handleDrop}
                 enterKeyHint="next"
                 {...register("daysInput", {
@@ -314,16 +414,16 @@ const GrossToNetDiscountForm = ({
                   type="number"
                   inputMode="numeric"
                   className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-gray-900 dark:text-gray-100 w-20"
-                  {...register("discountRateInput", {
-                    required: true,
-                    min: 0,
-                    max: 99.9999,
-                  })}
+                  {...discountRateRegister}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault()
                       e.currentTarget.blur()
                     }
+                  }}
+                  onChange={(e) => {
+                    void discountRateRegister.onChange(e)
+                    setLastEdited("rate")
                   }}
                 />
                 <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">%</span>
@@ -336,16 +436,45 @@ const GrossToNetDiscountForm = ({
             )}
           </div>
 
-          <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Net amount</span>
-            <div className="flex gap-1 items-center">
-              <span className="text-lg font-semibold text-green-600 dark:text-green-400">
-                {net === undefined ? "?" : net.value.toNumber()}
-              </span>
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {net?.currency ?? gross.currency}
-              </span>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <label htmlFor="netInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Net amount
+              </label>
+              <div className="flex gap-1 items-center">
+                <input
+                  id="netInput"
+                  step={isSat ? "1" : "0.01"}
+                  type="number"
+                  inputMode={isSat ? "numeric" : "decimal"}
+                  className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-green-600 dark:text-green-400 w-28"
+                  {...netInputRegister}
+                  onKeyDown={(e) => {
+                    if (isSat) {
+                      blockDecimalInput(e)
+                      handleKeyDown(e)
+                    } else if (e.key === "Enter") {
+                      e.preventDefault()
+                      e.currentTarget.blur()
+                    }
+                  }}
+                  onInput={isSat ? handleIntegerInputFor("netInput") : undefined}
+                  onBeforeInput={isSat ? blockNonDigitInput : undefined}
+                  onPaste={isSat ? handlePasteDigitsFor("netInput") : undefined}
+                  onDrop={handleDrop}
+                  onChange={(e) => {
+                    void netInputRegister.onChange(e)
+                    setLastEdited("net")
+                  }}
+                />
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {gross.currency}
+                </span>
+              </div>
             </div>
+            {errors.netInput && (
+              <div className="text-xs text-red-500">{errors.netInput.message}</div>
+            )}
           </div>
         </div>
 
@@ -354,7 +483,7 @@ const GrossToNetDiscountForm = ({
             <span className="text-gray-600 dark:text-gray-400">Annual discount</span>
             <div className="flex gap-1 items-center">
               <span className="text-gray-600 dark:text-gray-400">
-                {discount === undefined ? "0.00" : Math.abs(discount.value.toNumber()).toFixed(2)}
+                {discount === undefined ? (isSat ? "0" : "0.00") : formatAmount(discount.value.abs(), gross.currency)}
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-500">{discount?.currency ?? gross.currency}</span>
             </div>
@@ -363,7 +492,7 @@ const GrossToNetDiscountForm = ({
           <div className="flex justify-between items-center text-base font-semibold">
             <span className="text-gray-900 dark:text-gray-100">Gross amount</span>
             <div className="flex gap-1 items-center">
-              <span className="text-green-600 dark:text-green-400">+{gross.value.toNumber().toFixed(2)}</span>
+              <span className="text-green-600 dark:text-green-400">+{formatAmount(gross.value, gross.currency)}</span>
               <span className="text-xs text-gray-500 dark:text-gray-500">{gross.currency}</span>
             </div>
           </div>

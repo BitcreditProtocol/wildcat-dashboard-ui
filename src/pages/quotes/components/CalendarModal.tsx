@@ -9,6 +9,8 @@ interface CalendarModalProps {
   selectedDate?: Date
   draftDate?: Date
   title: string
+  minDate?: Date
+  maxDate?: Date
   onClose: () => void
   onDateChange: (date: Date) => void
   onConfirm: () => void
@@ -20,11 +22,16 @@ export function CalendarModal({
   selectedDate,
   draftDate,
   title,
+  minDate,
+  maxDate,
   onClose,
   onDateChange,
   onConfirm,
   onCancel,
 }: CalendarModalProps) {
+  const disabledBefore = minDate ?? addDays(new Date(Date.now()), 1)
+  const disabledAfter = maxDate
+
   return (
     <>
       <div
@@ -57,7 +64,7 @@ export function CalendarModal({
                   onDateChange(range.from)
                 }
               }}
-              disabled={{ before: addDays(new Date(Date.now()), 1) }}
+              disabled={{ before: disabledBefore, after: disabledAfter }}
               modifiers={{
                 saved: (d) => !!selectedDate && isSameDay(d, selectedDate),
               }}

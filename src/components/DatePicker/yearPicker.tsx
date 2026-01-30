@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 
-import { useLanguage } from "@/context/language/LanguageContext";
+import { LanguageContext } from "@/context/language/LanguageContext";
 import { cn } from "@/lib/utils";
 import { formatYearNumeric } from "@/utils/dates";
 
@@ -26,7 +26,7 @@ const YearPicker = ({
   currentYearPosition = "start",
   order = "asc",
 }: YearPickerProps) => {
-  const lang = useLanguage();
+  const lang = useContext(LanguageContext);
   const currentYear = new Date().getFullYear();
   const total = numberYears;
   const half = Math.floor(total / 2);

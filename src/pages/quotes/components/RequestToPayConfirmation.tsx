@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button.tsx"
 import { ConfirmDrawer } from "@/components/Drawers.tsx"
 import { LoaderIcon } from "lucide-react"
 import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import { useQuery } from "@tanstack/react-query"
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
-import { getDefaultDeadline } from "@/utils/dates"
+import { addDays } from "date-fns"
+import { getItem, setItem } from "@/utils/local-storage"
 
 interface RequestToPayConfirmationProps {
   open: boolean
@@ -15,6 +16,21 @@ interface RequestToPayConfirmationProps {
   isPending: boolean
   maturityDate?: string | null
   billId: string
+}
+
+const REQUEST_TO_PAY_DEADLINE_STORAGE_KEY = "requestToPayDeadlineUtc"
+
+const getMinSelectableDate = (maturityDate?: string | null): Date => {
+  const now = new Date()
+  const maturity = maturityDate ? new Date(maturityDate) : null
+  const baseDate = maturity && maturity > now ? maturity : now
+  const minDate = addDays(baseDate, 2)
+  minDate.setUTCHours(0, 0, 0, 0)
+  return minDate
+}
+
+const toUtcEndOfDay = (date: Date): Date => {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999))
 }
 
 export function RequestToPayConfirmation({
@@ -29,6 +45,7 @@ export function RequestToPayConfirmation({
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
   const [showPaymentCalendar, setShowPaymentCalendar] = useState(false)
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
+  const minSelectableDate = useMemo(() => getMinSelectableDate(maturityDate), [maturityDate])
 
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
@@ -43,10 +60,20 @@ export function RequestToPayConfirmation({
   const ebillAvailable = !ebillQuery.isLoading && !ebillQuery.error && !!ebillQuery.data
 
   useEffect(() => {
-    if (!validUntilDate) {
-      setValidUntilDate(getDefaultDeadline(maturityDate))
+    if (!open || validUntilDate) {
+      return
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+    const stored = getItem<string>(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY)
+    if (!stored) {
+      return
+    }
+
+    const parsed = new Date(stored)
+    if (!Number.isNaN(parsed.getTime()) && parsed >= minSelectableDate) {
+      setValidUntilDate(parsed)
+    }
+  }, [open, validUntilDate, minSelectableDate])
 
   return (
     <>
@@ -56,13 +83,11 @@ export function RequestToPayConfirmation({
         open={open}
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
-          if (isOpen) {
-            setValidUntilDate(getDefaultDeadline(maturityDate))
-          }
         }}
         onSubmit={() => {
-          const deadline = validUntilDate ?? getDefaultDeadline(maturityDate)
-          onSubmit(deadline)
+          if (validUntilDate) {
+            onSubmit(validUntilDate)
+          }
         }}
         submitButtonText="Yes, request to pay"
         submitButtonDisabled={!validUntilDate}
@@ -109,6 +134,7 @@ export function RequestToPayConfirmation({
         selectedDate={validUntilDate}
         draftDate={draftValidUntilDate}
         title="Payment deadline"
+        minDate={minSelectableDate}
         onClose={() => {
           setShowPaymentCalendar(false)
           onOpenChange(true)
@@ -116,7 +142,9 @@ export function RequestToPayConfirmation({
         onDateChange={setDraftValidUntilDate}
         onConfirm={() => {
           if (draftValidUntilDate) {
-            setValidUntilDate(draftValidUntilDate)
+            const utcDeadline = toUtcEndOfDay(draftValidUntilDate)
+            setValidUntilDate(utcDeadline)
+            setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, utcDeadline.toISOString())
           }
           setShowPaymentCalendar(false)
           onOpenChange(true)

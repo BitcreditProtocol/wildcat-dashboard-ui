@@ -1,34 +1,58 @@
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ConfirmDrawer } from "@/components/Drawers.tsx"
 import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import Big from "big.js"
 import type { OfferFormResult } from "./OfferFormDrawer.tsx"
-import { getDefaultDeadline } from "@/utils/dates"
+import { addDays, addYears } from "date-fns"
+import { getItem, removeItem, setItem } from "@/utils/local-storage"
 
 interface OfferConfirmationProps {
   offerFormData?: OfferFormResult
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: OfferFormResult) => void
-  maturityDate?: string | null
+  quoteId?: string
 }
+
+const OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX = "offer-valid-until-"
 
 export function OfferConfirmation({
   offerFormData,
   open,
   onOpenChange,
   onSubmit,
-  maturityDate,
+  quoteId,
 }: OfferConfirmationProps) {
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
   const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false)
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
+  const minDate = useMemo(() => {
+    const date = addDays(new Date(), 1)
+    date.setHours(0, 0, 0, 0)
+    return date
+  }, [])
+  const maxDate = useMemo(() => {
+    const date = addYears(new Date(), 1)
+    date.setHours(23, 59, 59, 999)
+    return date
+  }, [])
+  const storageKey = quoteId ? `${OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX}${quoteId}` : null
 
   useEffect(() => {
-    if (!validUntilDate) {
-      setValidUntilDate(getDefaultDeadline(maturityDate))
+    if (!open || validUntilDate || !storageKey) {
+      return
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    const stored = getItem<string>(storageKey)
+    if (!stored) {
+      return
+    }
+    const parsed = new Date(stored)
+    if (!Number.isNaN(parsed.getTime()) && parsed >= minDate && parsed <= maxDate) {
+      setValidUntilDate(parsed)
+    } else {
+      removeItem(storageKey)
+    }
+  }, [open, validUntilDate, storageKey, minDate, maxDate])
 
   const effectiveDiscount = offerFormData
     ? new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
@@ -42,18 +66,14 @@ export function OfferConfirmation({
         open={open}
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
-          if (isOpen) {
-            setValidUntilDate(getDefaultDeadline(maturityDate))
-          }
         }}
+        submitButtonDisabled={!validUntilDate}
         onSubmit={() => {
-          if (!offerFormData) {
+          if (!offerFormData || !validUntilDate) {
             return
           }
 
-          const finalOfferData = validUntilDate
-            ? { ...offerFormData, ttl: { ttl: validUntilDate } }
-            : offerFormData
+          const finalOfferData = { ...offerFormData, ttl: { ttl: validUntilDate } }
 
           onSubmit(finalOfferData)
         }}
@@ -79,9 +99,9 @@ export function OfferConfirmation({
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-semibold w-32">Valid until:</span>
             <DatePickerButton
-              date={validUntilDate ?? offerFormData?.ttl.ttl}
+              date={validUntilDate}
               onClick={() => {
-                setDraftValidUntilDate(validUntilDate ?? offerFormData?.ttl.ttl)
+                setDraftValidUntilDate(validUntilDate)
                 onOpenChange(false)
                 setShowValidUntilCalendar(true)
               }}
@@ -95,6 +115,8 @@ export function OfferConfirmation({
         selectedDate={validUntilDate}
         draftDate={draftValidUntilDate}
         title="Selected date"
+        minDate={minDate}
+        maxDate={maxDate}
         onClose={() => {
           setShowValidUntilCalendar(false)
           onOpenChange(true)
@@ -103,6 +125,9 @@ export function OfferConfirmation({
         onConfirm={() => {
           if (draftValidUntilDate) {
             setValidUntilDate(draftValidUntilDate)
+            if (storageKey) {
+              setItem(storageKey, draftValidUntilDate.toISOString())
+            }
           }
           setShowValidUntilCalendar(false)
           onOpenChange(true)
@@ -116,4 +141,3 @@ export function OfferConfirmation({
     </>
   )
 }
-
