@@ -192,7 +192,7 @@ function PageBody({ id }: { id: string }) {
                 <span className="text-sm font-semibold w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.status",
-                    defaultMessage: "Status:"
+                    defaultMessage: "Quote status:"
                   })}
                 </span>
                 <Badge variant={getStatusVariant(quote.status)}>
@@ -207,7 +207,7 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.minting",
-                      defaultMessage: "Minting:"
+                      defaultMessage: "Redemption status:"
                     })}
                   </span>
                   <Badge
@@ -243,7 +243,7 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.payment",
-                      defaultMessage: "Payment:"
+                      defaultMessage: "Payment status:"
                     })}
                   </span>
                   {ebillPaid ? (
