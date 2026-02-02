@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { dateMatchModifiers, DateRange, DayPicker, DayPickerProps, OnSelectHandler } from "react-day-picker"
+import { DateRange, DayPicker, DayPickerProps, OnSelectHandler } from "react-day-picker"
 import { format, isSameDay } from "date-fns";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useIntl } from "react-intl";
@@ -19,6 +19,7 @@ export type CalendarProps = Omit<DayPickerProps, "mode" | "onSelect" | "selected
   ISOWeek?: boolean
   showOutsideDays?: boolean
   month?: Date
+  minDate?: Date
   initialFocus?: boolean
   modifiers?: Record<string, (date: Date) => boolean>
   modifiersClassNames?: Record<string, string>
@@ -53,9 +54,8 @@ const classNames = {
 
 function getNextDate(
   current: Date,
-  offset: number,
-  disabled?: (date: Date) => boolean
-): Date | null {
+  offset: number
+): Date {
   const year = current.getFullYear();
   const month = current.getMonth();
   const day = current.getDate();
@@ -74,17 +74,7 @@ function getNextDate(
     ? daysInTargetMonth
     : Math.min(day, daysInTargetMonth);
 
-  const newDate = new Date(
-    targetMonthDate.getFullYear(),
-    targetMonthDate.getMonth(),
-    newDay
-  );
-
-  if (disabled?.(newDate)) {
-    return null;
-  }
-
-  return newDate;
+  return new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), newDay)
 }
 
 function Calendar({
@@ -100,13 +90,15 @@ function Calendar({
                     initialFocus,
                     modifiers,
                     modifiersClassNames,
+                    month: monthProp,
+                    minDate,
                     ...restProps
                   }: CalendarProps) {
   const intl = useIntl();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     selected.from
   );
-  const [month, setMonth] = useState<Date>(selected.from ?? new Date());
+  const [month, setMonth] = useState<Date>(selected.from ?? monthProp ?? new Date());
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
@@ -117,15 +109,15 @@ function Calendar({
         setMonth(selected.from);
       } else {
         setSelectedDate(undefined);
-        setMonth(new Date());
+        setMonth(monthProp ?? new Date());
       }
     } else {
       if (!selected.from && !selected.to) {
-        setMonth(new Date());
+        setMonth(monthProp ?? new Date());
         setSelectedDate(undefined);
       }
     }
-  }, [selected, mode]);
+  }, [selected, mode, monthProp]);
 
   const handleOnSelectRange: OnSelectHandler<DateRange | undefined> = (range, selectedDay, modifiers, e) => {
     if (mode === "single") {
@@ -140,23 +132,9 @@ function Calendar({
     handleOnSelectRange(day ? { from: day } : undefined, selectedDay, modifiers, e)
   }
 
-  const matchesDisabled = (date: Date, disabledMatchers: CalendarProps["disabled"]) => {
-    if (!disabledMatchers) {
-      return false
-    }
-    return dateMatchModifiers(date, disabledMatchers)
-  }
-
   const goToOffsetMonth = useCallback((offset: number) => {
-    const disabledMatchers = restProps.disabled;
-    const isDisabled = (date: Date) => matchesDisabled(date, disabledMatchers)
-
-    const newDate = getNextDate(month, offset, isDisabled);
-    if (!newDate) {
-      return;
-    }
-    setMonth(newDate);
-  }, [month, restProps.disabled]);
+    setMonth(getNextDate(month, offset));
+  }, [month]);
 
   let touchStartX: number | null = null;
 
@@ -336,10 +314,6 @@ function Calendar({
           value={month}
           onChange={(newDate) => {
             setMonth(newDate)
-            if (mode === "single") {
-              setSelectedDate(newDate)
-              handleOnSelectSingle(newDate, newDate, {}, {} as React.MouseEvent<Element>)
-            }
             setShowYearPicker(false)
             setShowMonthPicker(true)
           }}
@@ -347,22 +321,20 @@ function Calendar({
             setShowYearPicker(false)
           }}
           disableFutureNavigation={disableFutureNavigation}
+          minDate={minDate}
         />
       ) : showMonthPicker ? (
         <MonthPicker
           value={month}
           onChange={(newDate) => {
             setMonth(newDate)
-            if (mode === "single") {
-              setSelectedDate(newDate)
-              handleOnSelectSingle(newDate, newDate, {}, {} as React.MouseEvent<Element>)
-            }
             setShowMonthPicker(false)
           }}
           onCaptionLabelClicked={() => {
             setShowMonthPicker(false)
           }}
           disableFutureNavigation={disableFutureNavigation}
+          minDate={minDate}
         />
       ) : mode === "single" ? (
         <DayPicker

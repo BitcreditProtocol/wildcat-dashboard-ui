@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button.tsx"
 import { Calendar } from "@/components/DatePicker/calendar.tsx"
 import { CalendarIcon } from "lucide-react"
-import { addDays, format, isSameDay } from "date-fns"
+import { addDays, endOfDay, format, isAfter, isBefore, isSameDay, startOfDay } from "date-fns"
 import { cn } from "@/lib/utils.ts"
 import { useIntl } from "react-intl"
 
@@ -31,8 +31,11 @@ export function CalendarModal({
   onCancel,
 }: CalendarModalProps) {
   const intl = useIntl()
-  const disabledBefore = minDate ?? addDays(new Date(Date.now()), 1)
-  const disabledAfter = maxDate
+  const fallbackMin = addDays(new Date(Date.now()), 1)
+  const minDay = startOfDay(minDate ?? fallbackMin)
+  const maxDay = maxDate ? endOfDay(maxDate) : null
+  const disabled = (date: Date) => isBefore(date, minDay) || (maxDay ? isAfter(date, maxDay) : false)
+  const displayMonth = draftDate ?? selectedDate ?? minDate ?? new Date()
 
   return (
     <>
@@ -62,13 +65,15 @@ export function CalendarModal({
 
             <Calendar
               mode="single"
+              month={displayMonth}
+              minDate={minDate}
               selected={{ from: draftDate ?? selectedDate }}
               onSelect={(range) => {
                 if (range?.from) {
                   onDateChange(range.from)
                 }
               }}
-              disabled={{ before: disabledBefore, after: disabledAfter }}
+              disabled={disabled}
               modifiers={{
                 saved: (d) => !!selectedDate && isSameDay(d, selectedDate),
               }}
@@ -127,11 +132,12 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
     >
       <CalendarIcon className="text-gray-500 dark:text-gray-400 w-5 h-5" strokeWidth={1.5} />
       <span className="text-gray-900 dark:text-gray-100">
-        {date?.toLocaleDateString(intl.locale) ??
-          intl.formatMessage({
-            id: "quotes.calendar.selectDate",
-            defaultMessage: "Select date",
-          })}
+        {date
+          ? format(date, "MMM dd, yyyy")
+          : intl.formatMessage({
+              id: "quotes.calendar.selectDate",
+              defaultMessage: "Select date",
+            })}
       </span>
     </button>
   )
