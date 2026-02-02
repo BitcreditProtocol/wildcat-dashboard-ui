@@ -338,7 +338,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       <th className="text-left p-2 font-semibold">
                         <FormattedMessage
                           id="keyset.detail.table.mintStatus"
-                          defaultMessage="Mint status"
+                          defaultMessage="Redemption status"
                         />
                       </th>
                       <th className="text-left p-2 font-semibold">
