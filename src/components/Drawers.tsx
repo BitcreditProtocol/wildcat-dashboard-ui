@@ -10,6 +10,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer"
 import { VariantProps } from "class-variance-authority"
+import { useIntl } from "react-intl"
 
 type DrawerProps = Parameters<typeof Drawer>[0]
 type BaseDrawerProps = DrawerProps & {
@@ -44,25 +45,38 @@ type ConfirmDrawerProps = BaseDrawerProps & {
 }
 
 export function ConfirmDrawer({
-  cancelButtonText = "Cancel",
-  submitButtonText = "Confirm",
+  cancelButtonText,
+  submitButtonText,
   submitButtonVariant,
   submitButtonDisabled = false,
   onSubmit,
   children,
   ...drawerProps
 }: ConfirmDrawerProps) {
+  const intl = useIntl()
+  const resolvedCancelText =
+    cancelButtonText ??
+    intl.formatMessage({
+      id: "Cancel",
+      defaultMessage: "Cancel"
+    })
+  const resolvedSubmitText =
+    submitButtonText ??
+    intl.formatMessage({
+      id: "Confirm",
+      defaultMessage: "Confirm"
+    })
   return (
     <BaseDrawer {...drawerProps}>
       {children}
       <DrawerFooter>
         <div className="gap-2">
           <Button className="w-full mb-2 max-w-sm" variant={submitButtonVariant} size="lg" onClick={onSubmit} disabled={submitButtonDisabled}>
-            {submitButtonText}
+            {resolvedSubmitText}
           </Button>
           <DrawerClose asChild>
             <Button className="w-full max-w-sm" variant="outline" size="lg">
-              {cancelButtonText}
+              {resolvedCancelText}
             </Button>
           </DrawerClose>
         </div>

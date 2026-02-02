@@ -5,6 +5,7 @@ import { LoaderIcon } from "lucide-react"
 import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import { useQuery } from "@tanstack/react-query"
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { useIntl } from "react-intl"
 import { addDays } from "date-fns"
 import { getItem, setItem } from "@/utils/local-storage"
 
@@ -42,6 +43,7 @@ export function RequestToPayConfirmation({
   maturityDate,
   billId,
 }: RequestToPayConfirmationProps) {
+  const intl = useIntl()
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
   const [showPaymentCalendar, setShowPaymentCalendar] = useState(false)
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
@@ -78,8 +80,14 @@ export function RequestToPayConfirmation({
   return (
     <>
       <ConfirmDrawer
-        title="Confirm requesting to pay"
-        description="Are you sure you want to request to pay this e-bill?"
+        title={intl.formatMessage({
+          id: "quotes.requestToPay.confirmTitle",
+          defaultMessage: "Confirm requesting to pay",
+        })}
+        description={intl.formatMessage({
+          id: "quotes.requestToPay.confirmDescription",
+          defaultMessage: "Are you sure you want to request to pay this e-bill?",
+        })}
         open={open}
         onOpenChange={(isOpen) => {
           onOpenChange(isOpen)
@@ -89,7 +97,10 @@ export function RequestToPayConfirmation({
             onSubmit(validUntilDate)
           }
         }}
-        submitButtonText="Yes, request to pay"
+        submitButtonText={intl.formatMessage({
+          id: "quotes.requestToPay.confirmButton",
+          defaultMessage: "Yes, request to pay",
+        })}
         submitButtonDisabled={!validUntilDate}
         trigger={
           <Button
@@ -104,11 +115,19 @@ export function RequestToPayConfirmation({
           >
             {!ebillAvailable ? (
               <span className="flex items-center gap-2">
-                <LoaderIcon className="stroke-1 animate-spin" /> Loading information for payment
+                <LoaderIcon className="stroke-1 animate-spin" />
+                {intl.formatMessage({
+                  id: "quotes.requestToPay.loadingInfo",
+                  defaultMessage: "Loading information for payment",
+                })}
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                Request to pay {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                {intl.formatMessage({
+                  id: "quotes.requestToPay.button",
+                  defaultMessage: "Request to pay"
+                })}{" "}
+                {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
               </span>
             )}
           </Button>
@@ -116,7 +135,12 @@ export function RequestToPayConfirmation({
       >
         <div className="flex flex-col gap-4 px-4 py-4">
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold">Payment deadline:</span>
+            <span className="text-sm font-semibold">
+              {intl.formatMessage({
+                id: "quotes.requestToPay.deadlineLabel",
+                defaultMessage: "Payment deadline:",
+              })}
+            </span>
             <DatePickerButton
               date={validUntilDate}
               onClick={() => {
@@ -133,7 +157,10 @@ export function RequestToPayConfirmation({
         isOpen={showPaymentCalendar}
         selectedDate={validUntilDate}
         draftDate={draftValidUntilDate}
-        title="Payment deadline"
+        title={intl.formatMessage({
+          id: "quotes.requestToPay.deadlineTitle",
+          defaultMessage: "Payment deadline",
+        })}
         minDate={minSelectableDate}
         onClose={() => {
           setShowPaymentCalendar(false)

@@ -1,62 +1,112 @@
 import { Bitcoin, Home, Inbox, Key } from "lucide-react"
-import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar" // SidebarFooter,
+import { useContext } from "react"
+import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain"
 // import { useKeycloak } from "../lib/keycloak-user"
+import { LanguageContext } from "@/context/language/LanguageContext"
+import { useIntl } from "react-intl"
 
 const data = {
   navMain: [
     {
-      title: "Home",
+      titleId: "nav.home",
+      titleDefaultMessage: "Home",
       url: "/",
       icon: Home,
     },
     {
-      title: "Balances",
+      titleId: "nav.balances",
+      titleDefaultMessage: "Balances",
       url: "/balances",
       icon: Bitcoin,
     },
     {
-      title: "Quotes",
+      titleId: "nav.quotes",
+      titleDefaultMessage: "Quotes",
       url: "/quotes",
       icon: Inbox,
       items: [
         {
-          title: "Pending",
+          titleId: "nav.quotes.pending",
+          titleDefaultMessage: "Pending",
           url: "/quotes/pending",
         },
         {
-          title: "Offered",
+          titleId: "nav.quotes.offered",
+          titleDefaultMessage: "Offered",
           url: "/quotes/offered",
         },
         {
-          title: "Offer expired",
+          titleId: "nav.quotes.offerExpired",
+          titleDefaultMessage: "Offer expired",
           url: "/quotes/offerexpired",
         },
         {
-          title: "Accepted",
+          titleId: "nav.quotes.accepted",
+          titleDefaultMessage: "Accepted",
           url: "/quotes/accepted",
         },
         {
-          title: "Denied",
+          titleId: "nav.quotes.denied",
+          titleDefaultMessage: "Denied",
           url: "/quotes/denied",
         },
         {
-          title: "Rejected",
+          titleId: "nav.quotes.rejected",
+          titleDefaultMessage: "Rejected",
           url: "/quotes/rejected",
         },
         {
-          title: "Canceled",
+          titleId: "nav.quotes.canceled",
+          titleDefaultMessage: "Canceled",
           url: "/quotes/canceled",
         },
       ],
     },
     {
-      title: "Keysets",
+      titleId: "nav.keysets",
+      titleDefaultMessage: "Keysets",
       url: "/keysets",
       icon: Key,
     },
   ],
+}
+
+function LanguageSelector() {
+  const intl = useIntl()
+  const { locale, setLocale, availableLocales } = useContext(LanguageContext)
+  const locales = availableLocales()
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+        {intl.formatMessage({
+          id: "language.label",
+          defaultMessage: "Language"
+        })}
+      </span>
+      <Select value={locale} onValueChange={setLocale}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder={intl.formatMessage({
+            id: "language.select",
+            defaultMessage: "Select language"
+          })} />
+        </SelectTrigger>
+        <SelectContent>
+          {locales.map((loc) => (
+            <SelectItem key={loc} value={loc}>
+              {intl.formatMessage({
+                id: `locale.${loc}`,
+                defaultMessage: loc
+              })}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
 }
 
 export function AppSidebar() {
@@ -67,6 +117,10 @@ export function AppSidebar() {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
+      <SidebarSeparator className="my-2" />
+      <SidebarFooter className="group-data-[collapsible=icon]:hidden">
+        <LanguageSelector />
+      </SidebarFooter>
       {/* https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/131
         <SidebarFooter>{!isLoading && user && <NavUser user={user} />}</SidebarFooter>
       */}

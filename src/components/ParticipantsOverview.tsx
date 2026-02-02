@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover"
 import { UserAnonymousIcon } from "@/components/icons/UserAnonymous"
 import type React from "react"
+import { useIntl } from "react-intl"
 
 type IdentityPublicData = BillIdentParticipant
 type AnonPublicData = BillAnonParticipant
@@ -94,6 +95,27 @@ export function ParticipantsOverviewCard({
   payee?: IdentOrAnonParticipant
   className?: string
 }) {
+  const intl = useIntl()
+  const getRoleLabel = (role: "drawee" | "drawer" | "payee" | "holder") => {
+    const defaults = {
+      drawee: "Drawee",
+      drawer: "Drawer",
+      payee: "Payee",
+      holder: "Holder",
+    }
+    return intl.formatMessage(
+      {
+        id: `participants.role.${role}`,
+        defaultMessage: defaults[role]
+      },
+      {}
+    )
+  }
+  const bearerLabel = intl.formatMessage({
+    id: "participants.role.bearer",
+    defaultMessage: "Bearer",
+  })
+
   const getIdentTooltip = (data: IdentityPublicData | undefined, role: string) => {
     if (!data) {
       return role
@@ -138,7 +160,7 @@ export function ParticipantsOverviewCard({
       return (
         <div className="flex flex-col gap-1 max-w-xs">
           <div className="font-semibold break-words">{role}</div>
-          <div className="break-words">Bearer</div>
+          <div className="break-words">{bearerLabel}</div>
           {anonData?.node_id && <div className="text-xs font-mono break-all">{anonData.node_id}</div>}
         </div>
       )
@@ -151,24 +173,24 @@ export function ParticipantsOverviewCard({
     <span className={cn("flex gap-1 items-center", className)}>
       {drawee && (
         <div>
-          <IdentityPublicAvatar value={drawee} tooltip={getIdentTooltip(drawee, "Drawee")} />
+          <IdentityPublicAvatar value={drawee} tooltip={getIdentTooltip(drawee, getRoleLabel("drawee"))} />
         </div>
       )}
       {drawer && (
         <div>
-          <IdentityPublicAvatar value={drawer} tooltip={getIdentTooltip(drawer, "Drawer")} />
+          <IdentityPublicAvatar value={drawer} tooltip={getIdentTooltip(drawer, getRoleLabel("drawer"))} />
         </div>
       )}
       {payee && (
         <div>
-          <IdentOrAnonAvatar value={payee} tooltip={getIdentOrAnonTooltip(payee, "Payee")} />
+          <IdentOrAnonAvatar value={payee} tooltip={getIdentOrAnonTooltip(payee, getRoleLabel("payee"))} />
         </div>
       )}
       {holder && holder.length > 0 && (
         <div>
           <IdentOrAnonAvatar
             value={holder[holder.length - 1]}
-            tooltip={getIdentOrAnonTooltip(holder[holder.length - 1], "Holder")}
+            tooltip={getIdentOrAnonTooltip(holder[holder.length - 1], getRoleLabel("holder"))}
           />
         </div>
       )}
@@ -181,6 +203,7 @@ export function ParticipantDetail({
 }: {
   participant: BillIdentParticipant | BillParticipant | undefined
 }) {
+  const intl = useIntl()
   if (!participant) {
     return null
   }
@@ -194,7 +217,12 @@ export function ParticipantDetail({
       <div className="flex items-center gap-3">
         <UserAnonymousIcon className="h-8 w-8 text-muted-foreground" />
         <div className="flex flex-col gap-1">
-          <div className="text-sm text-muted-foreground">Bearer</div>
+          <div className="text-sm text-muted-foreground">
+            {intl.formatMessage({
+              id: "participants.role.bearer",
+              defaultMessage: "Bearer"
+            })}
+          </div>
           {anonData?.node_id && (
             <div className="text-xs text-muted-foreground font-mono break-all">
               <TruncatedTextPopover

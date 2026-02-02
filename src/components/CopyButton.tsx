@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Copy, Check } from "lucide-react"
 import { toast } from "sonner"
 import { useState } from "react"
+import { useIntl } from "react-intl"
 
 interface CopyButtonProps {
   value: string
@@ -20,7 +21,13 @@ export function CopyButton({
   className = "h-6 px-2",
   showCheckmark = false,
 }: CopyButtonProps) {
+  const intl = useIntl()
   const [copied, setCopied] = useState(false)
+  const fallbackLabel = intl.formatMessage({
+    id: "copyButton.defaultLabel",
+    defaultMessage: "Value",
+  })
+  const labelValue = label ?? fallbackLabel
 
   const handleCopy = () => {
     navigator.clipboard
@@ -30,10 +37,20 @@ export function CopyButton({
           setCopied(true)
           setTimeout(() => setCopied(false), 2000)
         }
-        toast.success(`${label ?? "Value"} copied to clipboard`)
+        toast.success(
+          intl.formatMessage(
+            { id: "copyButton.copied", defaultMessage: "{label} copied to clipboard" },
+            { label: labelValue }
+          )
+        )
       })
       .catch(() => {
-        toast.error(`Failed to copy ${label ?? "value"}`)
+        toast.error(
+          intl.formatMessage(
+            { id: "copyButton.failed", defaultMessage: "Failed to copy {label}" },
+            { label: labelValue }
+          )
+        )
       })
   }
 

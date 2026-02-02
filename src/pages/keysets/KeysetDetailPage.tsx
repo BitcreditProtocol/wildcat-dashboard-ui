@@ -12,6 +12,7 @@ import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { truncateString, formatStatusLabel } from "@/utils/strings"
 import { toast } from "sonner"
 import { useMemo } from "react"
+import { FormattedMessage, useIntl } from "react-intl"
 
 /**
  * Check if a bill's maturity date matches a keyset's final expiry date
@@ -44,6 +45,7 @@ function Loader() {
 }
 
 function PageBody({ keysetId }: { keysetId: string }) {
+  const intl = useIntl()
   const queryClient = useQueryClient()
   const { data: keysets, isLoading: keysetsLoading } = useQuery(listKeysetInfosOptions())
   const { data: allQuotesData, isLoading: quotesLoading } = useQuery(listQuotesOptions())
@@ -55,14 +57,28 @@ function PageBody({ keysetId }: { keysetId: string }) {
   const redemptionMutation = useMutation({
     ...postEnableRedemptionMutation(),
     onSuccess: () => {
-      toast.success("Redemption enabled successfully")
+      toast.success(
+        intl.formatMessage({
+          id: "keyset.detail.redeem.success",
+          defaultMessage: "Redemption enabled successfully",
+        }),
+      )
       void queryClient.invalidateQueries({
         queryKey: [{ _id: 'listKeysetInfos' }],
         exact: false
       })
     },
     onError: (error) => {
-      toast.error(`Failed to enable redemption: ${error}`)
+      const message = error instanceof Error ? error.message : String(error)
+      toast.error(
+        intl.formatMessage(
+          {
+            id: "keyset.detail.redeem.error",
+            defaultMessage: "Failed to enable redemption: {error}",
+          },
+          { error: message },
+        ),
+      )
     },
   })
 
@@ -158,12 +174,22 @@ function PageBody({ keysetId }: { keysetId: string }) {
       <div className="p-4">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-muted-foreground">Keyset not found</p>
+            <p className="text-muted-foreground">
+              <FormattedMessage
+                id="keyset.detail.notFound"
+                defaultMessage="Keyset not found"
+              />
+            </p>
           </CardContent>
         </Card>
       </div>
     )
   }
+
+  const noExpiryText = intl.formatMessage({
+    id: "keysets.noExpiry",
+    defaultMessage: "No expiry",
+  })
 
   const finalExpiryDate = keyset.final_expiry
     ? new Date(keyset.final_expiry * 1000).toLocaleDateString("en-US", {
@@ -171,7 +197,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
         month: "short",
         year: "numeric",
       }).replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
-    : "No expiry"
+    : noExpiryText
   const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
 
   type EbillType = NonNullable<typeof ebills>[number]
@@ -201,11 +227,30 @@ function PageBody({ keysetId }: { keysetId: string }) {
             <div>
               <CardTitle className="font-mono text-sm">{keyset.id}</CardTitle>
               <CardDescription className="mt-1">
-                Currency: {currencyUnit} | Maturity date: {finalExpiryDate}
+                <FormattedMessage
+                  id="keyset.detail.meta"
+                  defaultMessage="Currency: {currency} | Maturity date: {maturityDate}"
+                  values={{
+                    currency: currencyUnit,
+                    maturityDate: finalExpiryDate,
+                  }}
+                />
               </CardDescription>
             </div>
             <div className="flex gap-2 items-center">
-              <Badge variant={keyset.active ? "default" : "secondary"}>{keyset.active ? "Active" : "Inactive"}</Badge>
+              <Badge variant={keyset.active ? "default" : "secondary"}>
+                {keyset.active ? (
+                  <FormattedMessage
+                    id="keysets.status.active"
+                    defaultMessage="Active"
+                  />
+                ) : (
+                  <FormattedMessage
+                    id="keysets.status.inactive"
+                    defaultMessage="Inactive"
+                  />
+                )}
+              </Badge>
             </div>
           </div>
           {keyset.active && (
@@ -223,16 +268,34 @@ function PageBody({ keysetId }: { keysetId: string }) {
                 }}
               >
                 {redemptionMutation.isPending
-                  ? "Enabling redemption..."
+                  ? intl.formatMessage({
+                      id: "keyset.detail.redeem.enabling",
+                      defaultMessage: "Enabling redemption...",
+                    })
                   : hasNoMatchingBills
-                  ? "No matching bills found"
+                  ? intl.formatMessage({
+                      id: "keyset.detail.redeem.noMatchingBills",
+                      defaultMessage: "No matching bills found",
+                    })
                   : !allBillsPaid
-                  ? "Waiting for e-bill payments..."
+                  ? intl.formatMessage({
+                      id: "keyset.detail.redeem.waitingPayments",
+                      defaultMessage: "Waiting for e-bill payments...",
+                    })
                   : anyMintCompleteLoading
-                  ? "Checking mint status..."
+                  ? intl.formatMessage({
+                      id: "keyset.detail.redeem.checkingMintStatus",
+                      defaultMessage: "Checking mint status...",
+                    })
                   : !allMintComplete
-                  ? "Waiting for mint completion..."
-                  : "Redeem"}
+                  ? intl.formatMessage({
+                      id: "keyset.detail.redeem.waitingMintCompletion",
+                      defaultMessage: "Waiting for mint completion...",
+                    })
+                  : intl.formatMessage({
+                      id: "keyset.detail.redeem.action",
+                      defaultMessage: "Redeem",
+                    })}
               </Button>
             </div>
           )}
@@ -242,18 +305,54 @@ function PageBody({ keysetId }: { keysetId: string }) {
             <Skeleton className="h-20 w-full" />
           ) : matchingQuotes.length > 0 ? (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold">All quotes ({matchingQuotes.length})</h4>
+              <h4 className="text-sm font-semibold">
+                <FormattedMessage
+                  id="keyset.detail.allQuotes"
+                  defaultMessage="All quotes ({count})"
+                  values={{ count: matchingQuotes.length }}
+                />
+              </h4>
 
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="text-left p-2 font-semibold">Quote ID</th>
-                      <th className="text-left p-2 font-semibold">Quote status</th>
-                      <th className="text-left p-2 font-semibold">Payment status</th>
-                      <th className="text-left p-2 font-semibold">Mint status</th>
-                      <th className="text-left p-2 font-semibold">Payment address</th>
-                      <th className="text-right p-2 font-semibold">Sum</th>
+                      <th className="text-left p-2 font-semibold">
+                        <FormattedMessage
+                          id="keyset.detail.table.quoteId"
+                          defaultMessage="Quote ID"
+                        />
+                      </th>
+                      <th className="text-left p-2 font-semibold">
+                        <FormattedMessage
+                          id="keyset.detail.table.quoteStatus"
+                          defaultMessage="Quote status"
+                        />
+                      </th>
+                      <th className="text-left p-2 font-semibold">
+                        <FormattedMessage
+                          id="keyset.detail.table.paymentStatus"
+                          defaultMessage="Payment status"
+                        />
+                      </th>
+                      <th className="text-left p-2 font-semibold">
+                        <FormattedMessage
+                          id="keyset.detail.table.mintStatus"
+                          defaultMessage="Redemption status"
+                        />
+                      </th>
+                      <th className="text-left p-2 font-semibold">
+                        <FormattedMessage
+                          id="keyset.detail.table.paymentAddress"
+                          defaultMessage="Payment address"
+                        />
+                      </th>
+                      <th className="text-right p-2 font-semibold">
+                        <FormattedMessage
+                          id="keyset.detail.table.sum"
+                          defaultMessage="Sum"
+                        />
+                      </th>
                       <th className="text-right p-2 font-semibold"></th>
                     </tr>
                   </thead>
@@ -288,7 +387,12 @@ function PageBody({ keysetId }: { keysetId: string }) {
                             </Link>
                           </td>
                           <td className="p-2">
-                            <Badge variant="outline">{formatStatusLabel(quote.status)}</Badge>
+                            <Badge variant="outline">
+                              {intl.formatMessage({
+                                id: `quote.status.${quote.status}`,
+                                defaultMessage: formatStatusLabel(quote.status),
+                              })}
+                            </Badge>
                           </td>
                           <td className="p-2">
                             {ebill ? (
@@ -300,16 +404,34 @@ function PageBody({ keysetId }: { keysetId: string }) {
                                     : "bg-orange-50 text-orange-700 border-orange-200"
                                 }
                               >
-                                {isPaid ? "Paid" : "Unpaid"}
+                                {isPaid ? (
+                                  <FormattedMessage
+                                    id="keyset.detail.table.paid"
+                                    defaultMessage="Paid"
+                                  />
+                                ) : (
+                                  <FormattedMessage
+                                    id="keyset.detail.table.unpaid"
+                                    defaultMessage="Unpaid"
+                                  />
+                                )}
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground text-xs">N/A</span>
+                              <span className="text-muted-foreground text-xs">
+                                <FormattedMessage
+                                  id="keyset.detail.table.na"
+                                  defaultMessage="N/A"
+                                />
+                              </span>
                             )}
                           </td>
                           <td className="p-2">
                             {isMintLoading ? (
                               <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                                Checking...
+                                <FormattedMessage
+                                  id="keyset.detail.table.mintChecking"
+                                  defaultMessage="Checking..."
+                                />
                               </Badge>
                             ) : billId && mintCompleteQuery ? (
                               <Badge
@@ -320,15 +442,35 @@ function PageBody({ keysetId }: { keysetId: string }) {
                                     : "bg-yellow-50 text-yellow-700 border-yellow-200"
                                 }
                               >
-                                {isMintComplete ? "Complete" : "Pending"}
+                                {isMintComplete ? (
+                                  <FormattedMessage
+                                    id="keyset.detail.table.mintComplete"
+                                    defaultMessage="Complete"
+                                  />
+                                ) : (
+                                  <FormattedMessage
+                                    id="keyset.detail.table.mintPending"
+                                    defaultMessage="Pending"
+                                  />
+                                )}
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground text-xs">N/A</span>
+                              <span className="text-muted-foreground text-xs">
+                                <FormattedMessage
+                                  id="keyset.detail.table.na"
+                                  defaultMessage="N/A"
+                                />
+                              </span>
                             )}
                           </td>
                           <td className="p-2 font-mono text-xs break-all">
                             {paymentAddress ?? (
-                              <span className="text-muted-foreground">N/A</span>
+                              <span className="text-muted-foreground">
+                                <FormattedMessage
+                                  id="keyset.detail.table.na"
+                                  defaultMessage="N/A"
+                                />
+                              </span>
                             )}
                           </td>
                           <td className="p-2 text-right">{quote.sum} sat</td>
@@ -349,7 +491,12 @@ function PageBody({ keysetId }: { keysetId: string }) {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No quotes available</p>
+            <p className="text-sm text-muted-foreground">
+              <FormattedMessage
+                id="keyset.detail.noQuotes"
+                defaultMessage="No quotes available"
+              />
+            </p>
           )}
         </CardContent>
       </Card>
@@ -370,7 +517,12 @@ export default function KeysetDetailPage() {
       <div className="p-4">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-muted-foreground">Invalid keyset ID</p>
+            <p className="text-muted-foreground">
+              <FormattedMessage
+                id="keyset.detail.invalidId"
+                defaultMessage="Invalid keyset ID"
+              />
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -382,7 +534,12 @@ export default function KeysetDetailPage() {
       <Breadcrumbs
         parents={[
           <BreadcrumbLink key="keysets" asChild>
-            <Link to="/keysets">Keysets</Link>
+            <Link to="/keysets">
+              <FormattedMessage
+                id="keysets.page.title"
+                defaultMessage="Keysets"
+              />
+            </Link>
           </BreadcrumbLink>,
         ]}
       >
@@ -390,12 +547,24 @@ export default function KeysetDetailPage() {
       </Breadcrumbs>
       <div className="flex items-center justify-between">
         <PageTitle>
-          Keyset <span className="font-mono">{truncateString(keysetId, 16)}</span>
+          <FormattedMessage
+            id="keyset.detail.title"
+            defaultMessage="Keyset {id}"
+            values={{
+              id: <span className="font-mono">{truncateString(keysetId, 16)}</span>,
+            }}
+          />
         </PageTitle>
         {fromQuote && quoteId && (
           <Button variant="outline" size="sm" asChild>
             <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }}>
-              Back to quote <span className="font-mono">{truncateString(quoteId, 16)}</span>
+              <FormattedMessage
+                id="keyset.detail.backToQuote"
+                defaultMessage="Back to quote {id}"
+                values={{
+                  id: <span className="font-mono">{truncateString(quoteId, 16)}</span>,
+                }}
+              />
             </Link>
           </Button>
         )}

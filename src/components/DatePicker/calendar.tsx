@@ -1,22 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  DateRange,
-  DayPicker,
-  DayPickerRangeProps,
-  isMatch,
-  SelectRangeEventHandler,
-  SelectSingleEventHandler,
-} from "react-day-picker";
+import { DateRange, DayPicker, DayPickerProps, OnSelectHandler } from "react-day-picker"
 import { format, isSameDay } from "date-fns";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useIntl } from "react-intl";
 
 import { cn } from "@/lib/utils";
 import { YearPicker } from "./yearPicker";
 import { MonthPicker } from "./monthPicker";
 
-export type CalendarProps = Omit<DayPickerRangeProps, "mode" | "onSelect" | "selected"> & {
+export type CalendarProps = Omit<DayPickerProps, "mode" | "onSelect" | "selected"> & {
   mode: "single" | "range"
-  onSelect?: SelectRangeEventHandler
+  onSelect?: OnSelectHandler<DateRange | undefined>
   selected: DateRange
   onCaptionLabelClicked?: () => void
   disableFutureNavigation?: boolean
@@ -25,6 +19,7 @@ export type CalendarProps = Omit<DayPickerRangeProps, "mode" | "onSelect" | "sel
   ISOWeek?: boolean
   showOutsideDays?: boolean
   month?: Date
+  minDate?: Date
   initialFocus?: boolean
   modifiers?: Record<string, (date: Date) => boolean>
   modifiersClassNames?: Record<string, string>
@@ -32,21 +27,23 @@ export type CalendarProps = Omit<DayPickerRangeProps, "mode" | "onSelect" | "sel
 
 const classNames = {
   root: "w-full",
-  months: "",
-  month_grid: "w-full border-collapse space-y-2",
-  month: "w-full",
-  weekday: "h-10 w-10 text-center",
-  caption: "flex justify-center relative items-center hidden",
-  caption_label: "text-sm font-medium hidden",
+  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+  month: "space-y-4 w-full",
+  month_caption: "flex justify-center relative items-center",
+  // Hide default DayPicker caption label; we render our own header.
+  caption_label: "sr-only",
   nav: "space-x-1 flex items-center",
-  nav_button: "",
-  nav_button_previous: "absolute left-1 bg-transparent!",
-  nav_button_next: "absolute right-1 bg-transparent!",
-  table: "w-full h-full border-collapse space-y-1",
-  head_row: "flex justify-around",
-  head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-  row: "flex w-full mt-1 justify-around",
-  day_button: "h-10 w-10 text-center text-sm p-0 relative cursor-pointer hover:bg-accent/50 disabled:cursor-not-allowed disabled:opacity-50 [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+  button_previous: "absolute left-1 bg-transparent!",
+  button_next: "absolute right-1 bg-transparent!",
+  month_grid: "w-full h-full border-collapse space-y-1",
+  weekdays: "flex justify-around",
+  weekday: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+  week: "flex w-full mt-1 justify-around",
+  day: "h-10 w-10 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+  day_button:
+    "h-10 w-10 text-center text-sm p-0 relative cursor-pointer hover:bg-accent/50 disabled:cursor-not-allowed disabled:opacity-50 [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+  range_end: "day-range-end",
+  range_start: "day-range-start",
   selected: "bg-elevation-200 hover:bg-elevation-200 border border-divider-100",
   today: "bg-accent text-accent-foreground",
   outside: "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
@@ -57,9 +54,8 @@ const classNames = {
 
 function getNextDate(
   current: Date,
-  offset: number,
-  disabled?: (date: Date) => boolean
-): Date | null {
+  offset: number
+): Date {
   const year = current.getFullYear();
   const month = current.getMonth();
   const day = current.getDate();
@@ -78,17 +74,7 @@ function getNextDate(
     ? daysInTargetMonth
     : Math.min(day, daysInTargetMonth);
 
-  const newDate = new Date(
-    targetMonthDate.getFullYear(),
-    targetMonthDate.getMonth(),
-    newDay
-  );
-
-  if (disabled?.(newDate)) {
-    return null;
-  }
-
-  return newDate;
+  return new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), newDay)
 }
 
 function Calendar({
@@ -104,12 +90,15 @@ function Calendar({
                     initialFocus,
                     modifiers,
                     modifiersClassNames,
+                    month: monthProp,
+                    minDate,
                     ...restProps
                   }: CalendarProps) {
+  const intl = useIntl();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     selected.from
   );
-  const [month, setMonth] = useState<Date>(selected.from ?? new Date());
+  const [month, setMonth] = useState<Date>(selected.from ?? monthProp ?? new Date());
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
@@ -120,58 +109,32 @@ function Calendar({
         setMonth(selected.from);
       } else {
         setSelectedDate(undefined);
-        setMonth(new Date());
+        setMonth(monthProp ?? new Date());
       }
     } else {
       if (!selected.from && !selected.to) {
-        setMonth(new Date());
+        setMonth(monthProp ?? new Date());
         setSelectedDate(undefined);
       }
     }
-  }, [selected, mode]);
+  }, [selected, mode, monthProp]);
 
-  const handleOnSelectRange: SelectRangeEventHandler = (
-    range,
-    selectedDay,
-    modifiers,
-    e
-  ) => {
+  const handleOnSelectRange: OnSelectHandler<DateRange | undefined> = (range, selectedDay, modifiers, e) => {
     if (mode === "single") {
-      setSelectedDate(selectedDay);
+      setSelectedDate(selectedDay)
     }
     if (onSelect) {
-      onSelect(range, selectedDay, modifiers, e);
+      onSelect(range, selectedDay, modifiers, e)
     }
-  };
+  }
 
-  const handleOnSelectSingle: SelectSingleEventHandler = (
-    day,
-    selectedDay,
-    modifiers,
-    e
-  ) => {
-    handleOnSelectRange({ from: day }, selectedDay, modifiers, e);
-  };
+  const handleOnSelectSingle: OnSelectHandler<Date | undefined> = (day, selectedDay, modifiers, e) => {
+    handleOnSelectRange(day ? { from: day } : undefined, selectedDay, modifiers, e)
+  }
 
   const goToOffsetMonth = useCallback((offset: number) => {
-    const disabledMatchers = restProps.disabled;
-    const isDisabled = (date: Date) => {
-      if (!disabledMatchers) {
-        return false;
-      }
-      if (Array.isArray(disabledMatchers)) {
-        return disabledMatchers.some((m) => isMatch(date, [m]));
-      }
-
-      return isMatch(date, [disabledMatchers]);
-    };
-
-    const newDate = getNextDate(month, offset, isDisabled);
-    if (!newDate) {
-      return;
-    }
-    setMonth(newDate);
-  }, [month, restProps.disabled]);
+    setMonth(getNextDate(month, offset));
+  }, [month]);
 
   let touchStartX: number | null = null;
 
@@ -211,21 +174,22 @@ function Calendar({
       <button
         type="button"
         onClick={() => {
-          goToOffsetMonth(-1);
+          goToOffsetMonth(-1)
         }}
         className="absolute left-1 bg-transparent hover:bg-accent rounded-md p-2"
-        aria-label="Go to previous month"
+        aria-label={intl.formatMessage({
+          id: "calendar.nav.prevMonth",
+          defaultMessage: "Go to previous month",
+        })}
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
       <div
-        className={cn(
-          "flex justify-between items-center gap-2 cursor-pointer hover:bg-accent rounded-md px-3 py-1"
-        )}
+        className={cn("flex justify-between items-center gap-2 cursor-pointer hover:bg-accent rounded-md px-3 py-1")}
         role="button"
         tabIndex={0}
       >
-        {mode === "single" && selectedDate && (
+        {mode === "single" && selectedDate ? (
           <span
             className="text-sm font-medium flex gap-1"
             onClick={() => {
@@ -237,6 +201,31 @@ function Calendar({
             }}
           >
             <span>{format(month, "MMM dd,")}</span>
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowYearPicker(!showYearPicker)
+                setShowMonthPicker(false)
+                if (onCaptionLabelClicked) {
+                  onCaptionLabelClicked()
+                }
+              }}
+            >
+              {format(month, "yyyy")}
+            </span>
+          </span>
+        ) : (
+          <span
+            className="text-sm font-medium flex gap-1"
+            onClick={() => {
+              setShowYearPicker(!showYearPicker)
+              setShowMonthPicker(false)
+              if (onCaptionLabelClicked) {
+                onCaptionLabelClicked()
+              }
+            }}
+          >
+            <span>{format(month, "MMM ")}</span>
             <span
               onClick={(e) => {
                 e.stopPropagation()
@@ -283,19 +272,22 @@ function Calendar({
       <button
         type="button"
         onClick={() => {
-          goToOffsetMonth(1);
+          goToOffsetMonth(1)
         }}
         disabled={!canGoForward}
         className={cn(
           "absolute right-1 bg-transparent hover:bg-accent rounded-md p-2",
-          !canGoForward && "opacity-40 pointer-events-none"
+          !canGoForward && "opacity-40 pointer-events-none",
         )}
-        aria-label="Go to next month"
+        aria-label={intl.formatMessage({
+          id: "calendar.nav.nextMonth",
+          defaultMessage: "Go to next month",
+        })}
       >
         <ChevronRight className="h-4 w-4" />
       </button>
     </div>
-  );
+  )
 
   const pickerProps = {
     ...restProps,
@@ -322,10 +314,6 @@ function Calendar({
           value={month}
           onChange={(newDate) => {
             setMonth(newDate)
-            if (mode === "single") {
-              setSelectedDate(newDate)
-              handleOnSelectSingle(newDate, newDate, {}, {} as React.MouseEvent<Element>)
-            }
             setShowYearPicker(false)
             setShowMonthPicker(true)
           }}
@@ -333,22 +321,20 @@ function Calendar({
             setShowYearPicker(false)
           }}
           disableFutureNavigation={disableFutureNavigation}
+          minDate={minDate}
         />
       ) : showMonthPicker ? (
         <MonthPicker
           value={month}
           onChange={(newDate) => {
             setMonth(newDate)
-            if (mode === "single") {
-              setSelectedDate(newDate)
-              handleOnSelectSingle(newDate, newDate, {}, {} as React.MouseEvent<Element>)
-            }
             setShowMonthPicker(false)
           }}
           onCaptionLabelClicked={() => {
             setShowMonthPicker(false)
           }}
           disableFutureNavigation={disableFutureNavigation}
+          minDate={minDate}
         />
       ) : mode === "single" ? (
         <DayPicker

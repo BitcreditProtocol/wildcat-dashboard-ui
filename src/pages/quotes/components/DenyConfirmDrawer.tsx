@@ -1,5 +1,6 @@
 import { ConfirmDrawer } from "@/components/Drawers.tsx"
 import type { ReactNode } from "react"
+import { useIntl } from "react-intl"
 
 interface DenyConfirmDrawerProps {
   title: string
@@ -10,14 +11,21 @@ interface DenyConfirmDrawerProps {
 }
 
 export function DenyConfirmDrawer({ title, open, onOpenChange, onSubmit, children }: DenyConfirmDrawerProps) {
+  const intl = useIntl()
   return (
     <ConfirmDrawer
       title={title}
-      description="Are you sure you want to deny this quote? This action cannot be undone."
+      description={intl.formatMessage({
+        id: "quotes.deny.description",
+        defaultMessage: "Are you sure you want to deny this quote? This action cannot be undone.",
+      })}
       open={open}
       onOpenChange={onOpenChange}
       onSubmit={onSubmit}
-      submitButtonText="Yes, deny quote"
+      submitButtonText={intl.formatMessage({
+        id: "quotes.deny.confirmButton",
+        defaultMessage: "Yes, deny quote",
+      })}
       submitButtonVariant="destructive"
       trigger={children}
     />

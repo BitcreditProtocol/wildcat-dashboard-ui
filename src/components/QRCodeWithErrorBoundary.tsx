@@ -4,6 +4,7 @@ import { AlertTriangle, QrCode } from "lucide-react"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { canGenerateQRCode, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils.ts"
+import { useIntl } from "react-intl"
 
 /**
  * Generic QR Code Components
@@ -26,6 +27,7 @@ import { canGenerateQRCode, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils.ts"
 
 interface QRCodeErrorBoundaryProps {
   children: ReactNode
+  fallbackMessage: string
 }
 
 interface QRCodeErrorBoundaryState {
@@ -51,7 +53,7 @@ class QRCodeErrorBoundary extends Component<QRCodeErrorBoundaryProps, QRCodeErro
       return (
         <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          <span>QR code cannot be generated (data too large)</span>
+          <span>{this.props.fallbackMessage}</span>
         </div>
       )
     }
@@ -73,17 +75,31 @@ interface QRCodeModalProps extends QRCodeProps {
 }
 
 export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
+  const intl = useIntl()
+  const errorFallback = intl.formatMessage({
+    id: "qrCode.error.generic",
+    defaultMessage: "QR code cannot be generated (data too large)",
+  })
+
   if (value.length > QR_CODE_MAX_LENGTH) {
     return (
       <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
         <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-        <span>Data too large for QR code ({value.length} characters, max {QR_CODE_MAX_LENGTH})</span>
+        <span>
+          {intl.formatMessage(
+            {
+              id: "qrCode.error.tooLarge",
+              defaultMessage: "Data too large for QR code ({length} characters, max {max})",
+            },
+            { length: value.length, max: QR_CODE_MAX_LENGTH }
+          )}
+        </span>
       </div>
     )
   }
 
   return (
-    <QRCodeErrorBoundary>
+    <QRCodeErrorBoundary fallbackMessage={errorFallback}>
       <div className={`flex flex-col gap-2 p-4 bg-white border rounded-lg ${className ?? ""}`}>
         <QRCodeSVG
           value={value}
@@ -104,10 +120,21 @@ export function QRCodeModal({
   value,
   size = 768,
   label,
-  title = "QR Code",
-  triggerLabel = "Show QR code"
+  title,
+  triggerLabel,
 }: QRCodeModalProps) {
+  const intl = useIntl()
   const [open, setOpen] = useState(false)
+  const resolvedTitle =
+    title ??
+    intl.formatMessage({ id: "qrCode.modal.title", defaultMessage: "QR Code" })
+  const resolvedTriggerLabel =
+    triggerLabel ??
+    intl.formatMessage({ id: "qrCode.modal.triggerLabel", defaultMessage: "Show QR code" })
+  const errorFallback = intl.formatMessage({
+    id: "qrCode.error.generic",
+    defaultMessage: "QR code cannot be generated (data too large)",
+  })
 
   if (!canGenerateQRCode(value)) {
     return null
@@ -120,18 +147,18 @@ export function QRCodeModal({
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          aria-label={triggerLabel}
+          aria-label={resolvedTriggerLabel}
         >
           <QrCode className="h-4 w-4" />
         </Button>
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>{title}</DrawerTitle>
+          <DrawerTitle>{resolvedTitle}</DrawerTitle>
         </DrawerHeader>
         <div className="flex flex-col items-center gap-4 p-0 sm:p-6">
-          <QRCodeErrorBoundary>
-            <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg w-full" style={{ maxWidth: size }}>
+          <QRCodeErrorBoundary fallbackMessage={errorFallback}>
+            <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg">
               <QRCodeSVG
                 value={value}
                 size={size}
@@ -152,14 +179,30 @@ export function QRCodeModal({
 }
 
 export function FeeTokenQRCodeModal({ feeToken, size = 768 }: { feeToken: string; size?: number }) {
+  const intl = useIntl()
+
   return (
-    <QRCodeErrorBoundary>
+    <QRCodeErrorBoundary
+      fallbackMessage={intl.formatMessage({
+        id: "qrCode.error.generic",
+        defaultMessage: "QR code cannot be generated (data too large)",
+      })}
+    >
       <QRCodeModal
         value={feeToken}
         size={size}
-        label="Scan to use fee token"
-        title="Fee Token QR Code"
-        triggerLabel="Show QR code for fee token"
+        label={intl.formatMessage({
+          id: "qrCode.feeToken.label",
+          defaultMessage: "Scan to use fee token",
+        })}
+        title={intl.formatMessage({
+          id: "qrCode.feeToken.title",
+          defaultMessage: "Fee Token QR Code",
+        })}
+        triggerLabel={intl.formatMessage({
+          id: "qrCode.feeToken.triggerLabel",
+          defaultMessage: "Show QR code for fee token",
+        })}
       />
     </QRCodeErrorBoundary>
   )

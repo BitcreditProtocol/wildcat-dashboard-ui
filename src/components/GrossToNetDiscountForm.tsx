@@ -7,6 +7,7 @@ import { Act360 } from "@/utils/discount-util"
 import { Button } from "./ui/button"
 import { DrawerFooter, DrawerClose } from "./ui/drawer"
 import { setItem, getItem } from "@/utils/local-storage" // , removeItem
+import { useIntl } from "react-intl"
 
 interface CurrencyAmount {
   value: Big
@@ -54,9 +55,30 @@ const GrossToNetDiscountForm = ({
   submitButtonText,
   quoteId,
 }: GrossToNetProps) => {
+  const intl = useIntl()
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false)
   const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null)
   const isSat = gross.currency === "sat"
+  const daysLabel = intl.formatMessage({
+    id: "discountForm.days",
+    defaultMessage: "Days"
+  })
+  const discountRateLabel = intl.formatMessage({
+    id: "discountForm.discountRate",
+    defaultMessage: "Discount rate",
+  })
+  const netAmountLabel = intl.formatMessage({
+    id: "discountForm.netAmount",
+    defaultMessage: "Net amount",
+  })
+  const annualDiscountLabel = intl.formatMessage({
+    id: "discountForm.annualDiscount",
+    defaultMessage: "Annual discount",
+  })
+  const grossAmountLabel = intl.formatMessage({
+    id: "discountForm.grossAmount",
+    defaultMessage: "Gross amount",
+  })
 
   const parseDigitsToInt = (value: unknown) => {
     let str = ""
@@ -67,27 +89,87 @@ const GrossToNetDiscountForm = ({
   }
 
   const validateNetAmount = (value?: string) => {
-    if (value == null || value === "") return "Net amount is required"
+    if (value == null || value === "") {
+      return intl.formatMessage({
+        id: "discountForm.validation.net.required",
+        defaultMessage: "Net amount is required",
+      })
+    }
+
     const parsed = isSat ? parseIntSafe(value) : parseFloatSafe(value)
     if (parsed === undefined || Number.isNaN(parsed)) {
-      return "Net amount is invalid"
+      return intl.formatMessage({
+        id: "discountForm.validation.net.invalid",
+        defaultMessage: "Net amount must be a valid number",
+      })
     }
     if (parsed < 1) {
-      return "Net amount must be at least 1"
+      return intl.formatMessage(
+        { id: "discountForm.validation.net.min",
+          defaultMessage: "Net amount must be at least {min}"
+        },
+        { min: 1 }
+      )
     }
     if (new Big(parsed).gt(gross.value)) {
-      return "Net amount cannot exceed gross amount"
+      return intl.formatMessage({
+        id: "discountForm.validation.net.maxGross",
+        defaultMessage: "Net amount cannot exceed gross amount",
+      })
     }
+
     return true
   }
 
   const validateMinInteger = (min: number, label: string) => (value?: string) => {
-    if (value == null || value === "") return `${label} is required`
-    if (!/^\d+$/.test(value)) return `${label} must be a whole number`
+    if (value == null || value === "") {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.required",
+          defaultMessage: "{label} is required"
+        },
+        { label }
+      )
+    }
+    if (!/^\d+$/.test(value)) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.wholeNumber",
+          defaultMessage: "{label} must be a whole number"
+        },
+        { label }
+      )
+    }
+
     const n = parseInt(value, 10)
-    if (Number.isNaN(n)) return `${label} is invalid`
-    if (n < min) return `${label} must be at least ${min}`
-    if (n > INPUT_DAYS_MAX_VALUE) return `${label} must be at most ${INPUT_DAYS_MAX_VALUE}`
+    if (Number.isNaN(n)) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.invalid",
+          defaultMessage: "{label} is invalid"
+        },
+        { label }
+      )
+    }
+    if (n < min) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.min",
+          defaultMessage: "{label} must be at least {min}"
+        },
+        { label, min }
+      )
+    }
+    if (n > INPUT_DAYS_MAX_VALUE) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.max",
+          defaultMessage: "{label} must be at most {max}"
+        },
+        { label, max: INPUT_DAYS_MAX_VALUE }
+      )
+    }
+
     return true
   }
 
@@ -355,6 +437,14 @@ const GrossToNetDiscountForm = ({
     }
   }
 
+  const handleConfirmClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    void handleSubmit(handleFormSubmit)().catch((err) => {
+      console.error("Submit failed:", err)
+    })
+  }
+
   return (
     <>
       <form
@@ -369,7 +459,7 @@ const GrossToNetDiscountForm = ({
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <label htmlFor="daysInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Days
+                {daysLabel}
               </label>
               <input
                 id="daysInput"
@@ -391,13 +481,19 @@ const GrossToNetDiscountForm = ({
                   min: INPUT_DAYS_MIN_VALUE,
                   max: INPUT_DAYS_MAX_VALUE,
                   setValueAs: parseDigitsToInt,
-                  validate: validateMinInteger(INPUT_DAYS_MIN_VALUE, "Days"),
+                  validate: validateMinInteger(INPUT_DAYS_MIN_VALUE, daysLabel),
                 })}
               />
             </div>
             {errors.daysInput && (
               <div className="text-xs text-red-500">
-                Please enter a valid value between {INPUT_DAYS_MIN_VALUE} and {INPUT_DAYS_MAX_VALUE}.
+                {intl.formatMessage(
+                  {
+                    id: "discountForm.validation.range",
+                    defaultMessage: "Please enter a valid value between {min} and {max}.",
+                  },
+                  { min: INPUT_DAYS_MIN_VALUE, max: INPUT_DAYS_MAX_VALUE },
+                )}
               </div>
             )}
           </div>
@@ -405,7 +501,7 @@ const GrossToNetDiscountForm = ({
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <label htmlFor="discountRateInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Discount rate
+                {discountRateLabel}
               </label>
               <div className="flex gap-1 items-center">
                 <input
@@ -431,7 +527,13 @@ const GrossToNetDiscountForm = ({
             </div>
             {errors.discountRateInput && (
               <div className="text-xs text-red-500">
-                Please enter a valid value between {0}% and {99.9999}%.
+                {intl.formatMessage(
+                  {
+                    id: "discountForm.validation.rateRange",
+                    defaultMessage: "Please enter a valid value between {min}% and {max}%.",
+                  },
+                  { min: 0, max: 99.9999 },
+                )}
               </div>
             )}
           </div>
@@ -439,7 +541,7 @@ const GrossToNetDiscountForm = ({
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <label htmlFor="netInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Net amount
+                {netAmountLabel}
               </label>
               <div className="flex gap-1 items-center">
                 <input
@@ -480,7 +582,7 @@ const GrossToNetDiscountForm = ({
 
         <div className="flex flex-col gap-3 px-2">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">Annual discount</span>
+            <span className="text-gray-600 dark:text-gray-400">{annualDiscountLabel}</span>
             <div className="flex gap-1 items-center">
               <span className="text-gray-600 dark:text-gray-400">
                 {discount === undefined ? (isSat ? "0" : "0.00") : formatAmount(discount.value.abs(), gross.currency)}
@@ -490,7 +592,7 @@ const GrossToNetDiscountForm = ({
           </div>
 
           <div className="flex justify-between items-center text-base font-semibold">
-            <span className="text-gray-900 dark:text-gray-100">Gross amount</span>
+            <span className="text-gray-900 dark:text-gray-100">{grossAmountLabel}</span>
             <div className="flex gap-1 items-center">
               <span className="text-green-600 dark:text-green-400">+{formatAmount(gross.value, gross.currency)}</span>
               <span className="text-xs text-gray-500 dark:text-gray-500">{gross.currency}</span>
@@ -515,18 +617,13 @@ const GrossToNetDiscountForm = ({
           className="w-full mb-1"
           size="sm"
           type="button"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            void (async () => {
-              await handleSubmit(handleFormSubmit)()
-            })().catch((err) => {
-              console.error("Submit failed:", err)
-            })
-          }}
+          onClick={handleConfirmClick}
           disabled={!isValid || net === undefined || discountRate === undefined || days === undefined}
         >
-          Confirm
+          {intl.formatMessage({
+            id: "Confirm",
+            defaultMessage: "Confirm",
+          })}
         </Button>
         <DrawerClose asChild>
           <Button
@@ -534,7 +631,10 @@ const GrossToNetDiscountForm = ({
             variant="outline"
             size="sm"
           >
-            Cancel
+            {intl.formatMessage({
+              id: "Cancel",
+              defaultMessage: "Cancel",
+            })}
           </Button>
         </DrawerClose>
       </DrawerFooter>

@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button.tsx"
 import { Calendar } from "@/components/DatePicker/calendar.tsx"
 import { CalendarIcon } from "lucide-react"
-import { addDays, isSameDay } from "date-fns"
+import { addDays, endOfDay, format, isAfter, isBefore, isSameDay, startOfDay } from "date-fns"
 import { cn } from "@/lib/utils.ts"
+import { useIntl } from "react-intl"
 
 interface CalendarModalProps {
   isOpen: boolean
@@ -29,8 +30,12 @@ export function CalendarModal({
   onConfirm,
   onCancel,
 }: CalendarModalProps) {
-  const disabledBefore = minDate ?? addDays(new Date(Date.now()), 1)
-  const disabledAfter = maxDate
+  const intl = useIntl()
+  const fallbackMin = addDays(new Date(Date.now()), 1)
+  const minDay = startOfDay(minDate ?? fallbackMin)
+  const maxDay = maxDate ? endOfDay(maxDate) : null
+  const disabled = (date: Date) => isBefore(date, minDay) || (maxDay ? isAfter(date, maxDay) : false)
+  const displayMonth = draftDate ?? selectedDate ?? minDate ?? new Date()
 
   return (
     <>
@@ -54,17 +59,21 @@ export function CalendarModal({
         >
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
-            <div className="text-base">{draftDate?.toDateString() ?? "-"}</div>
+            <div className="text-base">
+              {draftDate ? format(draftDate, "MMM dd, yyyy") : "-"}
+            </div>
 
             <Calendar
               mode="single"
+              month={displayMonth}
+              minDate={minDate}
               selected={{ from: draftDate ?? selectedDate }}
               onSelect={(range) => {
                 if (range?.from) {
                   onDateChange(range.from)
                 }
               }}
-              disabled={{ before: disabledBefore, after: disabledAfter }}
+              disabled={disabled}
               modifiers={{
                 saved: (d) => !!selectedDate && isSameDay(d, selectedDate),
               }}
@@ -82,7 +91,10 @@ export function CalendarModal({
                 type="button"
                 onClick={onCancel}
               >
-                Cancel
+                {intl.formatMessage({
+                  id: "Cancel",
+                  defaultMessage: "Cancel"
+                })}
               </Button>
               <Button
                 className="w-full max-w-sm"
@@ -91,7 +103,10 @@ export function CalendarModal({
                 disabled={!draftDate}
                 onClick={onConfirm}
               >
-                Confirm
+                {intl.formatMessage({
+                  id: "Confirm",
+                  defaultMessage: "Confirm"
+                })}
               </Button>
             </div>
           </div>
@@ -107,6 +122,8 @@ interface DatePickerButtonProps {
 }
 
 export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
+  const intl = useIntl()
+
   return (
     <button
       type="button"
@@ -115,7 +132,12 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
     >
       <CalendarIcon className="text-gray-500 dark:text-gray-400 w-5 h-5" strokeWidth={1.5} />
       <span className="text-gray-900 dark:text-gray-100">
-        {date?.toDateString() ?? "Select date"}
+        {date
+          ? format(date, "MMM dd, yyyy")
+          : intl.formatMessage({
+              id: "quotes.calendar.selectDate",
+              defaultMessage: "Select date",
+            })}
       </span>
     </button>
   )

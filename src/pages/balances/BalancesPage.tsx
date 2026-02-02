@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { FormattedMessage, useIntl } from "react-intl"
 
 function Loader() {
   return (
@@ -26,26 +27,42 @@ function Loader() {
 }
 
 export function BitcoinBalanceChart() {
+  const intl = useIntl()
   const config = {
     bitcoin: {
-      label: "Bitcoin",
+      label: intl.formatMessage({ id: "balances.chart.bitcoin", defaultMessage: "Bitcoin" }),
       color: "#2563eb",
     },
   } satisfies ChartConfig
 
+  const months = [
+    intl.formatMessage({ id: "month.jan.short", defaultMessage: "Jan" }),
+    intl.formatMessage({ id: "month.feb.short", defaultMessage: "Feb" }),
+    intl.formatMessage({ id: "month.mar.short", defaultMessage: "Mar" }),
+    intl.formatMessage({ id: "month.apr.short", defaultMessage: "Apr" }),
+    intl.formatMessage({ id: "month.may.short", defaultMessage: "May" }),
+    intl.formatMessage({ id: "month.jun.short", defaultMessage: "Jun" }),
+    intl.formatMessage({ id: "month.jul.short", defaultMessage: "Jul" }),
+    intl.formatMessage({ id: "month.aug.short", defaultMessage: "Aug" }),
+    intl.formatMessage({ id: "month.sep.short", defaultMessage: "Sep" }),
+    intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
+    intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
+    intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
+  ]
+
   const data = [
-    { month: "January", bitcoin: 186 },
-    { month: "February", bitcoin: 305 },
-    { month: "March", bitcoin: 237 },
-    { month: "April", bitcoin: 73 },
-    { month: "May", bitcoin: 209 },
-    { month: "June", bitcoin: 214 },
-    { month: "July", bitcoin: 21 },
-    { month: "August", bitcoin: 32 },
-    { month: "September", bitcoin: 0 },
-    { month: "October", bitcoin: 0 },
-    { month: "November", bitcoin: 0 },
-    { month: "December", bitcoin: 0 },
+    { month: months[0], bitcoin: 186 },
+    { month: months[1], bitcoin: 305 },
+    { month: months[2], bitcoin: 237 },
+    { month: months[3], bitcoin: 73 },
+    { month: months[4], bitcoin: 209 },
+    { month: months[5], bitcoin: 214 },
+    { month: months[6], bitcoin: 21 },
+    { month: months[7], bitcoin: 32 },
+    { month: months[8], bitcoin: 0 },
+    { month: months[9], bitcoin: 0 },
+    { month: months[10], bitcoin: 0 },
+    { month: months[11], bitcoin: 0 },
   ]
 
   return (
@@ -57,7 +74,7 @@ export function BitcoinBalanceChart() {
           tickLine={false}
           tickMargin={10}
           axisLine={false}
-          tickFormatter={(value: string) => value.slice(0, 3)}
+          tickFormatter={(value: string) => value}
         />
         <YAxis dataKey="bitcoin" tickLine={false} tickMargin={10} axisLine={false} />
         <Bar dataKey="bitcoin" fill="var(--color-bitcoin)" radius={4} />
@@ -68,34 +85,50 @@ export function BitcoinBalanceChart() {
 }
 
 export function OtherBalanceChart() {
+  const intl = useIntl()
   const config = {
     eIOU: {
-      label: "e-IOU",
+      label: intl.formatMessage({ id: "balances.chart.eiou", defaultMessage: "e-IOU" }),
       color: "#911198",
     },
     credit: {
-      label: "Credit token",
+      label: intl.formatMessage({ id: "balances.chart.creditToken", defaultMessage: "Credit token" }),
       color: "#e9d4ff",
     },
     debit: {
-      label: "Debit token",
+      label: intl.formatMessage({ id: "balances.chart.debitToken", defaultMessage: "Debit token" }),
       color: "#c27aff",
     },
   } satisfies ChartConfig
 
+  const months = [
+    intl.formatMessage({ id: "month.jan.short", defaultMessage: "Jan" }),
+    intl.formatMessage({ id: "month.feb.short", defaultMessage: "Feb" }),
+    intl.formatMessage({ id: "month.mar.short", defaultMessage: "Mar" }),
+    intl.formatMessage({ id: "month.apr.short", defaultMessage: "Apr" }),
+    intl.formatMessage({ id: "month.may.short", defaultMessage: "May" }),
+    intl.formatMessage({ id: "month.jun.short", defaultMessage: "Jun" }),
+    intl.formatMessage({ id: "month.jul.short", defaultMessage: "Jul" }),
+    intl.formatMessage({ id: "month.aug.short", defaultMessage: "Aug" }),
+    intl.formatMessage({ id: "month.sep.short", defaultMessage: "Sep" }),
+    intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
+    intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
+    intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
+  ]
+
   const data = [
-    { month: "January", credit: 121, debit: 0 },
-    { month: "February", credit: 231, debit: 0 },
-    { month: "March", credit: 321, debit: 51 },
-    { month: "April", credit: 603, debit: 186 },
-    { month: "May", credit: 583, debit: 486 },
-    { month: "June", credit: 893, debit: 359 },
-    { month: "July", credit: 1023, debit: 192 },
-    { month: "August", credit: 2023, debit: 521 },
-    { month: "September", credit: 1821, debit: 789 },
-    { month: "October", credit: 1782, debit: 1232 },
-    { month: "November", credit: 0, debit: 0 },
-    { month: "December", credit: 0, debit: 0 },
+    { month: months[0], credit: 121, debit: 0 },
+    { month: months[1], credit: 231, debit: 0 },
+    { month: months[2], credit: 321, debit: 51 },
+    { month: months[3], credit: 603, debit: 186 },
+    { month: months[4], credit: 583, debit: 486 },
+    { month: months[5], credit: 893, debit: 359 },
+    { month: months[6], credit: 1023, debit: 192 },
+    { month: months[7], credit: 2023, debit: 521 },
+    { month: months[8], credit: 1821, debit: 789 },
+    { month: months[9], credit: 1782, debit: 1232 },
+    { month: months[10], credit: 0, debit: 0 },
+    { month: months[11], credit: 0, debit: 0 },
   ]
 
   return (
@@ -107,7 +140,7 @@ export function OtherBalanceChart() {
           tickLine={false}
           tickMargin={10}
           axisLine={false}
-          tickFormatter={(value: string) => value.slice(0, 3)}
+          tickFormatter={(value: string) => value}
         />
         <YAxis dataKey="credit" tickLine={false} tickMargin={10} axisLine={false} />
         <YAxis dataKey="debit" tickLine={false} tickMargin={10} axisLine={false} />
@@ -176,7 +209,13 @@ function PageBodyWithDevSection() {
         <div className="flex flex-col gap-4 my-2">
           <Card className="bg-red-50 border-red-200">
             <CardContent className="p-4">
-              <p className="text-red-800">Error loading balances: {error}</p>
+              <p className="text-red-800">
+                <FormattedMessage
+                  id="balances.error"
+                  defaultMessage="Error loading balances: {error}"
+                  values={{ error }}
+                />
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -190,7 +229,12 @@ function PageBodyWithDevSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <Card className="bg-indigo-100">
             <CardHeader>
-              <CardTitle>Bitcoin balance</CardTitle>
+              <CardTitle>
+                <FormattedMessage
+                  id="balances.bitcoin"
+                  defaultMessage="Bitcoin balance"
+                />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
@@ -198,7 +242,12 @@ function PageBodyWithDevSection() {
           </Card>
           <Card className="bg-orange-100">
             <CardHeader>
-              <CardTitle>e-IOU balance</CardTitle>
+              <CardTitle>
+                <FormattedMessage
+                  id="balances.eiou"
+                  defaultMessage="e-IOU balance"
+                />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
@@ -206,7 +255,12 @@ function PageBodyWithDevSection() {
           </Card>
           <Card className="bg-purple-200">
             <CardHeader>
-              <CardTitle>Credit token balance</CardTitle>
+              <CardTitle>
+                <FormattedMessage
+                  id="balances.creditToken"
+                  defaultMessage="Credit token balance"
+                />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
@@ -214,7 +268,12 @@ function PageBodyWithDevSection() {
           </Card>
           <Card className="bg-purple-400">
             <CardHeader>
-              <CardTitle>Debit token balance</CardTitle>
+              <CardTitle>
+                <FormattedMessage
+                  id="balances.debitToken"
+                  defaultMessage="Debit token balance"
+                />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
@@ -243,8 +302,18 @@ function PageBodyWithDevSection() {
 export default function BalancesPage() {
   return (
     <>
-      <Breadcrumbs>Balances</Breadcrumbs>
-      <PageTitle>Balances</PageTitle>
+      <Breadcrumbs>
+        <FormattedMessage
+          id="balances.page.title"
+          defaultMessage="Balances"
+        />
+      </Breadcrumbs>
+      <PageTitle>
+        <FormattedMessage
+          id="balances.page.title"
+          defaultMessage="Balances"
+        />
+      </PageTitle>
 
       <Suspense fallback={<Loader />}>
         <PageBodyWithDevSection />

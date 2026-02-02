@@ -13,7 +13,10 @@
     "docker:build": "docker build --tag wildcat-dashboard-ui .",
     "docker:rebuild": "npm run docker:build -- --no-cache",
     "docker:up": "docker compose up",
-    "openapi-ts": "openapi-ts"
+    "openapi-ts": "openapi-ts",
+    "crowdin:upload": "crowdin upload sources",
+    "crowdin:download": "crowdin download",
+    "crowdin:status": "crowdin status"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.8.3",
