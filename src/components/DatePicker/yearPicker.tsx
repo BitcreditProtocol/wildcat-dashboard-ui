@@ -13,6 +13,7 @@ interface YearPickerProps {
   onCaptionLabelClicked: () => void;
   numberYears?: number;
   disableFutureNavigation?: boolean;
+  minDate?: Date;
   currentYearPosition?: "start" | "center" | "end";
   order?: "asc" | "desc";
 }
@@ -23,18 +24,26 @@ const YearPicker = ({
   onCaptionLabelClicked,
   numberYears = 21,
   disableFutureNavigation = false,
+  minDate,
   currentYearPosition = "start",
   order = "asc",
 }: YearPickerProps) => {
   const lang = useContext(LanguageContext);
   const currentYear = new Date().getFullYear();
+  const minYear = minDate?.getFullYear();
   const total = numberYears;
   const half = Math.floor(total / 2);
   const positionIndex = currentYearPosition === "center" ? half : currentYearPosition === "end" ? (total - 1) : 0;
   const maxBaseYear = currentYear - (total - 1 - positionIndex);
 
   const [base, setBase] = useState<Date>(() => {
-    const initial = disableFutureNavigation ? Math.min(value.getFullYear(), maxBaseYear) : value.getFullYear();
+    let initial = value.getFullYear();
+    if (disableFutureNavigation) {
+      initial = Math.min(initial, maxBaseYear);
+    }
+    if (minYear !== undefined) {
+      initial = Math.max(initial, minYear);
+    }
     return new Date(initial, 0);
   });
 
@@ -56,11 +65,15 @@ const YearPicker = ({
     prevSelectedRef.current = selected;
 
     const maxBaseYear = currentYear - (total - 1 - positionIndex);
-    const clamped = disableFutureNavigation ? Math.min(selected, maxBaseYear) : selected;
+    let clamped = disableFutureNavigation ? Math.min(selected, maxBaseYear) : selected;
+    if (minYear !== undefined) {
+      clamped = Math.max(clamped, minYear);
+    }
     setBase(new Date(clamped, 0));
-  }, [value, disableFutureNavigation, currentYear, total, positionIndex]);
+  }, [value, disableFutureNavigation, currentYear, total, positionIndex, minYear]);
 
   const canGoForward = !disableFutureNavigation || endYear < currentYear;
+  const canGoBackward = minYear === undefined || startYear > minYear;
 
   const nextYears = () => {
     if (canGoForward) {
@@ -73,6 +86,9 @@ const YearPicker = ({
     }
   };
   const prevYears = () => {
+    if (!canGoBackward) {
+      return;
+    }
     setBase((val) => new Date(val.getFullYear() - numberYears, 0));
   };
 
@@ -105,7 +121,10 @@ const YearPicker = ({
     >
       <div className="flex justify-between items-center">
         <ChevronLeft
-          className={"mx-1 cursor-pointer"}
+          className={cn("mx-1", {
+            "cursor-pointer": canGoBackward,
+            "opacity-30 pointer-events-none": !canGoBackward,
+          })}
           onClick={prevYears}
         />
         <div
@@ -126,7 +145,9 @@ const YearPicker = ({
       <div className="grid grid-rows-7 grid-cols-3">
         {displayYears.map((year, index) => {
           const isSelected = year === value.getFullYear();
-          const isDisabled = disableFutureNavigation && year > currentYear;
+          const isDisabled =
+            (disableFutureNavigation && year > currentYear) ||
+            (minYear !== undefined && year < minYear);
 
           return (
             <div
