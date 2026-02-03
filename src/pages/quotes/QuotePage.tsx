@@ -133,7 +133,8 @@ function PageBody({ id }: { id: string }) {
   const paymentStatus = billStatus?.payment
   const cws = ebillQuery.data?.current_waiting_state
   const isMintComplete = mintCompleteQuery.data?.complete ?? false
-  const ebillPaid = Boolean(paymentStatus?.paid && isMintComplete)
+  const isMintCompleteLoading = mintCompleteQuery.isLoading
+  const ebillPaid = Boolean(paymentStatus?.paid)
   const hasPaymentRequestInWaitingState = Boolean(cws && "Payment" in cws)
   const requestedToPay = Boolean(
     paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds ?? hasPaymentRequestInWaitingState,
@@ -143,7 +144,7 @@ function PageBody({ id }: { id: string }) {
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
 
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
-  const showPayment = rejectedToPay === true || (isInMempool ?? requestedToPay) === true || ebillPaid === true
+  const showPayment = quoteData?.status === "Accepted" || quoteData?.status === "Minting"
 
   if (!quote || !bill) {
     return (
@@ -202,28 +203,48 @@ function PageBody({ id }: { id: string }) {
                   })}
                 </Badge>
               </div>
-              {(quote.status === "Accepted" || quote.status === "Minting") && "keyset_id" in quote && (
+              {(quote.status === "Accepted" || quote.status === "Minting") && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
-                      id: "quotes.detail.minting",
+                      id: "quotes.detail.redemptionStatus",
                       defaultMessage: "Redemption status:"
                     })}
                   </span>
-                  <Badge
-                    variant={quote.status === "Minting" ? "default" : "destructive"}
-                    className={quote.status === "Minting" ? "bg-blue-500" : "bg-red-500"}
-                  >
-                    {quote.status === "Minting"
-                      ? intl.formatMessage({
-                        id: "quotes.detail.minting.active",
-                        defaultMessage: "Active"
-                      })
-                      : intl.formatMessage({
-                        id: "quotes.detail.minting.inactive",
-                        defaultMessage: "Inactive"
+                  {isMintCompleteLoading ? (
+                    <Badge variant="default" className="bg-gray-500">
+                      {intl.formatMessage({
+                        id: "quotes.redemption.checking",
+                        defaultMessage: "Checking..."
                       })}
-                  </Badge>
+                    </Badge>
+                  ) : bill?.id && shouldCheckMintComplete ? (
+                    <Badge
+                      variant="default"
+                      className={
+                        isMintComplete
+                          ? "bg-green-600"
+                          : "bg-yellow-500"
+                      }
+                    >
+                      {isMintComplete
+                        ? intl.formatMessage({
+                          id: "quotes.redemption.complete",
+                          defaultMessage: "Complete"
+                        })
+                        : intl.formatMessage({
+                          id: "quotes.redemption.pending",
+                          defaultMessage: "Pending"
+                        })}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">
+                      {intl.formatMessage({
+                        id: "quotes.redemption.na",
+                        defaultMessage: "N/A"
+                      })}
+                    </span>
+                  )}
                 </div>
               )}
 
