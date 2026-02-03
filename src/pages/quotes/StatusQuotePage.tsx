@@ -68,7 +68,8 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
     ...getQuoteOptions({
       path: { qid: quote.id }
     }),
-    retry: 1,
+    retry: 2,
+    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000),
     enabled: !!quote.id,
   })
 
@@ -182,7 +183,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
   const { data, isFetching, error, isLoading } = useQuery({
     ...listQuotesOptions(),
-    retry: 1,
+    retry: 2,
+    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000),
   })
 
   /* TODO: optimize this with pagination or batch fetching if API supports it */
@@ -191,7 +193,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       ...getQuoteOptions({
         path: { qid: quote.id }
       }),
-      retry: 1,
+      retry: 2,
+      retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000),
       enabled: !!quote.id,
     }))
   })
@@ -339,11 +342,11 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         />
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center">
         <LoaderIcon
           className={cn("stroke-1", {
-            "animate-spin": isFetching,
-            invisible: !isFetching,
+            "animate-spin": isFetching && !isLoading,
+            invisible: !isFetching || isLoading,
           })}
         />
       </div>
@@ -364,7 +367,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           }
           return (
             <div key={quote.id || `quote-fallback-${index}`}>
-              <QuoteItemCard quote={quote} isLoading={isFetching} searchQuery={searchQuery} />
+              <QuoteItemCard quote={quote} isLoading={isLoading} searchQuery={searchQuery} />
             </div>
           )
         })}
