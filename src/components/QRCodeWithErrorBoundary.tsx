@@ -81,7 +81,7 @@ export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
     defaultMessage: "QR code cannot be generated (data too large)",
   })
 
-  if (value.length > QR_CODE_MAX_LENGTH) {
+  if (!canGenerateQRCode(value)) {
     return (
       <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
         <AlertTriangle className="h-4 w-4 flex-shrink-0" />
@@ -152,13 +152,13 @@ export function QRCodeModal({
           <QrCode className="h-4 w-4" />
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="max-h-[90vh]">
         <DrawerHeader>
           <DrawerTitle>{resolvedTitle}</DrawerTitle>
         </DrawerHeader>
         <div className="flex flex-col items-center gap-4 p-0 sm:p-6">
           <QRCodeErrorBoundary fallbackMessage={errorFallback}>
-            <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg">
+            <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg w-full max-w-[90vw] sm:max-w-md">
               <QRCodeSVG
                 value={value}
                 size={size}
@@ -178,7 +178,7 @@ export function QRCodeModal({
   )
 }
 
-export function FeeTokenQRCodeModal({ feeToken, size = 768 }: { feeToken: string; size?: number }) {
+export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string; size?: number }) {
   const intl = useIntl()
 
   return (
