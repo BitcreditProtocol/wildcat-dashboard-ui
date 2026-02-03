@@ -18,6 +18,8 @@ import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary"
 import { serializeKeysetId } from "@/utils/keyset"
 import { useIntl } from "react-intl"
 import { useEffect } from "react"
+import { useRef } from "react"
+import { toast } from "sonner"
 
 interface LocationState {
   from?: string
@@ -82,14 +84,30 @@ function PageBody({ id }: { id: string }) {
   const isPaid = ebillQuery.data?.status?.payment?.paid === true
   const shouldCheckMintComplete = (quoteStatus === "Accepted" || quoteStatus === "Minting") || isPaid
 
+  const feeTokenRequestRef = useRef<string | null>(null)
+
   const {
     mutate: requestFeeTokenStatus,
     isPending: isFeeTokenStatusPending,
     isSuccess: isFeeTokenStatusSuccess,
+    isError: isFeeTokenStatusError,
     data: feeTokenStatusData,
   } = useMutation({
     ...postTokenStatusMutation(),
-    retry: 1,
+    retry: 5,
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : String(error)
+      toast.error(
+        intl.formatMessage(
+          {
+            id: "quotes.feeToken.check.error",
+            defaultMessage: "Failed to check fee token: {error}",
+          },
+          { error: message },
+        ),
+      )
+      feeTokenRequestRef.current = null
+    },
   })
 
   const mintCompleteQuery = useQuery({
@@ -114,10 +132,15 @@ function PageBody({ id }: { id: string }) {
       return
     }
 
+    if (feeTokenRequestRef.current === feeTokenFromQuote) {
+      return
+    }
+
     if (isFeeTokenStatusPending || isFeeTokenStatusSuccess) {
       return
     }
 
+    feeTokenRequestRef.current = feeTokenFromQuote
     requestFeeTokenStatus({
       body: { token: feeTokenFromQuote },
     })
@@ -388,6 +411,20 @@ function PageBody({ id }: { id: string }) {
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.active",
                       defaultMessage: "Active"
+                    })}
+                  </Badge>
+                ) : isFeeTokenStatusError ? (
+                  <Badge variant="destructive" className="bg-red-600">
+                    {intl.formatMessage({
+                      id: "quotes.feeToken.badge.error",
+                      defaultMessage: "Error"
+                    })}
+                  </Badge>
+                ) : feeTokenStatusData?.state ? (
+                  <Badge variant="secondary" className="border border-border">
+                    {intl.formatMessage({
+                      id: "quotes.feeToken.badge.unknown",
+                      defaultMessage: "Unknown"
                     })}
                   </Badge>
                 ) : null}
