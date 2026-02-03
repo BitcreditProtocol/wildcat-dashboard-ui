@@ -26,6 +26,21 @@ function Loader() {
   )
 }
 
+const getMonthLabels = (intl: ReturnType<typeof useIntl>) => [
+  intl.formatMessage({ id: "month.jan.short", defaultMessage: "Jan" }),
+  intl.formatMessage({ id: "month.feb.short", defaultMessage: "Feb" }),
+  intl.formatMessage({ id: "month.mar.short", defaultMessage: "Mar" }),
+  intl.formatMessage({ id: "month.apr.short", defaultMessage: "Apr" }),
+  intl.formatMessage({ id: "month.may.short", defaultMessage: "May" }),
+  intl.formatMessage({ id: "month.jun.short", defaultMessage: "Jun" }),
+  intl.formatMessage({ id: "month.jul.short", defaultMessage: "Jul" }),
+  intl.formatMessage({ id: "month.aug.short", defaultMessage: "Aug" }),
+  intl.formatMessage({ id: "month.sep.short", defaultMessage: "Sep" }),
+  intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
+  intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
+  intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
+]
+
 export function BitcoinBalanceChart() {
   const intl = useIntl()
   const config = {
@@ -35,20 +50,7 @@ export function BitcoinBalanceChart() {
     },
   } satisfies ChartConfig
 
-  const months = [
-    intl.formatMessage({ id: "month.jan.short", defaultMessage: "Jan" }),
-    intl.formatMessage({ id: "month.feb.short", defaultMessage: "Feb" }),
-    intl.formatMessage({ id: "month.mar.short", defaultMessage: "Mar" }),
-    intl.formatMessage({ id: "month.apr.short", defaultMessage: "Apr" }),
-    intl.formatMessage({ id: "month.may.short", defaultMessage: "May" }),
-    intl.formatMessage({ id: "month.jun.short", defaultMessage: "Jun" }),
-    intl.formatMessage({ id: "month.jul.short", defaultMessage: "Jul" }),
-    intl.formatMessage({ id: "month.aug.short", defaultMessage: "Aug" }),
-    intl.formatMessage({ id: "month.sep.short", defaultMessage: "Sep" }),
-    intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
-    intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
-    intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
-  ]
+  const months = getMonthLabels(intl)
 
   const data = [
     { month: months[0], bitcoin: 186 },
@@ -101,20 +103,7 @@ export function OtherBalanceChart() {
     },
   } satisfies ChartConfig
 
-  const months = [
-    intl.formatMessage({ id: "month.jan.short", defaultMessage: "Jan" }),
-    intl.formatMessage({ id: "month.feb.short", defaultMessage: "Feb" }),
-    intl.formatMessage({ id: "month.mar.short", defaultMessage: "Mar" }),
-    intl.formatMessage({ id: "month.apr.short", defaultMessage: "Apr" }),
-    intl.formatMessage({ id: "month.may.short", defaultMessage: "May" }),
-    intl.formatMessage({ id: "month.jun.short", defaultMessage: "Jun" }),
-    intl.formatMessage({ id: "month.jul.short", defaultMessage: "Jul" }),
-    intl.formatMessage({ id: "month.aug.short", defaultMessage: "Aug" }),
-    intl.formatMessage({ id: "month.sep.short", defaultMessage: "Sep" }),
-    intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
-    intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
-    intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
-  ]
+  const months = getMonthLabels(intl)
 
   const data = [
     { month: months[0], credit: 121, debit: 0 },
