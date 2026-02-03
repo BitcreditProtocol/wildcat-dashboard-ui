@@ -23,6 +23,9 @@ import { useIntl } from "react-intl"
 type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "Minting"
 type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc"
 
+const RETRY_COUNT = 2
+const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000)
+
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "success" | "outline" {
   switch (status) {
     case "Offered":
@@ -60,7 +63,7 @@ function Loader() {
   )
 }
 
-function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; isLoading: boolean; searchQuery: string }) {
+function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: string }) {
   const intl = useIntl()
   const navigate = useNavigate()
 
@@ -68,8 +71,8 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
     ...getQuoteOptions({
       path: { qid: quote.id }
     }),
-    retry: 2,
-    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000),
+    retry: RETRY_COUNT,
+    retryDelay,
     enabled: !!quote.id,
   })
 
@@ -111,7 +114,7 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
                 <HighlightText text={quote.id} highlight={searchQuery} />
               </Link>
             </span>
-            <span>{isLoading && <LoaderIcon className="stroke-1 animate-spin" />}</span>
+            <span></span>
           </div>
         </CardTitle>
         <div className="flex gap-2">
@@ -131,7 +134,7 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
       </div>
       <div className="flex justify-between items-center gap-4 px-4 py-2">
         <div>
-          <Button size="sm" className="max-w-sm px-12" disabled={isLoading} onClick={handleQuoteClick}>
+          <Button size="sm" className="max-w-sm px-12" onClick={handleQuoteClick}>
             {intl.formatMessage({
               id: "quotes.card.view",
               defaultMessage: "View"
@@ -183,8 +186,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
   const { data, isFetching, error, isLoading } = useQuery({
     ...listQuotesOptions(),
-    retry: 2,
-    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000),
+    retry: RETRY_COUNT,
+    retryDelay,
   })
 
   /* TODO: optimize this with pagination or batch fetching if API supports it */
@@ -193,8 +196,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       ...getQuoteOptions({
         path: { qid: quote.id }
       }),
-      retry: 2,
-      retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000),
+      retry: RETRY_COUNT,
+      retryDelay,
       enabled: !!quote.id,
     }))
   })
@@ -367,7 +370,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           }
           return (
             <div key={quote.id || `quote-fallback-${index}`}>
-              <QuoteItemCard quote={quote} isLoading={isLoading} searchQuery={searchQuery} />
+              <QuoteItemCard quote={quote} searchQuery={searchQuery} />
             </div>
           )
         })}
