@@ -218,7 +218,7 @@ function PageBody({ id }: { id: string }) {
                         defaultMessage: "Checking..."
                       })}
                     </Badge>
-                  ) : bill?.id && shouldCheckMintComplete ? (
+                  ) : (
                     <Badge
                       variant="default"
                       className={
@@ -237,13 +237,6 @@ function PageBody({ id }: { id: string }) {
                           defaultMessage: "Pending"
                         })}
                     </Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">
-                      {intl.formatMessage({
-                        id: "quotes.redemption.na",
-                        defaultMessage: "N/A"
-                      })}
-                    </span>
                   )}
                 </div>
               )}
@@ -286,6 +279,13 @@ function PageBody({ id }: { id: string }) {
                       {intl.formatMessage({
                         id: "quotes.payment.inMempool",
                         defaultMessage: "In mempool"
+                      })}
+                    </Badge>
+                  ) : !requestedToPay ? (
+                    <Badge variant="secondary" className="border border-border">
+                      {intl.formatMessage({
+                        id: "quotes.payment.notRequested",
+                        defaultMessage: "Not requested"
                       })}
                     </Badge>
                   ) : (

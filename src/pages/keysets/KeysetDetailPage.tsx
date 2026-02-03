@@ -2,7 +2,7 @@ import { PageTitle } from "@/components/PageTitle"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useParams, Link, useLocation } from "react-router"
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query"
-import { listKeysetInfosOptions, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { listKeysetInfosOptions, listKeysetInfosQueryKey, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -64,7 +64,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
         }),
       )
       void queryClient.invalidateQueries({
-        queryKey: [{ _id: 'listKeysetInfos' }],
+        queryKey: listKeysetInfosQueryKey(),
         exact: false
       })
     },
