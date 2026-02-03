@@ -1,9 +1,9 @@
-import { Component, ReactNode, ErrorInfo, useState } from "react"
+import { Component, ReactNode, ErrorInfo, useEffect, useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
 import { AlertTriangle, QrCode } from "lucide-react"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
-import { canGenerateQRCode, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils.ts"
+import { canGenerateQRCode, canGenerateQRCodeAsync, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils.ts"
 import { useIntl } from "react-intl"
 
 /**
@@ -125,6 +125,7 @@ export function QRCodeModal({
 }: QRCodeModalProps) {
   const intl = useIntl()
   const [open, setOpen] = useState(false)
+  const [canRender, setCanRender] = useState(false)
   const resolvedTitle =
     title ??
     intl.formatMessage({ id: "qrCode.modal.title", defaultMessage: "QR Code" })
@@ -136,7 +137,22 @@ export function QRCodeModal({
     defaultMessage: "QR code cannot be generated (data too large)",
   })
 
-  if (!canGenerateQRCode(value)) {
+  useEffect(() => {
+    let isActive = true
+
+    void (async () => {
+      const result = await canGenerateQRCodeAsync(value)
+      if (isActive) {
+        setCanRender(result)
+      }
+    })()
+
+    return () => {
+      isActive = false
+    }
+  }, [value])
+
+  if (!canGenerateQRCode(value) || !canRender) {
     return null
   }
 
