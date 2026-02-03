@@ -12,7 +12,9 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_health",
         "responses": {
           "200": {
@@ -26,7 +28,9 @@
     },
     "/v1/admin/mint/info": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_mint_info",
         "responses": {
           "200": {
@@ -44,7 +48,9 @@
     },
     "/v1/admin/keysets/{kid}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_keyset_info",
         "parameters": [
           {
@@ -76,7 +82,9 @@
     },
     "/v1/admin/keysets": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "list_keyset_infos",
         "responses": {
           "200": {
@@ -97,7 +105,9 @@
     },
     "/v1/admin/credit/mint_op_status/{qid}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_mintop_status",
         "parameters": [
           {
@@ -130,7 +140,9 @@
     },
     "/v1/admin/credit/mint_ops/{kid}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "list_mintops",
         "parameters": [
           {
@@ -166,7 +178,9 @@
     },
     "/v1/admin/credit/enable_redemption": {
       "post": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "post_enable_redemption",
         "requestBody": {
           "content": {
@@ -197,7 +211,9 @@
     },
     "/v1/admin/credit/quote/{qid}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_quote",
         "parameters": [
           {
@@ -228,7 +244,9 @@
         }
       },
       "put": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "update_quote",
         "parameters": [
           {
@@ -270,7 +288,9 @@
     },
     "/v1/admin/credit/quote": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "list_quotes",
         "parameters": [
           {
@@ -278,7 +298,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "date"
             }
           },
@@ -287,7 +310,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "date"
             }
           },
@@ -311,7 +337,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             }
           },
           {
@@ -319,7 +348,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             }
           },
           {
@@ -327,7 +359,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             }
           },
           {
@@ -335,7 +370,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             }
           },
           {
@@ -343,7 +381,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             }
           },
           {
@@ -378,7 +419,9 @@
     },
     "/v1/admin/credit/quote/enable_mint/{qid}": {
       "post": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "post_enable_quote_minting",
         "parameters": [
           {
@@ -410,7 +453,9 @@
     },
     "/v1/admin/ebill/identity": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_identity",
         "responses": {
           "200": {
@@ -428,7 +473,9 @@
     },
     "/v1/admin/ebill/bills/{bid}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_ebill",
         "parameters": [
           {
@@ -460,7 +507,9 @@
     },
     "/v1/admin/ebill/bills": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "list_ebills",
         "responses": {
           "200": {
@@ -481,7 +530,9 @@
     },
     "/v1/admin/ebill/endorsements/{bid}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_ebill_endorsements",
         "parameters": [
           {
@@ -516,7 +567,9 @@
     },
     "/v1/admin/ebill/attachments/{bid}/{fname}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_ebill_attachment",
         "parameters": [
           {
@@ -550,7 +603,9 @@
     },
     "/v1/admin/ebill/payment_status/{bid}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_ebill_paymentstatus",
         "parameters": [
           {
@@ -582,7 +637,9 @@
     },
     "/v1/admin/clowder/info": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_clowder_info",
         "responses": {
           "200": {
@@ -600,7 +657,9 @@
     },
     "/v1/admin/clowder/alphas": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_clowder_alphas",
         "responses": {
           "200": {
@@ -618,7 +677,9 @@
     },
     "/v1/admin/clowder/betas": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_clowder_betas",
         "responses": {
           "200": {
@@ -636,7 +697,9 @@
     },
     "/v1/admin/clowder/coverage": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "summary": "Returns coverage information about the local mint",
         "operationId": "get_clowder_local_coverage",
         "responses": {
@@ -655,7 +718,9 @@
     },
     "/v1/admin/clowder/coverage/{pk}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "summary": "Returns coverage information about an alpha mint this local mint is verifying in beta capacity",
         "operationId": "get_clowder_foreign_coverage",
         "parameters": [
@@ -688,7 +753,9 @@
     },
     "/v1/admin/clowder/status": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_clowder_mystatus",
         "responses": {
           "200": {
@@ -706,7 +773,9 @@
     },
     "/v1/admin/clowder/status/{pk}": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_clowder_status",
         "parameters": [
           {
@@ -738,7 +807,9 @@
     },
     "/v1/admin/treasury/ebill/reqtopay": {
       "post": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "post_ebill_reqtopay",
         "requestBody": {
           "content": {
@@ -769,7 +840,9 @@
     },
     "/v1/admin/treasury/balance/sat": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "operationId": "get_sat_balance",
         "responses": {
           "200": {
@@ -787,19 +860,10 @@
     },
     "/v1/admin/treasury/ebill/mint_complete/{bid}": {
       "get": {
-        "tags": ["admin"],
-        "operationId": "get_ebill_mint_complete",
-        "parameters": [
-          {
-            "name": "bid",
-            "in": "path",
-            "description": "the ebill id to check mint completion status",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
+        "tags": [
+          "admin"
         ],
+        "operationId": "get_ebill_mint_complete",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -814,6 +878,46 @@
           "404": {
             "description": "bill id not found"
           }
+        },
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/admin/credit/token_status": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "post_token_status",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenStateResponse"
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -822,7 +926,9 @@
     "schemas": {
       "AlphaStateResponse": {
         "type": "object",
-        "required": ["state"],
+        "required": [
+          "state"
+        ],
         "properties": {
           "state": {
             "$ref": "#/components/schemas/SimpleAlphaState"
@@ -837,10 +943,18 @@
       },
       "BillAcceptanceStatus": {
         "type": "object",
-        "required": ["requested_to_accept", "accepted", "request_to_accept_timed_out", "rejected_to_accept"],
+        "required": [
+          "requested_to_accept",
+          "accepted",
+          "request_to_accept_timed_out",
+          "rejected_to_accept"
+        ],
         "properties": {
           "time_of_request_to_accept": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           },
@@ -857,7 +971,10 @@
             "type": "boolean"
           },
           "acceptance_deadline_timestamp": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           }
@@ -865,7 +982,10 @@
       },
       "BillAnonParticipant": {
         "type": "object",
-        "required": ["node_id", "nostr_relays"],
+        "required": [
+          "node_id",
+          "nostr_relays"
+        ],
         "properties": {
           "node_id": {
             "type": "string"
@@ -882,7 +1002,9 @@
         "oneOf": [
           {
             "type": "object",
-            "required": ["Sell"],
+            "required": [
+              "Sell"
+            ],
             "properties": {
               "Sell": {
                 "$ref": "#/components/schemas/BillWaitingForSellState"
@@ -891,7 +1013,9 @@
           },
           {
             "type": "object",
-            "required": ["Payment"],
+            "required": [
+              "Payment"
+            ],
             "properties": {
               "Payment": {
                 "$ref": "#/components/schemas/BillWaitingForPaymentState"
@@ -900,7 +1024,9 @@
           },
           {
             "type": "object",
-            "required": ["Recourse"],
+            "required": [
+              "Recourse"
+            ],
             "properties": {
               "Recourse": {
                 "$ref": "#/components/schemas/BillWaitingForRecourseState"
@@ -986,7 +1112,12 @@
           },
           {
             "type": "object",
-            "required": ["type", "node_id", "name", "nostr_relays"],
+            "required": [
+              "type",
+              "node_id",
+              "name",
+              "nostr_relays"
+            ],
             "properties": {
               "type": {
                 "$ref": "#/components/schemas/ContactType"
@@ -998,7 +1129,10 @@
                 "type": "string"
               },
               "email": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "nostr_relays": {
                 "type": "array",
@@ -1012,7 +1146,16 @@
       },
       "BillInfo": {
         "type": "object",
-        "required": ["id", "drawee", "drawer", "payee", "endorsees", "sum", "maturity_date", "file_urls"],
+        "required": [
+          "id",
+          "drawee",
+          "drawer",
+          "payee",
+          "endorsees",
+          "sum",
+          "maturity_date",
+          "file_urls"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1051,7 +1194,9 @@
       },
       "BillMintStatus": {
         "type": "object",
-        "required": ["has_mint_requests"],
+        "required": [
+          "has_mint_requests"
+        ],
         "properties": {
           "has_mint_requests": {
             "type": "boolean"
@@ -1062,7 +1207,9 @@
         "oneOf": [
           {
             "type": "object",
-            "required": ["Anon"],
+            "required": [
+              "Anon"
+            ],
             "properties": {
               "Anon": {
                 "$ref": "#/components/schemas/BillAnonParticipant"
@@ -1071,7 +1218,9 @@
           },
           {
             "type": "object",
-            "required": ["Ident"],
+            "required": [
+              "Ident"
+            ],
             "properties": {
               "Ident": {
                 "$ref": "#/components/schemas/BillIdentParticipant"
@@ -1082,7 +1231,14 @@
       },
       "BillParticipants": {
         "type": "object",
-        "required": ["drawee", "drawer", "payee", "endorsements", "endorsements_count", "all_participant_node_ids"],
+        "required": [
+          "drawee",
+          "drawer",
+          "payee",
+          "endorsements",
+          "endorsements_count",
+          "all_participant_node_ids"
+        ],
         "properties": {
           "drawee": {
             "$ref": "#/components/schemas/BillIdentParticipant"
@@ -1124,10 +1280,18 @@
       },
       "BillPaymentStatus": {
         "type": "object",
-        "required": ["requested_to_pay", "paid", "request_to_pay_timed_out", "rejected_to_pay"],
+        "required": [
+          "requested_to_pay",
+          "paid",
+          "request_to_pay_timed_out",
+          "rejected_to_pay"
+        ],
         "properties": {
           "time_of_request_to_pay": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           },
@@ -1144,7 +1308,10 @@
             "type": "boolean"
           },
           "payment_deadline_timestamp": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           }
@@ -1160,7 +1327,10 @@
         ],
         "properties": {
           "time_of_last_request_to_recourse": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           },
@@ -1177,7 +1347,10 @@
             "type": "boolean"
           },
           "recourse_deadline_timestamp": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           }
@@ -1185,10 +1358,18 @@
       },
       "BillSellStatus": {
         "type": "object",
-        "required": ["sold", "offered_to_sell", "offer_to_sell_timed_out", "rejected_offer_to_sell"],
+        "required": [
+          "sold",
+          "offered_to_sell",
+          "offer_to_sell_timed_out",
+          "rejected_offer_to_sell"
+        ],
         "properties": {
           "time_of_last_offer_to_sell": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           },
@@ -1205,7 +1386,10 @@
             "type": "boolean"
           },
           "buying_deadline_timestamp": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           }
@@ -1254,7 +1438,11 @@
       },
       "BillWaitingForPaymentState": {
         "type": "object",
-        "required": ["payer", "payee", "payment_data"],
+        "required": [
+          "payer",
+          "payee",
+          "payment_data"
+        ],
         "properties": {
           "payer": {
             "$ref": "#/components/schemas/BillIdentParticipant"
@@ -1269,7 +1457,11 @@
       },
       "BillWaitingForRecourseState": {
         "type": "object",
-        "required": ["recourser", "recoursee", "payment_data"],
+        "required": [
+          "recourser",
+          "recoursee",
+          "payment_data"
+        ],
         "properties": {
           "recourser": {
             "$ref": "#/components/schemas/BillParticipant"
@@ -1284,7 +1476,11 @@
       },
       "BillWaitingForSellState": {
         "type": "object",
-        "required": ["buyer", "seller", "payment_data"],
+        "required": [
+          "buyer",
+          "seller",
+          "payment_data"
+        ],
         "properties": {
           "buyer": {
             "$ref": "#/components/schemas/BillParticipant"
@@ -1331,7 +1527,10 @@
             "type": "string"
           },
           "tx_id": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "in_mempool": {
             "type": "boolean"
@@ -1342,7 +1541,10 @@
             "minimum": 0
           },
           "payment_deadline": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           }
@@ -1350,7 +1552,12 @@
       },
       "BitcreditBill": {
         "type": "object",
-        "required": ["id", "participants", "data", "status"],
+        "required": [
+          "id",
+          "participants",
+          "data",
+          "status"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1379,7 +1586,13 @@
       "ClowderNodeInfo": {
         "type": "object",
         "description": "--------------------------- Clowder Node Information",
-        "required": ["change_address", "node_id", "uptime_timestamp", "version", "network"],
+        "required": [
+          "change_address",
+          "node_id",
+          "uptime_timestamp",
+          "version",
+          "network"
+        ],
         "properties": {
           "change_address": {
             "type": "string"
@@ -1403,7 +1616,11 @@
       "ConnectedMintResponse": {
         "type": "object",
         "description": "--------------------------- Connected Mint",
-        "required": ["mint", "clowder", "node_id"],
+        "required": [
+          "mint",
+          "clowder",
+          "node_id"
+        ],
         "properties": {
           "mint": {
             "type": "string"
@@ -1419,7 +1636,9 @@
       },
       "ConnectedMintsResponse": {
         "type": "object",
-        "required": ["mints"],
+        "required": [
+          "mints"
+        ],
         "properties": {
           "mints": {
             "type": "array",
@@ -1431,7 +1650,11 @@
       },
       "ContactType": {
         "type": "string",
-        "enum": ["Person", "Company", "Anon"]
+        "enum": [
+          "Person",
+          "Company",
+          "Anon"
+        ]
       },
       "Coverage": {
         "type": "object",
@@ -1472,32 +1695,44 @@
           {
             "type": "string",
             "description": "Sat",
-            "enum": ["Sat"]
+            "enum": [
+              "Sat"
+            ]
           },
           {
             "type": "string",
             "description": "Msat",
-            "enum": ["Msat"]
+            "enum": [
+              "Msat"
+            ]
           },
           {
             "type": "string",
             "description": "Usd",
-            "enum": ["Usd"]
+            "enum": [
+              "Usd"
+            ]
           },
           {
             "type": "string",
             "description": "Euro",
-            "enum": ["Eur"]
+            "enum": [
+              "Eur"
+            ]
           },
           {
             "type": "string",
             "description": "Auth",
-            "enum": ["Auth"]
+            "enum": [
+              "Auth"
+            ]
           },
           {
             "type": "object",
             "description": "Custom currency unit",
-            "required": ["Custom"],
+            "required": [
+              "Custom"
+            ],
             "properties": {
               "Custom": {
                 "type": "string",
@@ -1511,7 +1746,9 @@
       "DeactivateKeysetRequest": {
         "type": "object",
         "description": "--------------------------- Deactivate keyset",
-        "required": ["kid"],
+        "required": [
+          "kid"
+        ],
         "properties": {
           "kid": {
             "$ref": "#/components/schemas/Id"
@@ -1520,7 +1757,9 @@
       },
       "DeactivateKeysetResponse": {
         "type": "object",
-        "required": ["kid"],
+        "required": [
+          "kid"
+        ],
         "properties": {
           "kid": {
             "$ref": "#/components/schemas/Id"
@@ -1530,7 +1769,10 @@
       "ECashBalance": {
         "type": "object",
         "description": "--------------------------- eCash wallet balance",
-        "required": ["amount", "unit"],
+        "required": [
+          "amount",
+          "unit"
+        ],
         "properties": {
           "amount": {
             "$ref": "#/components/schemas/Amount"
@@ -1543,7 +1785,9 @@
       "EbillMintingComplete": {
         "type": "object",
         "description": "--------------------------- ebill minting completed",
-        "required": ["complete"],
+        "required": [
+          "complete"
+        ],
         "properties": {
           "complete": {
             "type": "boolean"
@@ -1555,7 +1799,11 @@
       },
       "Endorsement": {
         "type": "object",
-        "required": ["pay_to_the_order_of", "signed", "signing_timestamp"],
+        "required": [
+          "pay_to_the_order_of",
+          "signed",
+          "signing_timestamp"
+        ],
         "properties": {
           "pay_to_the_order_of": {
             "$ref": "#/components/schemas/LightBillParticipant"
@@ -1582,7 +1830,11 @@
       },
       "File": {
         "type": "object",
-        "required": ["name", "hash", "nostr_hash"],
+        "required": [
+          "name",
+          "hash",
+          "nostr_hash"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -1598,7 +1850,10 @@
       "Id": {
         "type": "object",
         "description": "A keyset ID is an identifier for a specific keyset. It can be derived by\nanyone who knows the set of public keys of a mint. The keyset ID **CAN**\nbe stored in a Cashu token such that the token can be used to identify\nwhich mint or keyset it was generated from.",
-        "required": ["version", "id"],
+        "required": [
+          "version",
+          "id"
+        ],
         "properties": {
           "version": {
             "$ref": "#/components/schemas/KeySetVersion"
@@ -1613,7 +1868,9 @@
           {
             "type": "object",
             "description": "Bytes for v1",
-            "required": ["V1"],
+            "required": [
+              "V1"
+            ],
             "properties": {
               "V1": {
                 "type": "array",
@@ -1629,7 +1886,9 @@
           {
             "type": "object",
             "description": "Bytes for v2",
-            "required": ["V2"],
+            "required": [
+              "V2"
+            ],
             "properties": {
               "V2": {
                 "type": "array",
@@ -1647,7 +1906,14 @@
       },
       "Identity": {
         "type": "object",
-        "required": ["node_id", "name", "bitcoin_public_key", "npub", "postal_address", "nostr_relays"],
+        "required": [
+          "node_id",
+          "name",
+          "bitcoin_public_key",
+          "npub",
+          "postal_address",
+          "nostr_relays"
+        ],
         "properties": {
           "node_id": {
             "type": "string"
@@ -1656,7 +1922,10 @@
             "type": "string"
           },
           "email": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "bitcoin_public_key": {
             "type": "string"
@@ -1668,17 +1937,29 @@
             "$ref": "#/components/schemas/OptionalPostalAddress"
           },
           "date_of_birth": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "country_of_birth": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "city_of_birth": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "identification_number": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "profile_picture_file": {
             "oneOf": [
@@ -1713,7 +1994,13 @@
         "oneOf": [
           {
             "type": "object",
-            "required": ["id", "bill", "submitted", "suggested_expiration", "status"],
+            "required": [
+              "id",
+              "bill",
+              "submitted",
+              "suggested_expiration",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1732,13 +2019,20 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["Pending"]
+                "enum": [
+                  "Pending"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["id", "bill", "tstamp", "status"],
+            "required": [
+              "id",
+              "bill",
+              "tstamp",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1753,13 +2047,22 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["Canceled"]
+                "enum": [
+                  "Canceled"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["id", "bill", "ttl", "keyset_id", "discounted", "status"],
+            "required": [
+              "id",
+              "bill",
+              "ttl",
+              "keyset_id",
+              "discounted",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1782,13 +2085,21 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["Offered"]
+                "enum": [
+                  "Offered"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["id", "bill", "tstamp", "discounted", "status"],
+            "required": [
+              "id",
+              "bill",
+              "tstamp",
+              "discounted",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1808,13 +2119,20 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["OfferExpired"]
+                "enum": [
+                  "OfferExpired"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["id", "bill", "tstamp", "status"],
+            "required": [
+              "id",
+              "bill",
+              "tstamp",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1829,13 +2147,21 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["Denied"]
+                "enum": [
+                  "Denied"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["id", "bill", "keyset_id", "discounted", "status"],
+            "required": [
+              "id",
+              "bill",
+              "keyset_id",
+              "discounted",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1854,13 +2180,21 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["Accepted"]
+                "enum": [
+                  "Accepted"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["id", "bill", "tstamp", "discounted", "status"],
+            "required": [
+              "id",
+              "bill",
+              "tstamp",
+              "discounted",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1880,13 +2214,23 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["Rejected"]
+                "enum": [
+                  "Rejected"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["id", "bill", "keyset_id", "discounted", "minting_status", "fee", "status"],
+            "required": [
+              "id",
+              "bill",
+              "keyset_id",
+              "discounted",
+              "minting_status",
+              "fee",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1911,7 +2255,9 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["Minting"]
+                "enum": [
+                  "Minting"
+                ]
               }
             }
           }
@@ -1920,12 +2266,25 @@
       },
       "InfoReplyDiscriminants": {
         "type": "string",
-        "enum": ["Pending", "Canceled", "Offered", "OfferExpired", "Denied", "Accepted", "Rejected", "Minting"]
+        "enum": [
+          "Pending",
+          "Canceled",
+          "Offered",
+          "OfferExpired",
+          "Denied",
+          "Accepted",
+          "Rejected",
+          "Minting"
+        ]
       },
       "KeySetInfo": {
         "type": "object",
         "description": "KeySetInfo",
-        "required": ["id", "unit", "active"],
+        "required": [
+          "id",
+          "unit",
+          "active"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -1946,7 +2305,10 @@
             "minimum": 0
           },
           "final_expiry": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "description": "Expiry of the keyset",
             "minimum": 0
@@ -1956,11 +2318,16 @@
       "KeySetVersion": {
         "type": "string",
         "description": "Keyset version",
-        "enum": ["Version00", "Version01"]
+        "enum": [
+          "Version00",
+          "Version01"
+        ]
       },
       "LightBillAnonParticipant": {
         "type": "object",
-        "required": ["node_id"],
+        "required": [
+          "node_id"
+        ],
         "properties": {
           "node_id": {
             "type": "string"
@@ -1969,7 +2336,11 @@
       },
       "LightBillIdentParticipant": {
         "type": "object",
-        "required": ["type", "name", "node_id"],
+        "required": [
+          "type",
+          "name",
+          "node_id"
+        ],
         "properties": {
           "type": {
             "$ref": "#/components/schemas/ContactType"
@@ -1989,7 +2360,11 @@
           },
           {
             "type": "object",
-            "required": ["type", "name", "node_id"],
+            "required": [
+              "type",
+              "name",
+              "node_id"
+            ],
             "properties": {
               "type": {
                 "$ref": "#/components/schemas/ContactType"
@@ -2008,7 +2383,9 @@
         "oneOf": [
           {
             "type": "object",
-            "required": ["Anon"],
+            "required": [
+              "Anon"
+            ],
             "properties": {
               "Anon": {
                 "$ref": "#/components/schemas/LightBillAnonParticipant"
@@ -2017,7 +2394,9 @@
           },
           {
             "type": "object",
-            "required": ["Ident"],
+            "required": [
+              "Ident"
+            ],
             "properties": {
               "Ident": {
                 "$ref": "#/components/schemas/LightBillIdentParticipantWithAddress"
@@ -2028,7 +2407,11 @@
       },
       "LightInfo": {
         "type": "object",
-        "required": ["id", "status", "sum"],
+        "required": [
+          "id",
+          "status",
+          "sum"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -2046,7 +2429,9 @@
       },
       "LightSignedBy": {
         "type": "object",
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "properties": {
           "data": {
             "$ref": "#/components/schemas/LightBillParticipant"
@@ -2065,7 +2450,9 @@
       },
       "ListReplyLight": {
         "type": "object",
-        "required": ["quotes"],
+        "required": [
+          "quotes"
+        ],
         "properties": {
           "quotes": {
             "type": "array",
@@ -2077,12 +2464,20 @@
       },
       "ListSort": {
         "type": "string",
-        "enum": ["bill_maturity_date_desc", "bill_maturity_date_asc"]
+        "enum": [
+          "bill_maturity_date_desc",
+          "bill_maturity_date_asc"
+        ]
       },
       "MintOperationStatus": {
         "type": "object",
         "description": "--------------------------- Mint operation status",
-        "required": ["kid", "quote_id", "target", "current"],
+        "required": [
+          "kid",
+          "quote_id",
+          "target",
+          "current"
+        ],
         "properties": {
           "kid": {
             "$ref": "#/components/schemas/Id"
@@ -2102,30 +2497,44 @@
       "MintState": {
         "type": "string",
         "description": "--------------------------- Perceived State",
-        "enum": ["Online", "Offline", "Interim", "Rabid"]
+        "enum": [
+          "Online",
+          "Offline",
+          "Interim",
+          "Rabid"
+        ]
       },
       "MintingStatus": {
         "oneOf": [
           {
             "type": "object",
-            "required": ["status"],
+            "required": [
+              "status"
+            ],
             "properties": {
               "status": {
                 "type": "string",
-                "enum": ["Disabled"]
+                "enum": [
+                  "Disabled"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["minted", "status"],
+            "required": [
+              "minted",
+              "status"
+            ],
             "properties": {
               "minted": {
                 "$ref": "#/components/schemas/Amount"
               },
               "status": {
                 "type": "string",
-                "enum": ["Enabled"]
+                "enum": [
+                  "Enabled"
+                ]
               }
             }
           }
@@ -2134,19 +2543,31 @@
       },
       "Notification": {
         "type": "object",
-        "required": ["id", "notification_type", "description", "datetime", "active"],
+        "required": [
+          "id",
+          "notification_type",
+          "description",
+          "datetime",
+          "active"
+        ],
         "properties": {
           "id": {
             "type": "string"
           },
           "node_id": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "notification_type": {
             "$ref": "#/components/schemas/NotificationType"
           },
           "reference_id": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "description": {
             "type": "string"
@@ -2163,32 +2584,54 @@
       },
       "NotificationType": {
         "type": "string",
-        "enum": ["General", "Company", "Bill", "Contact"]
+        "enum": [
+          "General",
+          "Company",
+          "Bill",
+          "Contact"
+        ]
       },
       "OptionalPostalAddress": {
         "type": "object",
         "properties": {
           "country": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "city": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "zip": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "address": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
       "PerceivedState": {
         "type": "object",
         "description": "Reflects what the majority of Beta mints think about the current Alpha mint",
-        "required": ["alpha_state"],
+        "required": [
+          "alpha_state"
+        ],
         "properties": {
           "substitute_beta": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "alpha_state": {
             "$ref": "#/components/schemas/MintState"
@@ -2197,7 +2640,11 @@
       },
       "PostalAddress": {
         "type": "object",
-        "required": ["country", "city", "address"],
+        "required": [
+          "country",
+          "city",
+          "address"
+        ],
         "properties": {
           "country": {
             "type": "string"
@@ -2206,7 +2653,10 @@
             "type": "string"
           },
           "zip": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "address": {
             "type": "string"
@@ -2216,7 +2666,9 @@
       "PublicKey": {
         "type": "object",
         "description": "PublicKey",
-        "required": ["inner"],
+        "required": [
+          "inner"
+        ],
         "properties": {
           "inner": {
             "type": "string"
@@ -2226,7 +2678,11 @@
       "RequestToMintFromEBillRequest": {
         "type": "object",
         "description": "--------------------------- request to pay ebill",
-        "required": ["ebill_id", "amount", "deadline"],
+        "required": [
+          "ebill_id",
+          "amount",
+          "deadline"
+        ],
         "properties": {
           "ebill_id": {
             "type": "string"
@@ -2244,7 +2700,10 @@
       },
       "RequestToMintFromEBillResponse": {
         "type": "object",
-        "required": ["request_id", "request"],
+        "required": [
+          "request_id",
+          "request"
+        ],
         "properties": {
           "request_id": {
             "type": "string"
@@ -2259,7 +2718,9 @@
           {
             "type": "object",
             "description": "Last seen timestamp",
-            "required": ["Online"],
+            "required": [
+              "Online"
+            ],
             "properties": {
               "Online": {
                 "type": "integer",
@@ -2272,7 +2733,24 @@
           {
             "type": "object",
             "description": "Last seen timestamp",
-            "required": ["Offline"],
+            "required": [
+              "Interim"
+            ],
+            "properties": {
+              "Interim": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Last seen timestamp",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Last seen timestamp",
+            "required": [
+              "Offline"
+            ],
             "properties": {
               "Offline": {
                 "type": "integer",
@@ -2285,7 +2763,9 @@
           {
             "type": "object",
             "description": "Pre Rabid",
-            "required": ["Rabid"],
+            "required": [
+              "Rabid"
+            ],
             "properties": {
               "Rabid": {
                 "type": "string",
@@ -2296,7 +2776,9 @@
           {
             "type": "object",
             "description": "Post Rabid",
-            "required": ["ConfiscatedRabid"],
+            "required": [
+              "ConfiscatedRabid"
+            ],
             "properties": {
               "ConfiscatedRabid": {
                 "type": "array",
@@ -2304,8 +2786,8 @@
                   "type": "object"
                 },
                 "description": "Post Rabid",
-                "maxItems": 2,
-                "minItems": 2
+                "maxItems": 3,
+                "minItems": 3
               }
             }
           }
@@ -2314,7 +2796,9 @@
       },
       "SimplifiedBillPaymentStatus": {
         "type": "object",
-        "required": ["payment_status"],
+        "required": [
+          "payment_status"
+        ],
         "properties": {
           "payment_status": {
             "$ref": "#/components/schemas/BillPaymentStatus"
@@ -2331,21 +2815,57 @@
           }
         }
       },
+      "TokenState": {
+        "type": "string",
+        "enum": [
+          "Unspent",
+          "Spent"
+        ]
+      },
+      "TokenStateRequest": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenStateResponse": {
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/TokenState"
+          }
+        }
+      },
       "UpdateQuoteRequest": {
         "oneOf": [
           {
             "type": "object",
-            "required": ["action"],
+            "required": [
+              "action"
+            ],
             "properties": {
               "action": {
                 "type": "string",
-                "enum": ["Deny"]
+                "enum": [
+                  "Deny"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["discounted", "action"],
+            "required": [
+              "discounted",
+              "action"
+            ],
             "properties": {
               "discounted": {
                 "type": "integer",
@@ -2353,12 +2873,17 @@
                 "minimum": 0
               },
               "ttl": {
-                "type": ["string", "null"],
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "date-time"
               },
               "action": {
                 "type": "string",
-                "enum": ["Offer"]
+                "enum": [
+                  "Offer"
+                ]
               }
             }
           }
@@ -2369,17 +2894,25 @@
         "oneOf": [
           {
             "type": "object",
-            "required": ["status"],
+            "required": [
+              "status"
+            ],
             "properties": {
               "status": {
                 "type": "string",
-                "enum": ["Denied"]
+                "enum": [
+                  "Denied"
+                ]
               }
             }
           },
           {
             "type": "object",
-            "required": ["discounted", "ttl", "status"],
+            "required": [
+              "discounted",
+              "ttl",
+              "status"
+            ],
             "properties": {
               "discounted": {
                 "type": "integer",
@@ -2392,7 +2925,9 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["Offered"]
+                "enum": [
+                  "Offered"
+                ]
               }
             }
           }
@@ -2401,7 +2936,12 @@
       "VersionInfo": {
         "type": "object",
         "description": "Version information for the mint",
-        "required": ["wildcat", "bcr_ebill_core", "cdk_mintd", "clowder"],
+        "required": [
+          "wildcat",
+          "bcr_ebill_core",
+          "cdk_mintd",
+          "clowder"
+        ],
         "properties": {
           "wildcat": {
             "type": "string",

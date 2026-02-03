@@ -305,5 +305,13 @@
   "quotes.requestToPay.loadingInfo": "Loading information for payment",
   "quotes.requestToPay.button": "Request to pay",
   "quotes.requestToPay.deadlineLabel": "Payment deadline:",
-  "quotes.requestToPay.deadlineTitle": "Payment deadline"
+  "quotes.requestToPay.deadlineTitle": "Payment deadline",
+  "quotes.detail.redemptionStatus": "Redemption status:",
+  "quotes.redemption.complete": "Complete",
+  "quotes.redemption.pending": "Pending",
+  "quotes.payment.notRequested": "Not requested",
+  "quotes.redemption.checking": "Checking...",
+  "quotes.feeToken.badge.checking": "Checking...",
+  "quotes.feeToken.badge.spent": "Spent",
+  "quotes.feeToken.badge.active": "Active"
 }
