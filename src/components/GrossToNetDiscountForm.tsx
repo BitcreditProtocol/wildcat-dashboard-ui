@@ -362,12 +362,13 @@ const GrossToNetDiscountForm = ({
     }
 
     const netValue = Act360.grossToNet(gross.value, discountRate, days)
+    const roundedNetValue = isSat ? netValue.round(0, Big.roundDown) : netValue
     setNet({
-      value: netValue,
+      value: roundedNetValue,
       currency: gross.currency,
     })
-    setValue("netInput", formatAmount(netValue, gross.currency), { shouldValidate: true })
-  }, [gross, days, discountRate, lastEdited, setValue])
+    setValue("netInput", formatAmount(roundedNetValue, gross.currency), { shouldValidate: true })
+  }, [gross, days, discountRate, lastEdited, setValue, isSat])
 
   useEffect(() => {
     if (lastEdited !== "net") {
