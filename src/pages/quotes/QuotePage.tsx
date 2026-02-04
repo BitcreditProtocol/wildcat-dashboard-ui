@@ -5,20 +5,20 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview"
-import { getQuoteOptions, getEbillOptions, getEbillEndorsementsOptions, getEbillMintCompleteOptions, postTokenStatusMutation } from "@/generated/client/@tanstack/react-query.gen"
+import { getQuoteOptions, listEbillsOptions, getEbillEndorsementsOptions, getEbillMintCompleteOptions, postTokenStatusMutation } from "@/generated/client/@tanstack/react-query.gen"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { QuoteActions } from "./QuoteActions.tsx"
 import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
+import { getQuoteStatusVariant } from "@/utils/quote-status"
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx"
 import { EndorsementChain } from "@/components/EndorsementChain"
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary"
 import { serializeKeysetId } from "@/utils/keyset"
 import { useIntl } from "react-intl"
-import { useEffect } from "react"
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { toast } from "sonner"
 
 interface LocationState {
@@ -33,27 +33,9 @@ function Loader() {
   )
 }
 
-function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "success" | "outline" {
-  switch (status) {
-    case "Offered":
-    case "OfferExpired":
-      return "default"
-    case "Pending":
-      return "default"
-    case "Accepted":
-    case "Minting":
-      return "success"
-    case "Denied":
-    case "Canceled":
-    case "Rejected":
-      return "destructive"
-    default:
-      return "outline"
-  }
-}
-
 function PageBody({ id }: { id: string }) {
   const intl = useIntl()
+  const EBILL_POLL_INTERVAL_MS = 30_000
   const {
     data: quoteData,
     isFetching,
@@ -69,10 +51,15 @@ function PageBody({ id }: { id: string }) {
   const billId = quoteData?.bill?.id
   const quoteStatus = quoteData?.status
 
-  const ebillQuery = useQuery({
-    ...getEbillOptions({ path: { bid: billId ?? "" } }),
+  const ebillsQuery = useQuery({
+    ...listEbillsOptions(),
     retry: 1,
     enabled: !!billId,
+    refetchInterval: (query) => {
+      if (query.state.error) return false
+      const ebill = (query.state.data ?? []).find((item) => item.id === billId)
+      return ebill?.status?.payment?.paid ? false : EBILL_POLL_INTERVAL_MS
+    },
   })
 
   const endorsementsQuery = useQuery({
@@ -81,7 +68,8 @@ function PageBody({ id }: { id: string }) {
     enabled: !!billId,
   })
 
-  const isPaid = ebillQuery.data?.status?.payment?.paid === true
+  const ebill = ebillsQuery.data?.find((item) => item.id === billId)
+  const isPaid = ebill?.status?.payment?.paid === true
   const shouldCheckMintComplete = (quoteStatus === "Accepted" || quoteStatus === "Minting") || isPaid
 
   const feeTokenRequestRef = useRef<string | null>(null)
@@ -186,11 +174,12 @@ function PageBody({ id }: { id: string }) {
   const quote = quoteData!
   const bill = quote?.bill
 
-  const billStatus = ebillQuery.data?.status
+  const billStatus = ebill?.status
   const paymentStatus = billStatus?.payment
-  const cws = ebillQuery.data?.current_waiting_state
+  const cws = ebill?.current_waiting_state
   const isMintComplete = mintCompleteQuery.data?.complete ?? false
-  const ebillPaid = Boolean(paymentStatus?.paid && isMintComplete)
+  const isMintCompleteLoading = mintCompleteQuery.isLoading
+  const ebillPaid = Boolean(paymentStatus?.paid)
   const hasPaymentRequestInWaitingState = Boolean(cws && "Payment" in cws)
   const requestedToPay = Boolean(
     paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds ?? hasPaymentRequestInWaitingState,
@@ -200,7 +189,7 @@ function PageBody({ id }: { id: string }) {
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
 
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
-  const showPayment = rejectedToPay === true || (isInMempool ?? requestedToPay) === true || ebillPaid === true
+  const showPayment = quoteData?.status === "Accepted" || quoteData?.status === "Minting"
 
   if (!quote || !bill) {
     return (
@@ -252,35 +241,48 @@ function PageBody({ id }: { id: string }) {
                     defaultMessage: "Quote status:"
                   })}
                 </span>
-                <Badge variant={getStatusVariant(quote.status)}>
+                <Badge variant={getQuoteStatusVariant(quote.status)}>
                   {intl.formatMessage({
                     id: `quote.status.${quote.status}`,
                     defaultMessage: formatStatusLabel(quote.status),
                   })}
                 </Badge>
               </div>
-              {(quote.status === "Accepted" || quote.status === "Minting") && "keyset_id" in quote && (
+              {ebillPaid && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
-                      id: "quotes.detail.minting",
+                      id: "quotes.detail.redemptionStatus",
                       defaultMessage: "Redemption status:"
                     })}
                   </span>
-                  <Badge
-                    variant={quote.status === "Minting" ? "default" : "destructive"}
-                    className={quote.status === "Minting" ? "bg-blue-500" : "bg-red-500"}
-                  >
-                    {quote.status === "Minting"
-                      ? intl.formatMessage({
-                        id: "quotes.detail.minting.active",
-                        defaultMessage: "Active"
-                      })
-                      : intl.formatMessage({
-                        id: "quotes.detail.minting.inactive",
-                        defaultMessage: "Inactive"
+                  {isMintCompleteLoading ? (
+                    <Badge variant="default" className="bg-yellow-500">
+                      {intl.formatMessage({
+                        id: "quotes.redemption.pending",
+                        defaultMessage: "Pending"
                       })}
-                  </Badge>
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="default"
+                      className={
+                        isMintComplete
+                          ? "bg-green-600"
+                          : "bg-yellow-500"
+                      }
+                    >
+                      {isMintComplete
+                        ? intl.formatMessage({
+                          id: "quotes.redemption.complete",
+                          defaultMessage: "Complete"
+                        })
+                        : intl.formatMessage({
+                          id: "quotes.redemption.pending",
+                          defaultMessage: "Pending"
+                        })}
+                    </Badge>
+                  )}
                 </div>
               )}
 
@@ -322,6 +324,13 @@ function PageBody({ id }: { id: string }) {
                       {intl.formatMessage({
                         id: "quotes.payment.inMempool",
                         defaultMessage: "In mempool"
+                      })}
+                    </Badge>
+                  ) : !requestedToPay ? (
+                    <Badge variant="secondary" className="border border-border">
+                      {intl.formatMessage({
+                        id: "quotes.payment.notRequested",
+                        defaultMessage: "Not requested"
                       })}
                     </Badge>
                   ) : (
@@ -513,25 +522,25 @@ function PageBody({ id }: { id: string }) {
       <EndorsementChain
         endorsements={endorsementsQuery.data}
         isLoading={endorsementsQuery.isLoading}
-        issueDate={ebillQuery.data?.data?.issue_date}
+        issueDate={ebill?.data?.issue_date}
         maturityDate={bill.maturity_date}
-        requestToPayTimestamp={ebillQuery.data?.status?.payment?.time_of_request_to_pay ?? undefined}
+        requestToPayTimestamp={ebill?.status?.payment?.time_of_request_to_pay ?? undefined}
         rejectedToPayTimestamp={
-          ebillQuery.data?.status?.payment?.rejected_to_pay
-            ? (ebillQuery.data?.status?.last_block_time ?? undefined)
+          ebill?.status?.payment?.rejected_to_pay
+            ? (ebill?.status?.last_block_time ?? undefined)
             : undefined
         }
         paymentTimestamp={
-          ebillQuery.data?.status?.payment?.paid ? (ebillQuery.data?.status?.last_block_time ?? undefined) : undefined
+          ebill?.status?.payment?.paid ? (ebill?.status?.last_block_time ?? undefined) : undefined
         }
         acceptanceTimestamp={
-          ebillQuery.data?.status?.acceptance?.accepted
-            ? (ebillQuery.data?.status?.acceptance?.time_of_request_to_accept ?? undefined)
+          ebill?.status?.acceptance?.accepted
+            ? (ebill?.status?.acceptance?.time_of_request_to_accept ?? undefined)
             : undefined
         }
         rejectionTimestamp={
-          ebillQuery.data?.status?.acceptance?.rejected_to_accept
-            ? (ebillQuery.data?.status?.last_block_time ?? undefined)
+          ebill?.status?.acceptance?.rejected_to_accept
+            ? (ebill?.status?.last_block_time ?? undefined)
             : undefined
         }
         mintingEnabled={quote.status === "Minting"}

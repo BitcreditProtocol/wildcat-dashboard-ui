@@ -2,7 +2,7 @@ import { PageTitle } from "@/components/PageTitle"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useParams, Link, useLocation } from "react-router"
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query"
-import { listKeysetInfosOptions, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
+import { listKeysetInfosOptions, listKeysetInfosQueryKey, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { truncateString, formatStatusLabel } from "@/utils/strings"
+import { getQuoteStatusVariant } from "@/utils/quote-status"
 import { toast } from "sonner"
 import { useMemo } from "react"
 import { FormattedMessage, useIntl } from "react-intl"
@@ -64,7 +65,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
         }),
       )
       void queryClient.invalidateQueries({
-        queryKey: [{ _id: 'listKeysetInfos' }],
+        queryKey: listKeysetInfosQueryKey(),
         exact: false
       })
     },
@@ -362,14 +363,21 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       const quoteDetails = quoteDetailsQueries[quoteIndex]?.data
                       const billId = quoteDetails?.bill?.id
                       const ebill = billId ? billIdToEbillMap.get(billId) : null
-                      const isPaid = ebill?.status?.payment?.paid === true
+                      const paymentStatus = ebill?.status?.payment
+                      const cws = ebill?.current_waiting_state
+                      const isPaid = paymentStatus?.paid === true
+                      const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
+                      const hasPaymentRequestInWaitingState = Boolean(cws && "Payment" in cws)
+                      const requestedToPay = Boolean(
+                        paymentStatus?.requested_to_pay ?? ebill?.status?.has_requested_funds ?? hasPaymentRequestInWaitingState,
+                      )
+                      const rejectedToPay = Boolean(paymentStatus?.rejected_to_pay)
 
                       const billIdIndex = billId ? matchingBillIds.indexOf(billId) : -1
                       const mintCompleteQuery = billId && billIdIndex >= 0 ? mintCompleteQueries[billIdIndex] : null
                       const isMintComplete = mintCompleteQuery?.data?.complete === true
                       const isMintLoading = mintCompleteQuery?.isLoading
 
-                      const cws = ebill?.current_waiting_state
                       let paymentAddress: string | undefined
                       if (cws && "Payment" in cws) {
                         paymentAddress = cws.Payment.payment_data?.address_to_pay
@@ -387,7 +395,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                             </Link>
                           </td>
                           <td className="p-2">
-                            <Badge variant="outline">
+                            <Badge variant={getQuoteStatusVariant(quote.status)}>
                               {intl.formatMessage({
                                 id: `quote.status.${quote.status}`,
                                 defaultMessage: formatStatusLabel(quote.status),
@@ -396,81 +404,60 @@ function PageBody({ keysetId }: { keysetId: string }) {
                           </td>
                           <td className="p-2">
                             {ebill ? (
-                              <Badge
-                                variant="outline"
-                                className={
-                                  isPaid
-                                    ? "bg-green-50 text-green-700 border-green-200"
-                                    : "bg-orange-50 text-orange-700 border-orange-200"
-                                }
-                              >
-                                {isPaid ? (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.paid"
-                                    defaultMessage="Paid"
-                                  />
-                                ) : (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.unpaid"
-                                    defaultMessage="Unpaid"
-                                  />
-                                )}
-                              </Badge>
+                              isPaid ? (
+                                <Badge variant="default" className="bg-green-600">
+                                  <FormattedMessage id="quotes.payment.paid" defaultMessage="Paid" />
+                                </Badge>
+                              ) : rejectedToPay ? (
+                                <Badge variant="destructive" className="bg-red-600">
+                                  <FormattedMessage id="quotes.payment.rejected" defaultMessage="Rejected to pay" />
+                                </Badge>
+                              ) : isInMempool ? (
+                                <Badge variant="default" className="bg-orange-500">
+                                  <FormattedMessage id="quotes.payment.inMempool" defaultMessage="In mempool" />
+                                </Badge>
+                              ) : !requestedToPay ? (
+                                <Badge variant="secondary" className="border border-border">
+                                  <FormattedMessage id="quotes.payment.notRequested" defaultMessage="Not requested" />
+                                </Badge>
+                              ) : (
+                                <Badge variant="default" className="bg-blue-500">
+                                  <FormattedMessage id="quotes.payment.requested" defaultMessage="Requested" />
+                                </Badge>
+                              )
                             ) : (
-                              <span className="text-muted-foreground text-xs">
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </span>
+                              <Badge variant="secondary" className="border border-border">
+                                <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
+                              </Badge>
                             )}
                           </td>
                           <td className="p-2">
-                            {isMintLoading ? (
-                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                                <FormattedMessage
-                                  id="keyset.detail.table.mintChecking"
-                                  defaultMessage="Checking..."
-                                />
+                            {!isPaid ? (
+                              <Badge variant="secondary" className="border border-border">
+                                <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
                               </Badge>
-                            ) : billId && mintCompleteQuery ? (
-                              <Badge
-                                variant="outline"
-                                className={
-                                  isMintComplete
-                                    ? "bg-green-50 text-green-700 border-green-200"
-                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                }
-                              >
-                                {isMintComplete ? (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.mintComplete"
-                                    defaultMessage="Complete"
-                                  />
-                                ) : (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.mintPending"
-                                    defaultMessage="Pending"
-                                  />
-                                )}
+                            ) : isMintLoading || !mintCompleteQuery ? (
+                              <Badge variant="default" className="bg-yellow-500">
+                                <FormattedMessage id="keyset.detail.table.mintPending" defaultMessage="Pending" />
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground text-xs">
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </span>
+                              <Badge
+                                variant="default"
+                                className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}
+                              >
+                                {isMintComplete ? (
+                                  <FormattedMessage id="keyset.detail.table.mintComplete" defaultMessage="Complete" />
+                                ) : (
+                                  <FormattedMessage id="keyset.detail.table.mintPending" defaultMessage="Pending" />
+                                )}
+                              </Badge>
                             )}
                           </td>
                           <td className="p-2 font-mono text-xs break-all">
                             {paymentAddress ?? (
-                              <span className="text-muted-foreground">
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </span>
+                              <Badge variant="secondary" className="border border-border">
+                                <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
+                              </Badge>
                             )}
                           </td>
                           <td className="p-2 text-right">{quote.sum} sat</td>
