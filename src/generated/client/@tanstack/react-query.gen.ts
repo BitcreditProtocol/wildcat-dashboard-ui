@@ -431,9 +431,9 @@ export const getSatBalanceOptions = (options?: Options<GetSatBalanceData>) => qu
     queryKey: getSatBalanceQueryKey(options)
 });
 
-export const getEbillMintCompleteQueryKey = (options: Options<GetEbillMintCompleteData>) => createQueryKey('getEbillMintComplete', options);
+export const getEbillMintCompleteQueryKey = (options?: Options<GetEbillMintCompleteData>) => createQueryKey('getEbillMintComplete', options);
 
-export const getEbillMintCompleteOptions = (options: Options<GetEbillMintCompleteData>) => queryOptions<GetEbillMintCompleteResponse, DefaultError, GetEbillMintCompleteResponse, ReturnType<typeof getEbillMintCompleteQueryKey>>({
+export const getEbillMintCompleteOptions = (options?: Options<GetEbillMintCompleteData>) => queryOptions<GetEbillMintCompleteResponse, DefaultError, GetEbillMintCompleteResponse, ReturnType<typeof getEbillMintCompleteQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
         const { data } = await getEbillMintComplete({
             ...options,
