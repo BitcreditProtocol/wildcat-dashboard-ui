@@ -1,9 +1,9 @@
-import { Component, ReactNode, ErrorInfo, useState } from "react"
+import { Component, ReactNode, ErrorInfo, useEffect, useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
 import { AlertTriangle, QrCode } from "lucide-react"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
-import { canGenerateQRCode, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils.ts"
+import { canGenerateQRCode, canGenerateQRCodeAsync, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils.ts"
 import { useIntl } from "react-intl"
 
 /**
@@ -81,7 +81,7 @@ export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
     defaultMessage: "QR code cannot be generated (data too large)",
   })
 
-  if (value.length > QR_CODE_MAX_LENGTH) {
+  if (!canGenerateQRCode(value)) {
     return (
       <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
         <AlertTriangle className="h-4 w-4 flex-shrink-0" />
@@ -125,6 +125,7 @@ export function QRCodeModal({
 }: QRCodeModalProps) {
   const intl = useIntl()
   const [open, setOpen] = useState(false)
+  const [canRender, setCanRender] = useState(false)
   const resolvedTitle =
     title ??
     intl.formatMessage({ id: "qrCode.modal.title", defaultMessage: "QR Code" })
@@ -136,7 +137,22 @@ export function QRCodeModal({
     defaultMessage: "QR code cannot be generated (data too large)",
   })
 
-  if (!canGenerateQRCode(value)) {
+  useEffect(() => {
+    let isActive = true
+
+    void (async () => {
+      const result = await canGenerateQRCodeAsync(value)
+      if (isActive) {
+        setCanRender(result)
+      }
+    })()
+
+    return () => {
+      isActive = false
+    }
+  }, [value])
+
+  if (!canGenerateQRCode(value) || !canRender) {
     return null
   }
 
@@ -152,13 +168,13 @@ export function QRCodeModal({
           <QrCode className="h-4 w-4" />
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="max-h-[90vh]">
         <DrawerHeader>
           <DrawerTitle>{resolvedTitle}</DrawerTitle>
         </DrawerHeader>
         <div className="flex flex-col items-center gap-4 p-0 sm:p-6">
           <QRCodeErrorBoundary fallbackMessage={errorFallback}>
-            <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg">
+            <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg w-full max-w-[90vw] sm:max-w-md">
               <QRCodeSVG
                 value={value}
                 size={size}
@@ -178,7 +194,7 @@ export function QRCodeModal({
   )
 }
 
-export function FeeTokenQRCodeModal({ feeToken, size = 768 }: { feeToken: string; size?: number }) {
+export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string; size?: number }) {
   const intl = useIntl()
 
   return (
