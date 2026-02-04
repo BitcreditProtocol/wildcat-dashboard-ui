@@ -51,6 +51,7 @@ function getStatusVariant(status: string): "default" | "secondary" | "destructiv
 
 function PageBody({ id }: { id: string }) {
   const intl = useIntl()
+  const EBILL_POLL_INTERVAL_MS = 30_000
   const {
     data: quoteData,
     isFetching,
@@ -70,6 +71,10 @@ function PageBody({ id }: { id: string }) {
     ...getEbillOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
     enabled: !!billId,
+    refetchInterval: (query) => {
+      if (query.state.error) return false
+      return query.state.data?.status?.payment?.paid ? false : EBILL_POLL_INTERVAL_MS
+    },
   })
 
   const endorsementsQuery = useQuery({
@@ -203,7 +208,7 @@ function PageBody({ id }: { id: string }) {
                   })}
                 </Badge>
               </div>
-              {(quote.status === "Accepted" || quote.status === "Minting") && (
+              {ebillPaid && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
@@ -212,10 +217,10 @@ function PageBody({ id }: { id: string }) {
                     })}
                   </span>
                   {isMintCompleteLoading ? (
-                    <Badge variant="default" className="bg-gray-500">
+                    <Badge variant="default" className="bg-yellow-500">
                       {intl.formatMessage({
-                        id: "quotes.redemption.checking",
-                        defaultMessage: "Checking..."
+                        id: "quotes.redemption.pending",
+                        defaultMessage: "Pending"
                       })}
                     </Badge>
                   ) : (

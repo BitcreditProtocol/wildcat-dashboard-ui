@@ -405,35 +405,27 @@ function PageBody({ keysetId }: { keysetId: string }) {
                                 }
                               >
                                 {isPaid ? (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.paid"
-                                    defaultMessage="Paid"
-                                  />
+                                  <FormattedMessage id="keyset.detail.table.paid" defaultMessage="Paid" />
                                 ) : (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.unpaid"
-                                    defaultMessage="Unpaid"
-                                  />
+                                  <FormattedMessage id="keyset.detail.table.unpaid" defaultMessage="Unpaid" />
                                 )}
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground text-xs">
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </span>
+                              <Badge variant="secondary" className="border border-border">
+                                <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
+                              </Badge>
                             )}
                           </td>
                           <td className="p-2">
-                            {isMintLoading ? (
-                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                                <FormattedMessage
-                                  id="keyset.detail.table.mintChecking"
-                                  defaultMessage="Checking..."
-                                />
+                            {!isPaid ? (
+                              <Badge variant="secondary" className="border border-border">
+                                <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
                               </Badge>
-                            ) : billId && mintCompleteQuery ? (
+                            ) : isMintLoading || !mintCompleteQuery ? (
+                              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                                <FormattedMessage id="keyset.detail.table.mintPending" defaultMessage="Pending" />
+                              </Badge>
+                            ) : (
                               <Badge
                                 variant="outline"
                                 className={
@@ -443,34 +435,18 @@ function PageBody({ keysetId }: { keysetId: string }) {
                                 }
                               >
                                 {isMintComplete ? (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.mintComplete"
-                                    defaultMessage="Complete"
-                                  />
+                                  <FormattedMessage id="keyset.detail.table.mintComplete" defaultMessage="Complete" />
                                 ) : (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.mintPending"
-                                    defaultMessage="Pending"
-                                  />
+                                  <FormattedMessage id="keyset.detail.table.mintPending" defaultMessage="Pending" />
                                 )}
                               </Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </span>
                             )}
                           </td>
                           <td className="p-2 font-mono text-xs break-all">
                             {paymentAddress ?? (
-                              <span className="text-muted-foreground">
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </span>
+                              <Badge variant="secondary" className="border border-border">
+                                <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
+                              </Badge>
                             )}
                           </td>
                           <td className="p-2 text-right">{quote.sum} sat</td>
