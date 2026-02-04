@@ -8,6 +8,7 @@ import { useQuery, useQueries } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 import { formatNumber, truncateString, formatStatusLabel } from "@/utils/strings"
+import { getQuoteStatusVariant } from "@/utils/quote-status"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { LightInfo } from "@/generated/client/types.gen"
@@ -22,25 +23,6 @@ import { useIntl } from "react-intl"
 
 type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "Minting"
 type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc"
-
-function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "success" | "outline" {
-  switch (status) {
-    case "Offered":
-    case "OfferExpired":
-      return "default"
-    case "Pending":
-      return "default"
-    case "Accepted":
-    case "Minting":
-      return "success"
-    case "Denied":
-    case "Canceled":
-    case "Rejected":
-      return "destructive"
-    default:
-      return "outline"
-  }
-}
 
 interface StatusQuotePageProps {
   status?: QuoteStatus
@@ -117,7 +99,7 @@ function QuoteItemCard({ quote, isLoading, searchQuery }: { quote: LightInfo; is
           <div className="leading-none font-semibold tracking-tight text-3xl">
             <HighlightText text={`${formatNumber(intl.locale, quote.sum)} sat`} highlight={searchQuery} />
           </div>
-          <Badge variant={getStatusVariant(quote.status)}>
+          <Badge variant={getQuoteStatusVariant(quote.status)}>
             <HighlightText
               text={intl.formatMessage({
                 id: `quote.status.${quote.status}`,
