@@ -235,7 +235,7 @@ export type ECashBalance = {
 /**
  * --------------------------- ebill minting completed
  */
-export type EbillMintingComplete = {
+export type EbillPaymentComplete = {
     complete: boolean;
 };
 
@@ -1222,7 +1222,7 @@ export type GetEbillMintCompleteData = {
         bid: string;
     };
     query?: never;
-    url: '/v1/admin/treasury/ebill/mint_complete/{bid}';
+    url: '/v1/admin/treasury/ebill/payment_complete/{bid}';
 };
 
 export type GetEbillMintCompleteErrors = {
@@ -1236,7 +1236,7 @@ export type GetEbillMintCompleteResponses = {
     /**
      * Successful response
      */
-    200: EbillMintingComplete;
+    200: EbillPaymentComplete;
 };
 
 export type GetEbillMintCompleteResponse = GetEbillMintCompleteResponses[keyof GetEbillMintCompleteResponses];
