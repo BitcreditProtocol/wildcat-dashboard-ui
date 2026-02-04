@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview"
-import { getQuoteOptions, listEbillsOptions, getEbillEndorsementsOptions, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
-import { useQuery } from "@tanstack/react-query"
+import { getQuoteOptions, listEbillsOptions, getEbillEndorsementsOptions, getEbillMintCompleteOptions, postTokenStatusMutation } from "@/generated/client/@tanstack/react-query.gen"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
@@ -18,6 +18,8 @@ import { EndorsementChain } from "@/components/EndorsementChain"
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary"
 import { serializeKeysetId } from "@/utils/keyset"
 import { useIntl } from "react-intl"
+import { useEffect, useRef } from "react"
+import { toast } from "sonner"
 
 interface LocationState {
   from?: string
@@ -70,6 +72,32 @@ function PageBody({ id }: { id: string }) {
   const isPaid = ebill?.status?.payment?.paid === true
   const shouldCheckMintComplete = (quoteStatus === "Accepted" || quoteStatus === "Minting") || isPaid
 
+  const feeTokenRequestRef = useRef<string | null>(null)
+
+  const {
+    mutate: requestFeeTokenStatus,
+    isPending: isFeeTokenStatusPending,
+    isSuccess: isFeeTokenStatusSuccess,
+    isError: isFeeTokenStatusError,
+    data: feeTokenStatusData,
+  } = useMutation({
+    ...postTokenStatusMutation(),
+    retry: 5,
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : String(error)
+      toast.error(
+        intl.formatMessage(
+          {
+            id: "quotes.feeToken.check.error",
+            defaultMessage: "Failed to check fee token: {error}",
+          },
+          { error: message },
+        ),
+      )
+      feeTokenRequestRef.current = null
+    },
+  })
+
   const mintCompleteQuery = useQuery({
     ...getEbillMintCompleteOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
@@ -83,6 +111,34 @@ function PageBody({ id }: { id: string }) {
       return data?.complete === false ? 60000 : false
     },
   })
+
+  const feeTokenFromQuote = quoteData && "fee" in quoteData ? quoteData.fee : null
+  const quoteStatusForEffect = quoteData?.status
+
+  useEffect(() => {
+    if (!feeTokenFromQuote || quoteStatusForEffect !== "Minting") {
+      return
+    }
+
+    if (feeTokenRequestRef.current === feeTokenFromQuote) {
+      return
+    }
+
+    if (isFeeTokenStatusPending || isFeeTokenStatusSuccess) {
+      return
+    }
+
+    feeTokenRequestRef.current = feeTokenFromQuote
+    requestFeeTokenStatus({
+      body: { token: feeTokenFromQuote },
+    })
+  }, [
+    feeTokenFromQuote,
+    isFeeTokenStatusPending,
+    isFeeTokenStatusSuccess,
+    quoteStatusForEffect,
+    requestFeeTokenStatus,
+  ])
 
   if (error) {
     const errorMessage = (error as { message?: string }).message ?? String(error)
@@ -345,6 +401,42 @@ function PageBody({ id }: { id: string }) {
                   showCopyButton={true}
                 />
                 <FeeTokenQRCodeModal feeToken={quote.fee} />
+                {isFeeTokenStatusPending ? (
+                  <Badge variant="default" className="bg-gray-500">
+                    {intl.formatMessage({
+                      id: "quotes.feeToken.badge.checking",
+                      defaultMessage: "Checking..."
+                    })}
+                  </Badge>
+                ) : feeTokenStatusData?.state === "Spent" ? (
+                  <Badge variant="destructive" className="bg-red-600">
+                    {intl.formatMessage({
+                      id: "quotes.feeToken.badge.spent",
+                      defaultMessage: "Spent"
+                    })}
+                  </Badge>
+                ) : feeTokenStatusData?.state === "Unspent" ? (
+                  <Badge variant="default" className="bg-green-600">
+                    {intl.formatMessage({
+                      id: "quotes.feeToken.badge.active",
+                      defaultMessage: "Active"
+                    })}
+                  </Badge>
+                ) : isFeeTokenStatusError ? (
+                  <Badge variant="destructive" className="bg-red-600">
+                    {intl.formatMessage({
+                      id: "quotes.feeToken.badge.error",
+                      defaultMessage: "Error"
+                    })}
+                  </Badge>
+                ) : feeTokenStatusData?.state ? (
+                  <Badge variant="secondary" className="border border-border">
+                    {intl.formatMessage({
+                      id: "quotes.feeToken.badge.unknown",
+                      defaultMessage: "Unknown"
+                    })}
+                  </Badge>
+                ) : null}
               </div>
             )}
             <div className="flex items-center gap-2">

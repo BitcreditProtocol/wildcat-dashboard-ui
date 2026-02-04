@@ -159,8 +159,7 @@
   "dropdown.label.selectRange": "Select Range",
   "dropdown.clearPresetRange": "Clear preset range",
   "calendar.nav.prevMonth": "Go to previous month",
-  "calendar.nav.nextMonth": "Go to next month"
-  ,
+  "calendar.nav.nextMonth": "Go to next month",
   "nav.user.unknown": "Unknown User",
   "nav.user.initials.fallback": "U",
   "nav.user.avatarFallback": "CN",
@@ -174,5 +173,16 @@
   "ui.sidebar.title": "Sidebar",
   "ui.sidebar.description": "Displays the mobile sidebar.",
   "ui.sidebar.toggle": "Toggle Sidebar",
-  "ui.search.clear": "Clear search"
+  "ui.search.clear": "Clear search",
+  "quotes.detail.redemptionStatus": "Redemption status:",
+  "quotes.redemption.complete": "Complete",
+  "quotes.redemption.pending": "Pending",
+  "quotes.payment.notRequested": "Not requested",
+  "quotes.redemption.checking": "Checking...",
+  "quotes.feeToken.badge.checking": "Checking...",
+  "quotes.feeToken.badge.spent": "Spent",
+  "quotes.feeToken.badge.active": "Active",
+  "quotes.feeToken.check.error": "Failed to check fee token: {error}",
+  "quotes.feeToken.badge.error": "Error",
+  "quotes.feeToken.badge.unknown": "Unknown"
 }
