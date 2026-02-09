@@ -19,12 +19,13 @@ interface RequestToPayConfirmationProps {
 }
 
 const REQUEST_TO_PAY_DEADLINE_STORAGE_KEY = "requestToPayDeadlineUtc"
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
 
 const getMinSelectableDate = (maturityDate?: string | null): Date => {
   const now = new Date()
   const maturity = maturityDate ? new Date(maturityDate) : null
   const baseDate = maturity && maturity > now ? maturity : now
-  return new Date(baseDate.getTime() + 48 * 60 * 60 * 1000)
+  return new Date(baseDate.getTime() + TWO_DAYS_MS)
 }
 
 const toUtcEndOfDay = (date: Date): Date => {
