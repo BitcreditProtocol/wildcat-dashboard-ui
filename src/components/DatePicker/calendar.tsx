@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { DateRange, DayPicker, DayPickerProps, OnSelectHandler } from "react-day-picker"
-import { format, isSameDay } from "date-fns";
+import { isSameDay } from "date-fns";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useIntl } from "react-intl";
 
 import { cn } from "@/lib/utils";
 import { YearPicker } from "./yearPicker";
 import { MonthPicker } from "./monthPicker";
+import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
 
 export type CalendarProps = Omit<DayPickerProps, "mode" | "onSelect" | "selected"> & {
   mode: "single" | "range"
@@ -56,25 +57,23 @@ function getNextDate(
   current: Date,
   offset: number
 ): Date {
-  const year = current.getFullYear();
-  const month = current.getMonth();
-  const day = current.getDate();
+  const year = current.getUTCFullYear();
+  const month = current.getUTCMonth();
+  const day = current.getUTCDate();
 
-  const daysInCurrentMonth = new Date(year, month + 1, 0).getDate();
+  const daysInCurrentMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   const isLastDay = day === daysInCurrentMonth;
 
-  const targetMonthDate = new Date(year, month + offset, 1);
+  const targetMonthDate = new Date(Date.UTC(year, month + offset, 1));
   const daysInTargetMonth = new Date(
-    targetMonthDate.getFullYear(),
-    targetMonthDate.getMonth() + 1,
-    0
-  ).getDate();
+    Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth() + 1, 0)
+  ).getUTCDate();
 
   const newDay = isLastDay
     ? daysInTargetMonth
     : Math.min(day, daysInTargetMonth);
 
-  return new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), newDay)
+  return new Date(Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth(), newDay))
 }
 
 function Calendar({
@@ -101,6 +100,7 @@ function Calendar({
   const [month, setMonth] = useState<Date>(selected.from ?? monthProp ?? new Date());
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const { formatDay2Digit, formatMonthShort, formatYearNumeric } = useUtcDateFormatters(intl.locale);
 
   useEffect(() => {
     if (mode === "single") {
@@ -162,8 +162,12 @@ function Calendar({
 
   const isAtOrBeyondCurrentMonth = (d: Date) => {
     const today = new Date();
+    const todayYear = today.getUTCFullYear();
+    const todayMonth = today.getUTCMonth();
+    const dateYear = d.getUTCFullYear();
+    const dateMonth = d.getUTCMonth();
     return (
-      d.getFullYear() > today.getFullYear() || (d.getFullYear() === today.getFullYear() && d.getMonth() >= today.getMonth())
+      dateYear > todayYear || (dateYear === todayYear && dateMonth >= todayMonth)
     );
   };
 
@@ -200,7 +204,9 @@ function Calendar({
               }
             }}
           >
-            <span>{format(month, "MMM dd,")}</span>
+            <span>
+              {formatMonthShort(month)} {formatDay2Digit(month)},
+            </span>
             <span
               onClick={(e) => {
                 e.stopPropagation()
@@ -211,7 +217,7 @@ function Calendar({
                 }
               }}
             >
-              {format(month, "yyyy")}
+              {formatYearNumeric(month)}
             </span>
           </span>
         ) : (
@@ -225,7 +231,7 @@ function Calendar({
               }
             }}
           >
-            <span>{format(month, "MMM ")}</span>
+            <span>{formatMonthShort(month)} </span>
             <span
               onClick={(e) => {
                 e.stopPropagation()
@@ -236,7 +242,7 @@ function Calendar({
                 }
               }}
             >
-              {format(month, "yyyy")}
+              {formatYearNumeric(month)}
             </span>
           </span>
         )}
@@ -251,7 +257,7 @@ function Calendar({
               }
             }}
           >
-            <span>{format(month, "MMM")}</span>
+            <span>{formatMonthShort(month)}</span>
             <span
               onClick={(e) => {
                 e.stopPropagation()
@@ -263,7 +269,7 @@ function Calendar({
               }}
               className="hover:underline"
             >
-              {format(month, "yyyy")}
+              {formatYearNumeric(month)}
             </span>
           </span>
         )}
@@ -293,6 +299,8 @@ function Calendar({
     ...restProps,
     month,
     ISOWeek,
+    timeZone: "UTC",
+    noonSafe: true,
     showOutsideDays,
     className: cn("flex justify-center", className),
     classNames,

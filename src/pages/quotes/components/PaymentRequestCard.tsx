@@ -62,7 +62,7 @@ export function PaymentRequestCard({
               })}
             </span>
             <span className="text-sm">
-              {new Date(effectiveRequestTime * 1000).toLocaleString(intl.locale)}
+              {new Date(effectiveRequestTime * 1000).toLocaleString(intl.locale, { timeZone: "UTC" })}
             </span>
           </div>
         )}
@@ -75,7 +75,7 @@ export function PaymentRequestCard({
               })}
             </span>
             <span className="text-sm">
-              {new Date(effectiveDeadlineTs * 1000).toLocaleString(intl.locale)}
+              {new Date(effectiveDeadlineTs * 1000).toLocaleString(intl.locale, { timeZone: "UTC" })}
             </span>
           </div>
         )}
