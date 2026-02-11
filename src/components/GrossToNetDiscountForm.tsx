@@ -85,7 +85,7 @@ const GrossToNetDiscountForm = ({
     if (typeof value === "string" || typeof value === "number") {
       str = String(value)
     }
-    return str.replace(/\D/, "")
+    return str.replace(/\D/g, "")
   }
 
   const validateNetAmount = (value?: string) => {
@@ -238,13 +238,13 @@ const GrossToNetDiscountForm = ({
   const handlePasteDigitsFor = (field: "daysInput" | "netInput") => (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault()
     const text = e.clipboardData.getData("text") || ""
-    const digits = text.replace(/\D/, "")
+    const digits = text.replace(/\D/g, "")
     const input = e.currentTarget
     const start = input.selectionStart ?? input.value.length
     const end = input.selectionEnd ?? input.value.length
     const before = input.value.slice(0, start)
     const after = input.value.slice(end)
-    const next = (before + digits + after).replace(/\D/, "")
+    const next = (before + digits + after).replace(/\D/g, "")
     input.value = next
     setValue(field, next, { shouldValidate: true, shouldDirty: true })
     if (field === "netInput") {
@@ -383,9 +383,12 @@ const GrossToNetDiscountForm = ({
       value: roundedNetValue,
       currency: gross.currency,
     })
-    skipNetToRateRef.current = true
-    setValue("netInput", formatAmount(roundedNetValue, gross.currency), { shouldValidate: true })
-  }, [gross, days, discountRate, lastEdited, setValue, isSat])
+    const formattedNet = formatAmount(roundedNetValue, gross.currency)
+    if (formattedNet !== netInput) {
+      skipNetToRateRef.current = true
+      setValue("netInput", formattedNet, { shouldValidate: true })
+    }
+  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput])
 
   useEffect(() => {
     if (skipNetToRateRef.current) {
