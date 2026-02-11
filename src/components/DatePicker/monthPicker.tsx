@@ -24,48 +24,48 @@ const MonthPicker = ({
 }: MonthPickerProps) => {
   const lang = useContext(LanguageContext);
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const minYear = minDate?.getFullYear();
-  const minMonth = minDate?.getMonth();
+  const currentYear = now.getUTCFullYear();
+  const currentMonth = now.getUTCMonth();
+  const minYear = minDate?.getUTCFullYear();
+  const minMonth = minDate?.getUTCMonth();
 
   const [base, setBase] = useState<Date>(() => {
-    let initYear = value.getFullYear();
+    let initYear = value.getUTCFullYear();
     if (disableFutureNavigation) {
       initYear = Math.min(initYear, currentYear);
     }
     if (minYear !== undefined) {
       initYear = Math.max(initYear, minYear);
     }
-    return new Date(initYear, value.getMonth(), 1);
+    return new Date(Date.UTC(initYear, value.getUTCMonth(), 1));
   });
 
   useEffect(() => {
-    let nextYear = value.getFullYear();
+    let nextYear = value.getUTCFullYear();
     if (disableFutureNavigation) {
       nextYear = Math.min(nextYear, currentYear);
     }
     if (minYear !== undefined) {
       nextYear = Math.max(nextYear, minYear);
     }
-    if (nextYear !== base.getFullYear()) {
-      setBase(() => new Date(nextYear, value.getMonth(), 1));
+    if (nextYear !== base.getUTCFullYear()) {
+      setBase(() => new Date(Date.UTC(nextYear, value.getUTCMonth(), 1)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, disableFutureNavigation, currentYear]);
 
   const handleOnChange = (monthIndex: number) => {
     const newDate = new Date(base);
-    newDate.setMonth(monthIndex);
+    newDate.setUTCMonth(monthIndex);
     onChange(newDate);
   };
 
   const addYears = (years: number) => {
-    setBase((val) => new Date(val.getFullYear() + years, val.getMonth(), 1));
+    setBase((val) => new Date(Date.UTC(val.getUTCFullYear() + years, val.getUTCMonth(), 1)));
   };
 
-  const canGoBackward = minYear === undefined || base.getFullYear() > minYear;
-  const canGoForward = !disableFutureNavigation || base.getFullYear() < currentYear;
+  const canGoBackward = minYear === undefined || base.getUTCFullYear() > minYear;
+  const canGoForward = !disableFutureNavigation || base.getUTCFullYear() < currentYear;
 
   const nextYear = () => {
     if (!canGoForward) {
@@ -108,14 +108,14 @@ const MonthPicker = ({
       </div>
       <div className="grid grid-rows-4 grid-cols-3">
         {Array.from({ length: 12 }, (_, index) => {
-          const date = new Date(base.getFullYear(), index, 1);
+          const date = new Date(Date.UTC(base.getUTCFullYear(), index, 1));
           const isFutureMonth =
             disableFutureNavigation &&
-            (date.getFullYear() > currentYear || (date.getFullYear() === currentYear && index > currentMonth));
+            (date.getUTCFullYear() > currentYear || (date.getUTCFullYear() === currentYear && index > currentMonth));
           const isPastMonth =
             minYear !== undefined &&
-            (date.getFullYear() < minYear || (date.getFullYear() === minYear && minMonth !== undefined && index < minMonth));
-          const isSelected = date.getFullYear() === value.getFullYear() && date.getMonth() === value.getMonth();
+            (date.getUTCFullYear() < minYear || (date.getUTCFullYear() === minYear && minMonth !== undefined && index < minMonth));
+          const isSelected = date.getUTCFullYear() === value.getUTCFullYear() && date.getUTCMonth() === value.getUTCMonth();
 
           return (
             <div

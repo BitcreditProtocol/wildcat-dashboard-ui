@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { DateRange, dateMatchModifiers, type Matcher } from "react-day-picker"
 import { FormattedMessage } from "react-intl";
-import { addDays, differenceInCalendarDays, format, isSameDay } from "date-fns";
+import { addDays, isSameDay } from "date-fns";
 import { ArrowRight, CalendarIcon } from "lucide-react";
 
 import { Calendar } from "@/components/DatePicker/calendar";
@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LanguageContext } from "@/context/language/LanguageContext";
 import { cn } from "@/lib/utils";
-import { formatDateLong, formatDateShort } from "@/utils/dates";
+import { daysBetween, formatDateLong, formatDateShort } from "@/utils/dates";
+import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
 
 import { DateRangeDropdown } from "./dataRangeDropdown";
 import { MonthPicker } from "./monthPicker";
@@ -49,7 +50,7 @@ export function DatePicker({
   onDateFilterTypeChange,
 }: DatePickerProps) {
   const lang = useContext(LanguageContext);
-  const formatDateMmmDdYyyy = (date: Date) => format(date, "MMM dd, yyyy")
+  const { formatDateMmmDdYyyy } = useUtcDateFormatters(lang.locale);
   const [canSelect, setCanSelect] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
@@ -133,7 +134,7 @@ export function DatePicker({
       if (current.from === undefined || current.to === undefined) {
         return val;
       }
-      const diffDays = differenceInCalendarDays(current.to, current.from);
+      const diffDays = daysBetween(current.from, current.to);
       return diffDays !== val ? undefined : val;
     });
   }, [current]);

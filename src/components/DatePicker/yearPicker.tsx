@@ -29,36 +29,36 @@ const YearPicker = ({
   order = "asc",
 }: YearPickerProps) => {
   const lang = useContext(LanguageContext);
-  const currentYear = new Date().getFullYear();
-  const minYear = minDate?.getFullYear();
+  const currentYear = new Date().getUTCFullYear();
+  const minYear = minDate?.getUTCFullYear();
   const total = numberYears;
   const half = Math.floor(total / 2);
   const positionIndex = currentYearPosition === "center" ? half : currentYearPosition === "end" ? (total - 1) : 0;
   const maxBaseYear = currentYear - (total - 1 - positionIndex);
 
   const [base, setBase] = useState<Date>(() => {
-    let initial = value.getFullYear();
+    let initial = value.getUTCFullYear();
     if (disableFutureNavigation) {
       initial = Math.min(initial, maxBaseYear);
     }
     if (minYear !== undefined) {
       initial = Math.max(initial, minYear);
     }
-    return new Date(initial, 0);
+    return new Date(Date.UTC(initial, 0, 1));
   });
 
   const handleOnChange = (year: number) => {
     const updateDate = new Date(value);
-    updateDate.setFullYear(year);
+    updateDate.setUTCFullYear(year);
     onChange(updateDate);
   };
 
-  const startYear = base.getFullYear() - positionIndex;
+  const startYear = base.getUTCFullYear() - positionIndex;
   const endYear = startYear + total - 1;
-  const prevSelectedRef = useRef<number>(value.getFullYear());
+  const prevSelectedRef = useRef<number>(value.getUTCFullYear());
 
   useEffect(() => {
-    const selected = value.getFullYear();
+    const selected = value.getUTCFullYear();
     if (selected === prevSelectedRef.current) {
       return;
     }
@@ -69,7 +69,7 @@ const YearPicker = ({
     if (minYear !== undefined) {
       clamped = Math.max(clamped, minYear);
     }
-    setBase(new Date(clamped, 0));
+    setBase(new Date(Date.UTC(clamped, 0, 1)));
   }, [value, disableFutureNavigation, currentYear, total, positionIndex, minYear]);
 
   const canGoForward = !disableFutureNavigation || endYear < currentYear;
@@ -78,10 +78,10 @@ const YearPicker = ({
   const nextYears = () => {
     if (canGoForward) {
       setBase((val) => {
-        const target = val.getFullYear() + numberYears;
+        const target = val.getUTCFullYear() + numberYears;
         const maxBaseYear = currentYear - (total - 1 - positionIndex);
         const clamped = disableFutureNavigation ? Math.min(target, maxBaseYear) : target;
-        return new Date(clamped, 0);
+        return new Date(Date.UTC(clamped, 0, 1));
       });
     }
   };
@@ -89,7 +89,7 @@ const YearPicker = ({
     if (!canGoBackward) {
       return;
     }
-    setBase((val) => new Date(val.getFullYear() - numberYears, 0));
+    setBase((val) => new Date(Date.UTC(val.getUTCFullYear() - numberYears, 0, 1)));
   };
 
   let touchStartX: number | null = null;
@@ -144,7 +144,7 @@ const YearPicker = ({
       </div>
       <div className="grid grid-rows-7 grid-cols-3">
         {displayYears.map((year, index) => {
-          const isSelected = year === value.getFullYear();
+          const isSelected = year === value.getUTCFullYear();
           const isDisabled =
             (disableFutureNavigation && year > currentYear) ||
             (minYear !== undefined && year < minYear);

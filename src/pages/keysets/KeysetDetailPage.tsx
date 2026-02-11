@@ -197,6 +197,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
         day: "2-digit",
         month: "short",
         year: "numeric",
+        timeZone: "UTC",
       }).replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
     : noExpiryText
   const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
