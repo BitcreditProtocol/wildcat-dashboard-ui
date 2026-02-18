@@ -26,8 +26,8 @@ updates:
       day: "monday"
       time: "08:30"
       timezone: "Europe/Vienna"
-    labels: 
-      - "dependencies" 
+    labels:
+      - "dependencies"
       - "npm"
     target-branch: "dev"
     open-pull-requests-limit: 7
