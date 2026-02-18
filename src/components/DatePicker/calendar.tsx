@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react"
 import { DateRange, DayPicker, DayPickerProps, OnSelectHandler } from "react-day-picker"
-import { isSameDay } from "date-fns";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { useIntl } from "react-intl";
+import { isSameDay } from "date-fns"
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { useIntl } from "react-intl"
 
-import { cn } from "@/lib/utils";
-import { YearPicker } from "./yearPicker";
-import { MonthPicker } from "./monthPicker";
-import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
+import { cn } from "@/lib/utils"
+import { YearPicker } from "./yearPicker"
+import { MonthPicker } from "./monthPicker"
+import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters"
 
 export type CalendarProps = Omit<DayPickerProps, "mode" | "onSelect" | "selected"> & {
   mode: "single" | "range"
@@ -53,71 +53,64 @@ const classNames = {
   hidden: "invisible",
 }
 
-function getNextDate(
-  current: Date,
-  offset: number
-): Date {
-  const year = current.getUTCFullYear();
-  const month = current.getUTCMonth();
-  const day = current.getUTCDate();
+function getNextDate(current: Date, offset: number): Date {
+  const year = current.getUTCFullYear()
+  const month = current.getUTCMonth()
+  const day = current.getUTCDate()
 
-  const daysInCurrentMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  const isLastDay = day === daysInCurrentMonth;
+  const daysInCurrentMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  const isLastDay = day === daysInCurrentMonth
 
-  const targetMonthDate = new Date(Date.UTC(year, month + offset, 1));
+  const targetMonthDate = new Date(Date.UTC(year, month + offset, 1))
   const daysInTargetMonth = new Date(
-    Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth() + 1, 0)
-  ).getUTCDate();
+    Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth() + 1, 0),
+  ).getUTCDate()
 
-  const newDay = isLastDay
-    ? daysInTargetMonth
-    : Math.min(day, daysInTargetMonth);
+  const newDay = isLastDay ? daysInTargetMonth : Math.min(day, daysInTargetMonth)
 
   return new Date(Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth(), newDay))
 }
 
 function Calendar({
-                    mode,
-                    className,
-                    onCaptionLabelClicked,
-                    selected,
-                    onSelect,
-                    disableFutureNavigation = false,
-                    ISOWeek = true,
-                    showOutsideDays = true,
-                    rangeFocus = "from",
-                    initialFocus,
-                    modifiers,
-                    modifiersClassNames,
-                    month: monthProp,
-                    minDate,
-                    ...restProps
-                  }: CalendarProps) {
-  const intl = useIntl();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    selected.from
-  );
-  const [month, setMonth] = useState<Date>(selected.from ?? monthProp ?? new Date());
-  const [showYearPicker, setShowYearPicker] = useState(false);
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const { formatDay2Digit, formatMonthShort, formatYearNumeric } = useUtcDateFormatters(intl.locale);
+  mode,
+  className,
+  onCaptionLabelClicked,
+  selected,
+  onSelect,
+  disableFutureNavigation = false,
+  ISOWeek = true,
+  showOutsideDays = true,
+  rangeFocus = "from",
+  initialFocus,
+  modifiers,
+  modifiersClassNames,
+  month: monthProp,
+  minDate,
+  ...restProps
+}: CalendarProps) {
+  const intl = useIntl()
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(selected.from)
+  const [month, setMonth] = useState<Date>(selected.from ?? monthProp ?? new Date())
+  const [showYearPicker, setShowYearPicker] = useState(false)
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
+  const { formatDay2Digit, formatMonthShort, formatYearNumeric } = useUtcDateFormatters(intl.locale)
 
   useEffect(() => {
     if (mode === "single") {
       if (selected.from) {
-        setSelectedDate(selected.from);
-        setMonth(selected.from);
+        setSelectedDate(selected.from)
+        setMonth(selected.from)
       } else {
-        setSelectedDate(undefined);
-        setMonth(monthProp ?? new Date());
+        setSelectedDate(undefined)
+        setMonth(monthProp ?? new Date())
       }
     } else {
       if (!selected.from && !selected.to) {
-        setMonth(monthProp ?? new Date());
-        setSelectedDate(undefined);
+        setMonth(monthProp ?? new Date())
+        setSelectedDate(undefined)
       }
     }
-  }, [selected, mode, monthProp]);
+  }, [selected, mode, monthProp])
 
   const handleOnSelectRange: OnSelectHandler<DateRange | undefined> = (range, selectedDay, modifiers, e) => {
     if (mode === "single") {
@@ -132,46 +125,47 @@ function Calendar({
     handleOnSelectRange(day ? { from: day } : undefined, selectedDay, modifiers, e)
   }
 
-  const goToOffsetMonth = useCallback((offset: number) => {
-    setMonth(getNextDate(month, offset));
-  }, [month]);
+  const goToOffsetMonth = useCallback(
+    (offset: number) => {
+      setMonth(getNextDate(month, offset))
+    },
+    [month],
+  )
 
-  let touchStartX: number | null = null;
+  let touchStartX: number | null = null
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX = e.touches[0].clientX;
-  };
+    touchStartX = e.touches[0].clientX
+  }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX === null) {
-      return;
+      return
     }
 
-    const diffX = e.changedTouches[0].clientX - touchStartX;
+    const diffX = e.changedTouches[0].clientX - touchStartX
 
     if (diffX > 50) {
-      goToOffsetMonth(-1);
+      goToOffsetMonth(-1)
     } else if (diffX < -50) {
       if (canGoForward) {
-        goToOffsetMonth(1);
+        goToOffsetMonth(1)
       }
     }
 
-    touchStartX = null;
-  };
+    touchStartX = null
+  }
 
   const isAtOrBeyondCurrentMonth = (d: Date) => {
-    const today = new Date();
-    const todayYear = today.getUTCFullYear();
-    const todayMonth = today.getUTCMonth();
-    const dateYear = d.getUTCFullYear();
-    const dateMonth = d.getUTCMonth();
-    return (
-      dateYear > todayYear || (dateYear === todayYear && dateMonth >= todayMonth)
-    );
-  };
+    const today = new Date()
+    const todayYear = today.getUTCFullYear()
+    const todayMonth = today.getUTCMonth()
+    const dateYear = d.getUTCFullYear()
+    const dateMonth = d.getUTCMonth()
+    return dateYear > todayYear || (dateYear === todayYear && dateMonth >= todayMonth)
+  }
 
-  const canGoForward = disableFutureNavigation ? !isAtOrBeyondCurrentMonth(month) : true;
+  const canGoForward = disableFutureNavigation ? !isAtOrBeyondCurrentMonth(month) : true
 
   const NavigationHeader = () => (
     <div className="flex justify-center relative items-center mb-4">
@@ -308,14 +302,10 @@ function Calendar({
     ...(initialFocus && { initialFocus }),
     ...(modifiers && { modifiers }),
     ...(modifiersClassNames && { modifiersClassNames }),
-  };
+  }
 
   return (
-    <div
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      style={{ touchAction: "pan-y" }}
-    >
+    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ touchAction: "pan-y" }}>
       {!showYearPicker && !showMonthPicker && <NavigationHeader />}
       {showYearPicker ? (
         <YearPicker
@@ -345,33 +335,25 @@ function Calendar({
           minDate={minDate}
         />
       ) : mode === "single" ? (
-        <DayPicker
-          {...pickerProps}
-          mode="single"
-          selected={selectedDate}
-          onSelect={handleOnSelectSingle}
-        />
+        <DayPicker {...pickerProps} mode="single" selected={selectedDate} onSelect={handleOnSelectSingle} />
       ) : (
         <DayPicker
           {...pickerProps}
           mode="range"
           selected={selected}
           onSelect={(_range, selectedDay, modifiers, e) => {
-            const currentRange = selected;
-            let nextRange: DateRange;
+            const currentRange = selected
+            let nextRange: DateRange
             if (rangeFocus === "from") {
-              nextRange = { from: selectedDay, to: currentRange.to };
+              nextRange = { from: selectedDay, to: currentRange.to }
             } else {
-              const from = currentRange.from ?? selectedDay;
-              nextRange = selectedDay < from ? { from: selectedDay, to: from } : { from, to: selectedDay };
+              const from = currentRange.from ?? selectedDay
+              nextRange = selectedDay < from ? { from: selectedDay, to: from } : { from, to: selectedDay }
             }
-            if (
-              month.getMonth() !== selectedDay.getMonth() ||
-              month.getFullYear() !== selectedDay.getFullYear()
-            ) {
-              setMonth(selectedDay);
+            if (month.getMonth() !== selectedDay.getMonth() || month.getFullYear() !== selectedDay.getFullYear()) {
+              setMonth(selectedDay)
             }
-            handleOnSelectRange(nextRange, selectedDay, modifiers, e);
+            handleOnSelectRange(nextRange, selectedDay, modifiers, e)
           }}
           modifiers={{
             ...(selected.from && {
@@ -380,10 +362,10 @@ function Calendar({
             ...(selected.to && {
               range_end: (d: Date) => isSameDay(d, selected.to!),
             }),
-            ...(selected.from && selected.to && {
-              range_middle: (d: Date) =>
-                d > selected.from! && d < selected.to!,
-            }),
+            ...(selected.from &&
+              selected.to && {
+                range_middle: (d: Date) => d > selected.from! && d < selected.to!,
+              }),
             ...(selected.from &&
               rangeFocus === "from" && {
                 focus_from: (d: Date) => isSameDay(d, selected.from!),
@@ -394,8 +376,10 @@ function Calendar({
               }),
           }}
           modifiersClassNames={{
-            range_start: "bg-brand-200 rounded-full relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
-            range_end: "bg-brand-200 rounded-full relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
+            range_start:
+              "bg-brand-200 rounded-full relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
+            range_end:
+              "bg-brand-200 rounded-full relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
             range_middle: "bg-brand-100/40",
             focus_from: "ring-2 ring-brand-200",
             focus_to: "ring-2 ring-brand-200",
@@ -403,9 +387,9 @@ function Calendar({
         />
       )}
     </div>
-  );
+  )
 }
 
-Calendar.displayName = "Calendar";
+Calendar.displayName = "Calendar"
 
-export { Calendar };
+export { Calendar }

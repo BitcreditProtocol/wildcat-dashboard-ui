@@ -91,7 +91,7 @@ export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
               id: "qrCode.error.tooLarge",
               defaultMessage: "Data too large for QR code ({length} characters, max {max})",
             },
-            { length: value.length, max: QR_CODE_MAX_LENGTH }
+            { length: value.length, max: QR_CODE_MAX_LENGTH },
           )}
         </span>
       </div>
@@ -101,37 +101,20 @@ export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
   return (
     <QRCodeErrorBoundary fallbackMessage={errorFallback}>
       <div className={`flex flex-col gap-2 p-4 bg-white border rounded-lg ${className ?? ""}`}>
-        <QRCodeSVG
-          value={value}
-          size={size}
-          level="M"
-        />
-        {label && (
-          <span className="text-xs text-muted-foreground text-center">
-            {label}
-          </span>
-        )}
+        <QRCodeSVG value={value} size={size} level="M" />
+        {label && <span className="text-xs text-muted-foreground text-center">{label}</span>}
       </div>
     </QRCodeErrorBoundary>
   )
 }
 
-export function QRCodeModal({
-  value,
-  size = 768,
-  label,
-  title,
-  triggerLabel,
-}: QRCodeModalProps) {
+export function QRCodeModal({ value, size = 768, label, title, triggerLabel }: QRCodeModalProps) {
   const intl = useIntl()
   const [open, setOpen] = useState(false)
   const [canRender, setCanRender] = useState(false)
-  const resolvedTitle =
-    title ??
-    intl.formatMessage({ id: "qrCode.modal.title", defaultMessage: "QR Code" })
+  const resolvedTitle = title ?? intl.formatMessage({ id: "qrCode.modal.title", defaultMessage: "QR Code" })
   const resolvedTriggerLabel =
-    triggerLabel ??
-    intl.formatMessage({ id: "qrCode.modal.triggerLabel", defaultMessage: "Show QR code" })
+    triggerLabel ?? intl.formatMessage({ id: "qrCode.modal.triggerLabel", defaultMessage: "Show QR code" })
   const errorFallback = intl.formatMessage({
     id: "qrCode.error.generic",
     defaultMessage: "QR code cannot be generated (data too large)",
@@ -159,12 +142,7 @@ export function QRCodeModal({
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          aria-label={resolvedTriggerLabel}
-        >
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={resolvedTriggerLabel}>
           <QrCode className="h-4 w-4" />
         </Button>
       </DrawerTrigger>
@@ -175,17 +153,8 @@ export function QRCodeModal({
         <div className="flex flex-col items-center gap-4 p-0 sm:p-6">
           <QRCodeErrorBoundary fallbackMessage={errorFallback}>
             <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg w-full max-w-[90vw] sm:max-w-md">
-              <QRCodeSVG
-                value={value}
-                size={size}
-                level="M"
-                className="w-full h-auto"
-              />
-              {label && (
-                <span className="text-xs text-muted-foreground text-center">
-                  {label}
-                </span>
-              )}
+              <QRCodeSVG value={value} size={size} level="M" className="w-full h-auto" />
+              {label && <span className="text-xs text-muted-foreground text-center">{label}</span>}
             </div>
           </QRCodeErrorBoundary>
         </div>

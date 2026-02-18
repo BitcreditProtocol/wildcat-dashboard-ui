@@ -7,8 +7,7 @@ type RuntimeEnv = Partial<{
   VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: string
 }>
 
-const runtimeEnv: RuntimeEnv =
-  typeof window !== "undefined" ? (window as { __ENV__?: RuntimeEnv }).__ENV__ ?? {} : {}
+const runtimeEnv: RuntimeEnv = typeof window !== "undefined" ? ((window as { __ENV__?: RuntimeEnv }).__ENV__ ?? {}) : {}
 
 const fallbackEnv = import.meta.env as ImportMetaEnv & RuntimeEnv
 

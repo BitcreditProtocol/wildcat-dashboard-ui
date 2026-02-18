@@ -51,7 +51,7 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
 
   const queryResult = useQuery({
     ...getQuoteOptions({
-      path: { qid: quote.id }
+      path: { qid: quote.id },
     }),
     retry: RETRY_COUNT,
     retryDelay,
@@ -76,7 +76,7 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
             message:
               errorMessage ||
               intl.formatMessage({ id: "quotes.error.tryAgain", defaultMessage: "Please try again later." }),
-          }
+          },
         ),
         id: `quote-error-${quote.id}`,
         duration: 5000,
@@ -119,7 +119,7 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
           <Button size="sm" className="max-w-sm px-12" onClick={handleQuoteClick}>
             {intl.formatMessage({
               id: "quotes.card.view",
-              defaultMessage: "View"
+              defaultMessage: "View",
             })}
           </Button>
         </div>
@@ -152,7 +152,7 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
           <div className="text-sm text-gray-400">
             {intl.formatMessage({
               id: "quotes.card.noBillData",
-              defaultMessage: "No bill data available"
+              defaultMessage: "No bill data available",
             })}
           </div>
         )}
@@ -176,12 +176,12 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const quoteDetailsQueries = useQueries({
     queries: (data?.quotes ?? []).map((quote) => ({
       ...getQuoteOptions({
-        path: { qid: quote.id }
+        path: { qid: quote.id },
       }),
       retry: RETRY_COUNT,
       retryDelay,
       enabled: !!quote.id,
-    }))
+    })),
   })
 
   const noQuotesMessage = intl.formatMessage({
@@ -196,14 +196,14 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         <div className="text-red-800 font-semibold">
           {intl.formatMessage({
             id: "quotes.error.loadQuotes.title",
-            defaultMessage: "Failed to load quotes"
+            defaultMessage: "Failed to load quotes",
           })}
         </div>
         <div className="text-red-600 text-sm">
           {errorMessage ||
             intl.formatMessage({
               id: "quotes.error.unknown",
-              defaultMessage: "Unknown error occurred"
+              defaultMessage: "Unknown error occurred",
             })}
         </div>
         <div className="text-xs text-red-500">
@@ -220,30 +220,27 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     return <Loader />
   }
 
-  const filteredQuotes = data?.quotes.filter((quote) => {
-    if (status && quote.status !== status) {
-      return false
-    }
+  const filteredQuotes =
+    data?.quotes.filter((quote) => {
+      if (status && quote.status !== status) {
+        return false
+      }
 
-    if (!searchQuery) {
-      return true
-    }
+      if (!searchQuery) {
+        return true
+      }
 
-    const query = searchQuery.toLowerCase()
-    const quoteId = quote.id.toLowerCase()
-    const quoteStatus = quote.status.toLowerCase()
-    const quoteSum = quote.sum.toString()
+      const query = searchQuery.toLowerCase()
+      const quoteId = quote.id.toLowerCase()
+      const quoteStatus = quote.status.toLowerCase()
+      const quoteSum = quote.sum.toString()
 
-    return (
-      quoteId.includes(query) ||
-      quoteStatus.includes(query) ||
-      quoteSum.includes(query)
-    )
-  }) ?? []
+      return quoteId.includes(query) || quoteStatus.includes(query) || quoteSum.includes(query)
+    }) ?? []
 
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
-    const aIndex = data?.quotes.findIndex(q => q.id === a.id) ?? -1
-    const bIndex = data?.quotes.findIndex(q => q.id === b.id) ?? -1
+    const aIndex = data?.quotes.findIndex((q) => q.id === a.id) ?? -1
+    const bIndex = data?.quotes.findIndex((q) => q.id === b.id) ?? -1
 
     const aBill = aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data?.bill : null
     const bBill = bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data?.bill : null
@@ -276,7 +273,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
   const toggleSort = (field: "status" | "sum" | "maturity") => {
     if (sortBy.startsWith(field)) {
-      setSortBy(sortBy.endsWith("asc") ? `${field}-desc` as SortBy : `${field}-asc` as SortBy)
+      setSortBy(sortBy.endsWith("asc") ? (`${field}-desc` as SortBy) : (`${field}-asc` as SortBy))
     } else {
       setSortBy(`${field}-asc` as SortBy)
     }
@@ -287,21 +284,21 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       field: "sum" as const,
       label: intl.formatMessage({
         id: "quotes.sort.amount",
-        defaultMessage: "Amount"
+        defaultMessage: "Amount",
       }),
     },
     {
       field: "maturity" as const,
       label: intl.formatMessage({
         id: "quotes.sort.maturity",
-        defaultMessage: "Maturity"
+        defaultMessage: "Maturity",
       }),
     },
     {
       field: "status" as const,
       label: intl.formatMessage({
         id: "quotes.sort.status",
-        defaultMessage: "Status"
+        defaultMessage: "Status",
       }),
     },
   ]
@@ -320,11 +317,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           onChange={setSearchQuery}
           size="sm"
         />
-        <SortButtons
-          sortBy={sortBy}
-          onSortChange={toggleSort}
-          options={sortOptions}
-        />
+        <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
       </div>
 
       <div className="flex items-center justify-center">
@@ -383,14 +376,14 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
     ? intl.formatMessage(
         {
           id: "quotes.statusPage.title",
-          defaultMessage: "{status} quotes"
+          defaultMessage: "{status} quotes",
         },
-        { status: statusLabel }
+        { status: statusLabel },
       )
     : intl.formatMessage({
-      id: "quotes.statusPage.titleAll",
-      defaultMessage: "All quotes"
-    })
+        id: "quotes.statusPage.titleAll",
+        defaultMessage: "All quotes",
+      })
 
   return (
     <>
@@ -402,7 +395,7 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
                   <Link to="/quotes">
                     {intl.formatMessage({
                       id: "quotes.breadcrumb",
-                      defaultMessage: "Quotes"
+                      defaultMessage: "Quotes",
                     })}
                   </Link>
                 </BreadcrumbLink>,
@@ -410,10 +403,11 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
             : undefined
         }
       >
-        {statusLabel ?? intl.formatMessage({
-          id: "quotes.breadcrumb",
-          defaultMessage: "Quotes"
-        })}
+        {statusLabel ??
+          intl.formatMessage({
+            id: "quotes.breadcrumb",
+            defaultMessage: "Quotes",
+          })}
       </Breadcrumbs>
 
       <PageTitle>{pageTitle}</PageTitle>

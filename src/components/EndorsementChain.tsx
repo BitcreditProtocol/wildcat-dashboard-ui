@@ -1,6 +1,17 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronDown, ChevronUp, Clock, CheckCircle2, PencilLine, AlertTriangle, XCircle, Coins, DollarSign, ArrowUpDown } from "lucide-react"
+import {
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  CheckCircle2,
+  PencilLine,
+  AlertTriangle,
+  XCircle,
+  Coins,
+  DollarSign,
+  ArrowUpDown,
+} from "lucide-react"
 import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
@@ -35,11 +46,7 @@ function LightParticipantInfo({ participant }: { participant: LightBillParticipa
   } else if ("Ident" in participant) {
     return (
       <div className="flex flex-col gap-0.5">
-        <TruncatedTextPopover
-          text={participant.Ident.name}
-          maxLength={50}
-          className="font-medium text-sm"
-        />
+        <TruncatedTextPopover text={participant.Ident.name} maxLength={50} className="font-medium text-sm" />
         {participant.Ident.city && participant.Ident.country && (
           <TruncatedTextPopover
             text={`${participant.Ident.city}, ${participant.Ident.country}`}
@@ -54,7 +61,16 @@ function LightParticipantInfo({ participant }: { participant: LightBillParticipa
 }
 
 interface HistoryEvent {
-  type: "issue" | "offered" | "endorsement" | "requestToPay" | "payment" | "acceptance" | "rejection" | "minting" | "rejectedToPay"
+  type:
+    | "issue"
+    | "offered"
+    | "endorsement"
+    | "requestToPay"
+    | "payment"
+    | "acceptance"
+    | "rejection"
+    | "minting"
+    | "rejectedToPay"
   timestamp?: number
   data: Endorsement | null
 }
@@ -167,7 +183,7 @@ export function EndorsementChain({
     events.push({
       type: "issue",
       timestamp: issueTimestamp,
-      data: null
+      data: null,
     })
   }
 
@@ -180,11 +196,11 @@ export function EndorsementChain({
   }
 
   if (endorsements) {
-    endorsements.forEach(endorsement => {
+    endorsements.forEach((endorsement) => {
       events.push({
         type: "endorsement",
         timestamp: endorsement.signing_timestamp,
-        data: endorsement
+        data: endorsement,
       })
     })
   }
@@ -276,7 +292,7 @@ export function EndorsementChain({
                   id: "endorsement.history.eventCount",
                   defaultMessage: "({count, plural, one {# event} other {# events}})",
                 },
-                { count: eventCount }
+                { count: eventCount },
               )}
             </span>
           </div>

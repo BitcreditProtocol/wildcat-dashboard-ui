@@ -20,7 +20,7 @@ export function PaymentRequestCard({
       <h2 className="text-2xl font-extrabold tracking-tight mb-3">
         {intl.formatMessage({
           id: "quotes.paymentRequest.title",
-          defaultMessage: "Payment request"
+          defaultMessage: "Payment request",
         })}
       </h2>
       <div className="space-y-1">
@@ -29,7 +29,7 @@ export function PaymentRequestCard({
             <span className="font-bold w-32">
               {intl.formatMessage({
                 id: "quotes.paymentRequest.addressToPay",
-                defaultMessage: "Address to pay"
+                defaultMessage: "Address to pay",
               })}
             </span>
             <TruncatedTextPopover text={addressToPay} maxLength={64} className="font-mono text-sm" />
@@ -40,7 +40,7 @@ export function PaymentRequestCard({
             <span className="font-bold w-32">
               {intl.formatMessage({
                 id: "quotes.paymentRequest.linkToMempool",
-                defaultMessage: "Link to mempool"
+                defaultMessage: "Link to mempool",
               })}
             </span>
             <a
@@ -58,7 +58,7 @@ export function PaymentRequestCard({
             <span className="font-bold w-32">
               {intl.formatMessage({
                 id: "quotes.paymentRequest.requestedAt",
-                defaultMessage: "Requested at"
+                defaultMessage: "Requested at",
               })}
             </span>
             <span className="text-sm">
@@ -71,7 +71,7 @@ export function PaymentRequestCard({
             <span className="font-bold w-32">
               {intl.formatMessage({
                 id: "quotes.paymentRequest.deadline",
-                defaultMessage: "Deadline"
+                defaultMessage: "Deadline",
               })}
             </span>
             <span className="text-sm">

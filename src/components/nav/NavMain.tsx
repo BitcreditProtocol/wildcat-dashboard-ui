@@ -38,9 +38,7 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>
-        {intl.formatMessage({ id: "nav.dashboard", defaultMessage: "Dashboard" })}
-      </SidebarGroupLabel>
+      <SidebarGroupLabel>{intl.formatMessage({ id: "nav.dashboard", defaultMessage: "Dashboard" })}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
           const title = intl.formatMessage({ id: item.titleId, defaultMessage: item.titleDefaultMessage })
@@ -92,21 +90,22 @@ export function NavMain({
                       })
 
                       return (
-                      <SidebarMenuSubItem key={subItem.titleId}>
-                        <SidebarMenuSubButton asChild>
-                          <NavLink
-                            to={subItem.url}
-                            onClick={subItem.disabled ? (e) => e.preventDefault() : undefined}
-                            className={cn({
-                              "opacity-50": subItem.disabled,
-                              "cursor-not-allowed": subItem.disabled,
-                            })}
-                          >
-                            <span>{subTitle}</span>
-                          </NavLink>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    )})}
+                        <SidebarMenuSubItem key={subItem.titleId}>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink
+                              to={subItem.url}
+                              onClick={subItem.disabled ? (e) => e.preventDefault() : undefined}
+                              className={cn({
+                                "opacity-50": subItem.disabled,
+                                "cursor-not-allowed": subItem.disabled,
+                              })}
+                            >
+                              <span>{subTitle}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      )
+                    })}
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </SidebarMenuItem>

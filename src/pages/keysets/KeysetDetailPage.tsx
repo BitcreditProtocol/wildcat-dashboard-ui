@@ -2,7 +2,15 @@ import { PageTitle } from "@/components/PageTitle"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { useParams, Link, useLocation } from "react-router"
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query"
-import { listKeysetInfosOptions, listKeysetInfosQueryKey, listQuotesOptions, getQuoteOptions, listEbillsOptions, postEnableRedemptionMutation, getEbillMintCompleteOptions } from "@/generated/client/@tanstack/react-query.gen"
+import {
+  listKeysetInfosOptions,
+  listKeysetInfosQueryKey,
+  listQuotesOptions,
+  getQuoteOptions,
+  listEbillsOptions,
+  postEnableRedemptionMutation,
+  getEbillMintCompleteOptions,
+} from "@/generated/client/@tanstack/react-query.gen"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -66,7 +74,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
       )
       void queryClient.invalidateQueries({
         queryKey: listKeysetInfosQueryKey(),
-        exact: false
+        exact: false,
       })
     },
     onError: (error) => {
@@ -87,7 +95,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
     queries: allQuotes.map((quote) =>
       getQuoteOptions({
         path: { qid: quote.id },
-      })
+      }),
     ),
   })
 
@@ -95,16 +103,16 @@ function PageBody({ keysetId }: { keysetId: string }) {
 
   const quoteDetailsDepsKey = useMemo(() => {
     const billKeys = quoteDetailsQueries.map((query) => {
-      const billId = query.data?.bill?.id ?? ''
-      const maturityDate = query.data?.bill?.maturity_date ?? ''
+      const billId = query.data?.bill?.id ?? ""
+      const maturityDate = query.data?.bill?.maturity_date ?? ""
       return `${billId}|${maturityDate}`
     })
-    return billKeys.join(',')
+    return billKeys.join(",")
   }, [
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    quoteDetailsQueries.map((q) => q.data?.bill?.id).join(','),
+    quoteDetailsQueries.map((q) => q.data?.bill?.id).join(","),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    quoteDetailsQueries.map((q) => q.data?.bill?.maturity_date).join(',')
+    quoteDetailsQueries.map((q) => q.data?.bill?.maturity_date).join(","),
   ])
 
   const matchingBillIds = useMemo(() => {
@@ -153,13 +161,15 @@ function PageBody({ keysetId }: { keysetId: string }) {
     })),
   })
 
-  const allBillsPaid = matchingBillIds.length > 0 && matchingBillIds.every((billId) => {
-    const ebill = ebills?.find((e) => e.id === billId)
-    return ebill?.status?.payment?.paid === true
-  })
+  const allBillsPaid =
+    matchingBillIds.length > 0 &&
+    matchingBillIds.every((billId) => {
+      const ebill = ebills?.find((e) => e.id === billId)
+      return ebill?.status?.payment?.paid === true
+    })
 
-  const allMintComplete = matchingBillIds.length > 0 &&
-    mintCompleteQueries.every((query) => query.data?.complete === true)
+  const allMintComplete =
+    matchingBillIds.length > 0 && mintCompleteQueries.every((query) => query.data?.complete === true)
 
   const canEnableRedemption = allBillsPaid && allMintComplete
   const anyMintCompleteLoading = mintCompleteQueries.some((query) => query.isLoading)
@@ -176,10 +186,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground">
-              <FormattedMessage
-                id="keyset.detail.notFound"
-                defaultMessage="Keyset not found"
-              />
+              <FormattedMessage id="keyset.detail.notFound" defaultMessage="Keyset not found" />
             </p>
           </CardContent>
         </Card>
@@ -193,12 +200,14 @@ function PageBody({ keysetId }: { keysetId: string }) {
   })
 
   const finalExpiryDate = keyset.final_expiry
-    ? new Date(keyset.final_expiry * 1000).toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        timeZone: "UTC",
-      }).replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
+    ? new Date(keyset.final_expiry * 1000)
+        .toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          timeZone: "UTC",
+        })
+        .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
     : noExpiryText
   const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
 
@@ -242,15 +251,9 @@ function PageBody({ keysetId }: { keysetId: string }) {
             <div className="flex gap-2 items-center">
               <Badge variant={keyset.active ? "default" : "secondary"}>
                 {keyset.active ? (
-                  <FormattedMessage
-                    id="keysets.status.active"
-                    defaultMessage="Active"
-                  />
+                  <FormattedMessage id="keysets.status.active" defaultMessage="Active" />
                 ) : (
-                  <FormattedMessage
-                    id="keysets.status.inactive"
-                    defaultMessage="Inactive"
-                  />
+                  <FormattedMessage id="keysets.status.inactive" defaultMessage="Inactive" />
                 )}
               </Badge>
             </div>
@@ -261,7 +264,9 @@ function PageBody({ keysetId }: { keysetId: string }) {
                 className="w-full max-w-sm"
                 size="sm"
                 variant="default"
-                disabled={redemptionMutation.isPending || !canEnableRedemption || anyMintCompleteLoading || hasNoMatchingBills}
+                disabled={
+                  redemptionMutation.isPending || !canEnableRedemption || anyMintCompleteLoading || hasNoMatchingBills
+                }
                 onClick={() => {
                   redemptionMutation.mutate({
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
@@ -275,29 +280,29 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       defaultMessage: "Enabling redemption...",
                     })
                   : hasNoMatchingBills
-                  ? intl.formatMessage({
-                      id: "keyset.detail.redeem.noMatchingBills",
-                      defaultMessage: "No matching bills found",
-                    })
-                  : !allBillsPaid
-                  ? intl.formatMessage({
-                      id: "keyset.detail.redeem.waitingPayments",
-                      defaultMessage: "Waiting for e-bill payments...",
-                    })
-                  : anyMintCompleteLoading
-                  ? intl.formatMessage({
-                      id: "keyset.detail.redeem.checkingMintStatus",
-                      defaultMessage: "Checking mint status...",
-                    })
-                  : !allMintComplete
-                  ? intl.formatMessage({
-                      id: "keyset.detail.redeem.waitingMintCompletion",
-                      defaultMessage: "Waiting for mint completion...",
-                    })
-                  : intl.formatMessage({
-                      id: "keyset.detail.redeem.action",
-                      defaultMessage: "Redeem",
-                    })}
+                    ? intl.formatMessage({
+                        id: "keyset.detail.redeem.noMatchingBills",
+                        defaultMessage: "No matching bills found",
+                      })
+                    : !allBillsPaid
+                      ? intl.formatMessage({
+                          id: "keyset.detail.redeem.waitingPayments",
+                          defaultMessage: "Waiting for e-bill payments...",
+                        })
+                      : anyMintCompleteLoading
+                        ? intl.formatMessage({
+                            id: "keyset.detail.redeem.checkingMintStatus",
+                            defaultMessage: "Checking mint status...",
+                          })
+                        : !allMintComplete
+                          ? intl.formatMessage({
+                              id: "keyset.detail.redeem.waitingMintCompletion",
+                              defaultMessage: "Waiting for mint completion...",
+                            })
+                          : intl.formatMessage({
+                              id: "keyset.detail.redeem.action",
+                              defaultMessage: "Redeem",
+                            })}
               </Button>
             </div>
           )}
@@ -320,40 +325,22 @@ function PageBody({ keysetId }: { keysetId: string }) {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.quoteId"
-                          defaultMessage="Quote ID"
-                        />
+                        <FormattedMessage id="keyset.detail.table.quoteId" defaultMessage="Quote ID" />
                       </th>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.quoteStatus"
-                          defaultMessage="Quote status"
-                        />
+                        <FormattedMessage id="keyset.detail.table.quoteStatus" defaultMessage="Quote status" />
                       </th>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.paymentStatus"
-                          defaultMessage="Payment status"
-                        />
+                        <FormattedMessage id="keyset.detail.table.paymentStatus" defaultMessage="Payment status" />
                       </th>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.mintStatus"
-                          defaultMessage="Redemption status"
-                        />
+                        <FormattedMessage id="keyset.detail.table.mintStatus" defaultMessage="Redemption status" />
                       </th>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.paymentAddress"
-                          defaultMessage="Payment address"
-                        />
+                        <FormattedMessage id="keyset.detail.table.paymentAddress" defaultMessage="Payment address" />
                       </th>
                       <th className="text-right p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.sum"
-                          defaultMessage="Sum"
-                        />
+                        <FormattedMessage id="keyset.detail.table.sum" defaultMessage="Sum" />
                       </th>
                       <th className="text-right p-2 font-semibold"></th>
                     </tr>
@@ -370,7 +357,9 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
                       const hasPaymentRequestInWaitingState = Boolean(cws && "Payment" in cws)
                       const requestedToPay = Boolean(
-                        paymentStatus?.requested_to_pay ?? ebill?.status?.has_requested_funds ?? hasPaymentRequestInWaitingState,
+                        paymentStatus?.requested_to_pay ??
+                        ebill?.status?.has_requested_funds ??
+                        hasPaymentRequestInWaitingState,
                       )
                       const rejectedToPay = Boolean(paymentStatus?.rejected_to_pay)
 
@@ -442,10 +431,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                                 <FormattedMessage id="keyset.detail.table.mintPending" defaultMessage="Pending" />
                               </Badge>
                             ) : (
-                              <Badge
-                                variant="default"
-                                className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}
-                              >
+                              <Badge variant="default" className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}>
                                 {isMintComplete ? (
                                   <FormattedMessage id="keyset.detail.table.mintComplete" defaultMessage="Complete" />
                                 ) : (
@@ -480,10 +466,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              <FormattedMessage
-                id="keyset.detail.noQuotes"
-                defaultMessage="No quotes available"
-              />
+              <FormattedMessage id="keyset.detail.noQuotes" defaultMessage="No quotes available" />
             </p>
           )}
         </CardContent>
@@ -506,10 +489,7 @@ export default function KeysetDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground">
-              <FormattedMessage
-                id="keyset.detail.invalidId"
-                defaultMessage="Invalid keyset ID"
-              />
+              <FormattedMessage id="keyset.detail.invalidId" defaultMessage="Invalid keyset ID" />
             </p>
           </CardContent>
         </Card>
@@ -523,10 +503,7 @@ export default function KeysetDetailPage() {
         parents={[
           <BreadcrumbLink key="keysets" asChild>
             <Link to="/keysets">
-              <FormattedMessage
-                id="keysets.page.title"
-                defaultMessage="Keysets"
-              />
+              <FormattedMessage id="keysets.page.title" defaultMessage="Keysets" />
             </Link>
           </BreadcrumbLink>,
         ]}

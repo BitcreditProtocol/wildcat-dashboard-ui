@@ -29,9 +29,7 @@ function useResponsiveMaxLength(maxLength: number, showFullOnDesktop: boolean): 
 
       // Modern touch device detection using multiple signals
       const isTouchDevice =
-        (window.matchMedia('(pointer: coarse)').matches) ||
-        (navigator.maxTouchPoints > 0) ||
-        ('ontouchstart' in window)
+        window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0 || "ontouchstart" in window
 
       // If showFullOnDesktop is true and we're on a large screen without touch, skip truncation
       if (showFullOnDesktop && width >= 1024 && !isTouchDevice) {
@@ -115,7 +113,7 @@ export function TruncatedTextPopover({
         intl.formatMessage({
           id: "truncatedTextPopover.copied",
           defaultMessage: "Copied to clipboard",
-        })
+        }),
       )
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
@@ -124,7 +122,7 @@ export function TruncatedTextPopover({
         intl.formatMessage({
           id: "truncatedTextPopover.copyFailed",
           defaultMessage: "Failed to copy to clipboard",
-        })
+        }),
       )
     }
   }
@@ -193,24 +191,24 @@ export function TruncatedTextPopover({
           title={
             copied
               ? intl.formatMessage({
-                id: "truncatedTextPopover.copiedShort",
-                defaultMessage: "Copied!"
-              })
+                  id: "truncatedTextPopover.copiedShort",
+                  defaultMessage: "Copied!",
+                })
               : intl.formatMessage({
-                id: "truncatedTextPopover.copyAction",
-                defaultMessage: "Copy to clipboard"
-              })
+                  id: "truncatedTextPopover.copyAction",
+                  defaultMessage: "Copy to clipboard",
+                })
           }
           aria-label={
             copied
               ? intl.formatMessage({
-                id: "truncatedTextPopover.copiedShort",
-                defaultMessage: "Copied!"
-              })
+                  id: "truncatedTextPopover.copiedShort",
+                  defaultMessage: "Copied!",
+                })
               : intl.formatMessage({
-                id: "truncatedTextPopover.copyAction",
-                defaultMessage: "Copy to clipboard"
-              })
+                  id: "truncatedTextPopover.copyAction",
+                  defaultMessage: "Copy to clipboard",
+                })
           }
         >
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

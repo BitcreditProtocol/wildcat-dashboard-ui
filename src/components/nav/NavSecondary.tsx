@@ -39,12 +39,12 @@ export function NavSecondary({
             return (
               <SidebarMenuItem key={item.titleId ?? item.title}>
                 <SidebarMenuButton asChild size="sm" tooltip={title}>
-                <Link to={item.url}>
-                  <item.icon />
-                  <span>{title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+                  <Link to={item.url}>
+                    <item.icon />
+                    <span>{title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             )
           })}
         </SidebarMenu>

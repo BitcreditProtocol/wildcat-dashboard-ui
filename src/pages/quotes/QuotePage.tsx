@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview"
-import { getQuoteOptions, listEbillsOptions, getEbillEndorsementsOptions, getEbillMintCompleteOptions, postTokenStatusMutation } from "@/generated/client/@tanstack/react-query.gen"
+import {
+  getQuoteOptions,
+  listEbillsOptions,
+  getEbillEndorsementsOptions,
+  getEbillMintCompleteOptions,
+  postTokenStatusMutation,
+} from "@/generated/client/@tanstack/react-query.gen"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useParams, Link, useLocation } from "react-router"
 import { humanReadableDurationDays } from "@/utils/dates"
@@ -70,7 +76,7 @@ function PageBody({ id }: { id: string }) {
 
   const ebill = ebillsQuery.data?.find((item) => item.id === billId)
   const isPaid = ebill?.status?.payment?.paid === true
-  const shouldCheckMintComplete = (quoteStatus === "Accepted" || quoteStatus === "Minting") || isPaid
+  const shouldCheckMintComplete = quoteStatus === "Accepted" || quoteStatus === "Minting" || isPaid
 
   const feeTokenRequestRef = useRef<string | null>(null)
 
@@ -132,13 +138,7 @@ function PageBody({ id }: { id: string }) {
     requestFeeTokenStatus({
       body: { token: feeTokenFromQuote },
     })
-  }, [
-    feeTokenFromQuote,
-    isFeeTokenStatusPending,
-    isFeeTokenStatusSuccess,
-    quoteStatusForEffect,
-    requestFeeTokenStatus,
-  ])
+  }, [feeTokenFromQuote, isFeeTokenStatusPending, isFeeTokenStatusSuccess, quoteStatusForEffect, requestFeeTokenStatus])
 
   if (error) {
     const errorMessage = (error as { message?: string }).message ?? String(error)
@@ -147,14 +147,14 @@ function PageBody({ id }: { id: string }) {
         <div className="text-red-800 font-semibold">
           {intl.formatMessage({
             id: "quotes.error.loadQuote.title",
-            defaultMessage: "Failed to load quote"
+            defaultMessage: "Failed to load quote",
           })}
         </div>
         <div className="text-red-600 text-sm">
           {errorMessage ||
             intl.formatMessage({
               id: "quotes.error.unknown",
-              defaultMessage: "Unknown error occurred"
+              defaultMessage: "Unknown error occurred",
             })}
         </div>
         <div className="text-xs text-red-500">
@@ -196,7 +196,7 @@ function PageBody({ id }: { id: string }) {
       <div className="p-4 text-muted-foreground">
         {intl.formatMessage({
           id: "quotes.empty.noQuoteData",
-          defaultMessage: "No quote data available"
+          defaultMessage: "No quote data available",
         })}
       </div>
     )
@@ -206,9 +206,9 @@ function PageBody({ id }: { id: string }) {
   const maturityLabel = maturityDate
     ? humanReadableDurationDays(intl.locale, maturityDate)
     : intl.formatMessage({
-      id: "quotes.common.unknown",
-      defaultMessage: "Unknown"
-    })
+        id: "quotes.common.unknown",
+        defaultMessage: "Unknown",
+      })
 
   return (
     <div className="flex flex-col gap-4">
@@ -220,7 +220,7 @@ function PageBody({ id }: { id: string }) {
                 <span className="text-sm font-semibold w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.quoteId",
-                    defaultMessage: "Quote ID:"
+                    defaultMessage: "Quote ID:",
                   })}
                 </span>
                 <span className="font-mono text-sm">{quote.id}</span>
@@ -229,7 +229,7 @@ function PageBody({ id }: { id: string }) {
                 <span className="text-sm font-semibold w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.billId",
-                    defaultMessage: "Bill ID:"
+                    defaultMessage: "Bill ID:",
                   })}
                 </span>
                 <span className="font-mono text-sm">{quote.bill.id}</span>
@@ -238,7 +238,7 @@ function PageBody({ id }: { id: string }) {
                 <span className="text-sm font-semibold w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.status",
-                    defaultMessage: "Quote status:"
+                    defaultMessage: "Quote status:",
                   })}
                 </span>
                 <Badge variant={getQuoteStatusVariant(quote.status)}>
@@ -253,34 +253,27 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.redemptionStatus",
-                      defaultMessage: "Redemption status:"
+                      defaultMessage: "Redemption status:",
                     })}
                   </span>
                   {isMintCompleteLoading ? (
                     <Badge variant="default" className="bg-yellow-500">
                       {intl.formatMessage({
                         id: "quotes.redemption.pending",
-                        defaultMessage: "Pending"
+                        defaultMessage: "Pending",
                       })}
                     </Badge>
                   ) : (
-                    <Badge
-                      variant="default"
-                      className={
-                        isMintComplete
-                          ? "bg-green-600"
-                          : "bg-yellow-500"
-                      }
-                    >
+                    <Badge variant="default" className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}>
                       {isMintComplete
                         ? intl.formatMessage({
-                          id: "quotes.redemption.complete",
-                          defaultMessage: "Complete"
-                        })
+                            id: "quotes.redemption.complete",
+                            defaultMessage: "Complete",
+                          })
                         : intl.formatMessage({
-                          id: "quotes.redemption.pending",
-                          defaultMessage: "Pending"
-                        })}
+                            id: "quotes.redemption.pending",
+                            defaultMessage: "Pending",
+                          })}
                     </Badge>
                   )}
                 </div>
@@ -291,7 +284,7 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.deadline",
-                      defaultMessage: "Deadline:"
+                      defaultMessage: "Deadline:",
                     })}
                   </span>
                   <span>{new Date(quote.ttl).toISOString().split("T")[0]}</span>
@@ -302,42 +295,42 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.payment",
-                      defaultMessage: "Payment status:"
+                      defaultMessage: "Payment status:",
                     })}
                   </span>
                   {ebillPaid ? (
                     <Badge variant="default" className="bg-green-600">
                       {intl.formatMessage({
                         id: "quotes.payment.paid",
-                        defaultMessage: "Paid"
+                        defaultMessage: "Paid",
                       })}
                     </Badge>
                   ) : rejectedToPay ? (
                     <Badge variant="destructive" className="bg-red-600">
                       {intl.formatMessage({
                         id: "quotes.payment.rejected",
-                        defaultMessage: "Rejected to pay"
+                        defaultMessage: "Rejected to pay",
                       })}
                     </Badge>
                   ) : isInMempool ? (
                     <Badge variant="default" className="bg-orange-500">
                       {intl.formatMessage({
                         id: "quotes.payment.inMempool",
-                        defaultMessage: "In mempool"
+                        defaultMessage: "In mempool",
                       })}
                     </Badge>
                   ) : !requestedToPay ? (
                     <Badge variant="secondary" className="border border-border">
                       {intl.formatMessage({
                         id: "quotes.payment.notRequested",
-                        defaultMessage: "Not requested"
+                        defaultMessage: "Not requested",
                       })}
                     </Badge>
                   ) : (
                     <Badge variant="default" className="bg-blue-500">
                       {intl.formatMessage({
                         id: "quotes.payment.requested",
-                        defaultMessage: "Requested"
+                        defaultMessage: "Requested",
                       })}
                     </Badge>
                   )}
@@ -348,7 +341,7 @@ function PageBody({ id }: { id: string }) {
               <span className="text-sm font-semibold w-32">
                 {intl.formatMessage({
                   id: "quotes.detail.sum",
-                  defaultMessage: "Sum:"
+                  defaultMessage: "Sum:",
                 })}
               </span>
               <span className="text-lg font-bold">{bill.sum} sat</span>
@@ -359,7 +352,7 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.discounted",
-                      defaultMessage: "Discounted:"
+                      defaultMessage: "Discounted:",
                     })}
                   </span>
                   <span className="text-lg font-bold">{quote.discounted} sat</span>
@@ -391,7 +384,7 @@ function PageBody({ id }: { id: string }) {
                 <span className="text-sm font-semibold w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.feeToken",
-                    defaultMessage: "Fee token:"
+                    defaultMessage: "Fee token:",
                   })}
                 </span>
                 <TruncatedTextPopover
@@ -405,35 +398,35 @@ function PageBody({ id }: { id: string }) {
                   <Badge variant="default" className="bg-gray-500">
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.checking",
-                      defaultMessage: "Checking..."
+                      defaultMessage: "Checking...",
                     })}
                   </Badge>
                 ) : feeTokenStatusData?.state === "Spent" ? (
                   <Badge variant="destructive" className="bg-red-600">
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.spent",
-                      defaultMessage: "Spent"
+                      defaultMessage: "Spent",
                     })}
                   </Badge>
                 ) : feeTokenStatusData?.state === "Unspent" ? (
                   <Badge variant="default" className="bg-green-600">
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.active",
-                      defaultMessage: "Active"
+                      defaultMessage: "Active",
                     })}
                   </Badge>
                 ) : isFeeTokenStatusError ? (
                   <Badge variant="destructive" className="bg-red-600">
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.error",
-                      defaultMessage: "Error"
+                      defaultMessage: "Error",
                     })}
                   </Badge>
                 ) : feeTokenStatusData?.state ? (
                   <Badge variant="secondary" className="border border-border">
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.unknown",
-                      defaultMessage: "Unknown"
+                      defaultMessage: "Unknown",
                     })}
                   </Badge>
                 ) : null}
@@ -443,7 +436,7 @@ function PageBody({ id }: { id: string }) {
               <span className="text-sm font-semibold w-32">
                 {intl.formatMessage({
                   id: "quotes.detail.maturityDate",
-                  defaultMessage: "Maturity date:"
+                  defaultMessage: "Maturity date:",
                 })}
               </span>
               <span className="text-sm">
@@ -454,7 +447,7 @@ function PageBody({ id }: { id: string }) {
               <span className="text-sm font-semibold w-32">
                 {intl.formatMessage({
                   id: "quotes.detail.participants",
-                  defaultMessage: "Participants:"
+                  defaultMessage: "Participants:",
                 })}
               </span>
               <ParticipantsOverviewCard
@@ -468,8 +461,9 @@ function PageBody({ id }: { id: string }) {
               <span className="text-sm font-semibold w-32">
                 {intl.formatMessage({
                   id: "participants.role.drawee",
-                  defaultMessage: "Drawee"
-                })}:
+                  defaultMessage: "Drawee",
+                })}
+                :
               </span>
               <ParticipantDetail participant={bill.drawee} />
             </div>
@@ -477,8 +471,9 @@ function PageBody({ id }: { id: string }) {
               <span className="text-sm font-semibold w-32">
                 {intl.formatMessage({
                   id: "participants.role.drawer",
-                  defaultMessage: "Drawer"
-                })}:
+                  defaultMessage: "Drawer",
+                })}
+                :
               </span>
               <ParticipantDetail participant={bill.drawer} />
             </div>
@@ -486,8 +481,9 @@ function PageBody({ id }: { id: string }) {
               <span className="text-sm font-semibold w-32">
                 {intl.formatMessage({
                   id: "participants.role.payee",
-                  defaultMessage: "Payee"
-                })}:
+                  defaultMessage: "Payee",
+                })}
+                :
               </span>
               <ParticipantDetail participant={bill.payee} />
             </div>
@@ -497,8 +493,9 @@ function PageBody({ id }: { id: string }) {
                 <span className="text-sm font-semibold w-32">
                   {intl.formatMessage({
                     id: "participants.role.holder",
-                    defaultMessage: "Holder"
-                  })}:
+                    defaultMessage: "Holder",
+                  })}
+                  :
                 </span>
                 <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
               </span>
@@ -526,22 +523,16 @@ function PageBody({ id }: { id: string }) {
         maturityDate={bill.maturity_date}
         requestToPayTimestamp={ebill?.status?.payment?.time_of_request_to_pay ?? undefined}
         rejectedToPayTimestamp={
-          ebill?.status?.payment?.rejected_to_pay
-            ? (ebill?.status?.last_block_time ?? undefined)
-            : undefined
+          ebill?.status?.payment?.rejected_to_pay ? (ebill?.status?.last_block_time ?? undefined) : undefined
         }
-        paymentTimestamp={
-          ebill?.status?.payment?.paid ? (ebill?.status?.last_block_time ?? undefined) : undefined
-        }
+        paymentTimestamp={ebill?.status?.payment?.paid ? (ebill?.status?.last_block_time ?? undefined) : undefined}
         acceptanceTimestamp={
           ebill?.status?.acceptance?.accepted
             ? (ebill?.status?.acceptance?.time_of_request_to_accept ?? undefined)
             : undefined
         }
         rejectionTimestamp={
-          ebill?.status?.acceptance?.rejected_to_accept
-            ? (ebill?.status?.last_block_time ?? undefined)
-            : undefined
+          ebill?.status?.acceptance?.rejected_to_accept ? (ebill?.status?.last_block_time ?? undefined) : undefined
         }
         mintingEnabled={quote.status === "Minting"}
         quoteOffered={quote.status === "Offered" || quote.status === "Accepted" || quote.status === "Minting"}
@@ -585,7 +576,7 @@ export default function QuotePage() {
             <Link to="/quotes">
               {intl.formatMessage({
                 id: "quotes.breadcrumb",
-                defaultMessage: "Quotes"
+                defaultMessage: "Quotes",
               })}
             </Link>
           </BreadcrumbLink>,
@@ -598,7 +589,7 @@ export default function QuotePage() {
         <PageTitle>
           {intl.formatMessage({
             id: "quotes.detail.title",
-            defaultMessage: "Quote"
+            defaultMessage: "Quote",
           })}{" "}
           <span className="font-mono">{truncateString(quoteId, 16)}</span>
         </PageTitle>
@@ -607,7 +598,7 @@ export default function QuotePage() {
             <Link to={`/keysets/${keysetIdFromState}`} state={{ from: `/quotes/${quoteId}` }}>
               {intl.formatMessage({
                 id: "quotes.detail.backToKeyset",
-                defaultMessage: "Back to keyset"
+                defaultMessage: "Back to keyset",
               })}{" "}
               <span className="font-mono">{truncateString(keysetIdFromState, 16)}</span>
             </Link>
@@ -617,7 +608,7 @@ export default function QuotePage() {
             <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
               {intl.formatMessage({
                 id: "quotes.detail.goToKeyset",
-                defaultMessage: "Go to keyset"
+                defaultMessage: "Go to keyset",
               })}{" "}
               <span className="font-mono">{truncateString(serializeKeysetId(quoteData.keyset_id), 16)}</span>
             </Link>

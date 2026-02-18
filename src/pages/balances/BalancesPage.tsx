@@ -158,7 +158,11 @@ export function BalanceText({ amount, unit, children }: PropsWithChildren<Balanc
 }
 
 function useBalances() {
-  const { data: coverage, isError, refetch } = useQuery({
+  const {
+    data: coverage,
+    isError,
+    refetch,
+  } = useQuery({
     ...getClowderLocalCoverageOptions(),
     refetchInterval: 30_000,
     staleTime: 25_000,
@@ -219,10 +223,7 @@ function PageBodyWithDevSection() {
           <Card className="bg-indigo-100">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage
-                  id="balances.bitcoin"
-                  defaultMessage="Bitcoin balance"
-                />
+                <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -232,10 +233,7 @@ function PageBodyWithDevSection() {
           <Card className="bg-orange-100">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage
-                  id="balances.eiou"
-                  defaultMessage="e-IOU balance"
-                />
+                <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -245,10 +243,7 @@ function PageBodyWithDevSection() {
           <Card className="bg-purple-200">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage
-                  id="balances.creditToken"
-                  defaultMessage="Credit token balance"
-                />
+                <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -258,10 +253,7 @@ function PageBodyWithDevSection() {
           <Card className="bg-purple-400">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage
-                  id="balances.debitToken"
-                  defaultMessage="Debit token balance"
-                />
+                <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -292,16 +284,10 @@ export default function BalancesPage() {
   return (
     <>
       <Breadcrumbs>
-        <FormattedMessage
-          id="balances.page.title"
-          defaultMessage="Balances"
-        />
+        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage
-          id="balances.page.title"
-          defaultMessage="Balances"
-        />
+        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
       </PageTitle>
 
       <Suspense fallback={<Loader />}>

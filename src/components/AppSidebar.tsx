@@ -84,22 +84,24 @@ function LanguageSelector() {
       <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
         {intl.formatMessage({
           id: "language.label",
-          defaultMessage: "Language"
+          defaultMessage: "Language",
         })}
       </span>
       <Select value={locale} onValueChange={setLocale}>
         <SelectTrigger className="h-9">
-          <SelectValue placeholder={intl.formatMessage({
-            id: "language.select",
-            defaultMessage: "Select language"
-          })} />
+          <SelectValue
+            placeholder={intl.formatMessage({
+              id: "language.select",
+              defaultMessage: "Select language",
+            })}
+          />
         </SelectTrigger>
         <SelectContent>
           {locales.map((loc) => (
             <SelectItem key={loc} value={loc}>
               {intl.formatMessage({
                 id: `locale.${loc}`,
-                defaultMessage: loc
+                defaultMessage: loc,
               })}
             </SelectItem>
           ))}

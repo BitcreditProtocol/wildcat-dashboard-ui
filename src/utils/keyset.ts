@@ -29,7 +29,7 @@ export function serializeKeysetId(id: Id | string): string {
   }
 
   // Convert bytes to hex string
-  const hexString = bytes.map(b => b.toString(16).padStart(2, "0")).join("")
+  const hexString = bytes.map((b) => b.toString(16).padStart(2, "0")).join("")
 
   // Prepend version info (00 for Version00, 01 for Version01)
   const versionPrefix = id.version === "Version00" ? "00" : "01"

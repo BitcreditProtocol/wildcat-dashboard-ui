@@ -1,36 +1,36 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react"
 import { DateRange, dateMatchModifiers, type Matcher } from "react-day-picker"
-import { FormattedMessage } from "react-intl";
-import { addDays, isSameDay } from "date-fns";
-import { ArrowRight, CalendarIcon } from "lucide-react";
+import { FormattedMessage } from "react-intl"
+import { addDays, isSameDay } from "date-fns"
+import { ArrowRight, CalendarIcon } from "lucide-react"
 
-import { Calendar } from "@/components/DatePicker/calendar";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LanguageContext } from "@/context/language/LanguageContext";
-import { cn } from "@/lib/utils";
-import { daysBetween, formatDateLong, formatDateShort } from "@/utils/dates";
-import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
+import { Calendar } from "@/components/DatePicker/calendar"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { LanguageContext } from "@/context/language/LanguageContext"
+import { cn } from "@/lib/utils"
+import { daysBetween, formatDateLong, formatDateShort } from "@/utils/dates"
+import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters"
 
-import { DateRangeDropdown } from "./dataRangeDropdown";
-import { MonthPicker } from "./monthPicker";
-import { YearPicker } from "./yearPicker";
+import { DateRangeDropdown } from "./dataRangeDropdown"
+import { MonthPicker } from "./monthPicker"
+import { YearPicker } from "./yearPicker"
 
 interface DatePickerProps {
-  className?: string;
-  label?: string;
-  mode: "single" | "range";
-  value?: DateRange;
-  onChange: (dateRange: DateRange | undefined) => void;
-  customComponent?: React.ReactElement;
-  disabled?: Matcher | Matcher[] | undefined;
-  displayIncrementButtons?: boolean;
-  disableFutureNavigation?: boolean;
-  disableAutoSelect?: boolean;
-  currentYearPosition?: "start" | "center" | "end";
-  order?: "asc" | "desc";
-  dateFilterType?: "issue" | "maturity";
-  onDateFilterTypeChange?: (type: "issue" | "maturity") => void;
+  className?: string
+  label?: string
+  mode: "single" | "range"
+  value?: DateRange
+  onChange: (dateRange: DateRange | undefined) => void
+  customComponent?: React.ReactElement
+  disabled?: Matcher | Matcher[] | undefined
+  displayIncrementButtons?: boolean
+  disableFutureNavigation?: boolean
+  disableAutoSelect?: boolean
+  currentYearPosition?: "start" | "center" | "end"
+  order?: "asc" | "desc"
+  dateFilterType?: "issue" | "maturity"
+  onDateFilterTypeChange?: (type: "issue" | "maturity") => void
 }
 
 export function DatePicker({
@@ -49,119 +49,119 @@ export function DatePicker({
   dateFilterType = "issue",
   onDateFilterTypeChange,
 }: DatePickerProps) {
-  const lang = useContext(LanguageContext);
-  const { formatDateMmmDdYyyy } = useUtcDateFormatters(lang.locale);
-  const [canSelect, setCanSelect] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showYearPicker, setShowYearPicker] = useState(false);
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [selectedRange, setSelectedRange] = useState<number>();
-  const allowRangeSelection = useMemo(() => mode === "range", [mode]);
-  const [hasBeenCleared, setHasBeenCleared] = useState(false);
+  const lang = useContext(LanguageContext)
+  const { formatDateMmmDdYyyy } = useUtcDateFormatters(lang.locale)
+  const [canSelect, setCanSelect] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [showYearPicker, setShowYearPicker] = useState(false)
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
+  const [selectedRange, setSelectedRange] = useState<number>()
+  const allowRangeSelection = useMemo(() => mode === "range", [mode])
+  const [hasBeenCleared, setHasBeenCleared] = useState(false)
 
   const getInitialDate = () => {
     if (value) {
-      return value;
+      return value
     }
     if (hasBeenCleared) {
-      return { from: undefined, to: undefined };
+      return { from: undefined, to: undefined }
     }
     if (disableAutoSelect) {
-      return { from: undefined, to: undefined };
+      return { from: undefined, to: undefined }
     }
-    return { from: new Date(), to: undefined };
-  };
+    return { from: new Date(), to: undefined }
+  }
 
-  const [current, setCurrent] = useState<DateRange>(getInitialDate());
-  const [draft, setDraft] = useState<DateRange>(getInitialDate());
-  const [rangeFocus, setRangeFocus] = useState<"from" | "to">("from");
+  const [current, setCurrent] = useState<DateRange>(getInitialDate())
+  const [draft, setDraft] = useState<DateRange>(getInitialDate())
+  const [rangeFocus, setRangeFocus] = useState<"from" | "to">("from")
   const baseDate = useMemo(() => current.from ?? new Date(), [current])
 
   useEffect(() => {
     if (value) {
-      setCurrent(value);
-      setDraft(value);
-      setHasBeenCleared(false);
+      setCurrent(value)
+      setDraft(value)
+      setHasBeenCleared(false)
     }
-  }, [value]);
+  }, [value])
 
   const toggleCalendar = () => {
     setShowCalendar((prev) => {
-      const willOpen = !prev;
+      const willOpen = !prev
 
       if (willOpen) {
-        setDraft(current);
+        setDraft(current)
       }
 
-      return willOpen;
-    });
-  };
+      return willOpen
+    })
+  }
 
   const toggleYearPicker = () => {
-    setShowYearPicker((prev) => !prev);
-  };
+    setShowYearPicker((prev) => !prev)
+  }
 
   const clearSelection = () => {
-    const clearedRange: DateRange = { from: draft.from ?? current.from, to: undefined };
-    setSelectedRange(undefined);
-    setDraft(clearedRange);
-    setCurrent(clearedRange);
-    onChange(clearedRange);
-    setHasBeenCleared(true);
-    setRangeFocus("to");
-    setShowMonthPicker(false);
-    setShowYearPicker(false);
-  };
+    const clearedRange: DateRange = { from: draft.from ?? current.from, to: undefined }
+    setSelectedRange(undefined)
+    setDraft(clearedRange)
+    setCurrent(clearedRange)
+    onChange(clearedRange)
+    setHasBeenCleared(true)
+    setRangeFocus("to")
+    setShowMonthPicker(false)
+    setShowYearPicker(false)
+  }
 
   useEffect(() => {
     if (selectedRange === undefined) {
-      return;
+      return
     }
 
     const startDate = draft.from ?? current.from ?? new Date()
     const newRange = {
       from: startDate,
       to: addDays(startDate, selectedRange),
-    };
+    }
 
-    setCurrent(newRange);
-    setDraft(newRange);
+    setCurrent(newRange)
+    setDraft(newRange)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRange]);
+  }, [selectedRange])
 
   useEffect(() => {
     setSelectedRange((val) => {
       if (current.from === undefined || current.to === undefined) {
-        return val;
+        return val
       }
-      const diffDays = daysBetween(current.from, current.to);
-      return diffDays !== val ? undefined : val;
-    });
-  }, [current]);
+      const diffDays = daysBetween(current.from, current.to)
+      return diffDays !== val ? undefined : val
+    })
+  }, [current])
 
   useEffect(() => {
     if (!draft.from) {
-      setCanSelect(false);
-      return;
+      setCanSelect(false)
+      return
     }
 
     // single mode
     if (mode === "single") {
       const isDisabled = disabled ? dateMatchModifiers(draft.from, [disabled as Matcher]) : false
-      setCanSelect(!isDisabled);
+      setCanSelect(!isDisabled)
     }
 
     // range mode
     if (mode === "range") {
       if (!draft.to) {
-        setCanSelect(false);
-        return;
+        setCanSelect(false)
+        return
       }
       const isDisabledFrom = disabled ? dateMatchModifiers(draft.from, [disabled as Matcher]) : false
       const isDisabledTo = disabled ? dateMatchModifiers(draft.to, [disabled as Matcher]) : false
-      setCanSelect(!isDisabledFrom && !isDisabledTo);
+      setCanSelect(!isDisabledFrom && !isDisabledTo)
     }
-  }, [draft, disabled, mode]);
+  }, [draft, disabled, mode])
 
   return (
     <>
@@ -281,10 +281,7 @@ export function DatePicker({
                       {draft.from && formatDateShort(draft.from, lang.locale)}
                       {!draft.from && (
                         <span className="text-text-200">
-                          <FormattedMessage
-                            id="range.start"
-                            defaultMessage="Start"
-                          />
+                          <FormattedMessage id="range.start" defaultMessage="Start" />
                         </span>
                       )}
                     </button>
@@ -308,10 +305,7 @@ export function DatePicker({
                       {draft.to && formatDateShort(draft.to, lang.locale)}
                       {!draft.to && (
                         <span className="text-text-200">
-                          <FormattedMessage
-                            id="range.end"
-                            defaultMessage="End"
-                          />
+                          <FormattedMessage id="range.end" defaultMessage="End" />
                         </span>
                       )}
                     </button>
