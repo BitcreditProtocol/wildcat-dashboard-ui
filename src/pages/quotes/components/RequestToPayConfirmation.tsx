@@ -6,7 +6,6 @@ import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
 import { useQuery } from "@tanstack/react-query"
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
 import { useIntl } from "react-intl"
-import { addDays } from "date-fns"
 import { getItem, setItem } from "@/utils/local-storage"
 
 interface RequestToPayConfirmationProps {
@@ -20,18 +19,17 @@ interface RequestToPayConfirmationProps {
 }
 
 const REQUEST_TO_PAY_DEADLINE_STORAGE_KEY = "requestToPayDeadlineUtc"
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
 
 const getMinSelectableDate = (maturityDate?: string | null): Date => {
   const now = new Date()
   const maturity = maturityDate ? new Date(maturityDate) : null
   const baseDate = maturity && maturity > now ? maturity : now
-  const minDate = addDays(baseDate, 2)
-  minDate.setUTCHours(0, 0, 0, 0)
-  return minDate
+  return new Date(baseDate.getTime() + TWO_DAYS_MS)
 }
 
 const toUtcEndOfDay = (date: Date): Date => {
-  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999))
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999))
 }
 
 export function RequestToPayConfirmation({
@@ -67,14 +65,19 @@ export function RequestToPayConfirmation({
     }
 
     const stored = getItem<string>(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY)
-    if (!stored) {
-      return
+    const fallbackDeadline = toUtcEndOfDay(minSelectableDate)
+    if (stored) {
+      const parsed = new Date(stored)
+      if (!Number.isNaN(parsed.getTime()) && parsed >= minSelectableDate) {
+        setValidUntilDate(parsed)
+        setDraftValidUntilDate(parsed)
+        return
+      }
     }
 
-    const parsed = new Date(stored)
-    if (!Number.isNaN(parsed.getTime()) && parsed >= minSelectableDate) {
-      setValidUntilDate(parsed)
-    }
+    setValidUntilDate(fallbackDeadline)
+    setDraftValidUntilDate(fallbackDeadline)
+    setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, fallbackDeadline.toISOString())
   }, [open, validUntilDate, minSelectableDate])
 
   return (

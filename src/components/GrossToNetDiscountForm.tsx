@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import Big from "big.js"
 import { parseFloatSafe, parseIntSafe } from "@/utils/numbers"
@@ -85,7 +85,7 @@ const GrossToNetDiscountForm = ({
     if (typeof value === "string" || typeof value === "number") {
       str = String(value)
     }
-    return str.replace(/[^\d]/g, "")
+    return str.replace(/\D/g, "")
   }
 
   const validateNetAmount = (value?: string) => {
@@ -225,7 +225,7 @@ const GrossToNetDiscountForm = ({
     }
     e.preventDefault()
   }
-  const blockNonDigitInput = (e: React.FormEvent<HTMLInputElement>) => {
+  const blockNonDigitInput = (e: React.SyntheticEvent<HTMLInputElement>) => {
     const native = e.nativeEvent as InputEvent
     const data = native.data
     if (native.type === "beforeinput") {
@@ -238,13 +238,13 @@ const GrossToNetDiscountForm = ({
   const handlePasteDigitsFor = (field: "daysInput" | "netInput") => (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault()
     const text = e.clipboardData.getData("text") || ""
-    const digits = text.replace(/[^\d]/g, "")
+    const digits = text.replace(/\D/g, "")
     const input = e.currentTarget
     const start = input.selectionStart ?? input.value.length
     const end = input.selectionEnd ?? input.value.length
     const before = input.value.slice(0, start)
     const after = input.value.slice(end)
-    const next = (before + digits + after).replace(/[^\d]/g, "")
+    const next = (before + digits + after).replace(/\D/g, "")
     input.value = next
     setValue(field, next, { shouldValidate: true, shouldDirty: true })
     if (field === "netInput") {
@@ -274,6 +274,7 @@ const GrossToNetDiscountForm = ({
   }, [discountRateInput])
 
   const [net, setNet] = useState<CurrencyAmount>()
+  const skipNetToRateRef = useRef(false)
 
   const netInputValue = useMemo<Big | undefined>(() => {
     if (netInput == null || netInput === "") {
@@ -295,6 +296,8 @@ const GrossToNetDiscountForm = ({
           currency: net.currency,
         }
   }, [gross, net])
+
+  const prevNetInputRef = useRef<string | undefined>(undefined)
 
   const formatAmount = (value: Big, currency: string) => {
     if (currency === "sat") {
@@ -352,6 +355,19 @@ const GrossToNetDiscountForm = ({
   }, [localStorageKey, daysInput, discountRateInput, netInput, hasSetInitialDays])
 
   useEffect(() => {
+    if (netInput === prevNetInputRef.current) {
+      return
+    }
+    prevNetInputRef.current = netInput
+    if (skipNetToRateRef.current) {
+      return
+    }
+    if (netInput !== undefined) {
+      setLastEdited("net")
+    }
+  }, [netInput])
+
+  useEffect(() => {
     if (discountRate === undefined || days === undefined) {
       setNet(undefined)
       return
@@ -362,15 +378,21 @@ const GrossToNetDiscountForm = ({
     }
 
     const netValue = Act360.grossToNet(gross.value, discountRate, days)
+    const roundedNetValue = isSat ? netValue.round(0, Big.roundDown) : netValue
     setNet({
-      value: netValue,
+      value: roundedNetValue,
       currency: gross.currency,
     })
-    setValue("netInput", formatAmount(netValue, gross.currency), { shouldValidate: true })
-  }, [gross, days, discountRate, lastEdited, setValue])
+    const formattedNet = formatAmount(roundedNetValue, gross.currency)
+    if (formattedNet !== netInput) {
+      skipNetToRateRef.current = true
+      setValue("netInput", formattedNet, { shouldValidate: true })
+    }
+  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput])
 
   useEffect(() => {
-    if (lastEdited !== "net") {
+    if (skipNetToRateRef.current) {
+      skipNetToRateRef.current = false
       return
     }
     if (days === undefined || netInputValue === undefined) {
@@ -403,7 +425,7 @@ const GrossToNetDiscountForm = ({
     }
     const ratePercent = rate.times(100)
     setValue("discountRateInput", ratePercent.toFixed(4), { shouldValidate: true })
-  }, [lastEdited, days, netInputValue, gross, setValue])
+  }, [days, netInputValue, gross, setValue, netInput])
 
   const handleFormSubmit = () => {
     if (net === undefined || discountRate === undefined || days === undefined) {
@@ -418,22 +440,26 @@ const GrossToNetDiscountForm = ({
     })
   }
 
-  const handleIntegerInputFor = (field: "daysInput" | "netInput") => (e: React.FormEvent<HTMLInputElement>) => {
+  const handleIntegerInputFor =
+    (field: "daysInput" | "netInput") => (e: React.SyntheticEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const cleaned = input.value.replace(/[^\d]/g, "")
     if (input.value !== cleaned) {
       const caret = input.selectionStart ?? cleaned.length
       input.value = cleaned
       setValue(field, cleaned, { shouldValidate: true, shouldDirty: true })
-      if (field === "netInput") {
-        setLastEdited("net")
-      }
       const pos = Math.min(caret, cleaned.length)
       try {
         input.setSelectionRange(pos, pos)
       } catch {
         // ignore unsupported setSelectionRange
       }
+    }
+    if (field === "netInput") {
+      setLastEdited("net")
+    }
+    if (input.value === cleaned) {
+      setValue(field, cleaned, { shouldValidate: true, shouldDirty: true })
     }
   }
 

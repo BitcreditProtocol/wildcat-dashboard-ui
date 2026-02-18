@@ -14,6 +14,8 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      timeZone="UTC"
+      noonSafe
       className={cn("p-3", className)}
       classNames={{
         months: "flex flex-col gap-2",

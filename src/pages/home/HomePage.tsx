@@ -251,7 +251,9 @@ function PageBody() {
                       defaultMessage="Started At"
                     />
                   </span>
-                  <span className="text-sm">{new Date(clowderData.uptime_timestamp * 1000).toLocaleString()}</span>
+                  <span className="text-sm">
+                    {new Date(clowderData.uptime_timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}
+                  </span>
                 </div>
               )}
             </div>
@@ -396,7 +398,9 @@ function PageBody() {
                         defaultMessage="Started At"
                       />
                     </span>
-                    <span className="text-sm">{new Date(mintData.uptime_timestamp).toLocaleString()}</span>
+                    <span className="text-sm">
+                      {new Date(mintData.uptime_timestamp).toLocaleString(undefined, { timeZone: "UTC" })}
+                    </span>
                   </div>
                   {mintData.build_time && (
                     <div className="flex flex-col gap-1 mt-3">
@@ -406,7 +410,9 @@ function PageBody() {
                           defaultMessage="Build Time"
                         />
                       </span>
-                      <span className="text-sm">{new Date(mintData.build_time).toLocaleString()}</span>
+                      <span className="text-sm">
+                        {new Date(mintData.build_time).toLocaleString(undefined, { timeZone: "UTC" })}
+                      </span>
                     </div>
                   )}
                 </div>

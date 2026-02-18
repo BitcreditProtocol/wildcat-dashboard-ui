@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button.tsx"
 import { Calendar } from "@/components/DatePicker/calendar.tsx"
 import { CalendarIcon } from "lucide-react"
-import { addDays, endOfDay, format, isAfter, isBefore, isSameDay, startOfDay } from "date-fns"
+import { addDays, isAfter, isBefore, isSameDay } from "date-fns"
 import { cn } from "@/lib/utils.ts"
 import { useIntl } from "react-intl"
+import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters"
 
 interface CalendarModalProps {
   isOpen: boolean
@@ -18,6 +19,12 @@ interface CalendarModalProps {
   onCancel: () => void
 }
 
+const toUtcStartOfDay = (date: Date) =>
+  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0))
+
+const toUtcEndOfDay = (date: Date) =>
+  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999))
+
 export function CalendarModal({
   isOpen,
   selectedDate,
@@ -31,9 +38,10 @@ export function CalendarModal({
   onCancel,
 }: CalendarModalProps) {
   const intl = useIntl()
+  const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale)
   const fallbackMin = addDays(new Date(Date.now()), 1)
-  const minDay = startOfDay(minDate ?? fallbackMin)
-  const maxDay = maxDate ? endOfDay(maxDate) : null
+  const minDay = toUtcStartOfDay(minDate ?? fallbackMin)
+  const maxDay = maxDate ? toUtcEndOfDay(maxDate) : null
   const disabled = (date: Date) => isBefore(date, minDay) || (maxDay ? isAfter(date, maxDay) : false)
   const displayMonth = draftDate ?? selectedDate ?? minDate ?? new Date()
 
@@ -60,7 +68,7 @@ export function CalendarModal({
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
             <div className="text-base">
-              {draftDate ? format(draftDate, "MMM dd, yyyy") : "-"}
+              {draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}
             </div>
 
             <Calendar
@@ -123,6 +131,7 @@ interface DatePickerButtonProps {
 
 export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
   const intl = useIntl()
+  const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale)
 
   return (
     <button
@@ -133,7 +142,7 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
       <CalendarIcon className="text-gray-500 dark:text-gray-400 w-5 h-5" strokeWidth={1.5} />
       <span className="text-gray-900 dark:text-gray-100">
         {date
-          ? format(date, "MMM dd, yyyy")
+          ? formatDateMmmDdYyyy(date)
           : intl.formatMessage({
               id: "quotes.calendar.selectDate",
               defaultMessage: "Select date",

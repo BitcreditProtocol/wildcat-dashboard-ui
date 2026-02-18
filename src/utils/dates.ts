@@ -1,8 +1,13 @@
 import { differenceInCalendarYears, differenceInMinutes, subDays, addDays } from "date-fns"
 import { differenceInCalendarDays, differenceInCalendarMonths, differenceInHours, differenceInSeconds } from "date-fns"
 
+const UTC_TIME_ZONE = "UTC"
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
 export const daysBetween = (startDate: Date, endDate: Date): number => {
-  return differenceInCalendarDays(endDate, startDate)
+  const startUtc = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate())
+  const endUtc = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate())
+  return Math.floor((endUtc - startUtc) / MS_PER_DAY)
 }
 
 export function humanReadableDuration(locale: string, from: Date, until = new Date(Date.now())) {
@@ -40,9 +45,9 @@ export function humanReadableDurationDays(locale: string, from: Date, until = ne
 }
 
 export const formatDate = (locale: string, date: Date): string => {
-  const year = new Intl.DateTimeFormat(locale, { year: "2-digit" }).format(date)
-  const month = new Intl.DateTimeFormat(locale, { month: "short" }).format(date)
-  const day = new Intl.DateTimeFormat(locale, { day: "2-digit" }).format(date)
+  const year = new Intl.DateTimeFormat(locale, { year: "2-digit", timeZone: UTC_TIME_ZONE }).format(date)
+  const month = new Intl.DateTimeFormat(locale, { month: "short", timeZone: UTC_TIME_ZONE }).format(date)
+  const day = new Intl.DateTimeFormat(locale, { day: "2-digit", timeZone: UTC_TIME_ZONE }).format(date)
   return `${day}-${month}-${year}`
 }
 
@@ -51,6 +56,7 @@ export const formatDateLong = (date: Date, locale: string): string => {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: UTC_TIME_ZONE,
   }).format(date)
 }
 
@@ -59,22 +65,24 @@ export const formatDateShort = (date: Date, locale: string): string => {
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: UTC_TIME_ZONE,
   }).format(date)
 }
 
 export const formatMonthLong = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, { month: "long" }).format(date)
+  return new Intl.DateTimeFormat(locale, { month: "long", timeZone: UTC_TIME_ZONE }).format(date)
 }
 
 export const formatMonthYear = (date: Date, locale: string): string => {
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "long",
+    timeZone: UTC_TIME_ZONE,
   }).format(date)
 }
 
 export const formatYearNumeric = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, { year: "numeric" }).format(date)
+  return new Intl.DateTimeFormat(locale, { year: "numeric", timeZone: UTC_TIME_ZONE }).format(date)
 }
 
 /**

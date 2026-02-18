@@ -785,7 +785,7 @@
         }
       }
     },
-    "/v1/admin/treasury/ebill/mint_complete/{bid}": {
+    "/v1/admin/treasury/ebill/payment_complete/{bid}": {
       "get": {
         "tags": ["admin"],
         "operationId": "get_ebill_mint_complete",
@@ -793,7 +793,6 @@
           {
             "name": "bid",
             "in": "path",
-            "description": "the ebill id to check mint completion status",
             "required": true,
             "schema": {
               "type": "string"
@@ -806,13 +805,41 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EbillMintingComplete"
+                  "$ref": "#/components/schemas/EbillPaymentComplete"
                 }
               }
             }
           },
           "404": {
             "description": "bill id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/token_status": {
+      "post": {
+        "tags": ["admin"],
+        "operationId": "post_token_status",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenStateResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1540,7 +1567,7 @@
           }
         }
       },
-      "EbillMintingComplete": {
+      "EbillPaymentComplete": {
         "type": "object",
         "description": "--------------------------- ebill minting completed",
         "required": ["complete"],
@@ -2272,6 +2299,19 @@
           {
             "type": "object",
             "description": "Last seen timestamp",
+            "required": ["Interim"],
+            "properties": {
+              "Interim": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Last seen timestamp",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Last seen timestamp",
             "required": ["Offline"],
             "properties": {
               "Offline": {
@@ -2304,8 +2344,8 @@
                   "type": "object"
                 },
                 "description": "Post Rabid",
-                "maxItems": 2,
-                "minItems": 2
+                "maxItems": 3,
+                "minItems": 3
               }
             }
           }
@@ -2328,6 +2368,28 @@
                 "$ref": "#/components/schemas/BillWaitingForPaymentState"
               }
             ]
+          }
+        }
+      },
+      "TokenState": {
+        "type": "string",
+        "enum": ["Unspent", "Spent"]
+      },
+      "TokenStateRequest": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenStateResponse": {
+        "type": "object",
+        "required": ["state"],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/TokenState"
           }
         }
       },

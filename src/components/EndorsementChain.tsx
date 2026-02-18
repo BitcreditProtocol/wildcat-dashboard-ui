@@ -342,7 +342,7 @@ export function EndorsementChain({
                       {event.timestamp !== undefined && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          <span>{new Date(event.timestamp * 1000).toLocaleString()}</span>
+                          <span>{new Date(event.timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
                         </div>
                       )}
 
