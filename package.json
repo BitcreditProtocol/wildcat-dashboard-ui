@@ -64,7 +64,6 @@
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@eslint/plugin-kit": ">=0.3.4",
-    "@hey-api/client-fetch": "^0.8.3",
     "@hey-api/openapi-ts": "^0.91.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/big.js": "^6.2.2",
