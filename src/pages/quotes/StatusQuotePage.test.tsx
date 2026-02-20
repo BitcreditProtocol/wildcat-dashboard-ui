@@ -144,4 +144,41 @@ describe("StatusQuotePage", () => {
     expect(page.textContent).toContain("quote-accepted")
     expect(page.textContent).not.toContain("quote-pending")
   })
+
+  it("shows API error state when quotes query fails", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      if (opts.queryKey[0]._id === "listQuotes") {
+        return {
+          data: undefined,
+          isLoading: false,
+          isFetching: false,
+          error: new Error("network down"),
+        }
+      }
+      return { data: undefined, isLoading: false, isFetching: false, error: null }
+    })
+    mockUseQueries.mockReturnValue([])
+
+    const page = renderPage()
+    expect(page.textContent).toContain("Failed to load quotes")
+    expect(page.textContent).toContain("network down")
+  })
+
+  it("shows empty state when quotes list is empty", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      if (opts.queryKey[0]._id === "listQuotes") {
+        return {
+          data: { quotes: [] },
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        }
+      }
+      return { data: undefined, isLoading: false, isFetching: false, error: null }
+    })
+    mockUseQueries.mockReturnValue([])
+
+    const page = renderPage()
+    expect(page.textContent).toContain("No quotes available.")
+  })
 })

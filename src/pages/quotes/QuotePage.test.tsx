@@ -165,4 +165,69 @@ describe("QuotePage", () => {
     const link = page.querySelector('a[href="/keysets/keyset-from-quote"]')
     expect(link?.textContent).toContain("Go to keyset")
   })
+
+  it("shows quote load error state", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      if (opts.queryKey[0]._id === "getQuote") {
+        return {
+          data: undefined,
+          isLoading: false,
+          isFetching: false,
+          error: new Error("boom"),
+        }
+      }
+      return { data: undefined, isLoading: false, isFetching: false, error: null }
+    })
+
+    const page = renderPage("/quotes/quote-error")
+    expect(page.textContent).toContain("Failed to load quote")
+    expect(page.textContent).toContain("boom")
+  })
+
+  it("shows empty quote state when bill data is missing", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      if (opts.queryKey[0]._id === "getQuote") {
+        return {
+          data: { id: "quote-1", status: "Pending" },
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        }
+      }
+      return { data: undefined, isLoading: false, isFetching: false, error: null }
+    })
+
+    const page = renderPage("/quotes/quote-1")
+    expect(page.textContent).toContain("No quote data available")
+  })
+
+  it("does not render keyset action when quote does not expose keyset id", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      if (opts.queryKey[0]._id === "getQuote") {
+        return {
+          data: {
+            id: opts.queryKey[0].path?.qid ?? "quote-2",
+            status: "Pending",
+            bill: {
+              id: "bill-2",
+              sum: 50,
+              maturity_date: "2026-03-10",
+              drawee: {},
+              drawer: {},
+              payee: {},
+              endorsees: [],
+            },
+          },
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        }
+      }
+      return { data: undefined, isLoading: false, isFetching: false, error: null }
+    })
+
+    const page = renderPage("/quotes/quote-2")
+    const keysetLink = page.querySelector('a[href^="/keysets/"]')
+    expect(keysetLink).toBeNull()
+  })
 })
