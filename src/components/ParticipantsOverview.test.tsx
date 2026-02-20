@@ -68,7 +68,9 @@ describe("ParticipantsOverview", () => {
           name: "Drawee User",
           city: "Berlin",
           country: "DE",
+          address: "Main Street 1",
           email: "drawee@example.com",
+          nostr_relays: [],
         }}
         drawer={{
           type: "Company",
@@ -76,7 +78,9 @@ describe("ParticipantsOverview", () => {
           name: "Drawer Corp",
           city: "Vienna",
           country: "AT",
+          address: "Business Road 2",
           email: "drawer@example.com",
+          nostr_relays: [],
         }}
         payee={{
           Ident: {
@@ -85,13 +89,16 @@ describe("ParticipantsOverview", () => {
             name: "Payee Name",
             city: "Madrid",
             country: "ES",
+            address: "Payee Plaza 3",
             email: "payee@example.com",
+            nostr_relays: [],
           },
         }}
         holder={[
           {
             Anon: {
               node_id: "holder-anon-node",
+              nostr_relays: [],
             },
           },
         ]}
@@ -113,6 +120,7 @@ describe("ParticipantsOverview", () => {
         participant={{
           Anon: {
             node_id: "anon-node-123",
+            nostr_relays: [],
           },
         }}
       />,
@@ -132,7 +140,9 @@ describe("ParticipantsOverview", () => {
           name: "Ident Name",
           city: "Paris",
           country: "FR",
+          address: "Rue 4",
           email: "ident@example.com",
+          nostr_relays: [],
         }}
       />,
     )
