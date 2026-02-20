@@ -17,7 +17,7 @@ describe("serializeKeysetId", () => {
   })
 
   it("returns empty string for malformed id payload", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined)
     const id = { version: "Version00" }
 
     expect(serializeKeysetId(id as never)).toBe("")
@@ -26,7 +26,7 @@ describe("serializeKeysetId", () => {
   })
 
   it("returns empty string when id bytes shape is invalid", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined)
     const id = { version: "Version00", id: { invalid: [1, 2, 3] } }
 
     expect(serializeKeysetId(id as never)).toBe("")

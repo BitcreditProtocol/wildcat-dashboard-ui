@@ -95,17 +95,12 @@ function PageBody({ keysetId }: { keysetId: string }) {
 
   const quoteDetailsDepsKey = useMemo(() => {
     const billKeys = quoteDetailsQueries.map((query) => {
-      const billId = query.data?.bill?.id ?? ''
-      const maturityDate = query.data?.bill?.maturity_date ?? ''
+      const billId = query.data?.bill?.id ?? ""
+      const maturityDate = query.data?.bill?.maturity_date ?? ""
       return `${billId}|${maturityDate}`
     })
-    return billKeys.join(',')
-  }, [
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    quoteDetailsQueries.map((q) => q.data?.bill?.id).join(','),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    quoteDetailsQueries.map((q) => q.data?.bill?.maturity_date).join(',')
-  ])
+    return billKeys.join(",")
+  }, [quoteDetailsQueries])
 
   const matchingBillIds = useMemo(() => {
     const billIds: string[] = []

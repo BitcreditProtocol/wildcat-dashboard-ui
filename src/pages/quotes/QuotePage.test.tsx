@@ -1,11 +1,33 @@
+import { act, type ReactElement } from "react"
+import { createRoot, type Root } from "react-dom/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
 import { IntlProvider } from "react-intl"
 import { MemoryRouter, Route, Routes } from "react-router"
 import QuotePage from "./QuotePage"
 
-const mockUseQuery = vi.fn()
-const mockUseMutation = vi.fn()
+interface QueryKeyEntry {
+  _id: string
+  path?: { qid?: string; bid?: string }
+}
+interface QueryOptions {
+  queryKey: QueryKeyEntry[]
+}
+interface QueryResult {
+  data: unknown
+  isLoading: boolean
+  isFetching?: boolean
+  error: Error | null
+}
+interface MutationResult {
+  mutate: (value: { body: { token: string } }) => void
+  isPending: boolean
+  isSuccess: boolean
+  isError: boolean
+  data: unknown
+}
+
+const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>()
+const mockUseMutation = vi.fn<() => MutationResult>()
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn() },
@@ -28,8 +50,8 @@ vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query")
   return {
     ...actual,
-    useQuery: (...args: unknown[]) => mockUseQuery(...args),
-    useMutation: (...args: unknown[]) => mockUseMutation(...args),
+    useQuery: (options: QueryOptions) => mockUseQuery(options),
+    useMutation: () => mockUseMutation(),
   }
 })
 
@@ -45,8 +67,23 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   postTokenStatusMutation: () => ({ mutationFn: vi.fn() }),
 }))
 
-function renderPage(entry: string | { pathname: string; state?: Record<string, unknown> }) {
-  return render(
+let root: Root | null = null
+let container: HTMLDivElement | null = null
+
+function renderIntoDom(element: ReactElement): HTMLDivElement {
+  const mount = document.createElement("div")
+  document.body.appendChild(mount)
+  const mountRoot = createRoot(mount)
+  act(() => {
+    mountRoot.render(element)
+  })
+  root = mountRoot
+  container = mount
+  return mount
+}
+
+function renderPage(entry: string | { pathname: string; state?: Record<string, unknown> }): HTMLDivElement {
+  return renderIntoDom(
     <IntlProvider locale="en">
       <MemoryRouter initialEntries={[entry]}>
         <Routes>
@@ -59,65 +96,73 @@ function renderPage(entry: string | { pathname: string; state?: Record<string, u
 
 beforeEach(() => {
   vi.clearAllMocks()
+  if (root && container) {
+    act(() => {
+      root?.unmount()
+    })
+    container.remove()
+    root = null
+    container = null
+  }
 
   mockUseMutation.mockReturnValue({
-    mutate: vi.fn(),
+    mutate: vi.fn<(value: { body: { token: string } }) => void>(),
     isPending: false,
     isSuccess: false,
     isError: false,
     data: undefined,
   })
 
-  mockUseQuery.mockImplementation(
-    (opts: { queryKey: Array<{ _id: string; path?: { qid?: string; bid?: string } }> }) => {
-      const id = opts.queryKey[0]._id
-      if (id === "getQuote") {
-        return {
-          data: {
-            id: opts.queryKey[0].path?.qid ?? "quote-1",
-            status: "Accepted",
-            keyset_id: "keyset-from-quote",
-            bill: {
-              id: "bill-1",
-              sum: 100,
-              maturity_date: "2026-03-01",
-              drawee: {},
-              drawer: {},
-              payee: {},
-              endorsees: [],
-            },
+  mockUseQuery.mockImplementation((opts: QueryOptions) => {
+    const id = opts.queryKey[0]._id
+    if (id === "getQuote") {
+      return {
+        data: {
+          id: opts.queryKey[0].path?.qid ?? "quote-1",
+          status: "Accepted",
+          keyset_id: "keyset-from-quote",
+          bill: {
+            id: "bill-1",
+            sum: 100,
+            maturity_date: "2026-03-01",
+            drawee: {},
+            drawer: {},
+            payee: {},
+            endorsees: [],
           },
-          isLoading: false,
-          isFetching: false,
-          error: null,
-        }
+        },
+        isLoading: false,
+        isFetching: false,
+        error: null,
       }
+    }
 
-      if (id === "listEbills") {
-        return { data: [], isLoading: false, error: null }
-      }
+    if (id === "listEbills") {
+      return { data: [], isLoading: false, error: null }
+    }
 
-      if (id === "getEbillEndorsements") {
-        return { data: [], isLoading: false, error: null }
-      }
+    if (id === "getEbillEndorsements") {
+      return { data: [], isLoading: false, error: null }
+    }
 
-      if (id === "getEbillMintComplete") {
-        return { data: { complete: false }, isLoading: false, error: null }
-      }
+    if (id === "getEbillMintComplete") {
+      return { data: { complete: false }, isLoading: false, error: null }
+    }
 
-      return { data: undefined, isLoading: false, isFetching: false, error: null }
-    },
-  )
+    return { data: undefined, isLoading: false, isFetching: false, error: null }
+  })
 })
 
 describe("QuotePage", () => {
   it("shows back-to-keyset action when navigated from a keyset page", () => {
-    renderPage({ pathname: "/quotes/quote-1", state: { from: "/keysets/keyset-1234" } })
-    expect(screen.getByRole("link", { name: /Back to keyset/i })).toHaveAttribute("href", "/keysets/keyset-1234")
+    const page = renderPage({ pathname: "/quotes/quote-1", state: { from: "/keysets/keyset-1234" } })
+    const link = page.querySelector('a[href="/keysets/keyset-1234"]')
+    expect(link?.textContent).toContain("Back to keyset")
   })
 
   it("shows go-to-keyset action from quote data when no navigation state is provided", () => {
-    renderPage("/quotes/quote-1")
-    expect(screen.getByRole("link", { name: /Go to keyset/i })).toHaveAttribute("href", "/keysets/keyset-from-quote")
+    const page = renderPage("/quotes/quote-1")
+    const link = page.querySelector('a[href="/keysets/keyset-from-quote"]')
+    expect(link?.textContent).toContain("Go to keyset")
   })
 })

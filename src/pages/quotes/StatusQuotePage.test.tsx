@@ -1,11 +1,33 @@
+import { act, type ReactElement } from "react"
+import { createRoot, type Root } from "react-dom/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
 import { IntlProvider } from "react-intl"
 import { MemoryRouter } from "react-router"
 import StatusQuotePage from "./StatusQuotePage"
 
-const mockUseQuery = vi.fn()
-const mockUseQueries = vi.fn()
+interface QueryKeyEntry {
+  _id: string
+  path?: { qid: string }
+}
+interface QueryOptions {
+  queryKey: QueryKeyEntry[]
+}
+interface QueryResult {
+  data: unknown
+  isLoading: boolean
+  isFetching?: boolean
+  error: Error | null
+}
+interface UseQueriesArgs {
+  queries: { queryKey?: { path?: { qid: string } }[] }[]
+}
+interface UseQueriesResultItem {
+  data: unknown
+  isLoading: boolean
+}
+
+const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>()
+const mockUseQueries = vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>()
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn() },
@@ -15,8 +37,8 @@ vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query")
   return {
     ...actual,
-    useQuery: (...args: unknown[]) => mockUseQuery(...args),
-    useQueries: (...args: unknown[]) => mockUseQueries(...args),
+    useQuery: (options: QueryOptions) => mockUseQuery(options),
+    useQueries: (args: UseQueriesArgs) => mockUseQueries(args),
   }
 })
 
@@ -25,8 +47,23 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getQuoteOptions: ({ path }: { path: { qid: string } }) => ({ queryKey: [{ _id: "getQuote", path }] }),
 }))
 
-function renderPage(status?: "Accepted" | "Pending") {
-  return render(
+let root: Root | null = null
+let container: HTMLDivElement | null = null
+
+function renderIntoDom(element: ReactElement): HTMLDivElement {
+  const mount = document.createElement("div")
+  document.body.appendChild(mount)
+  const mountRoot = createRoot(mount)
+  act(() => {
+    mountRoot.render(element)
+  })
+  root = mountRoot
+  container = mount
+  return mount
+}
+
+function renderPage(status?: "Accepted" | "Pending"): HTMLDivElement {
+  return renderIntoDom(
     <IntlProvider locale="en">
       <MemoryRouter>
         <StatusQuotePage status={status} />
@@ -37,8 +74,16 @@ function renderPage(status?: "Accepted" | "Pending") {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  if (root && container) {
+    act(() => {
+      root?.unmount()
+    })
+    container.remove()
+    root = null
+    container = null
+  }
 
-  mockUseQuery.mockImplementation((opts: { queryKey: Array<{ _id: string; path?: { qid: string } }> }) => {
+  mockUseQuery.mockImplementation((opts: QueryOptions) => {
     const id = opts.queryKey[0]._id
     if (id === "listQuotes") {
       return {
@@ -74,31 +119,29 @@ beforeEach(() => {
     return { data: undefined, isLoading: false, isFetching: false, error: null }
   })
 
-  mockUseQueries.mockImplementation(
-    ({ queries }: { queries: Array<{ queryKey?: Array<{ path?: { qid: string } }> }> }) =>
-      queries.map((query) => ({
-        data: {
-          bill: {
-            id: `bill-${query.queryKey?.[0]?.path?.qid ?? "x"}`,
-            maturity_date: "2026-02-20",
-          },
+  mockUseQueries.mockImplementation(({ queries }: UseQueriesArgs) =>
+    queries.map((query) => ({
+      data: {
+        bill: {
+          id: `bill-${query.queryKey?.[0]?.path?.qid ?? "x"}`,
+          maturity_date: "2026-02-20",
         },
-        isLoading: false,
-      })),
+      },
+      isLoading: false,
+    })),
   )
 })
 
 describe("StatusQuotePage", () => {
   it("shows all quotes page title when no status filter is passed", () => {
-    renderPage()
-    expect(screen.getByText("All quotes")).toBeInTheDocument()
+    const page = renderPage()
+    expect(page.textContent).toContain("All quotes")
   })
 
   it("filters cards by status", () => {
-    renderPage("Accepted")
-
-    expect(screen.getByText("Accepted quotes")).toBeInTheDocument()
-    expect(screen.getByText("quote-accepted")).toBeInTheDocument()
-    expect(screen.queryByText("quote-pending")).not.toBeInTheDocument()
+    const page = renderPage("Accepted")
+    expect(page.textContent).toContain("Accepted quotes")
+    expect(page.textContent).toContain("quote-accepted")
+    expect(page.textContent).not.toContain("quote-pending")
   })
 })

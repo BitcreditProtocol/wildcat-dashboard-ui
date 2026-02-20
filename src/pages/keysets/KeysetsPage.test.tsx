@@ -1,16 +1,25 @@
+import { act, type ReactElement } from "react"
+import { createRoot, type Root } from "react-dom/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
 import { IntlProvider } from "react-intl"
 import { MemoryRouter } from "react-router"
 import KeysetsPage from "./KeysetsPage"
 
-const mockUseQuery = vi.fn()
+interface QueryOptions {
+  queryKey: { _id: string }[]
+}
+interface QueryResult {
+  data: unknown
+  isLoading: boolean
+}
+
+const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>()
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query")
   return {
     ...actual,
-    useQuery: (...args: unknown[]) => mockUseQuery(...args),
+    useQuery: (options: QueryOptions) => mockUseQuery(options),
   }
 })
 
@@ -18,8 +27,23 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   listKeysetInfosOptions: () => ({ queryKey: [{ _id: "listKeysetInfos" }] }),
 }))
 
-function renderPage() {
-  return render(
+let root: Root | null = null
+let container: HTMLDivElement | null = null
+
+function renderIntoDom(element: ReactElement): HTMLDivElement {
+  const mount = document.createElement("div")
+  document.body.appendChild(mount)
+  const mountRoot = createRoot(mount)
+  act(() => {
+    mountRoot.render(element)
+  })
+  root = mountRoot
+  container = mount
+  return mount
+}
+
+function renderPage(): HTMLDivElement {
+  return renderIntoDom(
     <IntlProvider locale="en">
       <MemoryRouter>
         <KeysetsPage />
@@ -30,14 +54,22 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  if (root && container) {
+    act(() => {
+      root?.unmount()
+    })
+    container.remove()
+    root = null
+    container = null
+  }
 })
 
 describe("KeysetsPage", () => {
   it("shows empty state when no keysets are returned", () => {
     mockUseQuery.mockReturnValue({ data: [], isLoading: false })
 
-    renderPage()
-    expect(screen.getByText("No keysets found")).toBeInTheDocument()
+    const page = renderPage()
+    expect(page.textContent).toContain("No keysets found")
   })
 
   it("renders keyset cards from API data", () => {
@@ -46,8 +78,11 @@ describe("KeysetsPage", () => {
       isLoading: false,
     })
 
-    renderPage()
-    expect(screen.getByText("keyset-abc")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "View" })).toHaveAttribute("href", "/keysets/keyset-abc")
+    const page = renderPage()
+    expect(page.textContent).toContain("keyset-abc")
+
+    const links = Array.from(page.querySelectorAll('a[href="/keysets/keyset-abc"]'))
+    expect(links.length).toBeGreaterThan(0)
+    expect(links.some((link) => (link.textContent ?? "").includes("View"))).toBe(true)
   })
 })
