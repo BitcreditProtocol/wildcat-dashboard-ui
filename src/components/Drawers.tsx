@@ -58,20 +58,26 @@ export function ConfirmDrawer({
     cancelButtonText ??
     intl.formatMessage({
       id: "Cancel",
-      defaultMessage: "Cancel"
+      defaultMessage: "Cancel",
     })
   const resolvedSubmitText =
     submitButtonText ??
     intl.formatMessage({
       id: "Confirm",
-      defaultMessage: "Confirm"
+      defaultMessage: "Confirm",
     })
   return (
     <BaseDrawer {...drawerProps}>
       {children}
       <DrawerFooter>
         <div className="gap-2">
-          <Button className="w-full mb-2 max-w-sm" variant={submitButtonVariant} size="lg" onClick={onSubmit} disabled={submitButtonDisabled}>
+          <Button
+            className="w-full mb-2 max-w-sm"
+            variant={submitButtonVariant}
+            size="lg"
+            onClick={onSubmit}
+            disabled={submitButtonDisabled}
+          >
             {resolvedSubmitText}
           </Button>
           <DrawerClose asChild>

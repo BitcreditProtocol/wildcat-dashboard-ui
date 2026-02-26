@@ -40,16 +40,16 @@ export function CopyButton({
         toast.success(
           intl.formatMessage(
             { id: "copyButton.copied", defaultMessage: "{label} copied to clipboard" },
-            { label: labelValue }
-          )
+            { label: labelValue },
+          ),
         )
       })
       .catch(() => {
         toast.error(
           intl.formatMessage(
             { id: "copyButton.failed", defaultMessage: "Failed to copy {label}" },
-            { label: labelValue }
-          )
+            { label: labelValue },
+          ),
         )
       })
   }

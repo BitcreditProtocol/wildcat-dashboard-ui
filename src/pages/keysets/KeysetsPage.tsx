@@ -40,10 +40,7 @@ function PageBody() {
   if (!keysets || keysets.length === 0) {
     return (
       <div className="p-4 text-muted-foreground">
-        <FormattedMessage
-          id="keysets.empty"
-          defaultMessage="No keysets found"
-        />
+        <FormattedMessage id="keysets.empty" defaultMessage="No keysets found" />
       </div>
     )
   }
@@ -57,12 +54,15 @@ function PageBody() {
     const keysetId = keyset.id.toLowerCase()
     const currencyUnit = (typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom).toLowerCase()
     const finalExpiryDate = keyset.final_expiry
-      ? new Date(keyset.final_expiry * 1000).toLocaleDateString("en-US", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          timeZone: "UTC",
-        }).replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3").toLowerCase()
+      ? new Date(keyset.final_expiry * 1000)
+          .toLocaleDateString("en-US", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "UTC",
+          })
+          .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
+          .toLowerCase()
       : noExpiryText.toLowerCase()
     const status = keyset.active
       ? intl.formatMessage({ id: "keysets.status.active", defaultMessage: "Active" }).toLowerCase()
@@ -136,7 +136,7 @@ function PageBody() {
 
   const toggleSort = (field: "maturity" | "status" | "currency") => {
     if (sortBy.startsWith(field)) {
-      setSortBy(sortBy.endsWith("asc") ? `${field}-desc` as SortBy : `${field}-asc` as SortBy)
+      setSortBy(sortBy.endsWith("asc") ? (`${field}-desc` as SortBy) : (`${field}-asc` as SortBy))
     } else {
       setSortBy(`${field}-asc` as SortBy)
     }
@@ -147,21 +147,21 @@ function PageBody() {
       field: "currency" as const,
       label: intl.formatMessage({
         id: "keysets.sort.currency",
-        defaultMessage: "Currency"
+        defaultMessage: "Currency",
       }),
     },
     {
       field: "maturity" as const,
       label: intl.formatMessage({
         id: "keysets.sort.maturity",
-        defaultMessage: "Maturity"
+        defaultMessage: "Maturity",
       }),
     },
     {
       field: "status" as const,
       label: intl.formatMessage({
         id: "keysets.sort.status",
-        defaultMessage: "Status"
+        defaultMessage: "Status",
       }),
     },
   ]
@@ -180,30 +180,25 @@ function PageBody() {
           onChange={setSearchQuery}
           size="sm"
         />
-        <SortButtons
-          sortBy={sortBy}
-          onSortChange={toggleSort}
-          options={sortOptions}
-        />
+        <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
       </div>
 
       {sortedKeysets.length === 0 ? (
         <div className="p-4 text-muted-foreground text-center">
-          <FormattedMessage
-            id="keysets.search.noMatch"
-            defaultMessage="No keysets match your search criteria"
-          />
+          <FormattedMessage id="keysets.search.noMatch" defaultMessage="No keysets match your search criteria" />
         </div>
       ) : (
         <>
           {sortedKeysets.map((keyset) => {
             const finalExpiryDate = keyset.final_expiry
-              ? new Date(keyset.final_expiry * 1000).toLocaleDateString("en-US", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                  timeZone: "UTC",
-                }).replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
+              ? new Date(keyset.final_expiry * 1000)
+                  .toLocaleDateString("en-US", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })
+                  .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
               : noExpiryText
             const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
             const statusText = keyset.active
@@ -248,10 +243,7 @@ function PageBody() {
                 <CardContent>
                   <Button size="sm" variant="default" className="max-w-sm px-12" asChild>
                     <Link to={`/keysets/${keyset.id}`}>
-                      <FormattedMessage
-                        id="keysets.view"
-                        defaultMessage="View"
-                      />
+                      <FormattedMessage id="keysets.view" defaultMessage="View" />
                     </Link>
                   </Button>
                 </CardContent>
@@ -268,16 +260,10 @@ export default function KeysetsPage() {
   return (
     <>
       <Breadcrumbs>
-        <FormattedMessage
-          id="keysets.page.title"
-          defaultMessage="Keysets"
-        />
+        <FormattedMessage id="keysets.page.title" defaultMessage="Keysets" />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage
-          id="keysets.page.title"
-          defaultMessage="Keysets"
-        />
+        <FormattedMessage id="keysets.page.title" defaultMessage="Keysets" />
       </PageTitle>
       <PageBody />
     </>

@@ -33,24 +33,24 @@ export function SortButtons<T extends string>({ sortBy, onSortChange, options }:
         ? intl.formatMessage(
             {
               id: "sortButtons.ascending",
-              defaultMessage: "{label} Ascending"
+              defaultMessage: "{label} Ascending",
             },
-            { label }
+            { label },
           )
         : intl.formatMessage(
             {
               id: "sortButtons.descending",
-              defaultMessage: "{label} Descending"
+              defaultMessage: "{label} Descending",
             },
-            { label }
+            { label },
           )
     }
     return intl.formatMessage(
       {
         id: "sortButtons.sortByWithLabel",
-        defaultMessage: "Sort by {label}"
+        defaultMessage: "Sort by {label}",
       },
-      { label }
+      { label },
     )
   }
 
@@ -59,7 +59,7 @@ export function SortButtons<T extends string>({ sortBy, onSortChange, options }:
       <span className="text-sm font-medium">
         {intl.formatMessage({
           id: "sortButtons.sortByLabel",
-          defaultMessage: "Sort by:"
+          defaultMessage: "Sort by:",
         })}
       </span>
       {options.map((option) => (

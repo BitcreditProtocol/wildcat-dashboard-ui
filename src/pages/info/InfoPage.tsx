@@ -33,16 +33,10 @@ export default function InfoPage() {
   return (
     <>
       <Breadcrumbs>
-        <FormattedMessage
-          id="info.page.title"
-          defaultMessage="Info"
-        />
+        <FormattedMessage id="info.page.title" defaultMessage="Info" />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage
-          id="info.page.title"
-          defaultMessage="Info"
-        />
+        <FormattedMessage id="info.page.title" defaultMessage="Info" />
       </PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody />

@@ -61,7 +61,7 @@ const GrossToNetDiscountForm = ({
   const isSat = gross.currency === "sat"
   const daysLabel = intl.formatMessage({
     id: "discountForm.days",
-    defaultMessage: "Days"
+    defaultMessage: "Days",
   })
   const discountRateLabel = intl.formatMessage({
     id: "discountForm.discountRate",
@@ -105,10 +105,8 @@ const GrossToNetDiscountForm = ({
     }
     if (parsed < 1) {
       return intl.formatMessage(
-        { id: "discountForm.validation.net.min",
-          defaultMessage: "Net amount must be at least {min}"
-        },
-        { min: 1 }
+        { id: "discountForm.validation.net.min", defaultMessage: "Net amount must be at least {min}" },
+        { min: 1 },
       )
     }
     if (new Big(parsed).gt(gross.value)) {
@@ -126,18 +124,18 @@ const GrossToNetDiscountForm = ({
       return intl.formatMessage(
         {
           id: "discountForm.validation.required",
-          defaultMessage: "{label} is required"
+          defaultMessage: "{label} is required",
         },
-        { label }
+        { label },
       )
     }
     if (!/^\d+$/.test(value)) {
       return intl.formatMessage(
         {
           id: "discountForm.validation.wholeNumber",
-          defaultMessage: "{label} must be a whole number"
+          defaultMessage: "{label} must be a whole number",
         },
-        { label }
+        { label },
       )
     }
 
@@ -146,27 +144,27 @@ const GrossToNetDiscountForm = ({
       return intl.formatMessage(
         {
           id: "discountForm.validation.invalid",
-          defaultMessage: "{label} is invalid"
+          defaultMessage: "{label} is invalid",
         },
-        { label }
+        { label },
       )
     }
     if (n < min) {
       return intl.formatMessage(
         {
           id: "discountForm.validation.min",
-          defaultMessage: "{label} must be at least {min}"
+          defaultMessage: "{label} must be at least {min}",
         },
-        { label, min }
+        { label, min },
       )
     }
     if (n > INPUT_DAYS_MAX_VALUE) {
       return intl.formatMessage(
         {
           id: "discountForm.validation.max",
-          defaultMessage: "{label} must be at most {max}"
+          defaultMessage: "{label} must be at most {max}",
         },
-        { label, max: INPUT_DAYS_MAX_VALUE }
+        { label, max: INPUT_DAYS_MAX_VALUE },
       )
     }
 
@@ -229,7 +227,11 @@ const GrossToNetDiscountForm = ({
     const native = e.nativeEvent as InputEvent
     const data = native.data
     if (native.type === "beforeinput") {
-      if ((native.inputType === "insertText" || native.inputType === "insertCompositionText") && data && /\D/.test(data)) {
+      if (
+        (native.inputType === "insertText" || native.inputType === "insertCompositionText") &&
+        data &&
+        /\D/.test(data)
+      ) {
         e.preventDefault()
       }
     }
@@ -440,8 +442,7 @@ const GrossToNetDiscountForm = ({
     })
   }
 
-  const handleIntegerInputFor =
-    (field: "daysInput" | "netInput") => (e: React.SyntheticEvent<HTMLInputElement>) => {
+  const handleIntegerInputFor = (field: "daysInput" | "netInput") => (e: React.SyntheticEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const cleaned = input.value.replace(/[^\d]/g, "")
     if (input.value !== cleaned) {
@@ -595,14 +596,10 @@ const GrossToNetDiscountForm = ({
                     setLastEdited("net")
                   }}
                 />
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {gross.currency}
-                </span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{gross.currency}</span>
               </div>
             </div>
-            {errors.netInput && (
-              <div className="text-xs text-red-500">{errors.netInput.message}</div>
-            )}
+            {errors.netInput && <div className="text-xs text-red-500">{errors.netInput.message}</div>}
           </div>
         </div>
 
@@ -627,12 +624,7 @@ const GrossToNetDiscountForm = ({
         </div>
 
         {submitButtonText && (
-          <Button
-            type="submit"
-            size="sm"
-            className="my-4"
-            disabled={!isValid}
-          >
+          <Button type="submit" size="sm" className="my-4" disabled={!isValid}>
             {submitButtonText}
           </Button>
         )}
@@ -652,11 +644,7 @@ const GrossToNetDiscountForm = ({
           })}
         </Button>
         <DrawerClose asChild>
-          <Button
-            className="w-full"
-            variant="outline"
-            size="sm"
-          >
+          <Button className="w-full" variant="outline" size="sm">
             {intl.formatMessage({
               id: "Cancel",
               defaultMessage: "Cancel",

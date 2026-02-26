@@ -46,7 +46,10 @@ function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; 
 
   const avatar = (
     <Avatar className={cn("h-8 w-8", shapeClass)}>
-      <AvatarFallback className={cn("text-white font-semibold text-sm bg-transparent", shapeClass)} style={{ backgroundColor }}>
+      <AvatarFallback
+        className={cn("text-white font-semibold text-sm bg-transparent", shapeClass)}
+        style={{ backgroundColor }}
+      >
         {initials}
       </AvatarFallback>
     </Avatar>
@@ -106,9 +109,9 @@ export function ParticipantsOverviewCard({
     return intl.formatMessage(
       {
         id: `participants.role.${role}`,
-        defaultMessage: defaults[role]
+        defaultMessage: defaults[role],
       },
-      {}
+      {},
     )
   }
   const bearerLabel = intl.formatMessage({
@@ -220,7 +223,7 @@ export function ParticipantDetail({
           <div className="text-sm text-muted-foreground">
             {intl.formatMessage({
               id: "participants.role.bearer",
-              defaultMessage: "Bearer"
+              defaultMessage: "Bearer",
             })}
           </div>
           {anonData?.node_id && (
@@ -253,30 +256,15 @@ export function ParticipantDetail({
     <div className="flex items-center justify-center gap-3">
       {avatar}
       <div className="flex flex-col gap-1">
-        <TruncatedTextPopover
-          text={data.name}
-          maxLength={50}
-          className="text-sm font-medium"
-          as="span"
-        />
+        <TruncatedTextPopover text={data.name} maxLength={50} className="text-sm font-medium" as="span" />
         {data.email && (
           <a href={`mailto:${data.email}`} className="text-sm text-blue-600 hover:underline">
-            <TruncatedTextPopover
-              text={data.email}
-              maxLength={40}
-              className="text-sm"
-              as="span"
-            />
+            <TruncatedTextPopover text={data.email} maxLength={40} className="text-sm" as="span" />
           </a>
         )}
         {"city" in data && data.city && data.country && (
           <div className="text-xs text-muted-foreground">
-            <TruncatedTextPopover
-              text={`${data.city}, ${data.country}`}
-              maxLength={50}
-              className="text-xs"
-              as="span"
-            />
+            <TruncatedTextPopover text={`${data.city}, ${data.country}`} maxLength={50} className="text-xs" as="span" />
           </div>
         )}
         <div className="text-xs text-muted-foreground font-mono break-all">

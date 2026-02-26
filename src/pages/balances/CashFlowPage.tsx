@@ -109,24 +109,15 @@ export default function CashFlowPage() {
         parents={[
           <>
             <Link to="/earnings">
-              <FormattedMessage
-                id="earnings.page.title"
-                defaultMessage="Earnings"
-              />
+              <FormattedMessage id="earnings.page.title" defaultMessage="Earnings" />
             </Link>
           </>,
         ]}
       >
-        <FormattedMessage
-          id="cashflow.page.title"
-          defaultMessage="CashFlow"
-        />
+        <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage
-          id="cashflow.page.title"
-          defaultMessage="CashFlow"
-        />
+        <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
       </PageTitle>
 
       <Suspense fallback={<Loader />}>

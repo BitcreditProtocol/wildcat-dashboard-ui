@@ -128,7 +128,7 @@ export function RequestToPayConfirmation({
               <span className="flex items-center gap-2">
                 {intl.formatMessage({
                   id: "quotes.requestToPay.button",
-                  defaultMessage: "Request to pay"
+                  defaultMessage: "Request to pay",
                 })}{" "}
                 {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
               </span>

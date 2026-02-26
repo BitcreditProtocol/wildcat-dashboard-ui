@@ -67,9 +67,7 @@ export function CalendarModal({
         >
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
-            <div className="text-base">
-              {draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}
-            </div>
+            <div className="text-base">{draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}</div>
 
             <Calendar
               mode="single"
@@ -101,19 +99,13 @@ export function CalendarModal({
               >
                 {intl.formatMessage({
                   id: "Cancel",
-                  defaultMessage: "Cancel"
+                  defaultMessage: "Cancel",
                 })}
               </Button>
-              <Button
-                className="w-full max-w-sm"
-                size="sm"
-                type="button"
-                disabled={!draftDate}
-                onClick={onConfirm}
-              >
+              <Button className="w-full max-w-sm" size="sm" type="button" disabled={!draftDate} onClick={onConfirm}>
                 {intl.formatMessage({
                   id: "Confirm",
-                  defaultMessage: "Confirm"
+                  defaultMessage: "Confirm",
                 })}
               </Button>
             </div>

@@ -21,7 +21,7 @@ export function Breadcrumbs({ parents, children }: PropsWithChildren<{ parents?:
             <Link to="/">
               {intl.formatMessage({
                 id: "nav.home",
-                defaultMessage: "Home"
+                defaultMessage: "Home",
               })}
             </Link>
           </BreadcrumbLink>

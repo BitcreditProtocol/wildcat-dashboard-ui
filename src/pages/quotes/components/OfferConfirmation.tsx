@@ -17,13 +17,7 @@ interface OfferConfirmationProps {
 
 const OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX = "offer-valid-until-"
 
-export function OfferConfirmation({
-  offerFormData,
-  open,
-  onOpenChange,
-  onSubmit,
-  quoteId,
-}: OfferConfirmationProps) {
+export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit, quoteId }: OfferConfirmationProps) {
   const intl = useIntl()
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
   const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false)
@@ -112,7 +106,7 @@ export function OfferConfirmation({
             <span className="text-sm font-semibold w-48">
               {intl.formatMessage({
                 id: "quotes.offer.netAmount",
-                defaultMessage: "Net amount:"
+                defaultMessage: "Net amount:",
               })}
             </span>
             <span className="text-sm text-right">
@@ -123,7 +117,7 @@ export function OfferConfirmation({
             <span className="text-sm font-semibold w-32">
               {intl.formatMessage({
                 id: "quotes.offer.validUntil",
-                defaultMessage: "Valid until:"
+                defaultMessage: "Valid until:",
               })}
             </span>
             <DatePickerButton

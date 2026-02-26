@@ -184,7 +184,8 @@ export function QuoteActions({
                   disabled={isFetching || enableMintingMutation.isPending}
                   variant="default"
                 >
-                  {enableMintingButtonLabel} {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                  {enableMintingButtonLabel}{" "}
+                  {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
                 </Button>
               }
             />

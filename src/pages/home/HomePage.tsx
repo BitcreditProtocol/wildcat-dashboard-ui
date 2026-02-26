@@ -3,7 +3,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useQuery } from "@tanstack/react-query"
 import { Suspense } from "react"
 import { CopyButton } from "@/components/CopyButton"
-import { getIdentityOptions, getClowderInfoOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen"
+import {
+  getIdentityOptions,
+  getClowderInfoOptions,
+  getMintInfoOptions,
+} from "@/generated/client/@tanstack/react-query.gen"
 import { FormattedMessage, useIntl } from "react-intl"
 
 function Loader() {
@@ -22,12 +26,20 @@ function PageBody() {
     gcTime: Infinity,
   })
 
-  const { data: mintData, isLoading: mintLoading, isError: mintError } = useQuery({
+  const {
+    data: mintData,
+    isLoading: mintLoading,
+    isError: mintError,
+  } = useQuery({
     ...getMintInfoOptions(),
     staleTime: 60_000,
   })
 
-  const { data: clowderData, isLoading: clowderLoading, isError: clowderError } = useQuery({
+  const {
+    data: clowderData,
+    isLoading: clowderLoading,
+    isError: clowderError,
+  } = useQuery({
     ...getClowderInfoOptions(),
     staleTime: 60_000,
   })
@@ -37,29 +49,20 @@ function PageBody() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <div className="bg-card text-card-foreground rounded-lg border p-6">
           <h3 className="text-lg font-semibold mb-4">
-            <FormattedMessage
-              id="home.identity.title"
-              defaultMessage="Identity"
-            />
+            <FormattedMessage id="home.identity.title" defaultMessage="Identity" />
           </h3>
           {identityData ? (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                  <FormattedMessage
-                    id="home.identity.name"
-                    defaultMessage="Name"
-                  />
+                  <FormattedMessage id="home.identity.name" defaultMessage="Name" />
                 </span>
                 <span className="font-semibold text-base">{identityData.name}</span>
               </div>
               {identityData.email && (
                 <div className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    <FormattedMessage
-                      id="home.identity.email"
-                      defaultMessage="Email"
-                    />
+                    <FormattedMessage id="home.identity.email" defaultMessage="Email" />
                   </span>
                   <span className="font-mono text-sm text-muted-foreground">{identityData.email}</span>
                 </div>
@@ -67,19 +70,13 @@ function PageBody() {
 
               <div className="border-t pt-4 mt-4">
                 <h4 className="text-md font-semibold mb-4">
-                  <FormattedMessage
-                    id="home.identity.keys"
-                    defaultMessage="Keys"
-                  />
+                  <FormattedMessage id="home.identity.keys" defaultMessage="Keys" />
                 </h4>
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center">
                       <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                        <FormattedMessage
-                          id="home.identity.nodeId"
-                          defaultMessage="Node ID"
-                        />
+                        <FormattedMessage id="home.identity.nodeId" defaultMessage="Node ID" />
                       </span>
                       <CopyButton
                         value={identityData.node_id}
@@ -93,10 +90,7 @@ function PageBody() {
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center">
                       <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                        <FormattedMessage
-                          id="home.identity.bitcoinPublicKey"
-                          defaultMessage="Bitcoin Public Key"
-                        />
+                        <FormattedMessage id="home.identity.bitcoinPublicKey" defaultMessage="Bitcoin Public Key" />
                       </span>
                       <CopyButton
                         value={identityData.bitcoin_public_key}
@@ -113,10 +107,7 @@ function PageBody() {
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center">
                       <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                        <FormattedMessage
-                          id="home.identity.nostrPublicKey"
-                          defaultMessage="Nostr Public Key"
-                        />
+                        <FormattedMessage id="home.identity.nostrPublicKey" defaultMessage="Nostr Public Key" />
                       </span>
                       <CopyButton
                         value={identityData.npub}
@@ -136,10 +127,7 @@ function PageBody() {
               {identityData.postal_address && (
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-md font-semibold mb-4">
-                    <FormattedMessage
-                      id="home.identity.address"
-                      defaultMessage="Address"
-                    />
+                    <FormattedMessage id="home.identity.address" defaultMessage="Address" />
                   </h4>
                   <div className="flex flex-col gap-1">
                     <div className="text-sm leading-relaxed">
@@ -156,44 +144,29 @@ function PageBody() {
             </div>
           ) : (
             <div className="text-center text-muted-foreground">
-              <FormattedMessage
-                id="home.identity.none"
-                defaultMessage="No identity found"
-              />
+              <FormattedMessage id="home.identity.none" defaultMessage="No identity found" />
             </div>
           )}
         </div>
 
         <div className="bg-card text-card-foreground rounded-lg border p-6">
           <h3 className="text-lg font-semibold mb-4">
-            <FormattedMessage
-              id="home.clowder.title"
-              defaultMessage="Clowder"
-            />
+            <FormattedMessage id="home.clowder.title" defaultMessage="Clowder" />
           </h3>
           {clowderLoading ? (
             <div className="text-center text-muted-foreground">
-              <FormattedMessage
-                id="home.clowder.loading"
-                defaultMessage="Loading clowder information..."
-              />
+              <FormattedMessage id="home.clowder.loading" defaultMessage="Loading clowder information..." />
             </div>
           ) : clowderError ? (
             <div className="text-center text-muted-foreground">
-              <FormattedMessage
-                id="home.clowder.error"
-                defaultMessage="Failed to load clowder information"
-              />
+              <FormattedMessage id="home.clowder.error" defaultMessage="Failed to load clowder information" />
             </div>
           ) : clowderData ? (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    <FormattedMessage
-                      id="home.clowder.nodeId"
-                      defaultMessage="Node ID"
-                    />
+                    <FormattedMessage id="home.clowder.nodeId" defaultMessage="Node ID" />
                   </span>
                   <CopyButton
                     value={clowderData.node_id as unknown as string}
@@ -207,20 +180,14 @@ function PageBody() {
 
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                  <FormattedMessage
-                    id="home.clowder.version"
-                    defaultMessage="Version"
-                  />
+                  <FormattedMessage id="home.clowder.version" defaultMessage="Version" />
                 </span>
                 <span className="text-sm">{clowderData.version}</span>
               </div>
 
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                  <FormattedMessage
-                    id="home.clowder.network"
-                    defaultMessage="Network"
-                  />
+                  <FormattedMessage id="home.clowder.network" defaultMessage="Network" />
                 </span>
                 <span className="text-sm capitalize">{clowderData.network}</span>
               </div>
@@ -228,10 +195,7 @@ function PageBody() {
               <div className="flex flex-col gap-1">
                 <div className="flex items-center">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    <FormattedMessage
-                      id="home.clowder.changeAddress"
-                      defaultMessage="Change Address"
-                    />
+                    <FormattedMessage id="home.clowder.changeAddress" defaultMessage="Change Address" />
                   </span>
                   <CopyButton
                     value={clowderData.change_address}
@@ -246,10 +210,7 @@ function PageBody() {
               {clowderData.uptime_timestamp && (
                 <div className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    <FormattedMessage
-                      id="home.clowder.startedAt"
-                      defaultMessage="Started At"
-                    />
+                    <FormattedMessage id="home.clowder.startedAt" defaultMessage="Started At" />
                   </span>
                   <span className="text-sm">
                     {new Date(clowderData.uptime_timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}
@@ -259,43 +220,28 @@ function PageBody() {
             </div>
           ) : (
             <div className="text-center text-muted-foreground">
-              <FormattedMessage
-                id="home.clowder.none"
-                defaultMessage="No clowder information available"
-              />
+              <FormattedMessage id="home.clowder.none" defaultMessage="No clowder information available" />
             </div>
           )}
         </div>
 
         <div className="bg-card text-card-foreground rounded-lg border p-6">
           <h3 className="text-lg font-semibold mb-4">
-            <FormattedMessage
-              id="home.mint.title"
-              defaultMessage="Mint Info"
-            />
+            <FormattedMessage id="home.mint.title" defaultMessage="Mint Info" />
           </h3>
           {mintLoading ? (
             <div className="text-center text-muted-foreground">
-              <FormattedMessage
-                id="home.mint.loading"
-                defaultMessage="Loading mint information..."
-              />
+              <FormattedMessage id="home.mint.loading" defaultMessage="Loading mint information..." />
             </div>
           ) : mintError ? (
             <div className="text-center text-muted-foreground">
-              <FormattedMessage
-                id="home.mint.error"
-                defaultMessage="Failed to load mint information"
-              />
+              <FormattedMessage id="home.mint.error" defaultMessage="Failed to load mint information" />
             </div>
           ) : mintData ? (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                  <FormattedMessage
-                    id="home.mint.network"
-                    defaultMessage="Network"
-                  />
+                  <FormattedMessage id="home.mint.network" defaultMessage="Network" />
                 </span>
                 <span className="text-sm capitalize">{mintData.network}</span>
               </div>
@@ -303,10 +249,7 @@ function PageBody() {
               <div className="flex flex-col gap-1">
                 <div className="flex items-center">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    <FormattedMessage
-                      id="home.mint.clowderNodeId"
-                      defaultMessage="Clowder Node ID"
-                    />
+                    <FormattedMessage id="home.mint.clowderNodeId" defaultMessage="Clowder Node ID" />
                   </span>
                   <CopyButton
                     value={mintData.clowder_node_id}
@@ -324,10 +267,7 @@ function PageBody() {
               <div className="flex flex-col gap-1">
                 <div className="flex items-center">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    <FormattedMessage
-                      id="home.mint.clowderChangeAddress"
-                      defaultMessage="Clowder Change Address"
-                    />
+                    <FormattedMessage id="home.mint.clowderChangeAddress" defaultMessage="Clowder Change Address" />
                   </span>
                   <CopyButton
                     value={mintData.clowder_change_address}
@@ -344,45 +284,30 @@ function PageBody() {
 
               <div className="border-t pt-4 mt-4">
                 <h4 className="text-md font-semibold mb-4">
-                  <FormattedMessage
-                    id="home.mint.versions"
-                    defaultMessage="Versions"
-                  />
+                  <FormattedMessage id="home.mint.versions" defaultMessage="Versions" />
                 </h4>
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      <FormattedMessage
-                        id="home.mint.version.wildcat"
-                        defaultMessage="Wildcat"
-                      />
+                      <FormattedMessage id="home.mint.version.wildcat" defaultMessage="Wildcat" />
                     </span>
                     <span className="text-sm font-mono">{mintData.versions.wildcat}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      <FormattedMessage
-                        id="home.mint.version.ebillCore"
-                        defaultMessage="BCR eBill Core"
-                      />
+                      <FormattedMessage id="home.mint.version.ebillCore" defaultMessage="BCR eBill Core" />
                     </span>
                     <span className="text-sm font-mono">{mintData.versions.bcr_ebill_core}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      <FormattedMessage
-                        id="home.mint.version.cdkMintd"
-                        defaultMessage="CDK Mintd"
-                      />
+                      <FormattedMessage id="home.mint.version.cdkMintd" defaultMessage="CDK Mintd" />
                     </span>
                     <span className="text-sm font-mono">{mintData.versions.cdk_mintd}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      <FormattedMessage
-                        id="home.mint.version.clowder"
-                        defaultMessage="Clowder"
-                      />
+                      <FormattedMessage id="home.mint.version.clowder" defaultMessage="Clowder" />
                     </span>
                     <span className="text-sm font-mono">{mintData.versions.clowder}</span>
                   </div>
@@ -393,10 +318,7 @@ function PageBody() {
                 <div className="border-t pt-4 mt-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                      <FormattedMessage
-                        id="home.mint.startedAt"
-                        defaultMessage="Started At"
-                      />
+                      <FormattedMessage id="home.mint.startedAt" defaultMessage="Started At" />
                     </span>
                     <span className="text-sm">
                       {new Date(mintData.uptime_timestamp).toLocaleString(undefined, { timeZone: "UTC" })}
@@ -405,10 +327,7 @@ function PageBody() {
                   {mintData.build_time && (
                     <div className="flex flex-col gap-1 mt-3">
                       <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                        <FormattedMessage
-                          id="home.mint.buildTime"
-                          defaultMessage="Build Time"
-                        />
+                        <FormattedMessage id="home.mint.buildTime" defaultMessage="Build Time" />
                       </span>
                       <span className="text-sm">
                         {new Date(mintData.build_time).toLocaleString(undefined, { timeZone: "UTC" })}
@@ -420,10 +339,7 @@ function PageBody() {
             </div>
           ) : (
             <div className="text-center text-muted-foreground">
-              <FormattedMessage
-                id="home.mint.none"
-                defaultMessage="No mint information available"
-              />
+              <FormattedMessage id="home.mint.none" defaultMessage="No mint information available" />
             </div>
           )}
         </div>
@@ -436,10 +352,7 @@ export default function HomePage() {
   return (
     <>
       <PageTitle>
-        <FormattedMessage
-          id="home.page.title"
-          defaultMessage="Home"
-        />
+        <FormattedMessage id="home.page.title" defaultMessage="Home" />
       </PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody />

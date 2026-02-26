@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   validate:
-    name: Validate (lint, test, build)
+    name: Validate (style, lint, test, build)
     runs-on: ubuntu-latest
     env:
       NODE_VERSION: 22
@@ -24,15 +24,19 @@ jobs:
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Check code style
+        run: npx prettier --check "src/**/*.{ts,tsx,json,css,md}"
+
       - name: Lint
         run: npm run lint
 
-      - name: Run tests and generate coverage
-        run: npm run test -- --coverage
+      - name: Run tests and generate coverage + JUnit report
+        run: npm run test -- --run --coverage --reporter=default --reporter=junit --outputFile.junit=./coverage/junit.xml
 
       - name: Build
         run: npm run build
@@ -41,3 +45,11 @@ jobs:
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+
+      - name: Upload test results to Codecov
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/junit.xml
+          report_type: test_results
