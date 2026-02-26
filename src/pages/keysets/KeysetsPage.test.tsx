@@ -28,13 +28,7 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 }))
 
 vi.mock("@/components/ui/search", () => ({
-  default: ({
-    onChange,
-    onSearch,
-  }: {
-    onChange?: (value: string) => void
-    onSearch: (value: string) => void
-  }) => (
+  default: ({ onChange, onSearch }: { onChange?: (value: string) => void; onSearch: (value: string) => void }) => (
     <button
       onClick={() => {
         onChange?.(nextSearchQuery)
@@ -177,11 +171,19 @@ describe("KeysetsPage", () => {
     const page = renderPage()
 
     // Default maturity-asc: expired first, no-expiry last.
-    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-expired", "/keysets/keyset-future", "/keysets/keyset-no-expiry"])
+    expect(orderedKeysetHrefs(page)).toEqual([
+      "/keysets/keyset-expired",
+      "/keysets/keyset-future",
+      "/keysets/keyset-no-expiry",
+    ])
 
     // Currency-asc: eur, sat, usd.
     clickButtonByText(page, "sort-currency")
-    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-no-expiry", "/keysets/keyset-expired", "/keysets/keyset-future"])
+    expect(orderedKeysetHrefs(page)).toEqual([
+      "/keysets/keyset-no-expiry",
+      "/keysets/keyset-expired",
+      "/keysets/keyset-future",
+    ])
 
     // Status-asc in this implementation sorts active first.
     clickButtonByText(page, "sort-status")
