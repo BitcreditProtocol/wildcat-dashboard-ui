@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     groups:
-      all-github-actions:
+      github-actions:
         patterns:
           - "*"
     schedule:
@@ -12,8 +12,37 @@ updates:
       time: "08:30"
       timezone: "Europe/Vienna"
     open-pull-requests-limit: 5
+    target-branch: "dev"
     labels:
       - "dependencies"
       - "github-actions"
     assignees:
-      - "cleot" # devops
+      - "cleot" # devops maintainer
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:30"
+      timezone: "Europe/Vienna"
+    labels:
+      - "dependencies"
+      - "npm"
+    target-branch: "dev"
+    open-pull-requests-limit: 7
+    groups:
+      npm-patch:
+        update-types:
+          - "patch"
+      npm-minor:
+        update-types:
+          - "minor"
+      ## optional: group major updates
+      #npm-major:
+      #  update-types:
+      #    - "major"
+    cooldown:
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3

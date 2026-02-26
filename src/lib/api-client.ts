@@ -8,33 +8,31 @@ heyApiClient.setConfig({
 })
 
 // Add the auth token interceptor
-heyApiClient.interceptors.request.use((request) => {
-  if (keycloak.token!) {
-    let headers = request.headers
-    if (!(headers instanceof Headers)) {
-      headers = new Headers(headers as HeadersInit)
-    }
-    headers.set("Authorization", `Bearer ${keycloak.token}`)
-
-    if (!(request.headers instanceof Headers)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      ;(request as any).headers = headers
-    }
-  }
-  return request
-})
-
-const originalFetch = window.fetch
-window.fetch = async function (...args) {
+heyApiClient.interceptors.request.use(async (request) => {
   try {
-    console.log("Refreshing token...")
     await keycloak.updateToken(30)
   } catch (error) {
     console.error("Failed to refresh token:", error)
   }
 
-  return originalFetch.apply(this, args)
-}
+  const token = keycloak.token
+  if (!token) {
+    return request
+  }
+
+  let headers = request.headers
+  if (!(headers instanceof Headers)) {
+    headers = new Headers(headers as HeadersInit)
+  }
+  headers.set("Authorization", `Bearer ${token}`)
+
+  if (!(request.headers instanceof Headers)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+    ;(request as any).headers = headers
+  }
+
+  return request
+})
 
 export const client = heyApiClient
 export { sdk }
