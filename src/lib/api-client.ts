@@ -1,11 +1,19 @@
 import { client as heyApiClient } from "@/generated/client/client.gen"
 import * as sdk from "@/generated/client/sdk.gen"
+import { normalizeApiError } from "@/lib/api-error"
 import { env } from "@/lib/env"
 import keycloak from "../keycloak"
 
 heyApiClient.setConfig({
   baseUrl: env.apiBaseUrl,
+  throwOnError: true,
 })
+
+heyApiClient.interceptors.error.use((error, response) =>
+  normalizeApiError(error, {
+    status: (response as Response | undefined)?.status,
+  }),
+)
 
 // Add the auth token interceptor
 heyApiClient.interceptors.request.use(async (request) => {

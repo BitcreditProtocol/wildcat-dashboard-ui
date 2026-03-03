@@ -9,30 +9,7 @@ import {
 } from "@/generated/client/@tanstack/react-query.gen.ts"
 import type { OfferFormResult } from "./OfferFormDrawer.tsx"
 import Big from "big.js"
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message
-  }
-  if (typeof error === "string") {
-    return error
-  }
-  if (error && typeof error === "object") {
-    if ("error" in error) {
-      const value = (error as { error?: unknown }).error
-      if (typeof value === "string") {
-        return value
-      }
-    }
-    if ("message" in error) {
-      const value = (error as { message?: unknown }).message
-      if (typeof value === "string") {
-        return value
-      }
-    }
-  }
-  return String(error)
-}
+import { getApiErrorMessage } from "@/lib/api-error"
 
 export function useQuoteMutations(quoteId: string, billId: string) {
   const queryClient = useQueryClient()
@@ -43,7 +20,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-deny`)
     },
     onError: (error) => {
-      toast.error(`Error while denying quote: ${getErrorMessage(error)}`)
+      toast.error(`Error while denying quote: ${getApiErrorMessage(error)}`)
       console.warn(error)
     },
     onSuccess: () => {
@@ -60,7 +37,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-offer`)
     },
     onError: (error) => {
-      toast.error(`Error while offering quote: ${getErrorMessage(error)}`)
+      toast.error(`Error while offering quote: ${getApiErrorMessage(error)}`)
       console.warn(error)
     },
     onSuccess: () => {
@@ -80,7 +57,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-enable-minting`)
     },
     onError: (error) => {
-      toast.error(`Error while enabling minting: ${getErrorMessage(error)}`)
+      toast.error(`Error while enabling minting: ${getApiErrorMessage(error)}`)
       console.warn(error)
     },
     onSuccess: () => {
@@ -98,7 +75,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-request-to-pay`)
     },
     onError: (error) => {
-      toast.error(`Error while requesting to pay: ${getErrorMessage(error)}`)
+      toast.error(`Error while requesting to pay: ${getApiErrorMessage(error)}`)
       console.warn(error)
     },
     onSuccess: () => {

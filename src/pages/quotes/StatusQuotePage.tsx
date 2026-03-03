@@ -20,6 +20,7 @@ import { useState } from "react"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { SortButtons } from "@/components/SortButtons"
 import { useIntl } from "react-intl"
+import { getApiErrorMessage } from "@/lib/api-error"
 
 type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "Minting"
 type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc"
@@ -64,7 +65,7 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
   const handleQuoteClick = (e: React.MouseEvent) => {
     if (detailsError) {
       e.preventDefault()
-      const errorMessage = detailsError.message || String(detailsError)
+      const errorMessage = getApiErrorMessage(detailsError)
       toast.error(intl.formatMessage({ id: "quotes.card.error.title", defaultMessage: "Cannot load quote" }), {
         description: intl.formatMessage(
           {
