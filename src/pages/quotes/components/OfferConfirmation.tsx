@@ -85,7 +85,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
             <span className="text-sm font-semibold w-48">
               {intl.formatMessage({
                 id: "quotes.detail.discount.relative",
-                defaultMessage: "Effective discount (relative):",
+                defaultMessage: "Effective fee (relative):",
               })}
             </span>
             <span className="text-sm text-right">{effectiveDiscount?.mul(new Big("100")).toFixed(2)}%</span>
@@ -94,7 +94,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
             <span className="text-sm font-semibold w-48">
               {intl.formatMessage({
                 id: "quotes.detail.discount.absolute",
-                defaultMessage: "Effective discount (absolute):",
+                defaultMessage: "Effective fee (absolute):",
               })}
             </span>
             <span className="text-sm text-right">
