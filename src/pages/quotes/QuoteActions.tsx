@@ -44,6 +44,7 @@ export function QuoteActions({
   })
 
   const ebill = ebillQuery.data
+  const quoteStatus = value.status as string
   const paymentStatus = ebill?.status.payment
   const cws = ebill?.current_waiting_state
 
@@ -191,7 +192,7 @@ export function QuoteActions({
             />
           </div>
         )}
-        {(value.status === "Accepted" || value.status === "Minting") &&
+        {(quoteStatus === "Accepted" || quoteStatus === "Minting" || quoteStatus === "MintingEnabled") &&
           "keyset_id" in value &&
           ebill &&
           !ebillPaidEff &&

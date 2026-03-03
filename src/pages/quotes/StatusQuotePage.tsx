@@ -22,7 +22,16 @@ import { SortButtons } from "@/components/SortButtons"
 import { useIntl } from "react-intl"
 import { getApiErrorMessage } from "@/lib/api-error"
 
-type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "Minting"
+type QuoteStatus =
+  | "Accepted"
+  | "Denied"
+  | "OfferExpired"
+  | "Offered"
+  | "Pending"
+  | "Rejected"
+  | "Canceled"
+  | "Minting"
+  | "MintingEnabled"
 type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc"
 
 const RETRY_COUNT = 2
