@@ -56,10 +56,7 @@ function extractStatus(error: unknown): number | undefined {
   return undefined
 }
 
-export function normalizeApiError(
-  error: unknown,
-  context?: { status?: number; fallbackMessage?: string },
-): ApiError {
+export function normalizeApiError(error: unknown, context?: { status?: number; fallbackMessage?: string }): ApiError {
   if (error instanceof ApiError) {
     if (error.status === undefined && context?.status !== undefined) {
       error.status = context.status
@@ -77,9 +74,6 @@ export function normalizeApiError(
   })
 }
 
-export function getApiErrorMessage(
-  error: unknown,
-  fallbackMessage = "Unexpected error",
-): string {
+export function getApiErrorMessage(error: unknown, fallbackMessage = "Unexpected error"): string {
   return normalizeApiError(error, { fallbackMessage }).message
 }
