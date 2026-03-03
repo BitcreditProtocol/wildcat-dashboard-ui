@@ -26,6 +26,7 @@ import { serializeKeysetId } from "@/utils/keyset"
 import { useIntl } from "react-intl"
 import { useEffect, useRef } from "react"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api-error"
 
 interface LocationState {
   from?: string
@@ -90,7 +91,7 @@ function PageBody({ id }: { id: string }) {
     ...postTokenStatusMutation(),
     retry: 5,
     onError: (error) => {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = getApiErrorMessage(error)
       toast.error(
         intl.formatMessage(
           {
@@ -141,7 +142,7 @@ function PageBody({ id }: { id: string }) {
   }, [feeTokenFromQuote, isFeeTokenStatusPending, isFeeTokenStatusSuccess, quoteStatusForEffect, requestFeeTokenStatus])
 
   if (error) {
-    const errorMessage = (error as { message?: string }).message ?? String(error)
+    const errorMessage = getApiErrorMessage(error)
     return (
       <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
         <div className="text-red-800 font-semibold">
