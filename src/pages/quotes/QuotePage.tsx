@@ -56,7 +56,7 @@ function PageBody({ id }: { id: string }) {
   })
 
   const billId = quoteData?.bill?.id
-  const quoteStatus = quoteData?.status
+  const quoteStatus = quoteData?.status as string | undefined
 
   const ebillsQuery = useQuery({
     ...listEbillsOptions(),
@@ -175,6 +175,7 @@ function PageBody({ id }: { id: string }) {
 
   const quote = quoteData!
   const bill = quote?.bill
+  const quoteStatusValue = quote.status as string
 
   const billStatus = ebill?.status
   const paymentStatus = billStatus?.payment
@@ -191,8 +192,7 @@ function PageBody({ id }: { id: string }) {
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
 
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
-  const showPayment =
-    quoteData?.status === "Accepted" || quoteData?.status === "Minting" || quoteData?.status === "MintingEnabled"
+  const showPayment = quoteStatus === "Accepted" || quoteStatus === "Minting" || quoteStatus === "MintingEnabled"
 
   if (!quote || !bill) {
     return (
@@ -510,7 +510,7 @@ function PageBody({ id }: { id: string }) {
       <QuoteActions
         value={quote}
         isFetching={isFetching}
-        mintingEnabled={quote.status === "Minting" || quote.status === "MintingEnabled"}
+        mintingEnabled={quoteStatusValue === "Minting" || quoteStatusValue === "MintingEnabled"}
         ebillPaid={ebillPaid}
         isMintComplete={isMintComplete}
         requestedToPay={requestedToPay}
@@ -537,12 +537,12 @@ function PageBody({ id }: { id: string }) {
         rejectionTimestamp={
           ebill?.status?.acceptance?.rejected_to_accept ? (ebill?.status?.last_block_time ?? undefined) : undefined
         }
-        mintingEnabled={quote.status === "Minting" || quote.status === "MintingEnabled"}
+        mintingEnabled={quoteStatusValue === "Minting" || quoteStatusValue === "MintingEnabled"}
         quoteOffered={
-          quote.status === "Offered" ||
-          quote.status === "Accepted" ||
-          quote.status === "Minting" ||
-          quote.status === "MintingEnabled"
+          quoteStatusValue === "Offered" ||
+          quoteStatusValue === "Accepted" ||
+          quoteStatusValue === "Minting" ||
+          quoteStatusValue === "MintingEnabled"
         }
         offeredTimestamp={
           "submitted" in quote
@@ -573,9 +573,10 @@ export default function QuotePage() {
     retry: 1,
   })
 
+  const quoteDataStatus = quoteData?.status as string | undefined
   const hasKeysetId =
     quoteData &&
-    (quoteData.status === "Accepted" || quoteData.status === "Minting" || quoteData.status === "MintingEnabled") &&
+    (quoteDataStatus === "Accepted" || quoteDataStatus === "Minting" || quoteDataStatus === "MintingEnabled") &&
     "keyset_id" in quoteData
 
   return (
