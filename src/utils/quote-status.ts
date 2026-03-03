@@ -9,6 +9,7 @@ export const getQuoteStatusVariant = (status: string): QuoteStatusVariant => {
       return "default"
     case "Accepted":
     case "Minting":
+    case "MintingEnabled":
       return "success"
     case "Denied":
     case "Canceled":

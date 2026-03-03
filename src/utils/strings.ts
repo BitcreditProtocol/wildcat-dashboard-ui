@@ -43,5 +43,11 @@ export const getDeterministicColor = (seed?: string): string => {
  * Converts "OfferExpired" to "Offer Expired" with proper spacing.
  */
 export const formatStatusLabel = (status: string): string => {
-  return status === "OfferExpired" ? "Offer expired" : status
+  if (status === "OfferExpired") {
+    return "Offer expired"
+  }
+  if (status === "MintingEnabled") {
+    return "Minting enabled"
+  }
+  return status
 }

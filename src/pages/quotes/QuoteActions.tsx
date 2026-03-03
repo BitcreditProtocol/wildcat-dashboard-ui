@@ -191,7 +191,7 @@ export function QuoteActions({
             />
           </div>
         )}
-        {(value.status === "Accepted" || value.status === "Minting") &&
+        {(value.status === "Accepted" || value.status === "Minting" || value.status === "MintingEnabled") &&
           "keyset_id" in value &&
           ebill &&
           !ebillPaidEff &&
