@@ -65,7 +65,7 @@ const GrossToNetDiscountForm = ({
   })
   const discountRateLabel = intl.formatMessage({
     id: "discountForm.discountRate",
-    defaultMessage: "Discount rate",
+    defaultMessage: "Fee rate",
   })
   const netAmountLabel = intl.formatMessage({
     id: "discountForm.netAmount",
@@ -73,7 +73,7 @@ const GrossToNetDiscountForm = ({
   })
   const annualDiscountLabel = intl.formatMessage({
     id: "discountForm.annualDiscount",
-    defaultMessage: "Annual discount",
+    defaultMessage: "Annual fee",
   })
   const grossAmountLabel = intl.formatMessage({
     id: "discountForm.grossAmount",

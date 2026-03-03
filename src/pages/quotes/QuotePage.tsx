@@ -352,7 +352,7 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.discounted",
-                      defaultMessage: "Discounted:",
+                      defaultMessage: "Fee:",
                     })}
                   </span>
                   <span className="text-lg font-bold">{quote.discounted} sat</span>
@@ -361,7 +361,7 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.discount.absolute",
-                      defaultMessage: "Effective discount (absolute):",
+                      defaultMessage: "Effective fee (absolute):",
                     })}
                   </span>
                   <span className="text-sm font-mono">{bill.sum - quote.discounted} sat</span>
@@ -370,7 +370,7 @@ function PageBody({ id }: { id: string }) {
                   <span className="text-sm font-semibold w-32">
                     {intl.formatMessage({
                       id: "quotes.detail.discount.relative",
-                      defaultMessage: "Effective discount (relative):",
+                      defaultMessage: "Effective fee (relative):",
                     })}
                   </span>
                   <span className="text-sm font-mono">
