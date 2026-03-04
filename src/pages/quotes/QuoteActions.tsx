@@ -2,7 +2,6 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { LoaderIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ConfirmDrawer } from "@/components/Drawers"
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
 import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen"
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer.tsx"
@@ -17,7 +16,6 @@ import { useIntl } from "react-intl"
 interface QuoteActionsProps {
   value: InfoReply
   isFetching: boolean
-  mintingEnabled: boolean
   ebillPaid: boolean
   isMintComplete: boolean
   requestedToPay: boolean
@@ -28,7 +26,6 @@ interface QuoteActionsProps {
 export function QuoteActions({
   value,
   isFetching,
-  mintingEnabled,
   ebillPaid,
   isMintComplete,
   requestedToPay,
@@ -66,7 +63,6 @@ export function QuoteActions({
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false)
-  const [enableMintingConfirmDrawerOpen, setEnableMintingConfirmDrawerOpen] = useState(false)
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false)
 
   const denyTitle = intl.formatMessage({
@@ -89,31 +85,12 @@ export function QuoteActions({
     id: "quotes.actions.offer.button",
     defaultMessage: "Offer",
   })
-  const enableMintingTitle = intl.formatMessage({
-    id: "quotes.actions.enableMinting.title",
-    defaultMessage: "Confirm enabling minting",
-  })
-  const enableMintingDescription = intl.formatMessage({
-    id: "quotes.actions.enableMinting.description",
-    defaultMessage: "Are you sure you want to enable minting for this quote?",
-  })
-  const enableMintingConfirmLabel = intl.formatMessage({
-    id: "quotes.actions.enableMinting.confirmButton",
-    defaultMessage: "Yes, enable minting",
-  })
-  const enableMintingButtonLabel = intl.formatMessage({
-    id: "quotes.actions.enableMinting.button",
-    defaultMessage: "Enable minting",
-  })
-
   const {
     denyQuote,
     offerQuote,
-    enableMintingMutation,
     requestToPayMutation,
     handleDenyQuote,
     handleOfferQuote,
-    handleEnableMinting,
     handleRequestToPay,
   } = useQuoteMutations(value.id, billId)
 
@@ -167,31 +144,6 @@ export function QuoteActions({
           quoteId={value.id}
         />
 
-        {value.status === "Accepted" && "keyset_id" in value && ebill && !mintingEnabled && (
-          <div className="flex-1 max-w-sm">
-            <ConfirmDrawer
-              title={enableMintingTitle}
-              description={enableMintingDescription}
-              open={enableMintingConfirmDrawerOpen}
-              onOpenChange={setEnableMintingConfirmDrawerOpen}
-              onSubmit={() => {
-                handleEnableMinting()
-                setEnableMintingConfirmDrawerOpen(false)
-              }}
-              submitButtonText={enableMintingConfirmLabel}
-              trigger={
-                <Button
-                  className="w-full max-w-sm"
-                  disabled={isFetching || enableMintingMutation.isPending}
-                  variant="default"
-                >
-                  {enableMintingButtonLabel}{" "}
-                  {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-                </Button>
-              }
-            />
-          </div>
-        )}
         {(quoteStatus === "Accepted" || quoteStatus === "Minting" || quoteStatus === "MintingEnabled") &&
           "keyset_id" in value &&
           ebill &&

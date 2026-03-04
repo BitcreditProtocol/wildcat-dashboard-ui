@@ -239,10 +239,6 @@ export type EbillPaymentComplete = {
     complete: boolean;
 };
 
-export type EnableMintingResponse = {
-    [key: string]: unknown;
-};
-
 export type Endorsement = {
     pay_to_the_order_of: LightBillParticipant;
     signed: LightSignedBy;
@@ -347,12 +343,11 @@ export type InfoReply = {
     bill: BillInfo;
     keyset_id: Id;
     discounted: number;
-    minting_status: MintingStatus;
     fee: string;
-    status: 'Minting';
+    status: 'MintingEnabled';
 };
 
-export type InfoReplyDiscriminants = 'Pending' | 'Canceled' | 'Offered' | 'OfferExpired' | 'Denied' | 'Accepted' | 'Rejected' | 'Minting';
+export type InfoReplyDiscriminants = 'Pending' | 'Canceled' | 'Offered' | 'OfferExpired' | 'Denied' | 'Accepted' | 'Rejected' | 'MintingEnabled';
 
 /**
  * KeySetInfo
@@ -439,16 +434,6 @@ export type MintOperationStatus = {
  * --------------------------- Perceived State
  */
 export type MintState = 'Online' | 'Offline' | 'Interim' | 'Rabid';
-
-/**
- * --------------------------- Look up quote
- */
-export type MintingStatus = {
-    status: 'Disabled';
-} | {
-    minted: Amount;
-    status: 'Enabled';
-};
 
 export type Notification = {
     id: string;
@@ -785,6 +770,22 @@ export type PostEnableRedemptionResponses = {
 
 export type PostEnableRedemptionResponse = PostEnableRedemptionResponses[keyof PostEnableRedemptionResponses];
 
+export type PostTokenStatusData = {
+    body: TokenStateRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/credit/token_status';
+};
+
+export type PostTokenStatusResponses = {
+    /**
+     * Successful response
+     */
+    200: TokenStateResponse;
+};
+
+export type PostTokenStatusResponse = PostTokenStatusResponses[keyof PostTokenStatusResponses];
+
 export type GetQuoteData = {
     body?: never;
     path: {
@@ -866,34 +867,6 @@ export type ListQuotesResponses = {
 };
 
 export type ListQuotesResponse = ListQuotesResponses[keyof ListQuotesResponses];
-
-export type PostEnableQuoteMintingData = {
-    body?: never;
-    path: {
-        /**
-         * The quote id
-         */
-        qid: string;
-    };
-    query?: never;
-    url: '/v1/admin/credit/quote/enable_mint/{qid}';
-};
-
-export type PostEnableQuoteMintingErrors = {
-    /**
-     * quote id not found
-     */
-    404: unknown;
-};
-
-export type PostEnableQuoteMintingResponses = {
-    /**
-     * Successful response
-     */
-    200: EnableMintingResponse;
-};
-
-export type PostEnableQuoteMintingResponse = PostEnableQuoteMintingResponses[keyof PostEnableQuoteMintingResponses];
 
 export type GetIdentityData = {
     body?: never;
@@ -1218,9 +1191,7 @@ export type GetSatBalanceResponse = GetSatBalanceResponses[keyof GetSatBalanceRe
 
 export type GetEbillMintCompleteData = {
     body?: never;
-    path: {
-        bid: string;
-    };
+    path?: never;
     query?: never;
     url: '/v1/admin/treasury/ebill/payment_complete/{bid}';
 };
@@ -1240,19 +1211,3 @@ export type GetEbillMintCompleteResponses = {
 };
 
 export type GetEbillMintCompleteResponse = GetEbillMintCompleteResponses[keyof GetEbillMintCompleteResponses];
-
-export type PostTokenStatusData = {
-    body: TokenStateRequest;
-    path?: never;
-    query?: never;
-    url: '/v1/admin/credit/token_status';
-};
-
-export type PostTokenStatusResponses = {
-    /**
-     * Successful response
-     */
-    200: TokenStateResponse;
-};
-
-export type PostTokenStatusResponse = PostTokenStatusResponses[keyof PostTokenStatusResponses];

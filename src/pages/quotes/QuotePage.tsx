@@ -510,7 +510,6 @@ function PageBody({ id }: { id: string }) {
       <QuoteActions
         value={quote}
         isFetching={isFetching}
-        mintingEnabled={quoteStatusValue === "Minting" || quoteStatusValue === "MintingEnabled"}
         ebillPaid={ebillPaid}
         isMintComplete={isMintComplete}
         requestedToPay={requestedToPay}

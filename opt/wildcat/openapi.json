@@ -195,6 +195,34 @@
         }
       }
     },
+    "/v1/admin/credit/token_status": {
+      "post": {
+        "tags": ["admin"],
+        "operationId": "post_token_status",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenStateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/credit/quote/{qid}": {
       "get": {
         "tags": ["admin"],
@@ -372,38 +400,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/v1/admin/credit/quote/enable_mint/{qid}": {
-      "post": {
-        "tags": ["admin"],
-        "operationId": "post_enable_quote_minting",
-        "parameters": [
-          {
-            "name": "qid",
-            "in": "path",
-            "description": "The quote id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EnableMintingResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "quote id not found"
           }
         }
       }
@@ -789,16 +785,6 @@
       "get": {
         "tags": ["admin"],
         "operationId": "get_ebill_mint_complete",
-        "parameters": [
-          {
-            "name": "bid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful response",
@@ -812,34 +798,6 @@
           },
           "404": {
             "description": "bill id not found"
-          }
-        }
-      }
-    },
-    "/v1/admin/credit/token_status": {
-      "post": {
-        "tags": ["admin"],
-        "operationId": "post_token_status",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TokenStateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenStateResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -1577,9 +1535,6 @@
           }
         }
       },
-      "EnableMintingResponse": {
-        "type": "object"
-      },
       "Endorsement": {
         "type": "object",
         "required": ["pay_to_the_order_of", "signed", "signing_timestamp"],
@@ -1913,7 +1868,7 @@
           },
           {
             "type": "object",
-            "required": ["id", "bill", "keyset_id", "discounted", "minting_status", "fee", "status"],
+            "required": ["id", "bill", "keyset_id", "discounted", "fee", "status"],
             "properties": {
               "id": {
                 "type": "string",
@@ -1930,15 +1885,12 @@
                 "format": "int64",
                 "minimum": 0
               },
-              "minting_status": {
-                "$ref": "#/components/schemas/MintingStatus"
-              },
               "fee": {
                 "type": "string"
               },
               "status": {
                 "type": "string",
-                "enum": ["Minting"]
+                "enum": ["MintingEnabled"]
               }
             }
           }
@@ -1947,7 +1899,7 @@
       },
       "InfoReplyDiscriminants": {
         "type": "string",
-        "enum": ["Pending", "Canceled", "Offered", "OfferExpired", "Denied", "Accepted", "Rejected", "Minting"]
+        "enum": ["Pending", "Canceled", "Offered", "OfferExpired", "Denied", "Accepted", "Rejected", "MintingEnabled"]
       },
       "KeySetInfo": {
         "type": "object",
@@ -2130,34 +2082,6 @@
         "type": "string",
         "description": "--------------------------- Perceived State",
         "enum": ["Online", "Offline", "Interim", "Rabid"]
-      },
-      "MintingStatus": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": ["status"],
-            "properties": {
-              "status": {
-                "type": "string",
-                "enum": ["Disabled"]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": ["minted", "status"],
-            "properties": {
-              "minted": {
-                "$ref": "#/components/schemas/Amount"
-              },
-              "status": {
-                "type": "string",
-                "enum": ["Enabled"]
-              }
-            }
-          }
-        ],
-        "description": "--------------------------- Look up quote"
       },
       "Notification": {
         "type": "object",

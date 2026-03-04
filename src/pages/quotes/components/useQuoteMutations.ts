@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
   updateQuoteMutation,
-  postEnableQuoteMintingMutation,
   postEbillReqtopayMutation,
   getQuoteOptions,
   getEbillOptions,
@@ -48,24 +47,6 @@ export function useQuoteMutations(quoteId: string, billId: string) {
     },
   })
 
-  const enableMintingMutation = useMutation({
-    ...postEnableQuoteMintingMutation(),
-    onMutate: () => {
-      toast.loading("Enabling minting…", { id: `quote-${quoteId}-enable-minting` })
-    },
-    onSettled: () => {
-      toast.dismiss(`quote-${quoteId}-enable-minting`)
-    },
-    onError: (error) => {
-      toast.error(`Error while enabling minting: ${getApiErrorMessage(error)}`)
-      console.warn(error)
-    },
-    onSuccess: () => {
-      toast.success("Minting has been enabled.")
-      void queryClient.invalidateQueries()
-    },
-  })
-
   const requestToPayMutation = useMutation({
     ...postEbillReqtopayMutation(),
     onMutate: () => {
@@ -108,12 +89,6 @@ export function useQuoteMutations(quoteId: string, billId: string) {
     })
   }
 
-  const handleEnableMinting = () => {
-    enableMintingMutation.mutate({
-      path: { qid: quoteId },
-    })
-  }
-
   const handleRequestToPay = (billSum: number, deadline: Date) => {
     requestToPayMutation.mutate({
       body: {
@@ -127,11 +102,9 @@ export function useQuoteMutations(quoteId: string, billId: string) {
   return {
     denyQuote,
     offerQuote,
-    enableMintingMutation,
     requestToPayMutation,
     handleDenyQuote,
     handleOfferQuote,
-    handleEnableMinting,
     handleRequestToPay,
   }
 }

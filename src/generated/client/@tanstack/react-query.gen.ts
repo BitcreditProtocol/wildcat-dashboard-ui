@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillMintComplete, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, getSatBalance, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, postEnableQuoteMinting, postEnableRedemption, postTokenStatus, updateQuote } from '../sdk.gen';
-import type { GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillMintCompleteData, GetEbillMintCompleteResponse, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, GetSatBalanceData, GetSatBalanceResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, PostEnableQuoteMintingData, PostEnableQuoteMintingResponse, PostEnableRedemptionData, PostEnableRedemptionResponse, PostTokenStatusData, PostTokenStatusResponse, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
+import { getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillMintComplete, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, getSatBalance, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, postEnableRedemption, postTokenStatus, updateQuote } from '../sdk.gen';
+import type { GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillMintCompleteData, GetEbillMintCompleteResponse, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, GetSatBalanceData, GetSatBalanceResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, PostEnableRedemptionData, PostEnableRedemptionResponse, PostTokenStatusData, PostTokenStatusResponse, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -143,6 +143,20 @@ export const postEnableRedemptionMutation = (options?: Partial<Options<PostEnabl
     return mutationOptions;
 };
 
+export const postTokenStatusMutation = (options?: Partial<Options<PostTokenStatusData>>): UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> => {
+    const mutationOptions: UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await postTokenStatus({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const getQuoteQueryKey = (options: Options<GetQuoteData>) => createQueryKey('getQuote', options);
 
 export const getQuoteOptions = (options: Options<GetQuoteData>) => queryOptions<GetQuoteResponse, DefaultError, GetQuoteResponse, ReturnType<typeof getQuoteQueryKey>>({
@@ -186,20 +200,6 @@ export const listQuotesOptions = (options?: Options<ListQuotesData>) => queryOpt
     },
     queryKey: listQuotesQueryKey(options)
 });
-
-export const postEnableQuoteMintingMutation = (options?: Partial<Options<PostEnableQuoteMintingData>>): UseMutationOptions<PostEnableQuoteMintingResponse, DefaultError, Options<PostEnableQuoteMintingData>> => {
-    const mutationOptions: UseMutationOptions<PostEnableQuoteMintingResponse, DefaultError, Options<PostEnableQuoteMintingData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await postEnableQuoteMinting({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
 
 export const getIdentityQueryKey = (options?: Options<GetIdentityData>) => createQueryKey('getIdentity', options);
 
@@ -431,9 +431,9 @@ export const getSatBalanceOptions = (options?: Options<GetSatBalanceData>) => qu
     queryKey: getSatBalanceQueryKey(options)
 });
 
-export const getEbillMintCompleteQueryKey = (options: Options<GetEbillMintCompleteData>) => createQueryKey('getEbillMintComplete', options);
+export const getEbillMintCompleteQueryKey = (options?: Options<GetEbillMintCompleteData>) => createQueryKey('getEbillMintComplete', options);
 
-export const getEbillMintCompleteOptions = (options: Options<GetEbillMintCompleteData>) => queryOptions<GetEbillMintCompleteResponse, DefaultError, GetEbillMintCompleteResponse, ReturnType<typeof getEbillMintCompleteQueryKey>>({
+export const getEbillMintCompleteOptions = (options?: Options<GetEbillMintCompleteData>) => queryOptions<GetEbillMintCompleteResponse, DefaultError, GetEbillMintCompleteResponse, ReturnType<typeof getEbillMintCompleteQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
         const { data } = await getEbillMintComplete({
             ...options,
@@ -445,17 +445,3 @@ export const getEbillMintCompleteOptions = (options: Options<GetEbillMintComplet
     },
     queryKey: getEbillMintCompleteQueryKey(options)
 });
-
-export const postTokenStatusMutation = (options?: Partial<Options<PostTokenStatusData>>): UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> => {
-    const mutationOptions: UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await postTokenStatus({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
