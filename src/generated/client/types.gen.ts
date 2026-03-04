@@ -1191,7 +1191,9 @@ export type GetSatBalanceResponse = GetSatBalanceResponses[keyof GetSatBalanceRe
 
 export type GetEbillMintCompleteData = {
     body?: never;
-    path?: never;
+    path: {
+        bid: string;
+    };
     query?: never;
     url: '/v1/admin/treasury/ebill/payment_complete/{bid}';
 };

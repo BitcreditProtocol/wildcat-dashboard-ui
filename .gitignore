@@ -32,3 +32,4 @@ tsconfig.node.tsbuildinfo
 
 # Backup directories
 /opt/wildcat/backup
+/opt/wildcat/backup/

@@ -104,4 +104,4 @@ export const postEbillReqtopay = <ThrowOnError extends boolean = false>(options:
 
 export const getSatBalance = <ThrowOnError extends boolean = false>(options?: Options<GetSatBalanceData, ThrowOnError>) => (options?.client ?? client).get<GetSatBalanceResponses, unknown, ThrowOnError>({ url: '/v1/admin/treasury/balance/sat', ...options });
 
-export const getEbillMintComplete = <ThrowOnError extends boolean = false>(options?: Options<GetEbillMintCompleteData, ThrowOnError>) => (options?.client ?? client).get<GetEbillMintCompleteResponses, GetEbillMintCompleteErrors, ThrowOnError>({ url: '/v1/admin/treasury/ebill/payment_complete/{bid}', ...options });
+export const getEbillMintComplete = <ThrowOnError extends boolean = false>(options: Options<GetEbillMintCompleteData, ThrowOnError>) => (options.client ?? client).get<GetEbillMintCompleteResponses, GetEbillMintCompleteErrors, ThrowOnError>({ url: '/v1/admin/treasury/ebill/payment_complete/{bid}', ...options });

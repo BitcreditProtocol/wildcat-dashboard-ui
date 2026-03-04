@@ -785,6 +785,16 @@
       "get": {
         "tags": ["admin"],
         "operationId": "get_ebill_mint_complete",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",

@@ -138,7 +138,7 @@ export function QuoteActions({
           quoteId={value.id}
         />
 
-        {(quoteStatus === "Accepted" || quoteStatus === "Minting" || quoteStatus === "MintingEnabled") &&
+        {(quoteStatus === "Accepted" || quoteStatus === "MintingEnabled") &&
           "keyset_id" in value &&
           ebill &&
           !ebillPaidEff &&
