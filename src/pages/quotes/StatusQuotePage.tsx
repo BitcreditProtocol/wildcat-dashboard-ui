@@ -16,11 +16,12 @@ import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview"
 import { toast } from "sonner"
 import * as React from "react"
 import SearchComponent, { HighlightText } from "@/components/ui/search"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { BreadcrumbLink } from "@/components/ui/breadcrumb"
 import { SortButtons } from "@/components/SortButtons"
 import { useIntl } from "react-intl"
 import { getApiErrorMessage } from "@/lib/api-error"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type QuoteStatus =
   | "Accepted"
@@ -34,6 +35,8 @@ type QuoteStatus =
 type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc"
 
 const RETRY_COUNT = 2
+const PAGE_SIZE = 10
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000)
 
 interface StatusQuotePageProps {
@@ -174,16 +177,37 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const intl = useIntl()
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc")
+  const [itemsPerPage, setItemsPerPage] = useState<number>(PAGE_SIZE)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageCursors, setPageCursors] = useState<(string | null)[]>([null])
+  const currentCursor = pageCursors[pageIndex] ?? null
+
+  useEffect(() => {
+    setPageIndex(0)
+    setPageCursors([null])
+  }, [status])
+
+  useEffect(() => {
+    setPageIndex(0)
+    setPageCursors([null])
+  }, [itemsPerPage])
 
   const { data, isFetching, error, isLoading } = useQuery({
-    ...listQuotesOptions(),
+    ...listQuotesOptions({
+      query: {
+        sort: "bill_maturity_date_desc",
+        status: status ?? null,
+        bill_maturity_date_to: currentCursor,
+      },
+    }),
     retry: RETRY_COUNT,
     retryDelay,
   })
 
-  /* TODO: optimize this with pagination or batch fetching if API supports it */
+  const pageQuotes = (data?.quotes ?? []).slice(0, itemsPerPage)
+
   const quoteDetailsQueries = useQueries({
-    queries: (data?.quotes ?? []).map((quote) => ({
+    queries: pageQuotes.map((quote) => ({
       ...getQuoteOptions({
         path: { qid: quote.id },
       }),
@@ -230,7 +254,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   }
 
   const filteredQuotes =
-    data?.quotes.filter((quote) => {
+    pageQuotes.filter((quote) => {
       if (status && quote.status !== status) {
         return false
       }
@@ -248,8 +272,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     }) ?? []
 
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
-    const aIndex = data?.quotes.findIndex((q) => q.id === a.id) ?? -1
-    const bIndex = data?.quotes.findIndex((q) => q.id === b.id) ?? -1
+    const aIndex = pageQuotes.findIndex((q) => q.id === a.id)
+    const bIndex = pageQuotes.findIndex((q) => q.id === b.id)
 
     const aBill = aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data?.bill : null
     const bBill = bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data?.bill : null
@@ -312,6 +336,47 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     },
   ]
 
+  const lastQuoteOnPage = pageQuotes.length > 0 ? pageQuotes[pageQuotes.length - 1] : null
+  const lastQuoteIndex = lastQuoteOnPage ? pageQuotes.findIndex((quote) => quote.id === lastQuoteOnPage.id) : -1
+  const lastQuoteMaturityDate =
+    lastQuoteIndex >= 0 ? (quoteDetailsQueries[lastQuoteIndex]?.data?.bill?.maturity_date ?? null) : null
+  const hasNextPage = (data?.quotes?.length ?? 0) > itemsPerPage && Boolean(lastQuoteMaturityDate)
+
+  const handlePrevPage = () => {
+    if (pageIndex === 0) return
+    setPageIndex((prev) => prev - 1)
+  }
+
+  const handleNextPage = () => {
+    if (!hasNextPage || !lastQuoteMaturityDate) return
+
+    setPageCursors((prev) => {
+      const nextIndex = pageIndex + 1
+      if (prev[nextIndex] !== undefined) {
+        return prev
+      }
+      return [...prev, lastQuoteMaturityDate]
+    })
+    setPageIndex((prev) => prev + 1)
+  }
+
+  const handlePageClick = (targetPageIndex: number) => {
+    if (targetPageIndex < pageCursors.length) {
+      setPageIndex(targetPageIndex)
+      return
+    }
+
+    const isNextUnknownPage =
+      targetPageIndex === pageCursors.length && pageIndex === pageCursors.length - 1 && hasNextPage
+
+    if (isNextUnknownPage) {
+      handleNextPage()
+    }
+  }
+
+  const knownPageIndices = pageCursors.map((_, index) => index)
+  const showNextUnknownPageButton = pageIndex === pageCursors.length - 1 && hasNextPage
+
   return (
     <>
       <div className="flex gap-4 items-center justify-between">
@@ -336,6 +401,64 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             invisible: !isFetching || isLoading,
           })}
         />
+      </div>
+
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span>
+            {intl.formatMessage({
+              id: "quotes.pagination.itemsPerPage",
+              defaultMessage: "Items per page",
+            })}
+          </span>
+          <Select value={String(itemsPerPage)} onValueChange={(value) => setItemsPerPage(Number(value))}>
+            <SelectTrigger className="h-8 w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={pageIndex === 0 || isFetching}>
+            {intl.formatMessage({
+              id: "quotes.pagination.previous",
+              defaultMessage: "Previous",
+            })}
+          </Button>
+          {knownPageIndices.map((knownIndex) => (
+            <Button
+              key={`page-${knownIndex}`}
+              variant={knownIndex === pageIndex ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageClick(knownIndex)}
+              disabled={isFetching}
+            >
+              {knownIndex + 1}
+            </Button>
+          ))}
+          {showNextUnknownPageButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageClick(pageCursors.length)}
+              disabled={isFetching}
+            >
+              {pageCursors.length + 1}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!hasNextPage || isFetching}>
+            {intl.formatMessage({
+              id: "quotes.pagination.next",
+              defaultMessage: "Next",
+            })}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5 my-2">
