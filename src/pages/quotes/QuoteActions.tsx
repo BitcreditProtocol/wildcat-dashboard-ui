@@ -85,14 +85,8 @@ export function QuoteActions({
     id: "quotes.actions.offer.button",
     defaultMessage: "Offer",
   })
-  const {
-    denyQuote,
-    offerQuote,
-    requestToPayMutation,
-    handleDenyQuote,
-    handleOfferQuote,
-    handleRequestToPay,
-  } = useQuoteMutations(value.id, billId)
+  const { denyQuote, offerQuote, requestToPayMutation, handleDenyQuote, handleOfferQuote, handleRequestToPay } =
+    useQuoteMutations(value.id, billId)
 
   return (
     <>
