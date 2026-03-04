@@ -39,6 +39,15 @@ const PAGE_SIZE = 10
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000)
 
+const shiftDateByDays = (dateStr: string, days: number): string => {
+  const date = new Date(`${dateStr}T00:00:00Z`)
+  if (Number.isNaN(date.getTime())) {
+    return dateStr
+  }
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
 interface StatusQuotePageProps {
   status?: QuoteStatus
 }
@@ -195,9 +204,9 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const { data, isFetching, error, isLoading } = useQuery({
     ...listQuotesOptions({
       query: {
-        sort: "bill_maturity_date_desc",
+        sort: "bill_maturity_date_asc",
         status: status ?? null,
-        bill_maturity_date_to: currentCursor,
+        bill_maturity_date_from: currentCursor,
       },
     }),
     retry: RETRY_COUNT,
@@ -336,11 +345,16 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     },
   ]
 
-  const lastQuoteOnPage = pageQuotes.length > 0 ? pageQuotes[pageQuotes.length - 1] : null
-  const lastQuoteIndex = lastQuoteOnPage ? pageQuotes.findIndex((quote) => quote.id === lastQuoteOnPage.id) : -1
-  const lastQuoteMaturityDate =
-    lastQuoteIndex >= 0 ? (quoteDetailsQueries[lastQuoteIndex]?.data?.bill?.maturity_date ?? null) : null
-  const hasNextPage = (data?.quotes?.length ?? 0) > itemsPerPage && Boolean(lastQuoteMaturityDate)
+  const nextCursorMaturityDate = (() => {
+    for (let idx = pageQuotes.length - 1; idx >= 0; idx -= 1) {
+      const maturityDate = quoteDetailsQueries[idx]?.data?.bill?.maturity_date
+      if (maturityDate) {
+        return maturityDate
+      }
+    }
+    return null
+  })()
+  const hasNextPage = (data?.quotes?.length ?? 0) > itemsPerPage && Boolean(nextCursorMaturityDate)
 
   const handlePrevPage = () => {
     if (pageIndex === 0) return
@@ -348,14 +362,21 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   }
 
   const handleNextPage = () => {
-    if (!hasNextPage || !lastQuoteMaturityDate) return
+    if (!hasNextPage || !nextCursorMaturityDate) return
+
+    // API date filters appear inclusive; when the same cursor is reused the page can repeat.
+    // Move one day forward to guarantee forward progress through date windows.
+    const cursorForNextPage =
+      currentCursor && currentCursor === nextCursorMaturityDate
+        ? shiftDateByDays(nextCursorMaturityDate, 1)
+        : nextCursorMaturityDate
 
     setPageCursors((prev) => {
       const nextIndex = pageIndex + 1
       if (prev[nextIndex] !== undefined) {
         return prev
       }
-      return [...prev, lastQuoteMaturityDate]
+      return [...prev, cursorForNextPage]
     })
     setPageIndex((prev) => prev + 1)
   }
