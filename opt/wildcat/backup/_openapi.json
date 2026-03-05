@@ -24,6 +24,24 @@
         }
       }
     },
+    "/v1/admin/mint/info": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "get_mint_info",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WildcatInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/keysets/{kid}": {
       "get": {
         "tags": ["admin"],
@@ -767,7 +785,7 @@
         }
       }
     },
-    "/v1/admin/treasury/ebill/mint_complete/{bid}": {
+    "/v1/admin/treasury/ebill/payment_complete/{bid}": {
       "get": {
         "tags": ["admin"],
         "operationId": "get_ebill_mint_complete",
@@ -775,7 +793,6 @@
           {
             "name": "bid",
             "in": "path",
-            "description": "the ebill id",
             "required": true,
             "schema": {
               "type": "string"
@@ -788,13 +805,41 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EbillMintingComplete"
+                  "$ref": "#/components/schemas/EbillPaymentComplete"
                 }
               }
             }
           },
           "404": {
             "description": "bill id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/token_status": {
+      "post": {
+        "tags": ["admin"],
+        "operationId": "post_token_status",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenStateResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1522,7 +1567,7 @@
           }
         }
       },
-      "EbillMintingComplete": {
+      "EbillPaymentComplete": {
         "type": "object",
         "description": "--------------------------- ebill minting completed",
         "required": ["complete"],
@@ -2254,6 +2299,19 @@
           {
             "type": "object",
             "description": "Last seen timestamp",
+            "required": ["Interim"],
+            "properties": {
+              "Interim": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Last seen timestamp",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Last seen timestamp",
             "required": ["Offline"],
             "properties": {
               "Offline": {
@@ -2286,8 +2344,8 @@
                   "type": "object"
                 },
                 "description": "Post Rabid",
-                "maxItems": 2,
-                "minItems": 2
+                "maxItems": 3,
+                "minItems": 3
               }
             }
           }
@@ -2310,6 +2368,28 @@
                 "$ref": "#/components/schemas/BillWaitingForPaymentState"
               }
             ]
+          }
+        }
+      },
+      "TokenState": {
+        "type": "string",
+        "enum": ["Unspent", "Spent"]
+      },
+      "TokenStateRequest": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenStateResponse": {
+        "type": "object",
+        "required": ["state"],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/TokenState"
           }
         }
       },
@@ -2379,6 +2459,69 @@
             }
           }
         ]
+      },
+      "VersionInfo": {
+        "type": "object",
+        "description": "Version information for the mint",
+        "required": ["wildcat", "bcr_ebill_core", "cdk_mintd", "clowder"],
+        "properties": {
+          "wildcat": {
+            "type": "string",
+            "description": "Wildcat version"
+          },
+          "bcr_ebill_core": {
+            "type": "string",
+            "description": "bcr-ebill-core version"
+          },
+          "cdk_mintd": {
+            "type": "string",
+            "description": "cdk-mintd version"
+          },
+          "clowder": {
+            "type": "string",
+            "description": "Clowder version"
+          }
+        }
+      },
+      "WildcatInfo": {
+        "type": "object",
+        "description": "Mint information including network, build time, versions, and uptime",
+        "required": [
+          "network",
+          "build_time",
+          "uptime_timestamp",
+          "versions",
+          "clowder_node_id",
+          "clowder_change_address"
+        ],
+        "properties": {
+          "network": {
+            "type": "string",
+            "description": "Bitcoin network (mainnet, testnet, signet, regtest)"
+          },
+          "build_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Build timestamp"
+          },
+          "uptime_timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Service uptime, last started"
+          },
+          "versions": {
+            "$ref": "#/components/schemas/VersionInfo",
+            "description": "Version information"
+          },
+          "clowder_node_id": {
+            "type": "string",
+            "description": "Clowder node id"
+          },
+          "clowder_change_address": {
+            "type": "string",
+            "description": "Clowder change address"
+          }
+        }
       }
     }
   }

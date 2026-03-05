@@ -77,8 +77,7 @@ function PageBody({ id }: { id: string }) {
 
   const ebill = ebillsQuery.data?.find((item) => item.id === billId)
   const isPaid = ebill?.status?.payment?.paid === true
-  const shouldCheckMintComplete =
-    quoteStatus === "Accepted" || quoteStatus === "Minting" || quoteStatus === "MintingEnabled" || isPaid
+  const shouldCheckMintComplete = quoteStatus === "Accepted" || quoteStatus === "MintingEnabled" || isPaid
 
   const feeTokenRequestRef = useRef<string | null>(null)
 
@@ -124,7 +123,7 @@ function PageBody({ id }: { id: string }) {
   const quoteStatusForEffect = quoteData?.status
 
   useEffect(() => {
-    if (!feeTokenFromQuote || quoteStatusForEffect !== "Minting") {
+    if (!feeTokenFromQuote || quoteStatusForEffect !== "MintingEnabled") {
       return
     }
 
@@ -176,6 +175,7 @@ function PageBody({ id }: { id: string }) {
   const quote = quoteData!
   const bill = quote?.bill
   const quoteStatusValue = quote.status as string
+  const feeToken = "fee" in quote && typeof quote.fee === "string" ? quote.fee : null
 
   const billStatus = ebill?.status
   const paymentStatus = billStatus?.payment
@@ -192,7 +192,7 @@ function PageBody({ id }: { id: string }) {
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
 
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
-  const showPayment = quoteStatus === "Accepted" || quoteStatus === "Minting" || quoteStatus === "MintingEnabled"
+  const showPayment = quoteStatus === "Accepted" || quoteStatus === "MintingEnabled"
 
   if (!quote || !bill) {
     return (
@@ -382,7 +382,7 @@ function PageBody({ id }: { id: string }) {
                 </div>
               </>
             )}
-            {quote.status === "Minting" && "fee" in quote && (
+            {quote.status === "MintingEnabled" && feeToken && (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold w-32">
                   {intl.formatMessage({
@@ -391,12 +391,12 @@ function PageBody({ id }: { id: string }) {
                   })}
                 </span>
                 <TruncatedTextPopover
-                  text={quote.fee}
+                  text={feeToken}
                   maxLength={64}
                   className="font-mono text-sm"
                   showCopyButton={true}
                 />
-                <FeeTokenQRCodeModal feeToken={quote.fee} />
+                <FeeTokenQRCodeModal feeToken={feeToken} />
                 {isFeeTokenStatusPending ? (
                   <Badge variant="default" className="bg-gray-500">
                     {intl.formatMessage({
@@ -510,7 +510,6 @@ function PageBody({ id }: { id: string }) {
       <QuoteActions
         value={quote}
         isFetching={isFetching}
-        mintingEnabled={quoteStatusValue === "Minting" || quoteStatusValue === "MintingEnabled"}
         ebillPaid={ebillPaid}
         isMintComplete={isMintComplete}
         requestedToPay={requestedToPay}
@@ -537,12 +536,9 @@ function PageBody({ id }: { id: string }) {
         rejectionTimestamp={
           ebill?.status?.acceptance?.rejected_to_accept ? (ebill?.status?.last_block_time ?? undefined) : undefined
         }
-        mintingEnabled={quoteStatusValue === "Minting" || quoteStatusValue === "MintingEnabled"}
+        mintingEnabled={quoteStatusValue === "MintingEnabled"}
         quoteOffered={
-          quoteStatusValue === "Offered" ||
-          quoteStatusValue === "Accepted" ||
-          quoteStatusValue === "Minting" ||
-          quoteStatusValue === "MintingEnabled"
+          quoteStatusValue === "Offered" || quoteStatusValue === "Accepted" || quoteStatusValue === "MintingEnabled"
         }
         offeredTimestamp={
           "submitted" in quote
@@ -575,9 +571,7 @@ export default function QuotePage() {
 
   const quoteDataStatus = quoteData?.status as string | undefined
   const hasKeysetId =
-    quoteData &&
-    (quoteDataStatus === "Accepted" || quoteDataStatus === "Minting" || quoteDataStatus === "MintingEnabled") &&
-    "keyset_id" in quoteData
+    quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData
 
   return (
     <>

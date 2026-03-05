@@ -30,7 +30,6 @@ type QuoteStatus =
   | "Pending"
   | "Rejected"
   | "Canceled"
-  | "Minting"
   | "MintingEnabled"
 type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc"
 

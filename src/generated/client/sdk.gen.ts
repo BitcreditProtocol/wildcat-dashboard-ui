@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetClowderAlphasData, GetClowderAlphasResponses, GetClowderBetasData, GetClowderBetasResponses, GetClowderForeignCoverageData, GetClowderForeignCoverageErrors, GetClowderForeignCoverageResponses, GetClowderInfoData, GetClowderInfoResponses, GetClowderLocalCoverageData, GetClowderLocalCoverageResponses, GetClowderMystatusData, GetClowderMystatusResponses, GetClowderStatusData, GetClowderStatusErrors, GetClowderStatusResponses, GetEbillAttachmentData, GetEbillAttachmentErrors, GetEbillAttachmentResponses, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsErrors, GetEbillEndorsementsResponses, GetEbillErrors, GetEbillMintCompleteData, GetEbillMintCompleteErrors, GetEbillMintCompleteResponses, GetEbillPaymentstatusData, GetEbillPaymentstatusErrors, GetEbillPaymentstatusResponses, GetEbillResponses, GetHealthData, GetHealthResponses, GetIdentityData, GetIdentityResponses, GetKeysetInfoData, GetKeysetInfoErrors, GetKeysetInfoResponses, GetMintInfoData, GetMintInfoResponses, GetMintopStatusData, GetMintopStatusErrors, GetMintopStatusResponses, GetQuoteData, GetQuoteErrors, GetQuoteResponses, GetSatBalanceData, GetSatBalanceResponses, ListEbillsData, ListEbillsResponses, ListKeysetInfosData, ListKeysetInfosResponses, ListMintopsData, ListMintopsErrors, ListMintopsResponses, ListQuotesData, ListQuotesResponses, PostEbillReqtopayData, PostEbillReqtopayErrors, PostEbillReqtopayResponses, PostEnableQuoteMintingData, PostEnableQuoteMintingErrors, PostEnableQuoteMintingResponses, PostEnableRedemptionData, PostEnableRedemptionErrors, PostEnableRedemptionResponses, PostTokenStatusData, PostTokenStatusResponses, UpdateQuoteData, UpdateQuoteErrors, UpdateQuoteResponses } from './types.gen';
+import type { GetClowderAlphasData, GetClowderAlphasResponses, GetClowderBetasData, GetClowderBetasResponses, GetClowderForeignCoverageData, GetClowderForeignCoverageErrors, GetClowderForeignCoverageResponses, GetClowderInfoData, GetClowderInfoResponses, GetClowderLocalCoverageData, GetClowderLocalCoverageResponses, GetClowderMystatusData, GetClowderMystatusResponses, GetClowderStatusData, GetClowderStatusErrors, GetClowderStatusResponses, GetEbillAttachmentData, GetEbillAttachmentErrors, GetEbillAttachmentResponses, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsErrors, GetEbillEndorsementsResponses, GetEbillErrors, GetEbillMintCompleteData, GetEbillMintCompleteErrors, GetEbillMintCompleteResponses, GetEbillPaymentstatusData, GetEbillPaymentstatusErrors, GetEbillPaymentstatusResponses, GetEbillResponses, GetHealthData, GetHealthResponses, GetIdentityData, GetIdentityResponses, GetKeysetInfoData, GetKeysetInfoErrors, GetKeysetInfoResponses, GetMintInfoData, GetMintInfoResponses, GetMintopStatusData, GetMintopStatusErrors, GetMintopStatusResponses, GetQuoteData, GetQuoteErrors, GetQuoteResponses, GetSatBalanceData, GetSatBalanceResponses, ListEbillsData, ListEbillsResponses, ListKeysetInfosData, ListKeysetInfosResponses, ListMintopsData, ListMintopsErrors, ListMintopsResponses, ListQuotesData, ListQuotesResponses, PostEbillReqtopayData, PostEbillReqtopayErrors, PostEbillReqtopayResponses, PostEnableRedemptionData, PostEnableRedemptionErrors, PostEnableRedemptionResponses, PostTokenStatusData, PostTokenStatusResponses, UpdateQuoteData, UpdateQuoteErrors, UpdateQuoteResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -39,6 +39,15 @@ export const postEnableRedemption = <ThrowOnError extends boolean = false>(optio
     }
 });
 
+export const postTokenStatus = <ThrowOnError extends boolean = false>(options: Options<PostTokenStatusData, ThrowOnError>) => (options.client ?? client).post<PostTokenStatusResponses, unknown, ThrowOnError>({
+    url: '/v1/admin/credit/token_status',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const getQuote = <ThrowOnError extends boolean = false>(options: Options<GetQuoteData, ThrowOnError>) => (options.client ?? client).get<GetQuoteResponses, GetQuoteErrors, ThrowOnError>({ url: '/v1/admin/credit/quote/{qid}', ...options });
 
 export const updateQuote = <ThrowOnError extends boolean = false>(options: Options<UpdateQuoteData, ThrowOnError>) => (options.client ?? client).put<UpdateQuoteResponses, UpdateQuoteErrors, ThrowOnError>({
@@ -51,8 +60,6 @@ export const updateQuote = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 export const listQuotes = <ThrowOnError extends boolean = false>(options?: Options<ListQuotesData, ThrowOnError>) => (options?.client ?? client).get<ListQuotesResponses, unknown, ThrowOnError>({ url: '/v1/admin/credit/quote', ...options });
-
-export const postEnableQuoteMinting = <ThrowOnError extends boolean = false>(options: Options<PostEnableQuoteMintingData, ThrowOnError>) => (options.client ?? client).post<PostEnableQuoteMintingResponses, PostEnableQuoteMintingErrors, ThrowOnError>({ url: '/v1/admin/credit/quote/enable_mint/{qid}', ...options });
 
 export const getIdentity = <ThrowOnError extends boolean = false>(options?: Options<GetIdentityData, ThrowOnError>) => (options?.client ?? client).get<GetIdentityResponses, unknown, ThrowOnError>({ url: '/v1/admin/ebill/identity', ...options });
 
@@ -98,12 +105,3 @@ export const postEbillReqtopay = <ThrowOnError extends boolean = false>(options:
 export const getSatBalance = <ThrowOnError extends boolean = false>(options?: Options<GetSatBalanceData, ThrowOnError>) => (options?.client ?? client).get<GetSatBalanceResponses, unknown, ThrowOnError>({ url: '/v1/admin/treasury/balance/sat', ...options });
 
 export const getEbillMintComplete = <ThrowOnError extends boolean = false>(options: Options<GetEbillMintCompleteData, ThrowOnError>) => (options.client ?? client).get<GetEbillMintCompleteResponses, GetEbillMintCompleteErrors, ThrowOnError>({ url: '/v1/admin/treasury/ebill/payment_complete/{bid}', ...options });
-
-export const postTokenStatus = <ThrowOnError extends boolean = false>(options: Options<PostTokenStatusData, ThrowOnError>) => (options.client ?? client).post<PostTokenStatusResponses, unknown, ThrowOnError>({
-    url: '/v1/admin/credit/token_status',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
