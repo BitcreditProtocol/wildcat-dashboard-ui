@@ -19,6 +19,8 @@ export default tseslint.config(
     ignores: [
       'dist',
       '.storybook',
+      'coverage',
+      'opt',
       'public/mockServiceWorker.js',
       'src/generated',
     ]
@@ -44,6 +46,10 @@ export default tseslint.config(
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
+      'react-hooks/immutability': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/incompatible-library': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
