@@ -1,5 +1,5 @@
 export function getDeterministicColor(seed?: string): string {
-  if (!seed) return "#64748b" // Default gray
+  if (!seed) return "#64748b"; // Default gray
 
   const colorPalette = [
     "#ef4444",
@@ -19,13 +19,13 @@ export function getDeterministicColor(seed?: string): string {
     "#d946ef",
     "#ec4899",
     "#f43f5e",
-  ]
+  ];
 
-  let hash = 0
+  let hash = 0;
   for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(i)) & 0xffffffff
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) & 0xffffffff;
   }
 
-  const colorIndex = Math.abs(hash) % colorPalette.length
-  return colorPalette[colorIndex]
+  const colorIndex = Math.abs(hash) % colorPalette.length;
+  return colorPalette[colorIndex];
 }

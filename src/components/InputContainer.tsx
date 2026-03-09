@@ -1,10 +1,10 @@
-import React, { LabelHTMLAttributes, PropsWithChildren } from "react"
-import { cn } from "@/lib/utils"
+import React, { LabelHTMLAttributes, PropsWithChildren } from "react";
+import { cn } from "@/lib/utils";
 
 type InputContainerProps = PropsWithChildren<{
-  htmlFor: LabelHTMLAttributes<HTMLLabelElement>["htmlFor"]
-  label: React.ReactNode
-}>
+  htmlFor: LabelHTMLAttributes<HTMLLabelElement>["htmlFor"];
+  label: React.ReactNode;
+}>;
 
 const InputContainer = ({ children, htmlFor, label }: InputContainerProps) => {
   return (
@@ -18,7 +18,7 @@ const InputContainer = ({ children, htmlFor, label }: InputContainerProps) => {
       <label htmlFor={htmlFor}>{label}</label>
       {children}
     </div>
-  )
-}
+  );
+};
 
-export { InputContainer }
+export { InputContainer };

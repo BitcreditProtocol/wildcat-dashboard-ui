@@ -1,36 +1,46 @@
-import { useEffect, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button.tsx"
-import { ConfirmDrawer } from "@/components/Drawers.tsx"
-import { LoaderIcon } from "lucide-react"
-import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
-import { useQuery } from "@tanstack/react-query"
-import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen"
-import { useIntl } from "react-intl"
-import { getItem, setItem } from "@/utils/local-storage"
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button.tsx";
+import { ConfirmDrawer } from "@/components/Drawers.tsx";
+import { LoaderIcon } from "lucide-react";
+import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx";
+import { useQuery } from "@tanstack/react-query";
+import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { useIntl } from "react-intl";
+import { getItem, setItem } from "@/utils/local-storage";
 
 interface RequestToPayConfirmationProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (deadline: Date) => void
-  isFetching: boolean
-  isPending: boolean
-  maturityDate?: string | null
-  billId: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (deadline: Date) => void;
+  isFetching: boolean;
+  isPending: boolean;
+  maturityDate?: string | null;
+  billId: string;
 }
 
-const REQUEST_TO_PAY_DEADLINE_STORAGE_KEY = "requestToPayDeadlineUtc"
-const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
+const REQUEST_TO_PAY_DEADLINE_STORAGE_KEY = "requestToPayDeadlineUtc";
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
 const getMinSelectableDate = (maturityDate?: string | null): Date => {
-  const now = new Date()
-  const maturity = maturityDate ? new Date(maturityDate) : null
-  const baseDate = maturity && maturity > now ? maturity : now
-  return new Date(baseDate.getTime() + TWO_DAYS_MS)
-}
+  const now = new Date();
+  const maturity = maturityDate ? new Date(maturityDate) : null;
+  const baseDate = maturity && maturity > now ? maturity : now;
+  return new Date(baseDate.getTime() + TWO_DAYS_MS);
+};
 
 const toUtcEndOfDay = (date: Date): Date => {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999))
-}
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      23,
+      59,
+      59,
+      999,
+    ),
+  );
+};
 
 export function RequestToPayConfirmation({
   open,
@@ -41,44 +51,55 @@ export function RequestToPayConfirmation({
   maturityDate,
   billId,
 }: RequestToPayConfirmationProps) {
-  const intl = useIntl()
-  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
-  const [showPaymentCalendar, setShowPaymentCalendar] = useState(false)
-  const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
-  const minSelectableDate = useMemo(() => getMinSelectableDate(maturityDate), [maturityDate])
+  const intl = useIntl();
+  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(
+    undefined,
+  );
+  const [showPaymentCalendar, setShowPaymentCalendar] = useState(false);
+  const [draftValidUntilDate, setDraftValidUntilDate] = useState<
+    Date | undefined
+  >(undefined);
+  const minSelectableDate = useMemo(
+    () => getMinSelectableDate(maturityDate),
+    [maturityDate],
+  );
 
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
     enabled: true,
     retry: 0,
     refetchInterval: (query) => {
-      return query.state.data ? false : 2000
+      return query.state.data ? false : 2000;
     },
     refetchIntervalInBackground: true,
-  })
+  });
 
-  const ebillAvailable = !ebillQuery.isLoading && !ebillQuery.error && !!ebillQuery.data
+  const ebillAvailable =
+    !ebillQuery.isLoading && !ebillQuery.error && !!ebillQuery.data;
 
   useEffect(() => {
     if (!open || validUntilDate) {
-      return
+      return;
     }
 
-    const stored = getItem<string>(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY)
-    const fallbackDeadline = toUtcEndOfDay(minSelectableDate)
+    const stored = getItem<string>(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY);
+    const fallbackDeadline = toUtcEndOfDay(minSelectableDate);
     if (stored) {
-      const parsed = new Date(stored)
+      const parsed = new Date(stored);
       if (!Number.isNaN(parsed.getTime()) && parsed >= minSelectableDate) {
-        setValidUntilDate(parsed)
-        setDraftValidUntilDate(parsed)
-        return
+        setValidUntilDate(parsed);
+        setDraftValidUntilDate(parsed);
+        return;
       }
     }
 
-    setValidUntilDate(fallbackDeadline)
-    setDraftValidUntilDate(fallbackDeadline)
-    setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, fallbackDeadline.toISOString())
-  }, [open, validUntilDate, minSelectableDate])
+    setValidUntilDate(fallbackDeadline);
+    setDraftValidUntilDate(fallbackDeadline);
+    setItem(
+      REQUEST_TO_PAY_DEADLINE_STORAGE_KEY,
+      fallbackDeadline.toISOString(),
+    );
+  }, [open, validUntilDate, minSelectableDate]);
 
   return (
     <>
@@ -89,15 +110,16 @@ export function RequestToPayConfirmation({
         })}
         description={intl.formatMessage({
           id: "quotes.requestToPay.confirmDescription",
-          defaultMessage: "Are you sure you want to request to pay this e-bill?",
+          defaultMessage:
+            "Are you sure you want to request to pay this e-bill?",
         })}
         open={open}
         onOpenChange={(isOpen) => {
-          onOpenChange(isOpen)
+          onOpenChange(isOpen);
         }}
         onSubmit={() => {
           if (validUntilDate) {
-            onSubmit(validUntilDate)
+            onSubmit(validUntilDate);
           }
         }}
         submitButtonText={intl.formatMessage({
@@ -111,9 +133,9 @@ export function RequestToPayConfirmation({
             disabled={isFetching || isPending || !ebillAvailable}
             variant="default"
             onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onOpenChange(true)
+              e.preventDefault();
+              e.stopPropagation();
+              onOpenChange(true);
             }}
           >
             {!ebillAvailable ? (
@@ -147,9 +169,9 @@ export function RequestToPayConfirmation({
             <DatePickerButton
               date={validUntilDate}
               onClick={() => {
-                setDraftValidUntilDate(validUntilDate)
-                onOpenChange(false)
-                setShowPaymentCalendar(true)
+                setDraftValidUntilDate(validUntilDate);
+                onOpenChange(false);
+                setShowPaymentCalendar(true);
               }}
             />
           </div>
@@ -166,25 +188,28 @@ export function RequestToPayConfirmation({
         })}
         minDate={minSelectableDate}
         onClose={() => {
-          setShowPaymentCalendar(false)
-          onOpenChange(true)
+          setShowPaymentCalendar(false);
+          onOpenChange(true);
         }}
         onDateChange={setDraftValidUntilDate}
         onConfirm={() => {
           if (draftValidUntilDate) {
-            const utcDeadline = toUtcEndOfDay(draftValidUntilDate)
-            setValidUntilDate(utcDeadline)
-            setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, utcDeadline.toISOString())
+            const utcDeadline = toUtcEndOfDay(draftValidUntilDate);
+            setValidUntilDate(utcDeadline);
+            setItem(
+              REQUEST_TO_PAY_DEADLINE_STORAGE_KEY,
+              utcDeadline.toISOString(),
+            );
           }
-          setShowPaymentCalendar(false)
-          onOpenChange(true)
+          setShowPaymentCalendar(false);
+          onOpenChange(true);
         }}
         onCancel={() => {
-          setShowPaymentCalendar(false)
-          setDraftValidUntilDate(undefined)
-          onOpenChange(true)
+          setShowPaymentCalendar(false);
+          setDraftValidUntilDate(undefined);
+          onOpenChange(true);
         }}
       />
     </>
-  )
+  );
 }

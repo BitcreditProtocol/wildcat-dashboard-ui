@@ -1,89 +1,98 @@
-import * as React from "react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { truncateString } from "@/utils/strings"
-import { Copy, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
-import { useIntl } from "react-intl"
+import * as React from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { truncateString } from "@/utils/strings";
+import { Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useIntl } from "react-intl";
 
 interface TruncatedTextPopoverProps {
-  text: React.ReactNode
-  maxLength?: number
-  showFullOnDesktop?: boolean
-  className?: string
-  contentClassName?: string
-  title?: string
-  as?: "button" | "span"
-  showCopyButton?: boolean
+  text: React.ReactNode;
+  maxLength?: number;
+  showFullOnDesktop?: boolean;
+  className?: string;
+  contentClassName?: string;
+  title?: string;
+  as?: "button" | "span";
+  showCopyButton?: boolean;
 }
 
-function useResponsiveMaxLength(maxLength: number, showFullOnDesktop: boolean): number {
-  const [effectiveMaxLength, setEffectiveMaxLength] = React.useState(maxLength)
+function useResponsiveMaxLength(
+  maxLength: number,
+  showFullOnDesktop: boolean,
+): number {
+  const [effectiveMaxLength, setEffectiveMaxLength] = React.useState(maxLength);
 
   React.useEffect(() => {
     const calculateMaxLength = () => {
       // Use document.documentElement.clientWidth for more accurate width
       // This excludes scrollbar and respects the actual viewport
-      const width = document.documentElement.clientWidth || window.innerWidth
+      const width = document.documentElement.clientWidth || window.innerWidth;
 
       // Modern touch device detection using multiple signals
       const isTouchDevice =
-        window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0 || "ontouchstart" in window
+        window.matchMedia("(pointer: coarse)").matches ||
+        navigator.maxTouchPoints > 0 ||
+        "ontouchstart" in window;
 
       // If showFullOnDesktop is true and we're on a large screen without touch, skip truncation
       if (showFullOnDesktop && width >= 1024 && !isTouchDevice) {
-        setEffectiveMaxLength(Infinity)
-        return
+        setEffectiveMaxLength(Infinity);
+        return;
       }
 
       // Define breakpoints and scaling factors based on viewport width
       // Touch devices get more aggressive truncation at larger widths
       if (width < 480) {
         // Extra small mobile: reduce to 30% of maxLength
-        setEffectiveMaxLength(Math.max(12, Math.floor(maxLength * 0.3)))
+        setEffectiveMaxLength(Math.max(12, Math.floor(maxLength * 0.3)));
       } else if (width < 768) {
         // Small mobile/tablet: reduce to 50% of maxLength
-        setEffectiveMaxLength(Math.max(16, Math.floor(maxLength * 0.5)))
+        setEffectiveMaxLength(Math.max(16, Math.floor(maxLength * 0.5)));
       } else if (width < 1024) {
         // Tablet/small desktop: reduce to 70% of maxLength
-        setEffectiveMaxLength(Math.max(16, Math.floor(maxLength * 0.7)))
+        setEffectiveMaxLength(Math.max(16, Math.floor(maxLength * 0.7)));
       } else if (width < 1440) {
         // Medium desktop: reduce to 90% of maxLength
-        setEffectiveMaxLength(Math.max(24, Math.floor(maxLength * 0.9)))
+        setEffectiveMaxLength(Math.max(24, Math.floor(maxLength * 0.9)));
       } else {
         // Large desktop: use full maxLength
-        setEffectiveMaxLength(maxLength)
+        setEffectiveMaxLength(maxLength);
       }
-    }
+    };
 
-    calculateMaxLength()
-    window.addEventListener("resize", calculateMaxLength)
-    return () => window.removeEventListener("resize", calculateMaxLength)
-  }, [maxLength, showFullOnDesktop])
+    calculateMaxLength();
+    window.addEventListener("resize", calculateMaxLength);
+    return () => window.removeEventListener("resize", calculateMaxLength);
+  }, [maxLength, showFullOnDesktop]);
 
-  return effectiveMaxLength
+  return effectiveMaxLength;
 }
 
 function extractTextFromNode(node: unknown): string {
   if (node == null) {
-    return ""
+    return "";
   }
 
   if (typeof node === "string" || typeof node === "number") {
-    return String(node)
+    return String(node);
   }
 
   if (Array.isArray(node)) {
-    return node.map((n) => extractTextFromNode(n)).join("")
+    return node.map((n) => extractTextFromNode(n)).join("");
   }
 
   if (React.isValidElement(node)) {
-    const el = node as React.ReactElement<{ children?: React.ReactNode }>
-    return extractTextFromNode(el.props.children)
+    const el = node as React.ReactElement<{ children?: React.ReactNode }>;
+    return extractTextFromNode(el.props.children);
   }
 
-  return ""
+  return "";
 }
 
 export function TruncatedTextPopover({
@@ -96,48 +105,58 @@ export function TruncatedTextPopover({
   as = "button",
   showCopyButton = false,
 }: TruncatedTextPopoverProps) {
-  const intl = useIntl()
-  const effectiveMaxLength = useResponsiveMaxLength(maxLength, showFullOnDesktop)
-  const [copied, setCopied] = React.useState(false)
+  const intl = useIntl();
+  const effectiveMaxLength = useResponsiveMaxLength(
+    maxLength,
+    showFullOnDesktop,
+  );
+  const [copied, setCopied] = React.useState(false);
 
-  const textStr = extractTextFromNode(text)
-  const rawLines = textStr.split(/\r?\n/)
-  const lines = rawLines.map((l) => l.replace(/\s+$/g, ""))
-  const needsTruncation = lines.some((line) => line.length > effectiveMaxLength)
+  const textStr = extractTextFromNode(text);
+  const rawLines = textStr.split(/\r?\n/);
+  const lines = rawLines.map((l) => l.replace(/\s+$/g, ""));
+  const needsTruncation = lines.some(
+    (line) => line.length > effectiveMaxLength,
+  );
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(textStr)
-      setCopied(true)
+      await navigator.clipboard.writeText(textStr);
+      setCopied(true);
       toast.success(
         intl.formatMessage({
           id: "truncatedTextPopover.copied",
           defaultMessage: "Copied to clipboard",
         }),
-      )
-      setTimeout(() => setCopied(false), 2000)
+      );
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy text:", err)
+      console.error("Failed to copy text:", err);
       toast.error(
         intl.formatMessage({
           id: "truncatedTextPopover.copyFailed",
           defaultMessage: "Failed to copy to clipboard",
         }),
-      )
+      );
     }
-  }
-  const flatLabel = lines.join(", ")
-  const truncatedLines = needsTruncation ? lines.map((line) => truncateString(line, effectiveMaxLength)) : lines
+  };
+  const flatLabel = lines.join(", ");
+  const truncatedLines = needsTruncation
+    ? lines.map((line) => truncateString(line, effectiveMaxLength))
+    : lines;
 
   if (!needsTruncation && !showCopyButton) {
     return (
-      <span className={cn("whitespace-pre-line", className)} title={title ?? flatLabel}>
+      <span
+        className={cn("whitespace-pre-line", className)}
+        title={title ?? flatLabel}
+      >
         {text}
       </span>
-    )
+    );
   }
 
-  const TriggerTag = as
+  const TriggerTag = as;
 
   const popoverContent = (
     <Popover>
@@ -154,7 +173,10 @@ export function TruncatedTextPopover({
         >
           {needsTruncation ? (
             truncatedLines.map((line, i) => (
-              <span key={i} className="truncate block w-full">
+              <span
+                key={i}
+                className="truncate block w-full"
+              >
                 {line}
               </span>
             ))
@@ -176,7 +198,7 @@ export function TruncatedTextPopover({
         <span className="text-sm whitespace-pre-line">{textStr}</span>
       </PopoverContent>
     </Popover>
-  )
+  );
 
   if (showCopyButton) {
     return (
@@ -211,11 +233,15 @@ export function TruncatedTextPopover({
                 })
           }
         >
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
         </Button>
       </div>
-    )
+    );
   }
 
-  return popoverContent
+  return popoverContent;
 }

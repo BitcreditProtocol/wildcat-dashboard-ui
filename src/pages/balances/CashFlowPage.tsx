@@ -1,11 +1,23 @@
-import { Suspense } from "react"
-import { Link } from "react-router"
-import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts"
-import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { PageTitle } from "@/components/PageTitle"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { FormattedMessage, useIntl } from "react-intl"
+import { Suspense } from "react";
+import { Link } from "react-router";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart";
+import { FormattedMessage, useIntl } from "react-intl";
 
 function Loader() {
   return (
@@ -15,17 +27,20 @@ function Loader() {
         <Skeleton className="h-96 rounded-lg" />
       </div>
     </div>
-  )
+  );
 }
 
 function CashFlowChart() {
-  const intl = useIntl()
+  const intl = useIntl();
   const config = {
     bitcoin: {
-      label: intl.formatMessage({ id: "balances.chart.bitcoin", defaultMessage: "Bitcoin" }),
+      label: intl.formatMessage({
+        id: "balances.chart.bitcoin",
+        defaultMessage: "Bitcoin",
+      }),
       color: "#2563eb",
     },
-  } satisfies ChartConfig
+  } satisfies ChartConfig;
 
   const months = [
     intl.formatMessage({ id: "month.jan.short", defaultMessage: "Jan" }),
@@ -40,7 +55,7 @@ function CashFlowChart() {
     intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
     intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
     intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
-  ]
+  ];
 
   const data = [
     { month: months[0], bitcoin: 186 },
@@ -55,10 +70,13 @@ function CashFlowChart() {
     { month: months[9], bitcoin: 0 },
     { month: months[10], bitcoin: 0 },
     { month: months[11], bitcoin: 0 },
-  ]
+  ];
 
   return (
-    <ChartContainer config={config} className="max-h-[300px] min-h-[200px] w-full">
+    <ChartContainer
+      config={config}
+      className="max-h-[300px] min-h-[200px] w-full"
+    >
       <LineChart
         accessibilityLayer
         data={data}
@@ -77,13 +95,26 @@ function CashFlowChart() {
           axisLine={false}
           tickFormatter={(value: string) => value}
         />
-        <YAxis dataKey="bitcoin" tickLine={false} tickMargin={10} axisLine={false} />
-        <Tooltip cursor={true} isAnimationActive={true} />
-        <Line type="step" dataKey="bitcoin" fill="var(--color-bitcoin)" radius={4} />
+        <YAxis
+          dataKey="bitcoin"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+        />
+        <Tooltip
+          cursor={true}
+          isAnimationActive={true}
+        />
+        <Line
+          type="step"
+          dataKey="bitcoin"
+          fill="var(--color-bitcoin)"
+          radius={4}
+        />
         <ChartLegend content={<ChartLegendContent />} />
       </LineChart>
     </ChartContainer>
-  )
+  );
 }
 
 function CashFlow() {
@@ -91,7 +122,7 @@ function CashFlow() {
     <div>
       <CashFlowChart />
     </div>
-  )
+  );
 }
 
 function PageBody() {
@@ -99,7 +130,7 @@ function PageBody() {
     <div className="my-4">
       <CashFlow />
     </div>
-  )
+  );
 }
 
 export default function CashFlowPage() {
@@ -109,20 +140,29 @@ export default function CashFlowPage() {
         parents={[
           <>
             <Link to="/earnings">
-              <FormattedMessage id="earnings.page.title" defaultMessage="Earnings" />
+              <FormattedMessage
+                id="earnings.page.title"
+                defaultMessage="Earnings"
+              />
             </Link>
           </>,
         ]}
       >
-        <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
+        <FormattedMessage
+          id="cashflow.page.title"
+          defaultMessage="CashFlow"
+        />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
+        <FormattedMessage
+          id="cashflow.page.title"
+          defaultMessage="CashFlow"
+        />
       </PageTitle>
 
       <Suspense fallback={<Loader />}>
         <PageBody />
       </Suspense>
     </>
-  )
+  );
 }

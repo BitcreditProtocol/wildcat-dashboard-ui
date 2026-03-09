@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query"
-import { listEbillsOptions } from "@/generated/client/@tanstack/react-query.gen"
-import type { BitcreditBill } from "@/generated/client/types.gen"
+import { useQuery } from "@tanstack/react-query";
+import { listEbillsOptions } from "@/generated/client/@tanstack/react-query.gen";
+import type { BitcreditBill } from "@/generated/client/types.gen";
 
 /**
  * Hook to fetch all bills and provide lookup utilities
@@ -17,31 +17,41 @@ export function useAllBills() {
     meta: {
       errorMessage: "Failed to fetch bills from /v1/admin/ebill/bills",
     },
-  })
+  });
 }
 
 /**
  * Helper to find a bill by ID from a list of bills
  */
-export function findBillById(bills: BitcreditBill[] | undefined, billId: string): BitcreditBill | undefined {
-  return bills?.find((bill) => bill.id === billId)
+export function findBillById(
+  bills: BitcreditBill[] | undefined,
+  billId: string,
+): BitcreditBill | undefined {
+  return bills?.find((bill) => bill.id === billId);
 }
 
 /**
  * Helper to filter bills by participant node ID
  */
-export function filterBillsByParticipant(bills: BitcreditBill[] | undefined, nodeId: string): BitcreditBill[] {
+export function filterBillsByParticipant(
+  bills: BitcreditBill[] | undefined,
+  nodeId: string,
+): BitcreditBill[] {
   if (!bills) {
-    return []
+    return [];
   }
 
-  return bills.filter((bill) => bill.participants.all_participant_node_ids.includes(nodeId))
+  return bills.filter((bill) =>
+    bill.participants.all_participant_node_ids.includes(nodeId),
+  );
 }
 
 /**
  * Helper to get participant display name
  */
-export function getParticipantName(participant: { name?: string; node_id: string } | undefined): string {
-  if (!participant) return "Unknown"
-  return participant.name ?? `Node ${participant.node_id.slice(0, 8)}...`
+export function getParticipantName(
+  participant: { name?: string; node_id: string } | undefined,
+): string {
+  if (!participant) return "Unknown";
+  return participant.name ?? `Node ${participant.node_id.slice(0, 8)}...`;
 }

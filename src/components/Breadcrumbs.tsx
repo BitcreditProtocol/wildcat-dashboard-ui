@@ -1,4 +1,4 @@
-import { PropsWithChildren } from "react"
+import { PropsWithChildren } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -6,12 +6,15 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Link } from "react-router"
-import { useIntl } from "react-intl"
+} from "@/components/ui/breadcrumb";
+import { Link } from "react-router";
+import { useIntl } from "react-intl";
 
-export function Breadcrumbs({ parents, children }: PropsWithChildren<{ parents?: React.ReactNode[] }>) {
-  const intl = useIntl()
+export function Breadcrumbs({
+  parents,
+  children,
+}: PropsWithChildren<{ parents?: React.ReactNode[] }>) {
+  const intl = useIntl();
 
   return (
     <Breadcrumb>
@@ -30,7 +33,10 @@ export function Breadcrumbs({ parents, children }: PropsWithChildren<{ parents?:
         {parents && (
           <>
             {parents.map((it, index) => (
-              <div className="flex items-center gap-2" key={index}>
+              <div
+                className="flex items-center gap-2"
+                key={index}
+              >
                 <BreadcrumbItem>
                   <>{it}</>
                 </BreadcrumbItem>
@@ -44,5 +50,5 @@ export function Breadcrumbs({ parents, children }: PropsWithChildren<{ parents?:
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Drawer,
   DrawerClose,
@@ -8,18 +8,24 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer"
-import { VariantProps } from "class-variance-authority"
-import { useIntl } from "react-intl"
+} from "@/components/ui/drawer";
+import { VariantProps } from "class-variance-authority";
+import { useIntl } from "react-intl";
 
-type DrawerProps = Parameters<typeof Drawer>[0]
+type DrawerProps = Parameters<typeof Drawer>[0];
 type BaseDrawerProps = DrawerProps & {
-  title: string
-  description?: string
-  trigger?: React.ReactNode
-  children?: React.ReactNode
-}
-export function BaseDrawer({ title, description = "", trigger, children, ...drawerProps }: BaseDrawerProps) {
+  title: string;
+  description?: string;
+  trigger?: React.ReactNode;
+  children?: React.ReactNode;
+};
+export function BaseDrawer({
+  title,
+  description = "",
+  trigger,
+  children,
+  ...drawerProps
+}: BaseDrawerProps) {
   return (
     <Drawer {...drawerProps}>
       {trigger && <DrawerTrigger asChild>{trigger}</DrawerTrigger>}
@@ -27,22 +33,24 @@ export function BaseDrawer({ title, description = "", trigger, children, ...draw
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
-            {description && <DrawerDescription>{description}</DrawerDescription>}
+            {description && (
+              <DrawerDescription>{description}</DrawerDescription>
+            )}
           </DrawerHeader>
           {children}
         </div>
       </DrawerContent>
     </Drawer>
-  )
+  );
 }
 
 type ConfirmDrawerProps = BaseDrawerProps & {
-  cancelButtonText?: string
-  submitButtonText?: string
-  submitButtonVariant?: VariantProps<typeof buttonVariants>["variant"]
-  submitButtonDisabled?: boolean
-  onSubmit: () => void
-}
+  cancelButtonText?: string;
+  submitButtonText?: string;
+  submitButtonVariant?: VariantProps<typeof buttonVariants>["variant"];
+  submitButtonDisabled?: boolean;
+  onSubmit: () => void;
+};
 
 export function ConfirmDrawer({
   cancelButtonText,
@@ -53,19 +61,19 @@ export function ConfirmDrawer({
   children,
   ...drawerProps
 }: ConfirmDrawerProps) {
-  const intl = useIntl()
+  const intl = useIntl();
   const resolvedCancelText =
     cancelButtonText ??
     intl.formatMessage({
       id: "Cancel",
       defaultMessage: "Cancel",
-    })
+    });
   const resolvedSubmitText =
     submitButtonText ??
     intl.formatMessage({
       id: "Confirm",
       defaultMessage: "Confirm",
-    })
+    });
   return (
     <BaseDrawer {...drawerProps}>
       {children}
@@ -81,12 +89,16 @@ export function ConfirmDrawer({
             {resolvedSubmitText}
           </Button>
           <DrawerClose asChild>
-            <Button className="w-full max-w-sm" variant="outline" size="lg">
+            <Button
+              className="w-full max-w-sm"
+              variant="outline"
+              size="lg"
+            >
               {resolvedCancelText}
             </Button>
           </DrawerClose>
         </div>
       </DrawerFooter>
     </BaseDrawer>
-  )
+  );
 }

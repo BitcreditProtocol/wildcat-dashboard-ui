@@ -1,16 +1,22 @@
-import { PageTitle } from "@/components/PageTitle"
-import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { useQuery } from "@tanstack/react-query"
-import { listKeysetInfosOptions } from "@/generated/client/@tanstack/react-query.gen"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Link } from "react-router"
-import { useState } from "react"
-import SearchComponent, { HighlightText } from "@/components/ui/search"
-import { SortButtons } from "@/components/SortButtons.tsx"
-import { FormattedMessage, useIntl } from "react-intl"
+import { PageTitle } from "@/components/PageTitle";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { useQuery } from "@tanstack/react-query";
+import { listKeysetInfosOptions } from "@/generated/client/@tanstack/react-query.gen";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router";
+import { useState } from "react";
+import SearchComponent, { HighlightText } from "@/components/ui/search";
+import { SortButtons } from "@/components/SortButtons.tsx";
+import { FormattedMessage, useIntl } from "react-intl";
 
 function Loader() {
   return (
@@ -18,41 +24,54 @@ function Loader() {
       <Skeleton className="h-32 w-full" />
       <Skeleton className="h-32 w-full" />
     </div>
-  )
+  );
 }
 
-type SortBy = "maturity-asc" | "maturity-desc" | "status-asc" | "status-desc" | "currency-asc" | "currency-desc"
+type SortBy =
+  | "maturity-asc"
+  | "maturity-desc"
+  | "status-asc"
+  | "status-desc"
+  | "currency-asc"
+  | "currency-desc";
 
 function PageBody() {
-  const { data: keysets, isLoading: keysetsLoading } = useQuery(listKeysetInfosOptions())
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<SortBy>("maturity-asc")
-  const intl = useIntl()
+  const { data: keysets, isLoading: keysetsLoading } = useQuery(
+    listKeysetInfosOptions(),
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
+  const intl = useIntl();
   const noExpiryText = intl.formatMessage({
     id: "keysets.noExpiry",
     defaultMessage: "No expiry",
-  })
+  });
 
   if (keysetsLoading) {
-    return <Loader />
+    return <Loader />;
   }
 
   if (!keysets || keysets.length === 0) {
     return (
       <div className="p-4 text-muted-foreground">
-        <FormattedMessage id="keysets.empty" defaultMessage="No keysets found" />
+        <FormattedMessage
+          id="keysets.empty"
+          defaultMessage="No keysets found"
+        />
       </div>
-    )
+    );
   }
 
   const filteredKeysets = keysets.filter((keyset) => {
     if (!searchQuery) {
-      return true
+      return true;
     }
 
-    const query = searchQuery.toLowerCase()
-    const keysetId = keyset.id.toLowerCase()
-    const currencyUnit = (typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom).toLowerCase()
+    const query = searchQuery.toLowerCase();
+    const keysetId = keyset.id.toLowerCase();
+    const currencyUnit = (
+      typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
+    ).toLowerCase();
     const finalExpiryDate = keyset.final_expiry
       ? new Date(keyset.final_expiry * 1000)
           .toLocaleDateString("en-US", {
@@ -63,84 +82,98 @@ function PageBody() {
           })
           .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
           .toLowerCase()
-      : noExpiryText.toLowerCase()
+      : noExpiryText.toLowerCase();
     const status = keyset.active
-      ? intl.formatMessage({ id: "keysets.status.active", defaultMessage: "Active" }).toLowerCase()
-      : intl.formatMessage({ id: "keysets.status.inactive", defaultMessage: "Inactive" }).toLowerCase()
+      ? intl
+          .formatMessage({
+            id: "keysets.status.active",
+            defaultMessage: "Active",
+          })
+          .toLowerCase()
+      : intl
+          .formatMessage({
+            id: "keysets.status.inactive",
+            defaultMessage: "Inactive",
+          })
+          .toLowerCase();
 
     return (
       keysetId.includes(query) ||
       currencyUnit.includes(query) ||
       finalExpiryDate.includes(query) ||
       status.includes(query)
-    )
-  })
+    );
+  });
 
   const sortedKeysets = [...filteredKeysets].sort((a, b) => {
-    let comparison = 0
+    let comparison = 0;
 
     switch (sortBy) {
       case "maturity-asc":
       case "maturity-desc": {
-        const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null
-        const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null
+        const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null;
+        const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null;
 
         if (!aExpiry && !bExpiry) {
-          comparison = 0
+          comparison = 0;
         } else if (!aExpiry) {
-          comparison = 1
+          comparison = 1;
         } else if (!bExpiry) {
-          comparison = -1
+          comparison = -1;
         } else {
-          const now = new Date()
-          const aIsExpired = aExpiry < now
-          const bIsExpired = bExpiry < now
+          const now = new Date();
+          const aIsExpired = aExpiry < now;
+          const bIsExpired = bExpiry < now;
 
           if (aIsExpired && !bIsExpired) {
-            comparison = -1
+            comparison = -1;
           } else if (!aIsExpired && bIsExpired) {
-            comparison = 1
+            comparison = 1;
           } else {
-            comparison = aExpiry.getTime() - bExpiry.getTime()
+            comparison = aExpiry.getTime() - bExpiry.getTime();
           }
         }
         if (sortBy === "maturity-desc") {
-          comparison = -comparison
+          comparison = -comparison;
         }
-        break
+        break;
       }
       case "status-asc":
       case "status-desc": {
-        const aStatus = a.active ? 1 : 0
-        const bStatus = b.active ? 1 : 0
-        comparison = bStatus - aStatus
+        const aStatus = a.active ? 1 : 0;
+        const bStatus = b.active ? 1 : 0;
+        comparison = bStatus - aStatus;
         if (sortBy === "status-desc") {
-          comparison = -comparison
+          comparison = -comparison;
         }
-        break
+        break;
       }
       case "currency-asc":
       case "currency-desc": {
-        const aCurrency = typeof a.unit === "string" ? a.unit : a.unit.Custom
-        const bCurrency = typeof b.unit === "string" ? b.unit : b.unit.Custom
-        comparison = aCurrency.localeCompare(bCurrency)
+        const aCurrency = typeof a.unit === "string" ? a.unit : a.unit.Custom;
+        const bCurrency = typeof b.unit === "string" ? b.unit : b.unit.Custom;
+        comparison = aCurrency.localeCompare(bCurrency);
         if (sortBy === "currency-desc") {
-          comparison = -comparison
+          comparison = -comparison;
         }
-        break
+        break;
       }
     }
 
-    return comparison
-  })
+    return comparison;
+  });
 
   const toggleSort = (field: "maturity" | "status" | "currency") => {
     if (sortBy.startsWith(field)) {
-      setSortBy(sortBy.endsWith("asc") ? (`${field}-desc` as SortBy) : (`${field}-asc` as SortBy))
+      setSortBy(
+        sortBy.endsWith("asc")
+          ? (`${field}-desc` as SortBy)
+          : (`${field}-asc` as SortBy),
+      );
     } else {
-      setSortBy(`${field}-asc` as SortBy)
+      setSortBy(`${field}-asc` as SortBy);
     }
-  }
+  };
 
   const sortOptions = [
     {
@@ -164,7 +197,7 @@ function PageBody() {
         defaultMessage: "Status",
       }),
     },
-  ]
+  ];
 
   return (
     <div className="space-y-4">
@@ -174,18 +207,26 @@ function PageBody() {
           className="flex-1 max-w-md"
           placeholder={intl.formatMessage({
             id: "keysets.search.placeholder",
-            defaultMessage: "Search by keyset ID, currency, maturity date, or status...",
+            defaultMessage:
+              "Search by keyset ID, currency, maturity date, or status...",
           })}
           onSearch={setSearchQuery}
           onChange={setSearchQuery}
           size="sm"
         />
-        <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
+        <SortButtons
+          sortBy={sortBy}
+          onSortChange={toggleSort}
+          options={sortOptions}
+        />
       </div>
 
       {sortedKeysets.length === 0 ? (
         <div className="p-4 text-muted-foreground text-center">
-          <FormattedMessage id="keysets.search.noMatch" defaultMessage="No keysets match your search criteria" />
+          <FormattedMessage
+            id="keysets.search.noMatch"
+            defaultMessage="No keysets match your search criteria"
+          />
         </div>
       ) : (
         <>
@@ -199,8 +240,11 @@ function PageBody() {
                     timeZone: "UTC",
                   })
                   .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
-              : noExpiryText
-            const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
+              : noExpiryText;
+            const currencyUnit =
+              typeof keyset.unit === "string"
+                ? keyset.unit
+                : keyset.unit.Custom;
             const statusText = keyset.active
               ? intl.formatMessage({
                   id: "keysets.status.active",
@@ -209,16 +253,25 @@ function PageBody() {
               : intl.formatMessage({
                   id: "keysets.status.inactive",
                   defaultMessage: "Inactive",
-                })
+                });
 
             return (
-              <Card key={keyset.id} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={keyset.id}
+                className="hover:shadow-lg transition-shadow"
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <Link to={`/keysets/${keyset.id}`} className="block">
+                      <Link
+                        to={`/keysets/${keyset.id}`}
+                        className="block"
+                      >
                         <CardTitle className="font-mono text-sm">
-                          <HighlightText text={keyset.id} highlight={searchQuery} />
+                          <HighlightText
+                            text={keyset.id}
+                            highlight={searchQuery}
+                          />
                         </CardTitle>
                       </Link>
                       <CardDescription className="mt-1">
@@ -226,46 +279,73 @@ function PageBody() {
                           id="keysets.card.meta"
                           defaultMessage="Currency: {currency} | Maturity date: {maturityDate}"
                           values={{
-                            currency: <HighlightText text={currencyUnit} highlight={searchQuery} />,
-                            maturityDate: <HighlightText text={finalExpiryDate} highlight={searchQuery} />,
+                            currency: (
+                              <HighlightText
+                                text={currencyUnit}
+                                highlight={searchQuery}
+                              />
+                            ),
+                            maturityDate: (
+                              <HighlightText
+                                text={finalExpiryDate}
+                                highlight={searchQuery}
+                              />
+                            ),
                           }}
                         />
                       </CardDescription>
                     </div>
                     <div className="flex gap-2 items-center">
                       <Badge variant={keyset.active ? "default" : "secondary"}>
-                        <HighlightText text={statusText} highlight={searchQuery} />
+                        <HighlightText
+                          text={statusText}
+                          highlight={searchQuery}
+                        />
                       </Badge>
                     </div>
                   </div>
                 </CardHeader>
 
                 <CardContent>
-                  <Button size="sm" variant="default" className="max-w-sm px-12" asChild>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="max-w-sm px-12"
+                    asChild
+                  >
                     <Link to={`/keysets/${keyset.id}`}>
-                      <FormattedMessage id="keysets.view" defaultMessage="View" />
+                      <FormattedMessage
+                        id="keysets.view"
+                        defaultMessage="View"
+                      />
                     </Link>
                   </Button>
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </>
       )}
     </div>
-  )
+  );
 }
 
 export default function KeysetsPage() {
   return (
     <>
       <Breadcrumbs>
-        <FormattedMessage id="keysets.page.title" defaultMessage="Keysets" />
+        <FormattedMessage
+          id="keysets.page.title"
+          defaultMessage="Keysets"
+        />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage id="keysets.page.title" defaultMessage="Keysets" />
+        <FormattedMessage
+          id="keysets.page.title"
+          defaultMessage="Keysets"
+        />
       </PageTitle>
       <PageBody />
     </>
-  )
+  );
 }
