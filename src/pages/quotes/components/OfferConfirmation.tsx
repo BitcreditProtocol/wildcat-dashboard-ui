@@ -1,58 +1,78 @@
-import { useEffect, useMemo, useState } from "react"
-import { ConfirmDrawer } from "@/components/Drawers.tsx"
-import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx"
-import Big from "big.js"
-import type { OfferFormResult } from "./OfferFormDrawer.tsx"
-import { addDays, addYears } from "date-fns"
-import { getItem, removeItem, setItem } from "@/utils/local-storage"
-import { useIntl } from "react-intl"
+import { useEffect, useMemo, useState } from "react";
+import { ConfirmDrawer } from "@/components/Drawers.tsx";
+import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx";
+import Big from "big.js";
+import type { OfferFormResult } from "./OfferFormDrawer.tsx";
+import { addDays, addYears } from "date-fns";
+import { getItem, removeItem, setItem } from "@/utils/local-storage";
+import { useIntl } from "react-intl";
 
 interface OfferConfirmationProps {
-  offerFormData?: OfferFormResult
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: OfferFormResult) => void
-  quoteId?: string
+  offerFormData?: OfferFormResult;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: OfferFormResult) => void;
+  quoteId?: string;
 }
 
-const OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX = "offer-valid-until-"
+const OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX = "offer-valid-until-";
 
-export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit, quoteId }: OfferConfirmationProps) {
-  const intl = useIntl()
-  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined)
-  const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false)
-  const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined)
+export function OfferConfirmation({
+  offerFormData,
+  open,
+  onOpenChange,
+  onSubmit,
+  quoteId,
+}: OfferConfirmationProps) {
+  const intl = useIntl();
+  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(
+    undefined,
+  );
+  const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false);
+  const [draftValidUntilDate, setDraftValidUntilDate] = useState<
+    Date | undefined
+  >(undefined);
   const minDate = useMemo(() => {
-    const date = addDays(new Date(), 1)
-    date.setHours(0, 0, 0, 0)
-    return date
-  }, [])
+    const date = addDays(new Date(), 1);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, []);
   const maxDate = useMemo(() => {
-    const date = addYears(new Date(), 1)
-    date.setHours(23, 59, 59, 999)
-    return date
-  }, [])
-  const storageKey = quoteId ? `${OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX}${quoteId}` : null
+    const date = addYears(new Date(), 1);
+    date.setHours(23, 59, 59, 999);
+    return date;
+  }, []);
+  const storageKey = quoteId
+    ? `${OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX}${quoteId}`
+    : null;
 
   useEffect(() => {
     if (!open || validUntilDate || !storageKey) {
-      return
+      return;
     }
-    const stored = getItem<string>(storageKey)
+    const stored = getItem<string>(storageKey);
     if (!stored) {
-      return
+      return;
     }
-    const parsed = new Date(stored)
-    if (!Number.isNaN(parsed.getTime()) && parsed >= minDate && parsed <= maxDate) {
-      setValidUntilDate(parsed)
+    const parsed = new Date(stored);
+    if (
+      !Number.isNaN(parsed.getTime()) &&
+      parsed >= minDate &&
+      parsed <= maxDate
+    ) {
+      setValidUntilDate(parsed);
     } else {
-      removeItem(storageKey)
+      removeItem(storageKey);
     }
-  }, [open, validUntilDate, storageKey, minDate, maxDate])
+  }, [open, validUntilDate, storageKey, minDate, maxDate]);
 
   const effectiveDiscount = offerFormData
-    ? new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
-    : undefined
+    ? new Big(1).minus(
+        offerFormData.discount.net.value.div(
+          offerFormData.discount.gross.value,
+        ),
+      )
+    : undefined;
 
   return (
     <>
@@ -67,17 +87,20 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
         })}
         open={open}
         onOpenChange={(isOpen) => {
-          onOpenChange(isOpen)
+          onOpenChange(isOpen);
         }}
         submitButtonDisabled={!validUntilDate}
         onSubmit={() => {
           if (!offerFormData || !validUntilDate) {
-            return
+            return;
           }
 
-          const finalOfferData = { ...offerFormData, ttl: { ttl: validUntilDate } }
+          const finalOfferData = {
+            ...offerFormData,
+            ttl: { ttl: validUntilDate },
+          };
 
-          onSubmit(finalOfferData)
+          onSubmit(finalOfferData);
         }}
       >
         <div className="flex flex-col gap-4 px-4 py-4">
@@ -88,7 +111,9 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
                 defaultMessage: "Effective fee (relative):",
               })}
             </span>
-            <span className="text-sm text-right">{effectiveDiscount?.mul(new Big("100")).toFixed(2)}%</span>
+            <span className="text-sm text-right">
+              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm font-semibold w-48">
@@ -98,7 +123,9 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
               })}
             </span>
             <span className="text-sm text-right">
-              {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
+              {offerFormData?.discount.gross.value
+                .minus(offerFormData?.discount.net.value)
+                .toFixed(0)}{" "}
               {offerFormData?.discount.net.currency}
             </span>
           </div>
@@ -110,7 +137,8 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
               })}
             </span>
             <span className="text-sm text-right">
-              {offerFormData?.discount.net.value.round(0).toFixed(0)} {offerFormData?.discount.net.currency}
+              {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
+              {offerFormData?.discount.net.currency}
             </span>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -123,9 +151,9 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
             <DatePickerButton
               date={validUntilDate}
               onClick={() => {
-                setDraftValidUntilDate(validUntilDate)
-                onOpenChange(false)
-                setShowValidUntilCalendar(true)
+                setDraftValidUntilDate(validUntilDate);
+                onOpenChange(false);
+                setShowValidUntilCalendar(true);
               }}
             />
           </div>
@@ -143,26 +171,26 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
         minDate={minDate}
         maxDate={maxDate}
         onClose={() => {
-          setShowValidUntilCalendar(false)
-          onOpenChange(true)
+          setShowValidUntilCalendar(false);
+          onOpenChange(true);
         }}
         onDateChange={setDraftValidUntilDate}
         onConfirm={() => {
           if (draftValidUntilDate) {
-            setValidUntilDate(draftValidUntilDate)
+            setValidUntilDate(draftValidUntilDate);
             if (storageKey) {
-              setItem(storageKey, draftValidUntilDate.toISOString())
+              setItem(storageKey, draftValidUntilDate.toISOString());
             }
           }
-          setShowValidUntilCalendar(false)
-          onOpenChange(true)
+          setShowValidUntilCalendar(false);
+          onOpenChange(true);
         }}
         onCancel={() => {
-          setShowValidUntilCalendar(false)
-          setDraftValidUntilDate(undefined)
-          onOpenChange(true)
+          setShowValidUntilCalendar(false);
+          setDraftValidUntilDate(undefined);
+          onOpenChange(true);
         }}
       />
     </>
-  )
+  );
 }

@@ -832,7 +832,12 @@
       },
       "BillAcceptanceStatus": {
         "type": "object",
-        "required": ["requested_to_accept", "accepted", "request_to_accept_timed_out", "rejected_to_accept"],
+        "required": [
+          "requested_to_accept",
+          "accepted",
+          "request_to_accept_timed_out",
+          "rejected_to_accept"
+        ],
         "properties": {
           "time_of_request_to_accept": {
             "type": ["integer", "null"],
@@ -1007,7 +1012,16 @@
       },
       "BillInfo": {
         "type": "object",
-        "required": ["id", "drawee", "drawer", "payee", "endorsees", "sum", "maturity_date", "file_urls"],
+        "required": [
+          "id",
+          "drawee",
+          "drawer",
+          "payee",
+          "endorsees",
+          "sum",
+          "maturity_date",
+          "file_urls"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1077,7 +1091,14 @@
       },
       "BillParticipants": {
         "type": "object",
-        "required": ["drawee", "drawer", "payee", "endorsements", "endorsements_count", "all_participant_node_ids"],
+        "required": [
+          "drawee",
+          "drawer",
+          "payee",
+          "endorsements",
+          "endorsements_count",
+          "all_participant_node_ids"
+        ],
         "properties": {
           "drawee": {
             "$ref": "#/components/schemas/BillIdentParticipant"
@@ -1119,7 +1140,12 @@
       },
       "BillPaymentStatus": {
         "type": "object",
-        "required": ["requested_to_pay", "paid", "request_to_pay_timed_out", "rejected_to_pay"],
+        "required": [
+          "requested_to_pay",
+          "paid",
+          "request_to_pay_timed_out",
+          "rejected_to_pay"
+        ],
         "properties": {
           "time_of_request_to_pay": {
             "type": ["integer", "null"],
@@ -1180,7 +1206,12 @@
       },
       "BillSellStatus": {
         "type": "object",
-        "required": ["sold", "offered_to_sell", "offer_to_sell_timed_out", "rejected_offer_to_sell"],
+        "required": [
+          "sold",
+          "offered_to_sell",
+          "offer_to_sell_timed_out",
+          "rejected_offer_to_sell"
+        ],
         "properties": {
           "time_of_last_offer_to_sell": {
             "type": ["integer", "null"],
@@ -1374,7 +1405,13 @@
       "ClowderNodeInfo": {
         "type": "object",
         "description": "--------------------------- Clowder Node Information",
-        "required": ["change_address", "node_id", "uptime_timestamp", "version", "network"],
+        "required": [
+          "change_address",
+          "node_id",
+          "uptime_timestamp",
+          "version",
+          "network"
+        ],
         "properties": {
           "change_address": {
             "type": "string"
@@ -1639,7 +1676,14 @@
       },
       "Identity": {
         "type": "object",
-        "required": ["node_id", "name", "bitcoin_public_key", "npub", "postal_address", "nostr_relays"],
+        "required": [
+          "node_id",
+          "name",
+          "bitcoin_public_key",
+          "npub",
+          "postal_address",
+          "nostr_relays"
+        ],
         "properties": {
           "node_id": {
             "type": "string"
@@ -1705,7 +1749,13 @@
         "oneOf": [
           {
             "type": "object",
-            "required": ["id", "bill", "submitted", "suggested_expiration", "status"],
+            "required": [
+              "id",
+              "bill",
+              "submitted",
+              "suggested_expiration",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1751,7 +1801,14 @@
           },
           {
             "type": "object",
-            "required": ["id", "bill", "ttl", "keyset_id", "discounted", "status"],
+            "required": [
+              "id",
+              "bill",
+              "ttl",
+              "keyset_id",
+              "discounted",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1878,7 +1935,14 @@
           },
           {
             "type": "object",
-            "required": ["id", "bill", "keyset_id", "discounted", "fee", "status"],
+            "required": [
+              "id",
+              "bill",
+              "keyset_id",
+              "discounted",
+              "fee",
+              "status"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -1909,7 +1973,16 @@
       },
       "InfoReplyDiscriminants": {
         "type": "string",
-        "enum": ["Pending", "Canceled", "Offered", "OfferExpired", "Denied", "Accepted", "Rejected", "MintingEnabled"]
+        "enum": [
+          "Pending",
+          "Canceled",
+          "Offered",
+          "OfferExpired",
+          "Denied",
+          "Accepted",
+          "Rejected",
+          "MintingEnabled"
+        ]
       },
       "KeySetInfo": {
         "type": "object",
@@ -2095,7 +2168,13 @@
       },
       "Notification": {
         "type": "object",
-        "required": ["id", "notification_type", "description", "datetime", "active"],
+        "required": [
+          "id",
+          "notification_type",
+          "description",
+          "datetime",
+          "active"
+        ],
         "properties": {
           "id": {
             "type": "string"

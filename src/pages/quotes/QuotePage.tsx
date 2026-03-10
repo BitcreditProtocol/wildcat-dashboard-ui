@@ -1,35 +1,38 @@
-import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { PageTitle } from "@/components/PageTitle"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview"
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ParticipantsOverviewCard,
+  ParticipantDetail,
+} from "@/components/ParticipantsOverview";
 import {
   getQuoteOptions,
   listEbillsOptions,
   getEbillEndorsementsOptions,
   getEbillMintCompleteOptions,
   postTokenStatusMutation,
-} from "@/generated/client/@tanstack/react-query.gen"
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { useParams, Link, useLocation } from "react-router"
-import { humanReadableDurationDays } from "@/utils/dates"
-import { BreadcrumbLink } from "@/components/ui/breadcrumb"
-import { QuoteActions } from "./QuoteActions.tsx"
-import { truncateString, formatStatusLabel } from "@/utils/strings.ts"
-import { getQuoteStatusVariant } from "@/utils/quote-status"
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx"
-import { EndorsementChain } from "@/components/EndorsementChain"
-import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary"
-import { serializeKeysetId } from "@/utils/keyset"
-import { useIntl } from "react-intl"
-import { useEffect, useRef } from "react"
-import { toast } from "sonner"
-import { getApiErrorMessage } from "@/lib/api-error"
+} from "@/generated/client/@tanstack/react-query.gen";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useParams, Link, useLocation } from "react-router";
+import { humanReadableDurationDays } from "@/utils/dates";
+import { BreadcrumbLink } from "@/components/ui/breadcrumb";
+import { QuoteActions } from "./QuoteActions.tsx";
+import { truncateString, formatStatusLabel } from "@/utils/strings.ts";
+import { getQuoteStatusVariant } from "@/utils/quote-status";
+import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx";
+import { EndorsementChain } from "@/components/EndorsementChain";
+import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
+import { serializeKeysetId } from "@/utils/keyset";
+import { useIntl } from "react-intl";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 interface LocationState {
-  from?: string
+  from?: string;
 }
 
 function Loader() {
@@ -37,12 +40,12 @@ function Loader() {
     <div className="flex flex-col gap-1.5 py-2">
       <Skeleton className="h-48 rounded-lg" />
     </div>
-  )
+  );
 }
 
 function PageBody({ id }: { id: string }) {
-  const intl = useIntl()
-  const EBILL_POLL_INTERVAL_MS = 30_000
+  const intl = useIntl();
+  const EBILL_POLL_INTERVAL_MS = 30_000;
   const {
     data: quoteData,
     isFetching,
@@ -53,33 +56,34 @@ function PageBody({ id }: { id: string }) {
       path: { qid: id },
     }),
     retry: 1,
-  })
+  });
 
-  const billId = quoteData?.bill?.id
-  const quoteStatus = quoteData?.status as string | undefined
+  const billId = quoteData?.bill?.id;
+  const quoteStatus = quoteData?.status as string | undefined;
 
   const ebillsQuery = useQuery({
     ...listEbillsOptions(),
     retry: 1,
     enabled: !!billId,
     refetchInterval: (query) => {
-      if (query.state.error) return false
-      const ebill = (query.state.data ?? []).find((item) => item.id === billId)
-      return ebill?.status?.payment?.paid ? false : EBILL_POLL_INTERVAL_MS
+      if (query.state.error) return false;
+      const ebill = (query.state.data ?? []).find((item) => item.id === billId);
+      return ebill?.status?.payment?.paid ? false : EBILL_POLL_INTERVAL_MS;
     },
-  })
+  });
 
   const endorsementsQuery = useQuery({
     ...getEbillEndorsementsOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
     enabled: !!billId,
-  })
+  });
 
-  const ebill = ebillsQuery.data?.find((item) => item.id === billId)
-  const isPaid = ebill?.status?.payment?.paid === true
-  const shouldCheckMintComplete = quoteStatus === "Accepted" || quoteStatus === "MintingEnabled" || isPaid
+  const ebill = ebillsQuery.data?.find((item) => item.id === billId);
+  const isPaid = ebill?.status?.payment?.paid === true;
+  const shouldCheckMintComplete =
+    quoteStatus === "Accepted" || quoteStatus === "MintingEnabled" || isPaid;
 
-  const feeTokenRequestRef = useRef<string | null>(null)
+  const feeTokenRequestRef = useRef<string | null>(null);
 
   const {
     mutate: requestFeeTokenStatus,
@@ -91,7 +95,7 @@ function PageBody({ id }: { id: string }) {
     ...postTokenStatusMutation(),
     retry: 5,
     onError: (error) => {
-      const message = getApiErrorMessage(error)
+      const message = getApiErrorMessage(error);
       toast.error(
         intl.formatMessage(
           {
@@ -100,10 +104,10 @@ function PageBody({ id }: { id: string }) {
           },
           { error: message },
         ),
-      )
-      feeTokenRequestRef.current = null
+      );
+      feeTokenRequestRef.current = null;
     },
-  })
+  });
 
   const mintCompleteQuery = useQuery({
     ...getEbillMintCompleteOptions({ path: { bid: billId ?? "" } }),
@@ -111,38 +115,45 @@ function PageBody({ id }: { id: string }) {
     enabled: !!billId && shouldCheckMintComplete,
     refetchInterval: (query) => {
       if (!shouldCheckMintComplete) {
-        return false
+        return false;
       }
 
-      const data = query.state.data
-      return data?.complete === false ? 60000 : false
+      const data = query.state.data;
+      return data?.complete === false ? 60000 : false;
     },
-  })
+  });
 
-  const feeTokenFromQuote = quoteData && "fee" in quoteData ? quoteData.fee : null
-  const quoteStatusForEffect = quoteData?.status
+  const feeTokenFromQuote =
+    quoteData && "fee" in quoteData ? quoteData.fee : null;
+  const quoteStatusForEffect = quoteData?.status;
 
   useEffect(() => {
     if (!feeTokenFromQuote || quoteStatusForEffect !== "MintingEnabled") {
-      return
+      return;
     }
 
     if (feeTokenRequestRef.current === feeTokenFromQuote) {
-      return
+      return;
     }
 
     if (isFeeTokenStatusPending || isFeeTokenStatusSuccess) {
-      return
+      return;
     }
 
-    feeTokenRequestRef.current = feeTokenFromQuote
+    feeTokenRequestRef.current = feeTokenFromQuote;
     requestFeeTokenStatus({
       body: { token: feeTokenFromQuote },
-    })
-  }, [feeTokenFromQuote, isFeeTokenStatusPending, isFeeTokenStatusSuccess, quoteStatusForEffect, requestFeeTokenStatus])
+    });
+  }, [
+    feeTokenFromQuote,
+    isFeeTokenStatusPending,
+    isFeeTokenStatusSuccess,
+    quoteStatusForEffect,
+    requestFeeTokenStatus,
+  ]);
 
   if (error) {
-    const errorMessage = getApiErrorMessage(error)
+    const errorMessage = getApiErrorMessage(error);
     return (
       <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
         <div className="text-red-800 font-semibold">
@@ -165,34 +176,39 @@ function PageBody({ id }: { id: string }) {
           })}
         </div>
       </div>
-    )
+    );
   }
 
   if (isLoading) {
-    return <Loader />
+    return <Loader />;
   }
 
-  const quote = quoteData!
-  const bill = quote?.bill
-  const quoteStatusValue = quote.status as string
-  const feeToken = "fee" in quote && typeof quote.fee === "string" ? quote.fee : null
+  const quote = quoteData!;
+  const bill = quote?.bill;
+  const quoteStatusValue = quote.status as string;
+  const feeToken =
+    "fee" in quote && typeof quote.fee === "string" ? quote.fee : null;
 
-  const billStatus = ebill?.status
-  const paymentStatus = billStatus?.payment
-  const cws = ebill?.current_waiting_state
-  const isMintComplete = mintCompleteQuery.data?.complete ?? false
-  const isMintCompleteLoading = mintCompleteQuery.isLoading
-  const ebillPaid = Boolean(paymentStatus?.paid)
-  const hasPaymentRequestInWaitingState = Boolean(cws && "Payment" in cws)
+  const billStatus = ebill?.status;
+  const paymentStatus = billStatus?.payment;
+  const cws = ebill?.current_waiting_state;
+  const isMintComplete = mintCompleteQuery.data?.complete ?? false;
+  const isMintCompleteLoading = mintCompleteQuery.isLoading;
+  const ebillPaid = Boolean(paymentStatus?.paid);
+  const hasPaymentRequestInWaitingState = Boolean(cws && "Payment" in cws);
   const requestedToPay = Boolean(
-    paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds ?? hasPaymentRequestInWaitingState,
-  )
-  const rejectedToPay = Boolean(paymentStatus?.rejected_to_pay)
-  const paymentDeadlineTs = paymentStatus?.payment_deadline_timestamp ?? null
-  const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null
+    paymentStatus?.requested_to_pay ??
+    billStatus?.has_requested_funds ??
+    hasPaymentRequestInWaitingState,
+  );
+  const rejectedToPay = Boolean(paymentStatus?.rejected_to_pay);
+  const paymentDeadlineTs = paymentStatus?.payment_deadline_timestamp ?? null;
+  const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null;
 
-  const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true
-  const showPayment = quoteStatus === "Accepted" || quoteStatus === "MintingEnabled"
+  const isInMempool =
+    cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true;
+  const showPayment =
+    quoteStatus === "Accepted" || quoteStatus === "MintingEnabled";
 
   if (!quote || !bill) {
     return (
@@ -202,16 +218,16 @@ function PageBody({ id }: { id: string }) {
           defaultMessage: "No quote data available",
         })}
       </div>
-    )
+    );
   }
 
-  const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null
+  const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
   const maturityLabel = maturityDate
     ? humanReadableDurationDays(intl.locale, maturityDate)
     : intl.formatMessage({
         id: "quotes.common.unknown",
         defaultMessage: "Unknown",
-      })
+      });
 
   return (
     <div className="flex flex-col gap-4">
@@ -260,14 +276,22 @@ function PageBody({ id }: { id: string }) {
                     })}
                   </span>
                   {isMintCompleteLoading ? (
-                    <Badge variant="default" className="bg-yellow-500">
+                    <Badge
+                      variant="default"
+                      className="bg-yellow-500"
+                    >
                       {intl.formatMessage({
                         id: "quotes.redemption.pending",
                         defaultMessage: "Pending",
                       })}
                     </Badge>
                   ) : (
-                    <Badge variant="default" className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}>
+                    <Badge
+                      variant="default"
+                      className={
+                        isMintComplete ? "bg-green-600" : "bg-yellow-500"
+                      }
+                    >
                       {isMintComplete
                         ? intl.formatMessage({
                             id: "quotes.redemption.complete",
@@ -302,35 +326,50 @@ function PageBody({ id }: { id: string }) {
                     })}
                   </span>
                   {ebillPaid ? (
-                    <Badge variant="default" className="bg-green-600">
+                    <Badge
+                      variant="default"
+                      className="bg-green-600"
+                    >
                       {intl.formatMessage({
                         id: "quotes.payment.paid",
                         defaultMessage: "Paid",
                       })}
                     </Badge>
                   ) : rejectedToPay ? (
-                    <Badge variant="destructive" className="bg-red-600">
+                    <Badge
+                      variant="destructive"
+                      className="bg-red-600"
+                    >
                       {intl.formatMessage({
                         id: "quotes.payment.rejected",
                         defaultMessage: "Rejected to pay",
                       })}
                     </Badge>
                   ) : isInMempool ? (
-                    <Badge variant="default" className="bg-orange-500">
+                    <Badge
+                      variant="default"
+                      className="bg-orange-500"
+                    >
                       {intl.formatMessage({
                         id: "quotes.payment.inMempool",
                         defaultMessage: "In mempool",
                       })}
                     </Badge>
                   ) : !requestedToPay ? (
-                    <Badge variant="secondary" className="border border-border">
+                    <Badge
+                      variant="secondary"
+                      className="border border-border"
+                    >
                       {intl.formatMessage({
                         id: "quotes.payment.notRequested",
                         defaultMessage: "Not requested",
                       })}
                     </Badge>
                   ) : (
-                    <Badge variant="default" className="bg-blue-500">
+                    <Badge
+                      variant="default"
+                      className="bg-blue-500"
+                    >
                       {intl.formatMessage({
                         id: "quotes.payment.requested",
                         defaultMessage: "Requested",
@@ -358,7 +397,9 @@ function PageBody({ id }: { id: string }) {
                       defaultMessage: "Fee:",
                     })}
                   </span>
-                  <span className="text-lg font-bold">{quote.discounted} sat</span>
+                  <span className="text-lg font-bold">
+                    {quote.discounted} sat
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">
@@ -367,7 +408,9 @@ function PageBody({ id }: { id: string }) {
                       defaultMessage: "Effective fee (absolute):",
                     })}
                   </span>
-                  <span className="text-sm font-mono">{bill.sum - quote.discounted} sat</span>
+                  <span className="text-sm font-mono">
+                    {bill.sum - quote.discounted} sat
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold w-32">
@@ -377,7 +420,10 @@ function PageBody({ id }: { id: string }) {
                     })}
                   </span>
                   <span className="text-sm font-mono">
-                    {(((bill.sum - quote.discounted) / bill.sum) * 100).toFixed(4)}%
+                    {(((bill.sum - quote.discounted) / bill.sum) * 100).toFixed(
+                      4,
+                    )}
+                    %
                   </span>
                 </div>
               </>
@@ -398,35 +444,50 @@ function PageBody({ id }: { id: string }) {
                 />
                 <FeeTokenQRCodeModal feeToken={feeToken} />
                 {isFeeTokenStatusPending ? (
-                  <Badge variant="default" className="bg-gray-500">
+                  <Badge
+                    variant="default"
+                    className="bg-gray-500"
+                  >
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.checking",
                       defaultMessage: "Checking...",
                     })}
                   </Badge>
                 ) : feeTokenStatusData?.state === "Spent" ? (
-                  <Badge variant="destructive" className="bg-red-600">
+                  <Badge
+                    variant="destructive"
+                    className="bg-red-600"
+                  >
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.spent",
                       defaultMessage: "Spent",
                     })}
                   </Badge>
                 ) : feeTokenStatusData?.state === "Unspent" ? (
-                  <Badge variant="default" className="bg-green-600">
+                  <Badge
+                    variant="default"
+                    className="bg-green-600"
+                  >
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.active",
                       defaultMessage: "Active",
                     })}
                   </Badge>
                 ) : isFeeTokenStatusError ? (
-                  <Badge variant="destructive" className="bg-red-600">
+                  <Badge
+                    variant="destructive"
+                    className="bg-red-600"
+                  >
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.error",
                       defaultMessage: "Error",
                     })}
                   </Badge>
                 ) : feeTokenStatusData?.state ? (
-                  <Badge variant="secondary" className="border border-border">
+                  <Badge
+                    variant="secondary"
+                    className="border border-border"
+                  >
                     {intl.formatMessage({
                       id: "quotes.feeToken.badge.unknown",
                       defaultMessage: "Unknown",
@@ -500,7 +561,9 @@ function PageBody({ id }: { id: string }) {
                   })}
                   :
                 </span>
-                <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
+                <ParticipantDetail
+                  participant={bill.endorsees[bill.endorsees.length - 1]}
+                />
               </span>
             )}
           </div>
@@ -523,22 +586,35 @@ function PageBody({ id }: { id: string }) {
         isLoading={endorsementsQuery.isLoading}
         issueDate={ebill?.data?.issue_date}
         maturityDate={bill.maturity_date}
-        requestToPayTimestamp={ebill?.status?.payment?.time_of_request_to_pay ?? undefined}
-        rejectedToPayTimestamp={
-          ebill?.status?.payment?.rejected_to_pay ? (ebill?.status?.last_block_time ?? undefined) : undefined
+        requestToPayTimestamp={
+          ebill?.status?.payment?.time_of_request_to_pay ?? undefined
         }
-        paymentTimestamp={ebill?.status?.payment?.paid ? (ebill?.status?.last_block_time ?? undefined) : undefined}
+        rejectedToPayTimestamp={
+          ebill?.status?.payment?.rejected_to_pay
+            ? (ebill?.status?.last_block_time ?? undefined)
+            : undefined
+        }
+        paymentTimestamp={
+          ebill?.status?.payment?.paid
+            ? (ebill?.status?.last_block_time ?? undefined)
+            : undefined
+        }
         acceptanceTimestamp={
           ebill?.status?.acceptance?.accepted
-            ? (ebill?.status?.acceptance?.time_of_request_to_accept ?? undefined)
+            ? (ebill?.status?.acceptance?.time_of_request_to_accept ??
+              undefined)
             : undefined
         }
         rejectionTimestamp={
-          ebill?.status?.acceptance?.rejected_to_accept ? (ebill?.status?.last_block_time ?? undefined) : undefined
+          ebill?.status?.acceptance?.rejected_to_accept
+            ? (ebill?.status?.last_block_time ?? undefined)
+            : undefined
         }
         mintingEnabled={quoteStatusValue === "MintingEnabled"}
         quoteOffered={
-          quoteStatusValue === "Offered" || quoteStatusValue === "Accepted" || quoteStatusValue === "MintingEnabled"
+          quoteStatusValue === "Offered" ||
+          quoteStatusValue === "Accepted" ||
+          quoteStatusValue === "MintingEnabled"
         }
         offeredTimestamp={
           "submitted" in quote
@@ -549,35 +625,41 @@ function PageBody({ id }: { id: string }) {
         }
       />
     </div>
-  )
+  );
 }
 
 export default function QuotePage() {
-  const intl = useIntl()
-  const { id } = useParams()
-  const quoteId = id ?? ""
-  const location = useLocation()
-  const state = location.state as LocationState | null
-  const fromPath = state?.from
-  const fromKeyset = fromPath?.startsWith("/keysets/")
-  const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null
+  const intl = useIntl();
+  const { id } = useParams();
+  const quoteId = id ?? "";
+  const location = useLocation();
+  const state = location.state as LocationState | null;
+  const fromPath = state?.from;
+  const fromKeyset = fromPath?.startsWith("/keysets/");
+  const keysetIdFromState =
+    fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
 
   const { data: quoteData } = useQuery({
     ...getQuoteOptions({
       path: { qid: quoteId },
     }),
     retry: 1,
-  })
+  });
 
-  const quoteDataStatus = quoteData?.status as string | undefined
+  const quoteDataStatus = quoteData?.status as string | undefined;
   const hasKeysetId =
-    quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData
+    quoteData &&
+    (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") &&
+    "keyset_id" in quoteData;
 
   return (
     <>
       <Breadcrumbs
         parents={[
-          <BreadcrumbLink key="quotes" asChild>
+          <BreadcrumbLink
+            key="quotes"
+            asChild
+          >
             <Link to="/quotes">
               {intl.formatMessage({
                 id: "quotes.breadcrumb",
@@ -599,28 +681,46 @@ export default function QuotePage() {
           <span className="font-mono">{truncateString(quoteId, 16)}</span>
         </PageTitle>
         {fromKeyset && keysetIdFromState ? (
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/keysets/${keysetIdFromState}`} state={{ from: `/quotes/${quoteId}` }}>
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link
+              to={`/keysets/${keysetIdFromState}`}
+              state={{ from: `/quotes/${quoteId}` }}
+            >
               {intl.formatMessage({
                 id: "quotes.detail.backToKeyset",
                 defaultMessage: "Back to keyset",
               })}{" "}
-              <span className="font-mono">{truncateString(keysetIdFromState, 16)}</span>
+              <span className="font-mono">
+                {truncateString(keysetIdFromState, 16)}
+              </span>
             </Link>
           </Button>
         ) : hasKeysetId ? (
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link
+              to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
+              state={{ from: `/quotes/${quoteId}` }}
+            >
               {intl.formatMessage({
                 id: "quotes.detail.goToKeyset",
                 defaultMessage: "Go to keyset",
               })}{" "}
-              <span className="font-mono">{truncateString(serializeKeysetId(quoteData.keyset_id), 16)}</span>
+              <span className="font-mono">
+                {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
+              </span>
             </Link>
           </Button>
         ) : null}
       </div>
       <PageBody id={quoteId} />
     </>
-  )
+  );
 }

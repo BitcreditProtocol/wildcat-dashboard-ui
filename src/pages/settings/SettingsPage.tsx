@@ -1,14 +1,14 @@
-import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { PageTitle } from "@/components/PageTitle"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Suspense } from "react"
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 
 function Loader() {
   return (
     <div className="flex flex-col gap-1.5 py-2">
       <Skeleton className="h-12 rounded-lg" />
     </div>
-  )
+  );
 }
 
 function PageBody() {
@@ -16,7 +16,7 @@ function PageBody() {
     <>
       <div className="my-2"></div>
     </>
-  )
+  );
 }
 
 export default function SettingsPage() {
@@ -29,5 +29,5 @@ export default function SettingsPage() {
         <PageBody />
       </Suspense>
     </>
-  )
+  );
 }

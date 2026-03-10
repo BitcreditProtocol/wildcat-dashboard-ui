@@ -1,5 +1,5 @@
-import * as React from "react"
-import { type LucideIcon } from "lucide-react"
+import * as React from "react";
+import { type LucideIcon } from "lucide-react";
 
 import {
   SidebarGroup,
@@ -7,23 +7,23 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { Link } from "react-router"
-import { useIntl } from "react-intl"
+} from "@/components/ui/sidebar";
+import { Link } from "react-router";
+import { useIntl } from "react-intl";
 
 export function NavSecondary({
   items,
   ...props
 }: {
   items: {
-    titleId?: string
-    titleDefaultMessage?: string
-    title: string
-    url: string
-    icon: LucideIcon
-  }[]
+    titleId?: string;
+    titleDefaultMessage?: string;
+    title: string;
+    url: string;
+    icon: LucideIcon;
+  }[];
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
-  const intl = useIntl()
+  const intl = useIntl();
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
@@ -34,21 +34,25 @@ export function NavSecondary({
                   id: item.titleId,
                   defaultMessage: item.titleDefaultMessage ?? item.title,
                 })
-              : item.title
+              : item.title;
 
             return (
               <SidebarMenuItem key={item.titleId ?? item.title}>
-                <SidebarMenuButton asChild size="sm" tooltip={title}>
+                <SidebarMenuButton
+                  asChild
+                  size="sm"
+                  tooltip={title}
+                >
                   <Link to={item.url}>
                     <item.icon />
                     <span>{title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )
+            );
           })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

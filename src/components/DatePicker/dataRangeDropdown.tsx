@@ -1,7 +1,7 @@
-import { useIntl } from "react-intl"
-import { CircleX } from "lucide-react"
+import { useIntl } from "react-intl";
+import { CircleX } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 import {
   DropdownMenu,
@@ -11,45 +11,52 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./dropdownMenu"
+} from "./dropdownMenu";
 
 interface DateRangeDropdownProps {
-  value?: number
-  onRangeChange: (range: number) => void
-  onClear?: () => void
+  value?: number;
+  onRangeChange: (range: number) => void;
+  onClear?: () => void;
 }
 
-export function DateRangeDropdown({ value, onRangeChange, onClear }: DateRangeDropdownProps) {
-  const intl = useIntl()
+export function DateRangeDropdown({
+  value,
+  onRangeChange,
+  onClear,
+}: DateRangeDropdownProps) {
+  const intl = useIntl();
 
   const handleRangeChanged = (value: string) => {
-    const range = Number(value)
-    onRangeChange(range)
-  }
+    const range = Number(value);
+    onRangeChange(range);
+  };
 
   const handleDisplayRange = (value: number | undefined): string => {
     switch (value) {
       case 30:
       case 60:
       case 90:
-        return intl.formatMessage({ id: "displayRange.days", defaultMessage: "{value} Days" }, { value })
+        return intl.formatMessage(
+          { id: "displayRange.days", defaultMessage: "{value} Days" },
+          { value },
+        );
       case 180:
         return intl.formatMessage({
           id: "displayRange.sixMonths",
           defaultMessage: "6 Months",
-        })
+        });
       case 365:
         return intl.formatMessage({
           id: "displayRange.oneYear",
           defaultMessage: "1 Year",
-        })
+        });
       default:
         return intl.formatMessage({
           id: "displayRange.selectRange",
           defaultMessage: "Select range",
-        })
+        });
     }
-  }
+  };
 
   return (
     <DropdownMenu>
@@ -69,25 +76,28 @@ export function DateRangeDropdown({ value, onRangeChange, onClear }: DateRangeDr
               })}
               aria-pressed="false"
               onPointerDown={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
+                e.preventDefault();
+                e.stopPropagation();
               }}
               onClick={(e) => {
-                e.stopPropagation()
-                onClear?.()
+                e.stopPropagation();
+                onClear?.();
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onClear?.()
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClear?.();
                 } else if (e.key === "Escape") {
-                  e.stopPropagation()
+                  e.stopPropagation();
                 }
               }}
               className="p-1 rounded-sm hover:bg-elevation-250 focus:outline-hidden focus:ring-2 focus:ring-brand-200 focus:ring-offset-1 cursor-pointer transition-colors"
             >
-              <CircleX className="h-5 w-5 text-text-300" strokeWidth={1} />
+              <CircleX
+                className="h-5 w-5 text-text-300"
+                strokeWidth={1}
+              />
             </div>
           )}
         </Button>
@@ -100,7 +110,10 @@ export function DateRangeDropdown({ value, onRangeChange, onClear }: DateRangeDr
           })}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup value={String(value)} onValueChange={handleRangeChanged}>
+        <DropdownMenuRadioGroup
+          value={String(value)}
+          onValueChange={handleRangeChanged}
+        >
           <DropdownMenuRadioItem value="30">
             {intl.formatMessage({
               id: "dropdown.option.30days",
@@ -134,5 +147,5 @@ export function DateRangeDropdown({ value, onRangeChange, onClear }: DateRangeDr
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

@@ -28,9 +28,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "src",
-    "vitest-setup.ts",
-    "openapi-ts.config.ts"
-  ]
+  "include": ["src", "vitest-setup.ts", "openapi-ts.config.ts"]
 }

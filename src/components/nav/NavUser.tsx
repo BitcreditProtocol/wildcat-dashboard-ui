@@ -1,7 +1,7 @@
-import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from "lucide-react"
-import { useIntl } from "react-intl"
+import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from "lucide-react";
+import { useIntl } from "react-intl";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,37 +10,45 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+} from "@/components/ui/dropdown-menu";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 export function NavUser({
   user,
 }: {
   user: {
-    name: string
-    email: string
-    avatar: string
-  }
+    name: string;
+    email: string;
+    avatar: string;
+  };
 }) {
-  const { isMobile } = useSidebar()
-  const intl = useIntl()
+  const { isMobile } = useSidebar();
+  const intl = useIntl();
 
-  const initials = user.name.length > 0 ? user.name[0].toUpperCase() : ""
+  const initials = user.name.length > 0 ? user.name[0].toUpperCase() : "";
   const unknownUser = intl.formatMessage({
     id: "nav.user.unknown",
     defaultMessage: "Unknown User",
-  })
+  });
   const initialsFallback = intl.formatMessage({
     id: "nav.user.initials.fallback",
     defaultMessage: "U",
-  })
-  const tooltipLabel = user.name || unknownUser
+  });
+  const tooltipLabel = user.name || unknownUser;
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild className="cursor-pointer">
+          <DropdownMenuTrigger
+            asChild
+            className="cursor-pointer"
+          >
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -68,7 +76,10 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage
+                    src={user.avatar}
+                    alt={user.name}
+                  />
                   <AvatarFallback className="rounded-lg">
                     {intl.formatMessage({
                       id: "nav.user.avatarFallback",
@@ -111,5 +122,5 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

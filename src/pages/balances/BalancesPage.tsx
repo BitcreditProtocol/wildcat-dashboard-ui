@@ -1,13 +1,18 @@
-import { PropsWithChildren, Suspense } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { PageTitle } from "@/components/PageTitle"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen"
-import { FormattedMessage, useIntl } from "react-intl"
+import { PropsWithChildren, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart";
+import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { FormattedMessage, useIntl } from "react-intl";
 
 function Loader() {
   return (
@@ -23,7 +28,7 @@ function Loader() {
         <Skeleton className="h-96 rounded-lg" />
       </div>
     </div>
-  )
+  );
 }
 
 const getMonthLabels = (intl: ReturnType<typeof useIntl>) => [
@@ -39,18 +44,21 @@ const getMonthLabels = (intl: ReturnType<typeof useIntl>) => [
   intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
   intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
   intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
-]
+];
 
 export function BitcoinBalanceChart() {
-  const intl = useIntl()
+  const intl = useIntl();
   const config = {
     bitcoin: {
-      label: intl.formatMessage({ id: "balances.chart.bitcoin", defaultMessage: "Bitcoin" }),
+      label: intl.formatMessage({
+        id: "balances.chart.bitcoin",
+        defaultMessage: "Bitcoin",
+      }),
       color: "#2563eb",
     },
-  } satisfies ChartConfig
+  } satisfies ChartConfig;
 
-  const months = getMonthLabels(intl)
+  const months = getMonthLabels(intl);
 
   const data = [
     { month: months[0], bitcoin: 186 },
@@ -65,11 +73,17 @@ export function BitcoinBalanceChart() {
     { month: months[9], bitcoin: 0 },
     { month: months[10], bitcoin: 0 },
     { month: months[11], bitcoin: 0 },
-  ]
+  ];
 
   return (
-    <ChartContainer config={config} className="min-h-[200px] w-full">
-      <BarChart accessibilityLayer data={data}>
+    <ChartContainer
+      config={config}
+      className="min-h-[200px] w-full"
+    >
+      <BarChart
+        accessibilityLayer
+        data={data}
+      >
         <CartesianGrid vertical={false} />
         <XAxis
           dataKey="month"
@@ -78,32 +92,50 @@ export function BitcoinBalanceChart() {
           axisLine={false}
           tickFormatter={(value: string) => value}
         />
-        <YAxis dataKey="bitcoin" tickLine={false} tickMargin={10} axisLine={false} />
-        <Bar dataKey="bitcoin" fill="var(--color-bitcoin)" radius={4} />
+        <YAxis
+          dataKey="bitcoin"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+        />
+        <Bar
+          dataKey="bitcoin"
+          fill="var(--color-bitcoin)"
+          radius={4}
+        />
         <ChartLegend content={<ChartLegendContent />} />
       </BarChart>
     </ChartContainer>
-  )
+  );
 }
 
 export function OtherBalanceChart() {
-  const intl = useIntl()
+  const intl = useIntl();
   const config = {
     eIOU: {
-      label: intl.formatMessage({ id: "balances.chart.eiou", defaultMessage: "e-IOU" }),
+      label: intl.formatMessage({
+        id: "balances.chart.eiou",
+        defaultMessage: "e-IOU",
+      }),
       color: "#911198",
     },
     credit: {
-      label: intl.formatMessage({ id: "balances.chart.creditToken", defaultMessage: "Credit token" }),
+      label: intl.formatMessage({
+        id: "balances.chart.creditToken",
+        defaultMessage: "Credit token",
+      }),
       color: "#e9d4ff",
     },
     debit: {
-      label: intl.formatMessage({ id: "balances.chart.debitToken", defaultMessage: "Debit token" }),
+      label: intl.formatMessage({
+        id: "balances.chart.debitToken",
+        defaultMessage: "Debit token",
+      }),
       color: "#c27aff",
     },
-  } satisfies ChartConfig
+  } satisfies ChartConfig;
 
-  const months = getMonthLabels(intl)
+  const months = getMonthLabels(intl);
 
   const data = [
     { month: months[0], credit: 121, debit: 0 },
@@ -118,11 +150,17 @@ export function OtherBalanceChart() {
     { month: months[9], credit: 1782, debit: 1232 },
     { month: months[10], credit: 0, debit: 0 },
     { month: months[11], credit: 0, debit: 0 },
-  ]
+  ];
 
   return (
-    <ChartContainer config={config} className="min-h-[200px] w-full">
-      <BarChart accessibilityLayer data={data}>
+    <ChartContainer
+      config={config}
+      className="min-h-[200px] w-full"
+    >
+      <BarChart
+        accessibilityLayer
+        data={data}
+      >
         <CartesianGrid vertical={false} />
         <XAxis
           dataKey="month"
@@ -131,22 +169,44 @@ export function OtherBalanceChart() {
           axisLine={false}
           tickFormatter={(value: string) => value}
         />
-        <YAxis dataKey="credit" tickLine={false} tickMargin={10} axisLine={false} />
-        <YAxis dataKey="debit" tickLine={false} tickMargin={10} axisLine={false} />
-        <Bar dataKey="credit" fill="var(--color-credit)" radius={4} />
-        <Bar dataKey="debit" fill="var(--color-debit)" radius={4} />
+        <YAxis
+          dataKey="credit"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+        />
+        <YAxis
+          dataKey="debit"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+        />
+        <Bar
+          dataKey="credit"
+          fill="var(--color-credit)"
+          radius={4}
+        />
+        <Bar
+          dataKey="debit"
+          fill="var(--color-debit)"
+          radius={4}
+        />
         <ChartLegend content={<ChartLegendContent />} />
       </BarChart>
     </ChartContainer>
-  )
+  );
 }
 
 interface BalanceDisplay {
-  amount: string
-  unit: string
+  amount: string;
+  unit: string;
 }
 
-export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
+export function BalanceText({
+  amount,
+  unit,
+  children,
+}: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
       <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
@@ -154,7 +214,7 @@ export function BalanceText({ amount, unit, children }: PropsWithChildren<Balanc
       </h3>
       {children}
     </>
-  )
+  );
 }
 
 function useBalances() {
@@ -167,9 +227,9 @@ function useBalances() {
     refetchInterval: 30_000,
     staleTime: 25_000,
     retry: 2,
-  })
+  });
 
-  const error = isError ? "Failed to load coverage data" : null
+  const error = isError ? "Failed to load coverage data" : null;
 
   const balances: Record<string, BalanceDisplay> = {
     bitcoin: {
@@ -188,13 +248,13 @@ function useBalances() {
       amount: coverage?.debit_circulating_supply?.toString() ?? "0",
       unit: "sat",
     },
-  }
+  };
 
-  return { balances, error, refetch }
+  return { balances, error, refetch };
 }
 
 function PageBodyWithDevSection() {
-  const { balances, error } = useBalances()
+  const { balances, error } = useBalances();
 
   if (error) {
     return (
@@ -213,7 +273,7 @@ function PageBodyWithDevSection() {
           </Card>
         </div>
       </>
-    )
+    );
   }
 
   return (
@@ -223,41 +283,65 @@ function PageBodyWithDevSection() {
           <Card className="bg-indigo-100">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
+                <FormattedMessage
+                  id="balances.bitcoin"
+                  defaultMessage="Bitcoin balance"
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
+              <BalanceText
+                amount={balances.bitcoin.amount}
+                unit={balances.bitcoin.unit}
+              />
             </CardContent>
           </Card>
           <Card className="bg-orange-100">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
+                <FormattedMessage
+                  id="balances.eiou"
+                  defaultMessage="e-IOU balance"
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
+              <BalanceText
+                amount={balances.eiou.amount}
+                unit={balances.eiou.unit}
+              />
             </CardContent>
           </Card>
           <Card className="bg-purple-200">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
+                <FormattedMessage
+                  id="balances.creditToken"
+                  defaultMessage="Credit token balance"
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
+              <BalanceText
+                amount={balances.credit.amount}
+                unit={balances.credit.unit}
+              />
             </CardContent>
           </Card>
           <Card className="bg-purple-400">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
+                <FormattedMessage
+                  id="balances.debitToken"
+                  defaultMessage="Debit token balance"
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
+              <BalanceText
+                amount={balances.debit.amount}
+                unit={balances.debit.unit}
+              />
             </CardContent>
           </Card>
         </div>
@@ -277,22 +361,28 @@ function PageBodyWithDevSection() {
         */}
       </div>
     </>
-  )
+  );
 }
 
 export default function BalancesPage() {
   return (
     <>
       <Breadcrumbs>
-        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
+        <FormattedMessage
+          id="balances.page.title"
+          defaultMessage="Balances"
+        />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
+        <FormattedMessage
+          id="balances.page.title"
+          defaultMessage="Balances"
+        />
       </PageTitle>
 
       <Suspense fallback={<Loader />}>
         <PageBodyWithDevSection />
       </Suspense>
     </>
-  )
+  );
 }

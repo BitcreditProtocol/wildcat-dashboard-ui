@@ -1,35 +1,35 @@
-import Big from "big.js"
-import { BaseDrawer } from "@/components/Drawers"
-import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm"
-import type { InfoReply } from "@/generated/client/types.gen"
-import type { ReactNode } from "react"
+import Big from "big.js";
+import { BaseDrawer } from "@/components/Drawers";
+import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm";
+import type { InfoReply } from "@/generated/client/types.gen";
+import type { ReactNode } from "react";
 
 export interface OfferFormResult {
   discount: {
-    days: number
-    discountRate: Big
+    days: number;
+    discountRate: Big;
     net: {
-      value: Big
-      currency: string
-    }
+      value: Big;
+      currency: string;
+    };
     gross: {
-      value: Big
-      currency: string
-    }
-  }
+      value: Big;
+      currency: string;
+    };
+  };
   ttl: {
-    ttl: Date
-  }
+    ttl: Date;
+  };
 }
 
 interface OfferFormDrawerProps {
-  title: string
-  description: string
-  value: InfoReply
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: OfferFormResult) => void
-  children: ReactNode
+  title: string;
+  description: string;
+  value: InfoReply;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: OfferFormResult) => void;
+  children: ReactNode;
 }
 
 export function OfferFormDrawer({
@@ -42,28 +42,37 @@ export function OfferFormDrawer({
   children,
 }: OfferFormDrawerProps) {
   const handleFormSubmit = (values: {
-    days: number
-    discountRate: Big
-    net: { value: Big; currency: string }
-    gross: { value: Big; currency: string }
+    days: number;
+    discountRate: Big;
+    net: { value: Big; currency: string };
+    gross: { value: Big; currency: string };
   }) => {
-    const now = new Date()
-    const ttl = new Date(now.getTime() + values.days * 24 * 60 * 60 * 1000)
+    const now = new Date();
+    const ttl = new Date(now.getTime() + values.days * 24 * 60 * 60 * 1000);
 
     const result: OfferFormResult = {
       discount: values,
       ttl: { ttl },
-    }
+    };
 
-    onSubmit(result)
-  }
+    onSubmit(result);
+  };
 
-  const startDate = value.status === "Pending" ? new Date(value.submitted) : new Date()
+  const startDate =
+    value.status === "Pending" ? new Date(value.submitted) : new Date();
   const endDate =
-    value.status === "Pending" ? new Date(value.suggested_expiration) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    value.status === "Pending"
+      ? new Date(value.suggested_expiration)
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   return (
-    <BaseDrawer title={title} description={description} open={open} onOpenChange={onOpenChange} trigger={children}>
+    <BaseDrawer
+      title={title}
+      description={description}
+      open={open}
+      onOpenChange={onOpenChange}
+      trigger={children}
+    >
       <GrossToNetDiscountForm
         startDate={startDate}
         endDate={endDate}
@@ -75,5 +84,5 @@ export function OfferFormDrawer({
         quoteId={value.id}
       />
     </BaseDrawer>
-  )
+  );
 }

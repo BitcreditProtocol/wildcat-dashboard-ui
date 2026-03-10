@@ -1,7 +1,7 @@
-import { useIntl } from "react-intl"
+import { useIntl } from "react-intl";
 
 export function UserAnonymousIcon({ className }: { className?: string }) {
-  const intl = useIntl()
+  const intl = useIntl();
   return (
     <svg
       width="24"
@@ -21,5 +21,5 @@ export function UserAnonymousIcon({ className }: { className?: string }) {
         fill="currentColor"
       />
     </svg>
-  )
+  );
 }

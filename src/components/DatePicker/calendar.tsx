@@ -1,34 +1,43 @@
-import React, { useCallback, useEffect, useState } from "react"
-import { DateRange, DayPicker, DayPickerProps, OnSelectHandler } from "react-day-picker"
-import { isSameDay } from "date-fns"
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
-import { useIntl } from "react-intl"
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  DateRange,
+  DayPicker,
+  DayPickerProps,
+  OnSelectHandler,
+} from "react-day-picker";
+import { isSameDay } from "date-fns";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useIntl } from "react-intl";
 
-import { cn } from "@/lib/utils"
-import { YearPicker } from "./yearPicker"
-import { MonthPicker } from "./monthPicker"
-import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters"
+import { cn } from "@/lib/utils";
+import { YearPicker } from "./yearPicker";
+import { MonthPicker } from "./monthPicker";
+import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
 
-export type CalendarProps = Omit<DayPickerProps, "mode" | "onSelect" | "selected"> & {
-  mode: "single" | "range"
-  onSelect?: OnSelectHandler<DateRange | undefined>
-  selected: DateRange
-  onCaptionLabelClicked?: () => void
-  disableFutureNavigation?: boolean
-  rangeFocus?: "from" | "to"
-  className?: string
-  ISOWeek?: boolean
-  showOutsideDays?: boolean
-  month?: Date
-  minDate?: Date
-  initialFocus?: boolean
-  modifiers?: Record<string, (date: Date) => boolean>
-  modifiersClassNames?: Record<string, string>
-}
+export type CalendarProps = Omit<
+  DayPickerProps,
+  "mode" | "onSelect" | "selected"
+> & {
+  mode: "single" | "range";
+  onSelect?: OnSelectHandler<DateRange | undefined>;
+  selected: DateRange;
+  onCaptionLabelClicked?: () => void;
+  disableFutureNavigation?: boolean;
+  rangeFocus?: "from" | "to";
+  className?: string;
+  ISOWeek?: boolean;
+  showOutsideDays?: boolean;
+  month?: Date;
+  minDate?: Date;
+  initialFocus?: boolean;
+  modifiers?: Record<string, (date: Date) => boolean>;
+  modifiersClassNames?: Record<string, string>;
+};
 
 const classNames = {
   root: "w-full",
-  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+  months:
+    "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
   month: "space-y-4 w-full",
   month_caption: "flex justify-center relative items-center",
   // Hide default DayPicker caption label; we render our own header.
@@ -47,28 +56,43 @@ const classNames = {
   range_start: "day-range-start",
   selected: "bg-elevation-200 hover:bg-elevation-200 border border-divider-100",
   today: "bg-accent text-accent-foreground",
-  outside: "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
+  outside:
+    "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
   disabled: "text-muted-foreground opacity-50",
   range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
   hidden: "invisible",
-}
+};
 
 function getNextDate(current: Date, offset: number): Date {
-  const year = current.getUTCFullYear()
-  const month = current.getUTCMonth()
-  const day = current.getUTCDate()
+  const year = current.getUTCFullYear();
+  const month = current.getUTCMonth();
+  const day = current.getUTCDate();
 
-  const daysInCurrentMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
-  const isLastDay = day === daysInCurrentMonth
+  const daysInCurrentMonth = new Date(
+    Date.UTC(year, month + 1, 0),
+  ).getUTCDate();
+  const isLastDay = day === daysInCurrentMonth;
 
-  const targetMonthDate = new Date(Date.UTC(year, month + offset, 1))
+  const targetMonthDate = new Date(Date.UTC(year, month + offset, 1));
   const daysInTargetMonth = new Date(
-    Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth() + 1, 0),
-  ).getUTCDate()
+    Date.UTC(
+      targetMonthDate.getUTCFullYear(),
+      targetMonthDate.getUTCMonth() + 1,
+      0,
+    ),
+  ).getUTCDate();
 
-  const newDay = isLastDay ? daysInTargetMonth : Math.min(day, daysInTargetMonth)
+  const newDay = isLastDay
+    ? daysInTargetMonth
+    : Math.min(day, daysInTargetMonth);
 
-  return new Date(Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth(), newDay))
+  return new Date(
+    Date.UTC(
+      targetMonthDate.getUTCFullYear(),
+      targetMonthDate.getUTCMonth(),
+      newDay,
+    ),
+  );
 }
 
 function Calendar({
@@ -88,91 +112,116 @@ function Calendar({
   minDate,
   ...restProps
 }: CalendarProps) {
-  const intl = useIntl()
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(selected.from)
-  const [month, setMonth] = useState<Date>(selected.from ?? monthProp ?? new Date())
-  const [showYearPicker, setShowYearPicker] = useState(false)
-  const [showMonthPicker, setShowMonthPicker] = useState(false)
-  const { formatDay2Digit, formatMonthShort, formatYearNumeric } = useUtcDateFormatters(intl.locale)
+  const intl = useIntl();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    selected.from,
+  );
+  const [month, setMonth] = useState<Date>(
+    selected.from ?? monthProp ?? new Date(),
+  );
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const { formatDay2Digit, formatMonthShort, formatYearNumeric } =
+    useUtcDateFormatters(intl.locale);
 
   useEffect(() => {
     if (mode === "single") {
       if (selected.from) {
-        setSelectedDate(selected.from)
-        setMonth(selected.from)
+        setSelectedDate(selected.from);
+        setMonth(selected.from);
       } else {
-        setSelectedDate(undefined)
-        setMonth(monthProp ?? new Date())
+        setSelectedDate(undefined);
+        setMonth(monthProp ?? new Date());
       }
     } else {
       if (!selected.from && !selected.to) {
-        setMonth(monthProp ?? new Date())
-        setSelectedDate(undefined)
+        setMonth(monthProp ?? new Date());
+        setSelectedDate(undefined);
       }
     }
-  }, [selected, mode, monthProp])
+  }, [selected, mode, monthProp]);
 
-  const handleOnSelectRange: OnSelectHandler<DateRange | undefined> = (range, selectedDay, modifiers, e) => {
+  const handleOnSelectRange: OnSelectHandler<DateRange | undefined> = (
+    range,
+    selectedDay,
+    modifiers,
+    e,
+  ) => {
     if (mode === "single") {
-      setSelectedDate(selectedDay)
+      setSelectedDate(selectedDay);
     }
     if (onSelect) {
-      onSelect(range, selectedDay, modifiers, e)
+      onSelect(range, selectedDay, modifiers, e);
     }
-  }
+  };
 
-  const handleOnSelectSingle: OnSelectHandler<Date | undefined> = (day, selectedDay, modifiers, e) => {
-    handleOnSelectRange(day ? { from: day } : undefined, selectedDay, modifiers, e)
-  }
+  const handleOnSelectSingle: OnSelectHandler<Date | undefined> = (
+    day,
+    selectedDay,
+    modifiers,
+    e,
+  ) => {
+    handleOnSelectRange(
+      day ? { from: day } : undefined,
+      selectedDay,
+      modifiers,
+      e,
+    );
+  };
 
   const goToOffsetMonth = useCallback(
     (offset: number) => {
-      setMonth(getNextDate(month, offset))
+      setMonth(getNextDate(month, offset));
     },
     [month],
-  )
+  );
 
-  let touchStartX: number | null = null
+  let touchStartX: number | null = null;
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX = e.touches[0].clientX
-  }
+    touchStartX = e.touches[0].clientX;
+  };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX === null) {
-      return
+      return;
     }
 
-    const diffX = e.changedTouches[0].clientX - touchStartX
+    const diffX = e.changedTouches[0].clientX - touchStartX;
 
     if (diffX > 50) {
-      goToOffsetMonth(-1)
+      goToOffsetMonth(-1);
     } else if (diffX < -50) {
       if (canGoForward) {
-        goToOffsetMonth(1)
+        goToOffsetMonth(1);
       }
     }
 
-    touchStartX = null
-  }
+    touchStartX = null;
+  };
 
   const isAtOrBeyondCurrentMonth = (d: Date) => {
-    const today = new Date()
-    const todayYear = today.getUTCFullYear()
-    const todayMonth = today.getUTCMonth()
-    const dateYear = d.getUTCFullYear()
-    const dateMonth = d.getUTCMonth()
-    return dateYear > todayYear || (dateYear === todayYear && dateMonth >= todayMonth)
-  }
+    const today = new Date();
+    const todayYear = today.getUTCFullYear();
+    const todayMonth = today.getUTCMonth();
+    const dateYear = d.getUTCFullYear();
+    const dateMonth = d.getUTCMonth();
+    return (
+      dateYear > todayYear ||
+      (dateYear === todayYear && dateMonth >= todayMonth)
+    );
+  };
 
-  const canGoForward = disableFutureNavigation ? !isAtOrBeyondCurrentMonth(month) : true
+  const canGoForward = disableFutureNavigation
+    ? !isAtOrBeyondCurrentMonth(month)
+    : true;
 
   const NavigationHeader = () => (
     <div className="flex justify-center relative items-center mb-4">
       <button
         type="button"
         onClick={() => {
-          goToOffsetMonth(-1)
+          goToOffsetMonth(-1);
         }}
         className="absolute left-1 bg-transparent hover:bg-accent rounded-md p-2"
         aria-label={intl.formatMessage({
@@ -183,7 +232,9 @@ function Calendar({
         <ChevronLeft className="h-4 w-4" />
       </button>
       <div
-        className={cn("flex justify-between items-center gap-2 cursor-pointer hover:bg-accent rounded-md px-3 py-1")}
+        className={cn(
+          "flex justify-between items-center gap-2 cursor-pointer hover:bg-accent rounded-md px-3 py-1",
+        )}
         role="button"
         tabIndex={0}
       >
@@ -191,10 +242,10 @@ function Calendar({
           <span
             className="text-sm font-medium flex gap-1"
             onClick={() => {
-              setShowYearPicker(!showYearPicker)
-              setShowMonthPicker(false)
+              setShowYearPicker(!showYearPicker);
+              setShowMonthPicker(false);
               if (onCaptionLabelClicked) {
-                onCaptionLabelClicked()
+                onCaptionLabelClicked();
               }
             }}
           >
@@ -203,11 +254,11 @@ function Calendar({
             </span>
             <span
               onClick={(e) => {
-                e.stopPropagation()
-                setShowYearPicker(!showYearPicker)
-                setShowMonthPicker(false)
+                e.stopPropagation();
+                setShowYearPicker(!showYearPicker);
+                setShowMonthPicker(false);
                 if (onCaptionLabelClicked) {
-                  onCaptionLabelClicked()
+                  onCaptionLabelClicked();
                 }
               }}
             >
@@ -218,21 +269,21 @@ function Calendar({
           <span
             className="text-sm font-medium flex gap-1"
             onClick={() => {
-              setShowYearPicker(!showYearPicker)
-              setShowMonthPicker(false)
+              setShowYearPicker(!showYearPicker);
+              setShowMonthPicker(false);
               if (onCaptionLabelClicked) {
-                onCaptionLabelClicked()
+                onCaptionLabelClicked();
               }
             }}
           >
             <span>{formatMonthShort(month)} </span>
             <span
               onClick={(e) => {
-                e.stopPropagation()
-                setShowYearPicker(!showYearPicker)
-                setShowMonthPicker(false)
+                e.stopPropagation();
+                setShowYearPicker(!showYearPicker);
+                setShowMonthPicker(false);
                 if (onCaptionLabelClicked) {
-                  onCaptionLabelClicked()
+                  onCaptionLabelClicked();
                 }
               }}
             >
@@ -244,21 +295,21 @@ function Calendar({
           <span
             className="text-sm font-medium flex gap-1"
             onClick={() => {
-              setShowYearPicker(!showYearPicker)
-              setShowMonthPicker(false)
+              setShowYearPicker(!showYearPicker);
+              setShowMonthPicker(false);
               if (onCaptionLabelClicked) {
-                onCaptionLabelClicked()
+                onCaptionLabelClicked();
               }
             }}
           >
             <span>{formatMonthShort(month)}</span>
             <span
               onClick={(e) => {
-                e.stopPropagation()
-                setShowYearPicker(!showYearPicker)
-                setShowMonthPicker(false)
+                e.stopPropagation();
+                setShowYearPicker(!showYearPicker);
+                setShowMonthPicker(false);
                 if (onCaptionLabelClicked) {
-                  onCaptionLabelClicked()
+                  onCaptionLabelClicked();
                 }
               }}
               className="hover:underline"
@@ -267,12 +318,17 @@ function Calendar({
             </span>
           </span>
         )}
-        {onCaptionLabelClicked && <ChevronDown strokeWidth={3} size={15} />}
+        {onCaptionLabelClicked && (
+          <ChevronDown
+            strokeWidth={3}
+            size={15}
+          />
+        )}
       </div>
       <button
         type="button"
         onClick={() => {
-          goToOffsetMonth(1)
+          goToOffsetMonth(1);
         }}
         disabled={!canGoForward}
         className={cn(
@@ -287,7 +343,7 @@ function Calendar({
         <ChevronRight className="h-4 w-4" />
       </button>
     </div>
-  )
+  );
 
   const pickerProps = {
     ...restProps,
@@ -302,21 +358,25 @@ function Calendar({
     ...(initialFocus && { initialFocus }),
     ...(modifiers && { modifiers }),
     ...(modifiersClassNames && { modifiersClassNames }),
-  }
+  };
 
   return (
-    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ touchAction: "pan-y" }}>
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{ touchAction: "pan-y" }}
+    >
       {!showYearPicker && !showMonthPicker && <NavigationHeader />}
       {showYearPicker ? (
         <YearPicker
           value={month}
           onChange={(newDate) => {
-            setMonth(newDate)
-            setShowYearPicker(false)
-            setShowMonthPicker(true)
+            setMonth(newDate);
+            setShowYearPicker(false);
+            setShowMonthPicker(true);
           }}
           onCaptionLabelClicked={() => {
-            setShowYearPicker(false)
+            setShowYearPicker(false);
           }}
           disableFutureNavigation={disableFutureNavigation}
           minDate={minDate}
@@ -325,35 +385,46 @@ function Calendar({
         <MonthPicker
           value={month}
           onChange={(newDate) => {
-            setMonth(newDate)
-            setShowMonthPicker(false)
+            setMonth(newDate);
+            setShowMonthPicker(false);
           }}
           onCaptionLabelClicked={() => {
-            setShowMonthPicker(false)
+            setShowMonthPicker(false);
           }}
           disableFutureNavigation={disableFutureNavigation}
           minDate={minDate}
         />
       ) : mode === "single" ? (
-        <DayPicker {...pickerProps} mode="single" selected={selectedDate} onSelect={handleOnSelectSingle} />
+        <DayPicker
+          {...pickerProps}
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleOnSelectSingle}
+        />
       ) : (
         <DayPicker
           {...pickerProps}
           mode="range"
           selected={selected}
           onSelect={(_range, selectedDay, modifiers, e) => {
-            const currentRange = selected
-            let nextRange: DateRange
+            const currentRange = selected;
+            let nextRange: DateRange;
             if (rangeFocus === "from") {
-              nextRange = { from: selectedDay, to: currentRange.to }
+              nextRange = { from: selectedDay, to: currentRange.to };
             } else {
-              const from = currentRange.from ?? selectedDay
-              nextRange = selectedDay < from ? { from: selectedDay, to: from } : { from, to: selectedDay }
+              const from = currentRange.from ?? selectedDay;
+              nextRange =
+                selectedDay < from
+                  ? { from: selectedDay, to: from }
+                  : { from, to: selectedDay };
             }
-            if (month.getMonth() !== selectedDay.getMonth() || month.getFullYear() !== selectedDay.getFullYear()) {
-              setMonth(selectedDay)
+            if (
+              month.getMonth() !== selectedDay.getMonth() ||
+              month.getFullYear() !== selectedDay.getFullYear()
+            ) {
+              setMonth(selectedDay);
             }
-            handleOnSelectRange(nextRange, selectedDay, modifiers, e)
+            handleOnSelectRange(nextRange, selectedDay, modifiers, e);
           }}
           modifiers={{
             ...(selected.from && {
@@ -364,7 +435,8 @@ function Calendar({
             }),
             ...(selected.from &&
               selected.to && {
-                range_middle: (d: Date) => d > selected.from! && d < selected.to!,
+                range_middle: (d: Date) =>
+                  d > selected.from! && d < selected.to!,
               }),
             ...(selected.from &&
               rangeFocus === "from" && {
@@ -387,9 +459,9 @@ function Calendar({
         />
       )}
     </div>
-  )
+  );
 }
 
-Calendar.displayName = "Calendar"
+Calendar.displayName = "Calendar";
 
-export { Calendar }
+export { Calendar };

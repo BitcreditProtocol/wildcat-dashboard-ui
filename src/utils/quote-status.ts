@@ -1,21 +1,26 @@
-export type QuoteStatusVariant = "default" | "secondary" | "destructive" | "success" | "outline"
+export type QuoteStatusVariant =
+  | "default"
+  | "secondary"
+  | "destructive"
+  | "success"
+  | "outline";
 
 export const getQuoteStatusVariant = (status: string): QuoteStatusVariant => {
   switch (status) {
     case "Offered":
     case "OfferExpired":
-      return "default"
+      return "default";
     case "Pending":
-      return "default"
+      return "default";
     case "Accepted":
     case "Minting":
     case "MintingEnabled":
-      return "success"
+      return "success";
     case "Denied":
     case "Canceled":
     case "Rejected":
-      return "destructive"
+      return "destructive";
     default:
-      return "outline"
+      return "outline";
   }
-}
+};
