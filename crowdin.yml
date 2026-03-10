@@ -1,12 +1,6 @@
-# Crowdin Configuration
-# Replace YOUR_PROJECT_ID with your actual Crowdin project ID
-# Get it from: https://crowdin.com/project/YOUR_PROJECT/settings#api
-project_id: "YOUR_PROJECT_ID"
-
-# API token will be read from the CROWDIN_PERSONAL_TOKEN environment variable
-api_token_env: "CROWDIN_PERSONAL_TOKEN"
-
-preserve_hierarchy: true
+project_id: YOUR_PROJECT_ID
+api_token_env: CROWDIN_PERSONAL_TOKEN
+preserve_hierarchy: 1
 files:
   - source: src/i18n/source.json
     translation: src/i18n/%locale%/translation.json
