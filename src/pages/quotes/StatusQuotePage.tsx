@@ -263,7 +263,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const intl = useIntl();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
-  const [itemsPerPage, setItemsPerPage] = useState<ItemsPerPageValue>(PAGE_SIZE);
+  const [itemsPerPage, setItemsPerPage] =
+    useState<ItemsPerPageValue>(PAGE_SIZE);
   const limit =
     itemsPerPage === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_LIMIT : itemsPerPage;
 
@@ -487,7 +488,9 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
               value={String(itemsPerPage)}
               onValueChange={(value) =>
                 setItemsPerPage(
-                  value === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_VALUE : Number(value),
+                  value === ALL_PAGE_SIZE_VALUE
+                    ? ALL_PAGE_SIZE_VALUE
+                    : Number(value),
                 )
               }
             >

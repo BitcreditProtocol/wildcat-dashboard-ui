@@ -43,9 +43,8 @@ interface UseQueriesResultItem {
   isLoading: boolean;
 }
 
-const mockUseQuery = vi.fn<
-  (options: GetQuoteQueryOptions) => GetQuoteQueryResult
->();
+const mockUseQuery =
+  vi.fn<(options: GetQuoteQueryOptions) => GetQuoteQueryResult>();
 const mockUseInfiniteQuery = vi.fn<() => InfiniteQueryResult>();
 const mockUseQueries =
   vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
@@ -98,9 +97,11 @@ vi.mock("@/components/ui/select", () => ({
     <div>{children}</div>
   ),
   SelectValue: () => <span>SelectValue</span>,
-  SelectContent: ({ children }: { children: ReactElement | ReactElement[] }) => (
-    <div>{children}</div>
-  ),
+  SelectContent: ({
+    children,
+  }: {
+    children: ReactElement | ReactElement[];
+  }) => <div>{children}</div>,
   SelectItem: ({
     value,
     children,
