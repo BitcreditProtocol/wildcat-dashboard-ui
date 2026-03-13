@@ -21,11 +21,11 @@ interface GetQuoteQueryResult {
 interface InfiniteQueryResult {
   data:
     | {
-        pages: Array<{
-          data?: Array<{ id: string; status: string; sum: number }>;
-          quotes?: Array<{ id: string; status: string; sum: number }>;
+        pages: {
+          data?: { id: string; status: string; sum: number }[];
+          quotes?: { id: string; status: string; sum: number }[];
           total?: number;
-        }>;
+        }[];
       }
     | undefined;
   isLoading: boolean;
