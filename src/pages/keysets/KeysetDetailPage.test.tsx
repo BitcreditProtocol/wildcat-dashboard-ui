@@ -141,7 +141,10 @@ describe("KeysetDetailPage", () => {
     mockUseQuery.mockImplementation((opts: QueryOptions) => {
       const id = opts.queryKey[0]._id;
       if (id === "listKeysetInfos") {
-        return { data: { data: [{ id: "other-keyset" }], total: 1 }, isLoading: false };
+        return {
+          data: { data: [{ id: "other-keyset" }], total: 1 },
+          isLoading: false,
+        };
       }
       if (id === "listQuotes") {
         return { data: { data: [], total: 0 }, isLoading: false };
@@ -177,7 +180,10 @@ describe("KeysetDetailPage", () => {
       }
       if (id === "listQuotes") {
         return {
-          data: { data: [{ id: "quote-1", status: "Pending", sum: 100 }], total: 1 },
+          data: {
+            data: [{ id: "quote-1", status: "Pending", sum: 100 }],
+            total: 1,
+          },
           isLoading: false,
         };
       }
