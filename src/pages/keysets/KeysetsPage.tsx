@@ -36,9 +36,10 @@ type SortBy =
   | "currency-desc";
 
 function PageBody() {
-  const { data: keysets, isLoading: keysetsLoading } = useQuery(
+  const { data: keysetsResponse, isLoading: keysetsLoading } = useQuery(
     listKeysetInfosOptions(),
   );
+  const keysets = keysetsResponse?.data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
   const intl = useIntl();

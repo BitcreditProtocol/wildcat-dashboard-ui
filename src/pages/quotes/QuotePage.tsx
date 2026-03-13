@@ -110,7 +110,7 @@ function PageBody({ id }: { id: string }) {
   });
 
   const mintCompleteQuery = useQuery({
-    ...getEbillMintCompleteOptions({ path: { bid: billId ?? "" } }),
+    ...getEbillMintCompleteOptions({ path: { bid: billId ?? "" } } as never),
     retry: 1,
     enabled: !!billId && shouldCheckMintComplete,
     refetchInterval: (query) => {

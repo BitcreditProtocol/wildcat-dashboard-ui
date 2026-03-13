@@ -141,10 +141,10 @@ describe("KeysetDetailPage", () => {
     mockUseQuery.mockImplementation((opts: QueryOptions) => {
       const id = opts.queryKey[0]._id;
       if (id === "listKeysetInfos") {
-        return { data: [{ id: "other-keyset" }], isLoading: false };
+        return { data: { data: [{ id: "other-keyset" }], total: 1 }, isLoading: false };
       }
       if (id === "listQuotes") {
-        return { data: { quotes: [] }, isLoading: false };
+        return { data: { data: [], total: 0 }, isLoading: false };
       }
       if (id === "listEbills") {
         return { data: [], isLoading: false };
@@ -161,20 +161,23 @@ describe("KeysetDetailPage", () => {
       const id = opts.queryKey[0]._id;
       if (id === "listKeysetInfos") {
         return {
-          data: [
-            {
-              id: "keyset-1",
-              active: true,
-              final_expiry: 1771545600,
-              unit: "sat",
-            },
-          ],
+          data: {
+            data: [
+              {
+                id: "keyset-1",
+                active: true,
+                final_expiry: 1771545600,
+                unit: "sat",
+              },
+            ],
+            total: 1,
+          },
           isLoading: false,
         };
       }
       if (id === "listQuotes") {
         return {
-          data: { quotes: [{ id: "quote-1", status: "Pending", sum: 100 }] },
+          data: { data: [{ id: "quote-1", status: "Pending", sum: 100 }], total: 1 },
           isLoading: false,
         };
       }

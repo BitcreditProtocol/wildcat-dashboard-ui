@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  listQuotesOptions,
+  listQuotesInfiniteOptions,
   getQuoteOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import {
@@ -28,6 +28,13 @@ import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { SortButtons } from "@/components/SortButtons";
 import { useIntl } from "react-intl";
 import { getApiErrorMessage } from "@/lib/api-error";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type QuoteStatus =
   | "Accepted"
@@ -47,10 +54,47 @@ type SortBy =
   | "maturity-desc";
 
 const RETRY_COUNT = 2;
+const PAGE_SIZE = 25;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const ALL_PAGE_SIZE_VALUE = "all";
+const ALL_PAGE_SIZE_LIMIT = 100_000;
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
+
+type ItemsPerPageValue = number | typeof ALL_PAGE_SIZE_VALUE;
 
 interface StatusQuotePageProps {
   status?: QuoteStatus;
+}
+
+interface QuoteListPage {
+  data?: unknown[];
+  quotes?: unknown[];
+  total?: number;
+}
+
+function isLightInfo(value: unknown): value is LightInfo {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "status" in value &&
+    typeof value.status === "string" &&
+    "sum" in value &&
+    typeof value.sum === "number"
+  );
+}
+
+function getPageQuotes(page: QuoteListPage | undefined): LightInfo[] {
+  if (!page) {
+    return [];
+  }
+
+  return (page.data ?? page.quotes ?? []).filter(isLightInfo);
+}
+
+function isPaginatedPage(page: QuoteListPage | undefined): boolean {
+  return Array.isArray(page?.data) && typeof page?.total === "number";
 }
 
 function Loader() {
@@ -219,16 +263,44 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const intl = useIntl();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
+  const [itemsPerPage, setItemsPerPage] = useState<ItemsPerPageValue>(PAGE_SIZE);
+  const limit =
+    itemsPerPage === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_LIMIT : itemsPerPage;
 
-  const { data, isFetching, error, isLoading } = useQuery({
-    ...listQuotesOptions(),
+  const {
+    data,
+    isFetching,
+    error,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    ...listQuotesInfiniteOptions({
+      query: {
+        limit,
+        status,
+      },
+    }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.reduce(
+        (sum, page) => sum + getPageQuotes(page).length,
+        0,
+      );
+      const total = lastPage.total ?? getPageQuotes(lastPage).length;
+      return loadedCount < total ? loadedCount : undefined;
+    },
     retry: RETRY_COUNT,
     retryDelay,
   });
+  const quotes = data?.pages.flatMap((page) => getPageQuotes(page)) ?? [];
+  const totalQuotes = data?.pages[0]?.total ?? quotes.length;
+  const usesLegacyFallback =
+    data?.pages.some((page) => !isPaginatedPage(page)) ?? false;
 
-  /* TODO: optimize this with pagination or batch fetching if API supports it */
   const quoteDetailsQueries = useQueries({
-    queries: (data?.quotes ?? []).map((quote) => ({
+    queries: quotes.map((quote) => ({
       ...getQuoteOptions({
         path: { qid: quote.id },
       }),
@@ -276,7 +348,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   }
 
   const filteredQuotes =
-    data?.quotes.filter((quote) => {
+    quotes.filter((quote) => {
       if (status && quote.status !== status) {
         return false;
       }
@@ -298,8 +370,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     }) ?? [];
 
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
-    const aIndex = data?.quotes.findIndex((q) => q.id === a.id) ?? -1;
-    const bIndex = data?.quotes.findIndex((q) => q.id === b.id) ?? -1;
+    const aIndex = quotes.findIndex((q) => q.id === a.id);
+    const bIndex = quotes.findIndex((q) => q.id === b.id);
 
     const aBill = aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data?.bill : null;
     const bBill = bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data?.bill : null;
@@ -396,10 +468,62 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       <div className="flex items-center justify-center">
         <LoaderIcon
           className={cn("stroke-1", {
-            "animate-spin": isFetching && !isLoading,
-            invisible: !isFetching || isLoading,
+            "animate-spin": (isFetching || isFetchingNextPage) && !isLoading,
+            invisible: (!isFetching && !isFetchingNextPage) || isLoading,
           })}
         />
+      </div>
+
+      <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
+        {!usesLegacyFallback && (
+          <div className="flex items-center gap-2">
+            <span>
+              {intl.formatMessage({
+                id: "quotes.pagination.itemsPerPage",
+                defaultMessage: "Items per page",
+              })}
+            </span>
+            <Select
+              value={String(itemsPerPage)}
+              onValueChange={(value) =>
+                setItemsPerPage(
+                  value === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_VALUE : Number(value),
+                )
+              }
+            >
+              <SelectTrigger className="h-8 w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem
+                    key={size}
+                    value={String(size)}
+                  >
+                    {size}
+                  </SelectItem>
+                ))}
+                <SelectItem value={ALL_PAGE_SIZE_VALUE}>
+                  {intl.formatMessage({
+                    id: "quotes.pagination.all",
+                    defaultMessage: "All",
+                  })}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {totalQuotes > 0 && (
+          <div>
+            {intl.formatMessage(
+              {
+                id: "quotes.pagination.count",
+                defaultMessage: "Showing {loaded} of {total} quotes",
+              },
+              { loaded: quotes.length, total: totalQuotes },
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5 my-2">
@@ -428,6 +552,27 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           );
         })}
       </div>
+
+      {hasNextPage && (
+        <div className="flex justify-center pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage
+              ? intl.formatMessage({
+                  id: "quotes.pagination.loadingMore",
+                  defaultMessage: "Loading more...",
+                })
+              : intl.formatMessage({
+                  id: "quotes.pagination.loadMore",
+                  defaultMessage: "Load more",
+                })}
+          </Button>
+        </div>
+      )}
     </>
   );
 }
