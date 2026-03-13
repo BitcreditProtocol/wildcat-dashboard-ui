@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChevronDown,
   ChevronUp,
@@ -11,30 +11,40 @@ import {
   Coins,
   DollarSign,
   ArrowUpDown,
-} from "lucide-react"
-import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover"
-import { useIntl } from "react-intl"
+} from "lucide-react";
+import type {
+  Endorsement,
+  LightBillParticipant,
+} from "@/generated/client/types.gen";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { useIntl } from "react-intl";
 
 interface EndorsementChainProps {
-  endorsements?: Endorsement[]
-  isLoading?: boolean
-  issueDate?: string
-  maturityDate?: string
-  mintingEnabled?: boolean
-  quoteOffered?: boolean
+  endorsements?: Endorsement[];
+  isLoading?: boolean;
+  issueDate?: string;
+  maturityDate?: string;
+  mintingEnabled?: boolean;
+  quoteOffered?: boolean;
 }
 
-function LightParticipantInfo({ participant }: { participant: LightBillParticipant }) {
-  const intl = useIntl()
+function LightParticipantInfo({
+  participant,
+}: {
+  participant: LightBillParticipant;
+}) {
+  const intl = useIntl();
   if ("Anon" in participant) {
     return (
       <div className="flex flex-col gap-0.5">
         <span className="text-sm text-muted-foreground">
-          {intl.formatMessage({ id: "participants.role.bearer", defaultMessage: "Bearer" })}
+          {intl.formatMessage({
+            id: "participants.role.bearer",
+            defaultMessage: "Bearer",
+          })}
         </span>
         <TruncatedTextPopover
           text={participant.Anon.node_id}
@@ -42,11 +52,15 @@ function LightParticipantInfo({ participant }: { participant: LightBillParticipa
           className="font-mono text-xs text-muted-foreground"
         />
       </div>
-    )
+    );
   } else if ("Ident" in participant) {
     return (
       <div className="flex flex-col gap-0.5">
-        <TruncatedTextPopover text={participant.Ident.name} maxLength={50} className="font-medium text-sm" />
+        <TruncatedTextPopover
+          text={participant.Ident.name}
+          maxLength={50}
+          className="font-medium text-sm"
+        />
         {participant.Ident.city && participant.Ident.country && (
           <TruncatedTextPopover
             text={`${participant.Ident.city}, ${participant.Ident.country}`}
@@ -55,9 +69,9 @@ function LightParticipantInfo({ participant }: { participant: LightBillParticipa
           />
         )}
       </div>
-    )
+    );
   }
-  return null
+  return null;
 }
 
 interface HistoryEvent {
@@ -70,9 +84,9 @@ interface HistoryEvent {
     | "acceptance"
     | "rejection"
     | "minting"
-    | "rejectedToPay"
-  timestamp?: number
-  data: Endorsement | null
+    | "rejectedToPay";
+  timestamp?: number;
+  data: Endorsement | null;
 }
 
 const EVENT_CONFIG = {
@@ -130,7 +144,7 @@ const EVENT_CONFIG = {
     labelId: "endorsement.event.payment",
     defaultLabel: "Payment received",
   },
-} as const
+} as const;
 
 export function EndorsementChain({
   endorsements,
@@ -147,21 +161,21 @@ export function EndorsementChain({
   quoteOffered,
   offeredTimestamp,
 }: EndorsementChainProps & {
-  requestToPayTimestamp?: number
-  rejectedToPayTimestamp?: number
-  paymentTimestamp?: number
-  acceptanceTimestamp?: number
-  rejectionTimestamp?: number
-  mintingTimestamp?: number
-  offeredTimestamp?: number
+  requestToPayTimestamp?: number;
+  rejectedToPayTimestamp?: number;
+  paymentTimestamp?: number;
+  acceptanceTimestamp?: number;
+  rejectionTimestamp?: number;
+  mintingTimestamp?: number;
+  offeredTimestamp?: number;
 }) {
-  const intl = useIntl()
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [sortByTimestamp, setSortByTimestamp] = useState(false)
+  const intl = useIntl();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [sortByTimestamp, setSortByTimestamp] = useState(false);
   const titleLabel = intl.formatMessage({
     id: "endorsement.history.title",
     defaultMessage: "Bill history",
-  })
+  });
 
   if (isLoading) {
     return (
@@ -173,18 +187,18 @@ export function EndorsementChain({
           <Skeleton className="h-32 w-full" />
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  const events: HistoryEvent[] = []
+  const events: HistoryEvent[] = [];
 
   if (issueDate) {
-    const issueTimestamp = new Date(issueDate).getTime() / 1000
+    const issueTimestamp = new Date(issueDate).getTime() / 1000;
     events.push({
       type: "issue",
       timestamp: issueTimestamp,
       data: null,
-    })
+    });
   }
 
   if (quoteOffered) {
@@ -192,7 +206,7 @@ export function EndorsementChain({
       type: "offered",
       timestamp: offeredTimestamp ?? undefined,
       data: null,
-    })
+    });
   }
 
   if (endorsements) {
@@ -201,8 +215,8 @@ export function EndorsementChain({
         type: "endorsement",
         timestamp: endorsement.signing_timestamp,
         data: endorsement,
-      })
-    })
+      });
+    });
   }
 
   if (requestToPayTimestamp) {
@@ -210,7 +224,7 @@ export function EndorsementChain({
       type: "requestToPay",
       timestamp: requestToPayTimestamp,
       data: null,
-    })
+    });
   }
 
   if (rejectedToPayTimestamp) {
@@ -218,7 +232,7 @@ export function EndorsementChain({
       type: "rejectedToPay",
       timestamp: rejectedToPayTimestamp,
       data: null,
-    })
+    });
   }
 
   if (paymentTimestamp) {
@@ -226,7 +240,7 @@ export function EndorsementChain({
       type: "payment",
       timestamp: paymentTimestamp,
       data: null,
-    })
+    });
   }
 
   if (acceptanceTimestamp) {
@@ -234,7 +248,7 @@ export function EndorsementChain({
       type: "acceptance",
       timestamp: acceptanceTimestamp,
       data: null,
-    })
+    });
   }
 
   if (rejectionTimestamp) {
@@ -242,7 +256,7 @@ export function EndorsementChain({
       type: "rejection",
       timestamp: rejectionTimestamp,
       data: null,
-    })
+    });
   }
 
   if (mintingTimestamp !== undefined) {
@@ -250,13 +264,13 @@ export function EndorsementChain({
       type: "minting",
       timestamp: mintingTimestamp,
       data: null,
-    })
+    });
   } else if (mintingEnabled) {
     events.push({
       type: "minting",
       timestamp: undefined,
       data: null,
-    })
+    });
   }
 
   const typePriority: Record<HistoryEvent["type"], number> = {
@@ -269,20 +283,23 @@ export function EndorsementChain({
     requestToPay: 5,
     rejectedToPay: 6,
     payment: 7,
-  }
+  };
 
   events.sort((a, b) => {
     if (!sortByTimestamp) {
-      return typePriority[a.type] - typePriority[b.type]
+      return typePriority[a.type] - typePriority[b.type];
     }
-    return typePriority[b.type] - typePriority[a.type]
-  })
+    return typePriority[b.type] - typePriority[a.type];
+  });
 
-  const eventCount = events.length
+  const eventCount = events.length;
 
   return (
     <Card>
-      <CardHeader className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+      <CardHeader
+        className="cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle>{titleLabel}</CardTitle>
@@ -290,19 +307,34 @@ export function EndorsementChain({
               {intl.formatMessage(
                 {
                   id: "endorsement.history.eventCount",
-                  defaultMessage: "({count, plural, one {# event} other {# events}})",
+                  defaultMessage:
+                    "({count, plural, one {# event} other {# events}})",
                 },
                 { count: eventCount },
               )}
             </span>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 px-2 py-0 gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 py-0 gap-1"
+          >
             <span className="text-xs text-muted-foreground">
               {isExpanded
-                ? intl.formatMessage({ id: "endorsement.history.hide", defaultMessage: "Hide history" })
-                : intl.formatMessage({ id: "endorsement.history.show", defaultMessage: "Show history" })}
+                ? intl.formatMessage({
+                    id: "endorsement.history.hide",
+                    defaultMessage: "Hide history",
+                  })
+                : intl.formatMessage({
+                    id: "endorsement.history.show",
+                    defaultMessage: "Show history",
+                  })}
             </span>
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </CardHeader>
@@ -314,16 +346,22 @@ export function EndorsementChain({
               variant="outline"
               size="sm"
               onClick={(e) => {
-                e.stopPropagation()
-                setSortByTimestamp(!sortByTimestamp)
+                e.stopPropagation();
+                setSortByTimestamp(!sortByTimestamp);
               }}
               className="gap-2"
             >
               <ArrowUpDown className="h-3 w-3" />
               <span className="text-xs">
                 {sortByTimestamp
-                  ? intl.formatMessage({ id: "endorsement.history.descending", defaultMessage: "Descending" })
-                  : intl.formatMessage({ id: "endorsement.history.ascending", defaultMessage: "Ascending" })}
+                  ? intl.formatMessage({
+                      id: "endorsement.history.descending",
+                      defaultMessage: "Descending",
+                    })
+                  : intl.formatMessage({
+                      id: "endorsement.history.ascending",
+                      defaultMessage: "Ascending",
+                    })}
               </span>
             </Button>
           </div>
@@ -338,12 +376,12 @@ export function EndorsementChain({
           ) : (
             <div className="flex flex-col gap-4">
               {events.map((event, index) => {
-                const config = EVENT_CONFIG[event.type]
-                const Icon = config.icon
+                const config = EVENT_CONFIG[event.type];
+                const Icon = config.icon;
                 const displayLabel = intl.formatMessage({
                   id: config.labelId,
                   defaultMessage: config.defaultLabel,
-                })
+                });
 
                 return (
                   <div key={index}>
@@ -351,14 +389,21 @@ export function EndorsementChain({
                       {/* Event Header */}
                       <div className="flex items-center gap-2">
                         <Icon className={`h-4 w-4 ${config.color}`} />
-                        <span className="text-sm font-semibold">{displayLabel}</span>
+                        <span className="text-sm font-semibold">
+                          {displayLabel}
+                        </span>
                       </div>
 
                       {/* Timestamp */}
                       {event.timestamp !== undefined && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          <span>{new Date(event.timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
+                          <span>
+                            {new Date(event.timestamp * 1000).toLocaleString(
+                              undefined,
+                              { timeZone: "UTC" },
+                            )}
+                          </span>
                         </div>
                       )}
 
@@ -385,7 +430,9 @@ export function EndorsementChain({
                                   defaultMessage: "Signed by",
                                 })}
                               </div>
-                              <LightParticipantInfo participant={event.data.signed.data} />
+                              <LightParticipantInfo
+                                participant={event.data.signed.data}
+                              />
                               {event.data.signed.signatory && (
                                 <div className="text-xs text-muted-foreground mt-1">
                                   <div>
@@ -410,7 +457,9 @@ export function EndorsementChain({
                                   defaultMessage: "Endorsed to",
                                 })}
                               </div>
-                              <LightParticipantInfo participant={event.data.pay_to_the_order_of} />
+                              <LightParticipantInfo
+                                participant={event.data.pay_to_the_order_of}
+                              />
                             </div>
                           </div>
 
@@ -439,14 +488,16 @@ export function EndorsementChain({
                       )}
                     </div>
 
-                    {index < events.length - 1 && <Separator className="my-2" />}
+                    {index < events.length - 1 && (
+                      <Separator className="my-2" />
+                    )}
                   </div>
-                )
+                );
               })}
             </div>
           )}
         </CardContent>
       )}
     </Card>
-  )
+  );
 }

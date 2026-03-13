@@ -1,23 +1,30 @@
-import { ConfirmDrawer } from "@/components/Drawers.tsx"
-import type { ReactNode } from "react"
-import { useIntl } from "react-intl"
+import { ConfirmDrawer } from "@/components/Drawers.tsx";
+import type { ReactNode } from "react";
+import { useIntl } from "react-intl";
 
 interface DenyConfirmDrawerProps {
-  title: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: () => void
-  children: ReactNode
+  title: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: () => void;
+  children: ReactNode;
 }
 
-export function DenyConfirmDrawer({ title, open, onOpenChange, onSubmit, children }: DenyConfirmDrawerProps) {
-  const intl = useIntl()
+export function DenyConfirmDrawer({
+  title,
+  open,
+  onOpenChange,
+  onSubmit,
+  children,
+}: DenyConfirmDrawerProps) {
+  const intl = useIntl();
   return (
     <ConfirmDrawer
       title={title}
       description={intl.formatMessage({
         id: "quotes.deny.description",
-        defaultMessage: "Are you sure you want to deny this quote? This action cannot be undone.",
+        defaultMessage:
+          "Are you sure you want to deny this quote? This action cannot be undone.",
       })}
       open={open}
       onOpenChange={onOpenChange}
@@ -29,5 +36,5 @@ export function DenyConfirmDrawer({ title, open, onOpenChange, onSubmit, childre
       submitButtonVariant="destructive"
       trigger={children}
     />
-  )
+  );
 }

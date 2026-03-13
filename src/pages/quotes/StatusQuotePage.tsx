@@ -1,27 +1,33 @@
-import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { PageTitle } from "@/components/PageTitle"
-import { Button } from "@/components/ui/button"
-import { Card, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { listQuotesOptions, getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen"
-import { useQuery, useQueries } from "@tanstack/react-query"
-import { LoaderIcon } from "lucide-react"
-import { Link, useNavigate } from "react-router"
-import { formatNumber, truncateString, formatStatusLabel } from "@/utils/strings"
-import { getQuoteStatusVariant } from "@/utils/quote-status"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import type { LightInfo } from "@/generated/client/types.gen"
-import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview"
-import { toast } from "sonner"
-import * as React from "react"
-import SearchComponent, { HighlightText } from "@/components/ui/search"
-import { useEffect, useState } from "react"
-import { BreadcrumbLink } from "@/components/ui/breadcrumb"
-import { SortButtons } from "@/components/SortButtons"
-import { useIntl } from "react-intl"
-import { getApiErrorMessage } from "@/lib/api-error"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  listQuotesOptions,
+  getQuoteOptions,
+} from "@/generated/client/@tanstack/react-query.gen";
+import { useQuery, useQueries } from "@tanstack/react-query";
+import { LoaderIcon } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+import {
+  formatNumber,
+  truncateString,
+  formatStatusLabel,
+} from "@/utils/strings";
+import { getQuoteStatusVariant } from "@/utils/quote-status";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import type { LightInfo } from "@/generated/client/types.gen";
+import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
+import { toast } from "sonner";
+import * as React from "react";
+import SearchComponent, { HighlightText } from "@/components/ui/search";
+import { useState } from "react";
+import { BreadcrumbLink } from "@/components/ui/breadcrumb";
+import { SortButtons } from "@/components/SortButtons";
+import { useIntl } from "react-intl";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 type QuoteStatus =
   | "Accepted"
@@ -31,25 +37,20 @@ type QuoteStatus =
   | "Pending"
   | "Rejected"
   | "Canceled"
-  | "MintingEnabled"
-type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc"
+  | "MintingEnabled";
+type SortBy =
+  | "status-asc"
+  | "status-desc"
+  | "sum-asc"
+  | "sum-desc"
+  | "maturity-asc"
+  | "maturity-desc";
 
-const RETRY_COUNT = 2
-const PAGE_SIZE = 10
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
-const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000)
-
-const shiftDateByDays = (dateStr: string, days: number): string => {
-  const date = new Date(`${dateStr}T00:00:00Z`)
-  if (Number.isNaN(date.getTime())) {
-    return dateStr
-  }
-  date.setUTCDate(date.getUTCDate() + days)
-  return date.toISOString().slice(0, 10)
-}
+const RETRY_COUNT = 2;
+const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
 
 interface StatusQuotePageProps {
-  status?: QuoteStatus
+  status?: QuoteStatus;
 }
 
 function Loader() {
@@ -63,12 +64,18 @@ function Loader() {
         <Skeleton className="h-29 rounded-lg" />
       </div>
     </div>
-  )
+  );
 }
 
-function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: string }) {
-  const intl = useIntl()
-  const navigate = useNavigate()
+function QuoteItemCard({
+  quote,
+  searchQuery,
+}: {
+  quote: LightInfo;
+  searchQuery: string;
+}) {
+  const intl = useIntl();
+  const navigate = useNavigate();
 
   const queryResult = useQuery({
     ...getQuoteOptions({
@@ -77,35 +84,48 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
     retry: RETRY_COUNT,
     retryDelay,
     enabled: !!quote.id,
-  })
+  });
 
-  const { data: quoteDetails, isLoading: isLoadingDetails, error: detailsError } = queryResult
-  const bill = quoteDetails?.bill
+  const {
+    data: quoteDetails,
+    isLoading: isLoadingDetails,
+    error: detailsError,
+  } = queryResult;
+  const bill = quoteDetails?.bill;
 
   const handleQuoteClick = (e: React.MouseEvent) => {
     if (detailsError) {
-      e.preventDefault()
-      const errorMessage = getApiErrorMessage(detailsError)
-      toast.error(intl.formatMessage({ id: "quotes.card.error.title", defaultMessage: "Cannot load quote" }), {
-        description: intl.formatMessage(
-          {
-            id: "quotes.card.error.description",
-            defaultMessage: "Quote {id} is unavailable. {message}",
-          },
-          {
-            id: truncateString(quote.id, 12),
-            message:
-              errorMessage ||
-              intl.formatMessage({ id: "quotes.error.tryAgain", defaultMessage: "Please try again later." }),
-          },
-        ),
-        id: `quote-error-${quote.id}`,
-        duration: 5000,
-      })
+      e.preventDefault();
+      const errorMessage = getApiErrorMessage(detailsError);
+      toast.error(
+        intl.formatMessage({
+          id: "quotes.card.error.title",
+          defaultMessage: "Cannot load quote",
+        }),
+        {
+          description: intl.formatMessage(
+            {
+              id: "quotes.card.error.description",
+              defaultMessage: "Quote {id} is unavailable. {message}",
+            },
+            {
+              id: truncateString(quote.id, 12),
+              message:
+                errorMessage ||
+                intl.formatMessage({
+                  id: "quotes.error.tryAgain",
+                  defaultMessage: "Please try again later.",
+                }),
+            },
+          ),
+          id: `quote-error-${quote.id}`,
+          duration: 5000,
+        },
+      );
     } else {
-      void navigate(`/quotes/${quote.id}`)
+      void navigate(`/quotes/${quote.id}`);
     }
-  }
+  };
 
   return (
     <Card className="text-sm">
@@ -113,8 +133,14 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
         <CardTitle className="text-xl">
           <div className="items-center flex gap-1">
             <span className="font-mono pt-2">
-              <Link to={`/quotes/${quote.id}`} onClick={handleQuoteClick}>
-                <HighlightText text={quote.id} highlight={searchQuery} />
+              <Link
+                to={`/quotes/${quote.id}`}
+                onClick={handleQuoteClick}
+              >
+                <HighlightText
+                  text={quote.id}
+                  highlight={searchQuery}
+                />
               </Link>
             </span>
             <span></span>
@@ -122,7 +148,10 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
         </CardTitle>
         <div className="flex gap-2">
           <div className="leading-none font-semibold tracking-tight text-3xl">
-            <HighlightText text={`${formatNumber(intl.locale, quote.sum)} sat`} highlight={searchQuery} />
+            <HighlightText
+              text={`${formatNumber(intl.locale, quote.sum)} sat`}
+              highlight={searchQuery}
+            />
           </div>
           <Badge variant={getQuoteStatusVariant(quote.status)}>
             <HighlightText
@@ -137,7 +166,11 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
       </div>
       <div className="flex justify-between items-center gap-4 px-4 py-2">
         <div>
-          <Button size="sm" className="max-w-sm px-12" onClick={handleQuoteClick}>
+          <Button
+            size="sm"
+            className="max-w-sm px-12"
+            onClick={handleQuoteClick}
+          >
             {intl.formatMessage({
               id: "quotes.card.view",
               defaultMessage: "View",
@@ -179,44 +212,23 @@ function QuoteItemCard({ quote, searchQuery }: { quote: LightInfo; searchQuery: 
         )}
       </div>
     </Card>
-  )
+  );
 }
 
 function QuoteList({ status }: { status?: QuoteStatus }) {
-  const intl = useIntl()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<SortBy>("maturity-asc")
-  const [itemsPerPage, setItemsPerPage] = useState<number>(PAGE_SIZE)
-  const [pageIndex, setPageIndex] = useState(0)
-  const [pageCursors, setPageCursors] = useState<(string | null)[]>([null])
-  const currentCursor = pageCursors[pageIndex] ?? null
-
-  useEffect(() => {
-    setPageIndex(0)
-    setPageCursors([null])
-  }, [status])
-
-  useEffect(() => {
-    setPageIndex(0)
-    setPageCursors([null])
-  }, [itemsPerPage])
+  const intl = useIntl();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
 
   const { data, isFetching, error, isLoading } = useQuery({
-    ...listQuotesOptions({
-      query: {
-        sort: "bill_maturity_date_asc",
-        status: status ?? null,
-        bill_maturity_date_from: currentCursor,
-      },
-    }),
+    ...listQuotesOptions(),
     retry: RETRY_COUNT,
     retryDelay,
-  })
+  });
 
-  const pageQuotes = (data?.quotes ?? []).slice(0, itemsPerPage)
-
+  /* TODO: optimize this with pagination or batch fetching if API supports it */
   const quoteDetailsQueries = useQueries({
-    queries: pageQuotes.map((quote) => ({
+    queries: (data?.quotes ?? []).map((quote) => ({
       ...getQuoteOptions({
         path: { qid: quote.id },
       }),
@@ -224,15 +236,16 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       retryDelay,
       enabled: !!quote.id,
     })),
-  })
+  });
 
   const noQuotesMessage = intl.formatMessage({
     id: "quotes.list.empty",
     defaultMessage: "No quotes available.",
-  })
+  });
 
   if (error) {
-    const errorMessage = (error as { message?: string }).message ?? String(error)
+    const errorMessage =
+      (error as { message?: string }).message ?? String(error);
     return (
       <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
         <div className="text-red-800 font-semibold">
@@ -255,71 +268,85 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           })}
         </div>
       </div>
-    )
+    );
   }
 
   if (isLoading) {
-    return <Loader />
+    return <Loader />;
   }
 
   const filteredQuotes =
-    pageQuotes.filter((quote) => {
+    data?.quotes.filter((quote) => {
       if (status && quote.status !== status) {
-        return false
+        return false;
       }
 
       if (!searchQuery) {
-        return true
+        return true;
       }
 
-      const query = searchQuery.toLowerCase()
-      const quoteId = quote.id.toLowerCase()
-      const quoteStatus = quote.status.toLowerCase()
-      const quoteSum = quote.sum.toString()
+      const query = searchQuery.toLowerCase();
+      const quoteId = quote.id.toLowerCase();
+      const quoteStatus = quote.status.toLowerCase();
+      const quoteSum = quote.sum.toString();
 
-      return quoteId.includes(query) || quoteStatus.includes(query) || quoteSum.includes(query)
-    }) ?? []
+      return (
+        quoteId.includes(query) ||
+        quoteStatus.includes(query) ||
+        quoteSum.includes(query)
+      );
+    }) ?? [];
 
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
-    const aIndex = pageQuotes.findIndex((q) => q.id === a.id)
-    const bIndex = pageQuotes.findIndex((q) => q.id === b.id)
+    const aIndex = data?.quotes.findIndex((q) => q.id === a.id) ?? -1;
+    const bIndex = data?.quotes.findIndex((q) => q.id === b.id) ?? -1;
 
-    const aBill = aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data?.bill : null
-    const bBill = bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data?.bill : null
+    const aBill = aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data?.bill : null;
+    const bBill = bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data?.bill : null;
 
     switch (sortBy) {
       case "status-asc":
-        return a.status.localeCompare(b.status)
+        return a.status.localeCompare(b.status);
       case "status-desc":
-        return b.status.localeCompare(a.status)
+        return b.status.localeCompare(a.status);
       case "sum-asc":
-        return a.sum - b.sum
+        return a.sum - b.sum;
       case "sum-desc":
-        return b.sum - a.sum
+        return b.sum - a.sum;
       case "maturity-asc": {
-        if (!aBill?.maturity_date && !bBill?.maturity_date) return 0
-        if (!aBill?.maturity_date) return 1
-        if (!bBill?.maturity_date) return -1
-        return new Date(aBill.maturity_date).getTime() - new Date(bBill.maturity_date).getTime()
+        if (!aBill?.maturity_date && !bBill?.maturity_date) return 0;
+        if (!aBill?.maturity_date) return 1;
+        if (!bBill?.maturity_date) return -1;
+        return (
+          new Date(aBill.maturity_date).getTime() -
+          new Date(bBill.maturity_date).getTime()
+        );
       }
       case "maturity-desc": {
-        if (!aBill?.maturity_date && !bBill?.maturity_date) return 0
-        if (!aBill?.maturity_date) return 1
-        if (!bBill?.maturity_date) return -1
-        return new Date(bBill.maturity_date).getTime() - new Date(aBill.maturity_date).getTime()
+        if (!aBill?.maturity_date && !bBill?.maturity_date) return 0;
+        if (!aBill?.maturity_date) return 1;
+        if (!bBill?.maturity_date) return -1;
+        return (
+          new Date(bBill.maturity_date).getTime() -
+          new Date(aBill.maturity_date).getTime()
+        );
       }
       default:
-        return 0
+        return 0;
     }
-  })
+  });
 
   const toggleSort = (field: "status" | "sum" | "maturity") => {
     if (sortBy.startsWith(field)) {
-      setSortBy(sortBy.endsWith("asc") ? (`${field}-desc` as SortBy) : (`${field}-asc` as SortBy))
+      setSortBy(
+        sortBy.endsWith("asc")
+          ? (`${field}-desc` as SortBy)
+          : (`${field}-asc` as SortBy),
+      );
     } else {
-      setSortBy(`${field}-asc` as SortBy)
+      setSortBy(`${field}-asc` as SortBy);
     }
-  }
+  };
 
   const sortOptions = [
     {
@@ -343,60 +370,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         defaultMessage: "Status",
       }),
     },
-  ]
-
-  const nextCursorMaturityDate = (() => {
-    for (let idx = pageQuotes.length - 1; idx >= 0; idx -= 1) {
-      const maturityDate = quoteDetailsQueries[idx]?.data?.bill?.maturity_date
-      if (maturityDate) {
-        return maturityDate
-      }
-    }
-    return null
-  })()
-  const hasNextPage = (data?.quotes?.length ?? 0) > itemsPerPage && Boolean(nextCursorMaturityDate)
-
-  const handlePrevPage = () => {
-    if (pageIndex === 0) return
-    setPageIndex((prev) => prev - 1)
-  }
-
-  const handleNextPage = () => {
-    if (!hasNextPage || !nextCursorMaturityDate) return
-
-    // API date filters appear inclusive; when the same cursor is reused the page can repeat.
-    // Move one day forward to guarantee forward progress through date windows.
-    const cursorForNextPage =
-      currentCursor && currentCursor === nextCursorMaturityDate
-        ? shiftDateByDays(nextCursorMaturityDate, 1)
-        : nextCursorMaturityDate
-
-    setPageCursors((prev) => {
-      const nextIndex = pageIndex + 1
-      if (prev[nextIndex] !== undefined) {
-        return prev
-      }
-      return [...prev, cursorForNextPage]
-    })
-    setPageIndex((prev) => prev + 1)
-  }
-
-  const handlePageClick = (targetPageIndex: number) => {
-    if (targetPageIndex < pageCursors.length) {
-      setPageIndex(targetPageIndex)
-      return
-    }
-
-    const isNextUnknownPage =
-      targetPageIndex === pageCursors.length && pageIndex === pageCursors.length - 1 && hasNextPage
-
-    if (isNextUnknownPage) {
-      handleNextPage()
-    }
-  }
-
-  const knownPageIndices = pageCursors.map((_, index) => index)
-  const showNextUnknownPageButton = pageIndex === pageCursors.length - 1 && hasNextPage
+  ];
 
   return (
     <>
@@ -412,7 +386,11 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           onChange={setSearchQuery}
           size="sm"
         />
-        <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
+        <SortButtons
+          sortBy={sortBy}
+          onSortChange={toggleSort}
+          options={sortOptions}
+        />
       </div>
 
       <div className="flex items-center justify-center">
@@ -424,64 +402,6 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         />
       </div>
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <span>
-            {intl.formatMessage({
-              id: "quotes.pagination.itemsPerPage",
-              defaultMessage: "Items per page",
-            })}
-          </span>
-          <Select value={String(itemsPerPage)} onValueChange={(value) => setItemsPerPage(Number(value))}>
-            <SelectTrigger className="h-8 w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={pageIndex === 0 || isFetching}>
-            {intl.formatMessage({
-              id: "quotes.pagination.previous",
-              defaultMessage: "Previous",
-            })}
-          </Button>
-          {knownPageIndices.map((knownIndex) => (
-            <Button
-              key={`page-${knownIndex}`}
-              variant={knownIndex === pageIndex ? "default" : "outline"}
-              size="sm"
-              onClick={() => handlePageClick(knownIndex)}
-              disabled={isFetching}
-            >
-              {knownIndex + 1}
-            </Button>
-          ))}
-          {showNextUnknownPageButton && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageClick(pageCursors.length)}
-              disabled={isFetching}
-            >
-              {pageCursors.length + 1}
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!hasNextPage || isFetching}>
-            {intl.formatMessage({
-              id: "quotes.pagination.next",
-              defaultMessage: "Next",
-            })}
-          </Button>
-        </div>
-      </div>
-
       <div className="flex flex-col gap-1.5 my-2">
         {sortedQuotes.length === 0 && searchQuery && (
           <div className="py-2 text-center text-muted-foreground">
@@ -491,20 +411,25 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             })}
           </div>
         )}
-        {sortedQuotes.length === 0 && !searchQuery && <div className="py-2 font-bold">{noQuotesMessage}</div>}
+        {sortedQuotes.length === 0 && !searchQuery && (
+          <div className="py-2 font-bold">{noQuotesMessage}</div>
+        )}
         {sortedQuotes.map((quote, index) => {
           if (!quote.id) {
-            console.warn(`Quote at index ${index} is missing an ID:`, quote)
+            console.warn(`Quote at index ${index} is missing an ID:`, quote);
           }
           return (
             <div key={quote.id || `quote-fallback-${index}`}>
-              <QuoteItemCard quote={quote} searchQuery={searchQuery} />
+              <QuoteItemCard
+                quote={quote}
+                searchQuery={searchQuery}
+              />
             </div>
-          )
+          );
         })}
       </div>
     </>
-  )
+  );
 }
 
 function PageBody({ status }: { status?: QuoteStatus }) {
@@ -514,17 +439,17 @@ function PageBody({ status }: { status?: QuoteStatus }) {
         <QuoteList status={status} />
       </div>
     </div>
-  )
+  );
 }
 
 export default function StatusQuotePage({ status }: StatusQuotePageProps) {
-  const intl = useIntl()
+  const intl = useIntl();
   const statusLabel = status
     ? intl.formatMessage({
         id: `quote.status.${status}`,
         defaultMessage: formatStatusLabel(status),
       })
-    : undefined
+    : undefined;
   const pageTitle = status
     ? intl.formatMessage(
         {
@@ -536,7 +461,7 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
     : intl.formatMessage({
         id: "quotes.statusPage.titleAll",
         defaultMessage: "All quotes",
-      })
+      });
 
   return (
     <>
@@ -544,7 +469,10 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
         parents={
           status
             ? [
-                <BreadcrumbLink key="quotes" asChild>
+                <BreadcrumbLink
+                  key="quotes"
+                  asChild
+                >
                   <Link to="/quotes">
                     {intl.formatMessage({
                       id: "quotes.breadcrumb",
@@ -566,5 +494,5 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
       <PageTitle>{pageTitle}</PageTitle>
       <PageBody status={status} />
     </>
-  )
+  );
 }

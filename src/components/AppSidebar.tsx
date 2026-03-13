@@ -1,12 +1,24 @@
-import { Bitcoin, Home, Inbox, Key } from "lucide-react"
-import { useContext } from "react"
-import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Bitcoin, Home, Inbox, Key } from "lucide-react";
+import { useContext } from "react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarRail,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 // import { NavUser } from "./nav/NavUser"
-import { NavMain } from "./nav/NavMain"
+import { NavMain } from "./nav/NavMain";
 // import { useKeycloak } from "../lib/keycloak-user"
-import { LanguageContext } from "@/context/language/LanguageContext"
-import { useIntl } from "react-intl"
+import { LanguageContext } from "@/context/language/LanguageContext";
+import { useIntl } from "react-intl";
 
 const data = {
   navMain: [
@@ -72,12 +84,12 @@ const data = {
       icon: Key,
     },
   ],
-}
+};
 
 function LanguageSelector() {
-  const intl = useIntl()
-  const { locale, setLocale, availableLocales } = useContext(LanguageContext)
-  const locales = availableLocales()
+  const intl = useIntl();
+  const { locale, setLocale, availableLocales } = useContext(LanguageContext);
+  const locales = availableLocales();
 
   return (
     <div className="flex flex-col gap-2">
@@ -87,7 +99,10 @@ function LanguageSelector() {
           defaultMessage: "Language",
         })}
       </span>
-      <Select value={locale} onValueChange={setLocale}>
+      <Select
+        value={locale}
+        onValueChange={setLocale}
+      >
         <SelectTrigger className="h-9">
           <SelectValue
             placeholder={intl.formatMessage({
@@ -98,7 +113,10 @@ function LanguageSelector() {
         </SelectTrigger>
         <SelectContent>
           {locales.map((loc) => (
-            <SelectItem key={loc} value={loc}>
+            <SelectItem
+              key={loc}
+              value={loc}
+            >
               {intl.formatMessage({
                 id: `locale.${loc}`,
                 defaultMessage: loc,
@@ -108,7 +126,7 @@ function LanguageSelector() {
         </SelectContent>
       </Select>
     </div>
-  )
+  );
 }
 
 export function AppSidebar() {
@@ -128,5 +146,5 @@ export function AppSidebar() {
       */}
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

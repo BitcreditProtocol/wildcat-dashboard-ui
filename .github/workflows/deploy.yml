@@ -3,35 +3,33 @@ name: Deploy wildcat-dashboard-ui (Cloudflare Pages)
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
     branches:
-      - 'master'
+      - "master"
   workflow_dispatch:
     inputs:
-        environment:
-          description: 'target'
-          required: true
-          default: 'production'
-          type: choice
-          options:
-            - dev
-            - staging
-            - production
-
+      environment:
+        description: "target"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
 
 jobs:
-
-######################################################################
-# ENV:          dev
-# CF project:   wildcat-dashboard
-######################################################################
+  ######################################################################
+  # ENV:          dev
+  # CF project:   wildcat-dashboard
+  ######################################################################
   deploy-dev:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
     concurrency:
-      group: 'deploy-dev-${{ github.ref_name }}'
+      group: "deploy-dev-${{ github.ref_name }}"
       cancel-in-progress: true
 
     # SET ENVIRONMENT
@@ -56,7 +54,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
-      
+
       # for dev: only allow dev branch
       - name: Validate correct branch on manual dispatch
         run: |
@@ -71,7 +69,7 @@ jobs:
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -87,22 +85,21 @@ jobs:
         id: deploy-dev-dispatch
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
-          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=dev --commit-message="MANUAL DISPATCH ${{ github.sha }}" --commit-hash=${{ github.sha }} --commit-dirty=true
 
-
-######################################################################
-# ENV:          staging
-# CF project:   wildcat-dashboard-staging
-######################################################################
+  ######################################################################
+  # ENV:          staging
+  # CF project:   wildcat-dashboard-staging
+  ######################################################################
   deploy-staging:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
     concurrency:
-      group: 'deploy-staging-${{ github.ref_name }}'
+      group: "deploy-staging-${{ github.ref_name }}"
       cancel-in-progress: true
 
     # SET ENVIRONMENT
@@ -144,7 +141,7 @@ jobs:
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -154,15 +151,15 @@ jobs:
 
       ##############################################################################
       # Customize deployment triggers
-      
+
       # STAGING PREVIEW: on push, branch master
       - name: Deploy ${{ github.ref_name }} to STAGING PREVIEW of ${{ env.CLOUDFLARE_PROJECT }} project
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         id: deploy-staging-preview-push-master
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
-          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=preview --commit-message="PREVIEW ${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
 
       # STAGING PROD: on push, with tag
@@ -171,8 +168,8 @@ jobs:
         id: deploy-staging-push-tag
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
-          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=master --commit-message="${{ github.ref_name }} (TAG PUSH)" --commit-hash=${{ github.sha }} --commit-dirty=true
 
       # STAGING PROD: on manual dispatch
@@ -181,22 +178,21 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
-          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=master --commit-message="${{ github.ref_name }} (DISPATCH)" --commit-hash=${{ github.sha }} --commit-dirty=true
 
-
-######################################################################
-# ENV:          production
-# CF project:   wildcat-dashboard-production
-######################################################################
+  ######################################################################
+  # ENV:          production
+  # CF project:   wildcat-dashboard-production
+  ######################################################################
   deploy-production:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
     concurrency:
-      group: 'deploy-production-${{ github.ref_name }}'
+      group: "deploy-production-${{ github.ref_name }}"
       cancel-in-progress: true
 
     # SET ENVIRONMENT
@@ -238,7 +234,7 @@ jobs:
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -246,18 +242,17 @@ jobs:
       - name: Build app
         run: npm run build
 
-
       ##############################################################################
       # Customize deployment triggers
-      
+
       # PRODUCTION PREVIEW: on push, with tag
       - name: Deploy ${{ github.ref_name }} to PRODUCTION PREVIEW of ${{ env.CLOUDFLARE_PROJECT }} project
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         id: deploy-production-preview-push-tag
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
-          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=preview --commit-message="PREVIEW ${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true
 
       # PRODUCTION PROD: manual dispatch, with tag
@@ -266,6 +261,6 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
-          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT }} --branch=master --commit-message="${{ github.ref_name }}" --commit-hash=${{ github.sha }} --commit-dirty=true

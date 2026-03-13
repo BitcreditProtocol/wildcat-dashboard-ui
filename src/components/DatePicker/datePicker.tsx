@@ -1,36 +1,36 @@
-import React, { useContext, useEffect, useMemo, useState } from "react"
-import { DateRange, dateMatchModifiers, type Matcher } from "react-day-picker"
-import { FormattedMessage } from "react-intl"
-import { addDays, isSameDay } from "date-fns"
-import { ArrowRight, CalendarIcon } from "lucide-react"
+import React, { useContext, useEffect, useMemo, useState } from "react";
+import { DateRange, dateMatchModifiers, type Matcher } from "react-day-picker";
+import { FormattedMessage } from "react-intl";
+import { addDays, isSameDay } from "date-fns";
+import { ArrowRight, CalendarIcon } from "lucide-react";
 
-import { Calendar } from "@/components/DatePicker/calendar"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LanguageContext } from "@/context/language/LanguageContext"
-import { cn } from "@/lib/utils"
-import { daysBetween, formatDateLong, formatDateShort } from "@/utils/dates"
-import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters"
+import { Calendar } from "@/components/DatePicker/calendar";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LanguageContext } from "@/context/language/LanguageContext";
+import { cn } from "@/lib/utils";
+import { daysBetween, formatDateLong, formatDateShort } from "@/utils/dates";
+import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
 
-import { DateRangeDropdown } from "./dataRangeDropdown"
-import { MonthPicker } from "./monthPicker"
-import { YearPicker } from "./yearPicker"
+import { DateRangeDropdown } from "./dataRangeDropdown";
+import { MonthPicker } from "./monthPicker";
+import { YearPicker } from "./yearPicker";
 
 interface DatePickerProps {
-  className?: string
-  label?: string
-  mode: "single" | "range"
-  value?: DateRange
-  onChange: (dateRange: DateRange | undefined) => void
-  customComponent?: React.ReactElement
-  disabled?: Matcher | Matcher[] | undefined
-  displayIncrementButtons?: boolean
-  disableFutureNavigation?: boolean
-  disableAutoSelect?: boolean
-  currentYearPosition?: "start" | "center" | "end"
-  order?: "asc" | "desc"
-  dateFilterType?: "issue" | "maturity"
-  onDateFilterTypeChange?: (type: "issue" | "maturity") => void
+  className?: string;
+  label?: string;
+  mode: "single" | "range";
+  value?: DateRange;
+  onChange: (dateRange: DateRange | undefined) => void;
+  customComponent?: React.ReactElement;
+  disabled?: Matcher | Matcher[] | undefined;
+  displayIncrementButtons?: boolean;
+  disableFutureNavigation?: boolean;
+  disableAutoSelect?: boolean;
+  currentYearPosition?: "start" | "center" | "end";
+  order?: "asc" | "desc";
+  dateFilterType?: "issue" | "maturity";
+  onDateFilterTypeChange?: (type: "issue" | "maturity") => void;
 }
 
 export function DatePicker({
@@ -49,124 +49,135 @@ export function DatePicker({
   dateFilterType = "issue",
   onDateFilterTypeChange,
 }: DatePickerProps) {
-  const lang = useContext(LanguageContext)
-  const { formatDateMmmDdYyyy } = useUtcDateFormatters(lang.locale)
-  const [canSelect, setCanSelect] = useState(false)
-  const [showCalendar, setShowCalendar] = useState(false)
-  const [showYearPicker, setShowYearPicker] = useState(false)
-  const [showMonthPicker, setShowMonthPicker] = useState(false)
-  const [selectedRange, setSelectedRange] = useState<number>()
-  const allowRangeSelection = useMemo(() => mode === "range", [mode])
-  const [hasBeenCleared, setHasBeenCleared] = useState(false)
+  const lang = useContext(LanguageContext);
+  const { formatDateMmmDdYyyy } = useUtcDateFormatters(lang.locale);
+  const [canSelect, setCanSelect] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [selectedRange, setSelectedRange] = useState<number>();
+  const allowRangeSelection = useMemo(() => mode === "range", [mode]);
+  const [hasBeenCleared, setHasBeenCleared] = useState(false);
 
   const getInitialDate = () => {
     if (value) {
-      return value
+      return value;
     }
     if (hasBeenCleared) {
-      return { from: undefined, to: undefined }
+      return { from: undefined, to: undefined };
     }
     if (disableAutoSelect) {
-      return { from: undefined, to: undefined }
+      return { from: undefined, to: undefined };
     }
-    return { from: new Date(), to: undefined }
-  }
+    return { from: new Date(), to: undefined };
+  };
 
-  const [current, setCurrent] = useState<DateRange>(getInitialDate())
-  const [draft, setDraft] = useState<DateRange>(getInitialDate())
-  const [rangeFocus, setRangeFocus] = useState<"from" | "to">("from")
-  const baseDate = useMemo(() => current.from ?? new Date(), [current])
+  const [current, setCurrent] = useState<DateRange>(getInitialDate());
+  const [draft, setDraft] = useState<DateRange>(getInitialDate());
+  const [rangeFocus, setRangeFocus] = useState<"from" | "to">("from");
+  const baseDate = useMemo(() => current.from ?? new Date(), [current]);
 
   useEffect(() => {
     if (value) {
-      setCurrent(value)
-      setDraft(value)
-      setHasBeenCleared(false)
+      setCurrent(value);
+      setDraft(value);
+      setHasBeenCleared(false);
     }
-  }, [value])
+  }, [value]);
 
   const toggleCalendar = () => {
     setShowCalendar((prev) => {
-      const willOpen = !prev
+      const willOpen = !prev;
 
       if (willOpen) {
-        setDraft(current)
+        setDraft(current);
       }
 
-      return willOpen
-    })
-  }
+      return willOpen;
+    });
+  };
 
   const toggleYearPicker = () => {
-    setShowYearPicker((prev) => !prev)
-  }
+    setShowYearPicker((prev) => !prev);
+  };
 
   const clearSelection = () => {
-    const clearedRange: DateRange = { from: draft.from ?? current.from, to: undefined }
-    setSelectedRange(undefined)
-    setDraft(clearedRange)
-    setCurrent(clearedRange)
-    onChange(clearedRange)
-    setHasBeenCleared(true)
-    setRangeFocus("to")
-    setShowMonthPicker(false)
-    setShowYearPicker(false)
-  }
+    const clearedRange: DateRange = {
+      from: draft.from ?? current.from,
+      to: undefined,
+    };
+    setSelectedRange(undefined);
+    setDraft(clearedRange);
+    setCurrent(clearedRange);
+    onChange(clearedRange);
+    setHasBeenCleared(true);
+    setRangeFocus("to");
+    setShowMonthPicker(false);
+    setShowYearPicker(false);
+  };
 
   useEffect(() => {
     if (selectedRange === undefined) {
-      return
+      return;
     }
 
-    const startDate = draft.from ?? current.from ?? new Date()
+    const startDate = draft.from ?? current.from ?? new Date();
     const newRange = {
       from: startDate,
       to: addDays(startDate, selectedRange),
-    }
+    };
 
-    setCurrent(newRange)
-    setDraft(newRange)
+    setCurrent(newRange);
+    setDraft(newRange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRange])
+  }, [selectedRange]);
 
   useEffect(() => {
     setSelectedRange((val) => {
       if (current.from === undefined || current.to === undefined) {
-        return val
+        return val;
       }
-      const diffDays = daysBetween(current.from, current.to)
-      return diffDays !== val ? undefined : val
-    })
-  }, [current])
+      const diffDays = daysBetween(current.from, current.to);
+      return diffDays !== val ? undefined : val;
+    });
+  }, [current]);
 
   useEffect(() => {
     if (!draft.from) {
-      setCanSelect(false)
-      return
+      setCanSelect(false);
+      return;
     }
 
     // single mode
     if (mode === "single") {
-      const isDisabled = disabled ? dateMatchModifiers(draft.from, [disabled as Matcher]) : false
-      setCanSelect(!isDisabled)
+      const isDisabled = disabled
+        ? dateMatchModifiers(draft.from, [disabled as Matcher])
+        : false;
+      setCanSelect(!isDisabled);
     }
 
     // range mode
     if (mode === "range") {
       if (!draft.to) {
-        setCanSelect(false)
-        return
+        setCanSelect(false);
+        return;
       }
-      const isDisabledFrom = disabled ? dateMatchModifiers(draft.from, [disabled as Matcher]) : false
-      const isDisabledTo = disabled ? dateMatchModifiers(draft.to, [disabled as Matcher]) : false
-      setCanSelect(!isDisabledFrom && !isDisabledTo)
+      const isDisabledFrom = disabled
+        ? dateMatchModifiers(draft.from, [disabled as Matcher])
+        : false;
+      const isDisabledTo = disabled
+        ? dateMatchModifiers(draft.to, [disabled as Matcher])
+        : false;
+      setCanSelect(!isDisabledFrom && !isDisabledTo);
     }
-  }, [draft, disabled, mode])
+  }, [draft, disabled, mode]);
 
   return (
     <>
       {customComponent ? (
-        React.cloneElement(customComponent, { onClick: toggleCalendar } as React.HTMLAttributes<HTMLElement>)
+        React.cloneElement(customComponent, {
+          onClick: toggleCalendar,
+        } as React.HTMLAttributes<HTMLElement>)
       ) : (
         <Button
           variant="outline"
@@ -175,7 +186,10 @@ export function DatePicker({
           }
           onClick={toggleCalendar}
         >
-          <CalendarIcon className="text-text-300 w-5 h-5" strokeWidth={1} />
+          <CalendarIcon
+            className="text-text-300 w-5 h-5"
+            strokeWidth={1}
+          />
 
           {mode === "single" ? (
             current.from ? (
@@ -199,7 +213,7 @@ export function DatePicker({
           showCalendar ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={() => {
-          setShowCalendar(false)
+          setShowCalendar(false);
         }}
       />
 
@@ -227,20 +241,26 @@ export function DatePicker({
                   value={dateFilterType}
                   onValueChange={(value) => {
                     if (onDateFilterTypeChange) {
-                      onDateFilterTypeChange(value as "issue" | "maturity")
+                      onDateFilterTypeChange(value as "issue" | "maturity");
                     }
                   }}
                   className="w-full"
                 >
                   <TabsList className="gap-0.5 w-full p-0 border-divider-50 bg-elevation-200">
-                    <TabsTrigger value="issue" className="flex items-center gap-1 py-2 bg-transparent">
+                    <TabsTrigger
+                      value="issue"
+                      className="flex items-center gap-1 py-2 bg-transparent"
+                    >
                       <FormattedMessage
                         id="bills.list.filter.date.issue"
                         defaultMessage="Issue date"
                         description="Filter by issue date"
                       />
                     </TabsTrigger>
-                    <TabsTrigger value="maturity" className="flex items-center gap-1 py-2 bg-transparent">
+                    <TabsTrigger
+                      value="maturity"
+                      className="flex items-center gap-1 py-2 bg-transparent"
+                    >
                       <FormattedMessage
                         id="bills.list.filter.date.maturity"
                         defaultMessage="Maturity date"
@@ -262,7 +282,7 @@ export function DatePicker({
                   value={selectedRange}
                   onRangeChange={setSelectedRange}
                   onClear={() => {
-                    clearSelection()
+                    clearSelection();
                   }}
                 />
 
@@ -271,41 +291,55 @@ export function DatePicker({
                     <button
                       type="button"
                       onClick={() => {
-                        setRangeFocus("from")
+                        setRangeFocus("from");
                       }}
                       className={cn(
                         "h-[46px] py-3 px-4 w-full bg-elevation-200 border rounded-lg truncate text-left",
-                        rangeFocus === "from" ? "border-brand-200" : "border-gray-200",
+                        rangeFocus === "from"
+                          ? "border-brand-200"
+                          : "border-gray-200",
                       )}
                     >
                       {draft.from && formatDateShort(draft.from, lang.locale)}
                       {!draft.from && (
                         <span className="text-text-200">
-                          <FormattedMessage id="range.start" defaultMessage="Start" />
+                          <FormattedMessage
+                            id="range.start"
+                            defaultMessage="Start"
+                          />
                         </span>
                       )}
                     </button>
                   </div>
 
                   <div className="col-auto flex justify-center items-center">
-                    <ArrowRight className="text-text-200" strokeWidth={1} size={24} />
+                    <ArrowRight
+                      className="text-text-200"
+                      strokeWidth={1}
+                      size={24}
+                    />
                   </div>
 
                   <div className="col-span-4">
                     <button
                       type="button"
                       onClick={() => {
-                        setRangeFocus("to")
+                        setRangeFocus("to");
                       }}
                       className={cn(
                         "h-[46px] py-3 pl-4 pr-2 w-full bg-elevation-200 border rounded-lg truncate text-left",
-                        rangeFocus === "to" ? "border-brand-200" : "border-gray-200",
+                        rangeFocus === "to"
+                          ? "border-brand-200"
+                          : "border-gray-200",
                       )}
                     >
                       {draft.to && formatDateShort(draft.to, lang.locale)}
                       {!draft.to && (
                         <span className="text-text-200">
-                          <FormattedMessage id="range.end" defaultMessage="End" />
+                          <FormattedMessage
+                            id="range.end"
+                            defaultMessage="End"
+                          />
                         </span>
                       )}
                     </button>
@@ -329,13 +363,16 @@ export function DatePicker({
                           key={days}
                           className="bg-elevation-200/70 p-1.5 rounded-sm text-text-300 text-[10px] font-medium"
                           onClick={() => {
-                            const base = current.from ?? new Date() // always start from confirmed date
-                            const newDate = addDays(base, days)
+                            const base = current.from ?? new Date(); // always start from confirmed date
+                            const newDate = addDays(base, days);
 
                             setDraft({
                               from: newDate,
-                              to: mode === "range" ? addDays(newDate, days) : undefined,
-                            })
+                              to:
+                                mode === "range"
+                                  ? addDays(newDate, days)
+                                  : undefined,
+                            });
                           }}
                         >
                           +{days}
@@ -344,7 +381,9 @@ export function DatePicker({
                     </div>
                   )}
                 </div>
-                <div className="text-base">{current.from ? formatDateMmmDdYyyy(current.from) : "-"}</div>
+                <div className="text-base">
+                  {current.from ? formatDateMmmDdYyyy(current.from) : "-"}
+                </div>
               </div>
             )}
           </div>
@@ -357,13 +396,13 @@ export function DatePicker({
                   setDraft({
                     ...draft,
                     from: date,
-                  })
-                  setShowYearPicker(false)
-                  setShowMonthPicker(true)
+                  });
+                  setShowYearPicker(false);
+                  setShowMonthPicker(true);
                 }}
                 onCaptionLabelClicked={() => {
-                  setShowYearPicker(false)
-                  setShowMonthPicker(false)
+                  setShowYearPicker(false);
+                  setShowMonthPicker(false);
                 }}
                 disableFutureNavigation={disableFutureNavigation}
                 currentYearPosition={currentYearPosition}
@@ -377,13 +416,13 @@ export function DatePicker({
                   setDraft({
                     ...draft,
                     from: date,
-                  })
-                  setShowYearPicker(false)
-                  setShowMonthPicker(false)
+                  });
+                  setShowYearPicker(false);
+                  setShowMonthPicker(false);
                 }}
                 onCaptionLabelClicked={() => {
-                  setShowYearPicker(true)
-                  setShowMonthPicker(false)
+                  setShowYearPicker(true);
+                  setShowMonthPicker(false);
                 }}
                 disableFutureNavigation={disableFutureNavigation}
               />
@@ -397,13 +436,18 @@ export function DatePicker({
                 onSelect={(_ignored: DateRange | undefined, selectedDay) => {
                   setDraft((prev) => {
                     if (rangeFocus === "from") {
-                      const newTo = prev.to && selectedDay <= prev.to ? prev.to : undefined
-                      return { from: selectedDay, to: newTo }
+                      const newTo =
+                        prev.to && selectedDay <= prev.to ? prev.to : undefined;
+                      return { from: selectedDay, to: newTo };
                     }
-                    const from = prev.from ?? selectedDay
-                    return selectedDay < from ? { from: selectedDay, to: from } : { from, to: selectedDay }
-                  })
-                  setRangeFocus((prevFocus) => (prevFocus === "from" ? "to" : "from"))
+                    const from = prev.from ?? selectedDay;
+                    return selectedDay < from
+                      ? { from: selectedDay, to: from }
+                      : { from, to: selectedDay };
+                  });
+                  setRangeFocus((prevFocus) =>
+                    prevFocus === "from" ? "to" : "from",
+                  );
                 }}
                 initialFocus
                 disabled={disabled}
@@ -427,9 +471,9 @@ export function DatePicker({
               size="sm"
               type="button"
               onClick={() => {
-                setShowMonthPicker(false)
-                setShowYearPicker(false)
-                setShowCalendar(false)
+                setShowMonthPicker(false);
+                setShowYearPicker(false);
+                setShowCalendar(false);
               }}
             >
               <FormattedMessage
@@ -442,13 +486,17 @@ export function DatePicker({
               className="w-full"
               size="sm"
               type="button"
-              disabled={!canSelect || draft.from === undefined || (mode === "range" && draft.to === undefined)}
+              disabled={
+                !canSelect ||
+                draft.from === undefined ||
+                (mode === "range" && draft.to === undefined)
+              }
               onClick={() => {
-                setCurrent(draft)
-                onChange(draft)
-                setShowMonthPicker(false)
-                setShowYearPicker(false)
-                setShowCalendar(false)
+                setCurrent(draft);
+                onChange(draft);
+                setShowMonthPicker(false);
+                setShowYearPicker(false);
+                setShowCalendar(false);
               }}
             >
               <FormattedMessage
@@ -461,5 +509,5 @@ export function DatePicker({
         </div>
       </div>
     </>
-  )
+  );
 }
