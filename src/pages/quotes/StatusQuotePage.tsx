@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   listQuotesInfiniteOptions,
   getQuoteOptions,
+  listEbillsOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
 import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
@@ -15,10 +16,13 @@ import {
   truncateString,
   formatStatusLabel,
 } from "@/utils/strings";
-import { getQuoteStatusVariant } from "@/utils/quote-status";
+import {
+  getEffectiveQuoteStatus,
+  getQuoteStatusVariant,
+} from "@/utils/quote-status";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { LightInfo } from "@/generated/client/types.gen";
+import type { BitcreditBill, LightInfo } from "@/generated/client/types.gen";
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
 import { toast } from "sonner";
 import * as React from "react";
@@ -58,7 +62,24 @@ const PAGE_SIZE = 25;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const ALL_PAGE_SIZE_VALUE = "all";
 const ALL_PAGE_SIZE_LIMIT = 100_000;
+const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
+const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
+  "Denied",
+  "Rejected",
+  "Canceled",
+  "MintingEnabled",
+]);
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
+
+const shouldPollStatusPage = (status?: QuoteStatus) =>
+  status === undefined ||
+  status === "Pending" ||
+  status === "Offered" ||
+  status === "Accepted" ||
+  status === "MintingEnabled";
+
+const shouldFetchEbillsForStatusPage = (status?: QuoteStatus) =>
+  status === undefined || status === "Pending" || status === "Offered";
 
 type ItemsPerPageValue = number | typeof ALL_PAGE_SIZE_VALUE;
 
@@ -113,9 +134,11 @@ function Loader() {
 
 function QuoteItemCard({
   quote,
+  effectiveStatus,
   searchQuery,
 }: {
   quote: LightInfo;
+  effectiveStatus: string;
   searchQuery: string;
 }) {
   const intl = useIntl();
@@ -197,11 +220,11 @@ function QuoteItemCard({
               highlight={searchQuery}
             />
           </div>
-          <Badge variant={getQuoteStatusVariant(quote.status)}>
+          <Badge variant={getQuoteStatusVariant(effectiveStatus)}>
             <HighlightText
               text={intl.formatMessage({
-                id: `quote.status.${quote.status}`,
-                defaultMessage: formatStatusLabel(quote.status),
+                id: `quote.status.${effectiveStatus}`,
+                defaultMessage: formatStatusLabel(effectiveStatus),
               })}
               highlight={searchQuery}
             />
@@ -283,6 +306,10 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         status,
       },
     }),
+    refetchInterval: shouldPollStatusPage(status)
+      ? QUOTE_STATUS_POLL_INTERVAL_MS
+      : false,
+    refetchIntervalInBackground: true,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       const loadedCount = allPages.reduce(
@@ -299,6 +326,16 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const totalQuotes = data?.pages[0]?.total ?? quotes.length;
   const usesLegacyFallback =
     data?.pages.some((page) => !isPaginatedPage(page)) ?? false;
+  const shouldFetchEbills = shouldFetchEbillsForStatusPage(status);
+  const { data: ebills } = useQuery({
+    ...listEbillsOptions(),
+    enabled: shouldFetchEbills && quotes.length > 0,
+    refetchInterval:
+      shouldFetchEbills && quotes.length > 0
+        ? QUOTE_STATUS_POLL_INTERVAL_MS
+        : false,
+    refetchIntervalInBackground: true,
+  });
 
   const quoteDetailsQueries = useQueries({
     queries: quotes.map((quote) => ({
@@ -308,6 +345,13 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       retry: RETRY_COUNT,
       retryDelay,
       enabled: !!quote.id,
+      refetchInterval: (query: { state: { data?: { status?: string } } }) => {
+        const currentStatus = query.state.data?.status ?? quote.status;
+        return QUOTE_POLLING_TERMINAL_STATUSES.has(currentStatus)
+          ? false
+          : QUOTE_STATUS_POLL_INTERVAL_MS;
+      },
+      refetchIntervalInBackground: true,
     })),
   });
 
@@ -348,9 +392,29 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     return <Loader />;
   }
 
+  const billIdToEbillMap = new Map<string, BitcreditBill>();
+  (ebills ?? []).forEach((ebill) => {
+    billIdToEbillMap.set(ebill.id, ebill);
+  });
+
+  const effectiveStatusByQuoteId = new Map<string, string>();
+  quotes.forEach((quote, index) => {
+    const billId = quoteDetailsQueries[index]?.data?.bill?.id;
+    const ebill = billId ? billIdToEbillMap.get(billId) : undefined;
+    const quoteStatus =
+      quoteDetailsQueries[index]?.data?.status ?? quote.status;
+    effectiveStatusByQuoteId.set(
+      quote.id,
+      getEffectiveQuoteStatus(quoteStatus, ebill),
+    );
+  });
+
   const filteredQuotes =
     quotes.filter((quote) => {
-      if (status && quote.status !== status) {
+      const effectiveStatus =
+        effectiveStatusByQuoteId.get(quote.id) ?? quote.status;
+
+      if (status && effectiveStatus !== status) {
         return false;
       }
 
@@ -360,7 +424,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
       const query = searchQuery.toLowerCase();
       const quoteId = quote.id.toLowerCase();
-      const quoteStatus = quote.status.toLowerCase();
+      const quoteStatus = effectiveStatus.toLowerCase();
       const quoteSum = quote.sum.toString();
 
       return (
@@ -379,9 +443,13 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
     switch (sortBy) {
       case "status-asc":
-        return a.status.localeCompare(b.status);
+        return (effectiveStatusByQuoteId.get(a.id) ?? a.status).localeCompare(
+          effectiveStatusByQuoteId.get(b.id) ?? b.status,
+        );
       case "status-desc":
-        return b.status.localeCompare(a.status);
+        return (effectiveStatusByQuoteId.get(b.id) ?? b.status).localeCompare(
+          effectiveStatusByQuoteId.get(a.id) ?? a.status,
+        );
       case "sum-asc":
         return a.sum - b.sum;
       case "sum-desc":
@@ -549,6 +617,9 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             <div key={quote.id || `quote-fallback-${index}`}>
               <QuoteItemCard
                 quote={quote}
+                effectiveStatus={
+                  effectiveStatusByQuoteId.get(quote.id) ?? quote.status
+                }
                 searchQuery={searchQuery}
               />
             </div>

@@ -29,7 +29,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { truncateString, formatStatusLabel } from "@/utils/strings";
-import { getQuoteStatusVariant } from "@/utils/quote-status";
+import {
+  getEffectiveQuoteStatus,
+  getQuoteStatusVariant,
+} from "@/utils/quote-status";
 import { toast } from "sonner";
 import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -67,19 +70,36 @@ function Loader() {
   );
 }
 
+const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
+const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
+  "Denied",
+  "Rejected",
+  "Canceled",
+  "MintingEnabled",
+]);
+
 function PageBody({ keysetId }: { keysetId: string }) {
   const intl = useIntl();
   const queryClient = useQueryClient();
-  const { data: keysets, isLoading: keysetsLoading } = useQuery(
-    listKeysetInfosOptions(),
-  );
-  const { data: allQuotesData, isLoading: quotesLoading } =
-    useQuery(listQuotesOptions());
+  const { data: keysets, isLoading: keysetsLoading } = useQuery({
+    ...listKeysetInfosOptions(),
+    refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: true,
+  });
+  const { data: allQuotesData, isLoading: quotesLoading } = useQuery({
+    ...listQuotesOptions(),
+    refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: true,
+  });
   const allQuotes = useMemo(
     () => allQuotesData?.data ?? [],
     [allQuotesData?.data],
   );
-  const { data: ebills } = useQuery(listEbillsOptions());
+  const { data: ebills } = useQuery({
+    ...listEbillsOptions(),
+    refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: true,
+  });
 
   const keyset = keysets?.data.find((k) => k.id === keysetId);
 
@@ -112,11 +132,18 @@ function PageBody({ keysetId }: { keysetId: string }) {
   });
 
   const quoteDetailsQueries = useQueries({
-    queries: allQuotes.map((quote) =>
-      getQuoteOptions({
+    queries: allQuotes.map((quote) => ({
+      ...getQuoteOptions({
         path: { qid: quote.id },
       }),
-    ),
+      refetchInterval: (query: { state: { data?: { status?: string } } }) => {
+        const currentStatus = query.state.data?.status ?? quote.status;
+        return QUOTE_POLLING_TERMINAL_STATUSES.has(currentStatus)
+          ? false
+          : KEYSET_DETAIL_POLL_INTERVAL_MS;
+      },
+      refetchIntervalInBackground: true,
+    })),
   });
 
   const quoteDetailsLoading = quoteDetailsQueries.some((q) => q.isLoading);
@@ -414,6 +441,11 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       const ebill = billId
                         ? billIdToEbillMap.get(billId)
                         : null;
+                      const quoteStatus = quoteDetails?.status ?? quote.status;
+                      const effectiveQuoteStatus = getEffectiveQuoteStatus(
+                        quoteStatus,
+                        ebill,
+                      );
                       const paymentStatus = ebill?.status?.payment;
                       const cws = ebill?.current_waiting_state;
                       const isPaid = paymentStatus?.paid === true;
@@ -466,11 +498,14 @@ function PageBody({ keysetId }: { keysetId: string }) {
                           </td>
                           <td className="p-2">
                             <Badge
-                              variant={getQuoteStatusVariant(quote.status)}
+                              variant={getQuoteStatusVariant(
+                                effectiveQuoteStatus,
+                              )}
                             >
                               {intl.formatMessage({
-                                id: `quote.status.${quote.status}`,
-                                defaultMessage: formatStatusLabel(quote.status),
+                                id: `quote.status.${effectiveQuoteStatus}`,
+                                defaultMessage:
+                                  formatStatusLabel(effectiveQuoteStatus),
                               })}
                             </Badge>
                           </td>

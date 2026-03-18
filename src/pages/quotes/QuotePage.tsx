@@ -17,11 +17,15 @@ import {
 } from "@/generated/client/@tanstack/react-query.gen";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
+import type { InfoReplyDiscriminants } from "@/generated/client/types.gen";
 import { humanReadableDurationDays } from "@/utils/dates";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { QuoteActions } from "./QuoteActions.tsx";
 import { truncateString, formatStatusLabel } from "@/utils/strings.ts";
-import { getQuoteStatusVariant } from "@/utils/quote-status";
+import {
+  getEffectiveQuoteStatus,
+  getQuoteStatusVariant,
+} from "@/utils/quote-status";
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx";
 import { EndorsementChain } from "@/components/EndorsementChain";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
@@ -43,9 +47,17 @@ function Loader() {
   );
 }
 
+const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
+const QUOTE_DETAIL_POLL_INTERVAL_MS = 10_000;
+const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
+  "Denied",
+  "Rejected",
+  "Canceled",
+  "MintingEnabled",
+]);
+
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
-  const EBILL_POLL_INTERVAL_MS = 30_000;
   const {
     data: quoteData,
     isFetching,
@@ -56,10 +68,20 @@ function PageBody({ id }: { id: string }) {
       path: { qid: id },
     }),
     retry: 1,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status as string | undefined;
+      if (!status) {
+        return QUOTE_STATUS_POLL_INTERVAL_MS;
+      }
+
+      return QUOTE_POLLING_TERMINAL_STATUSES.has(status)
+        ? false
+        : QUOTE_STATUS_POLL_INTERVAL_MS;
+    },
+    refetchIntervalInBackground: true,
   });
 
   const billId = quoteData?.bill?.id;
-  const quoteStatus = quoteData?.status as string | undefined;
 
   const ebillsQuery = useQuery({
     ...listEbillsOptions(),
@@ -68,20 +90,31 @@ function PageBody({ id }: { id: string }) {
     refetchInterval: (query) => {
       if (query.state.error) return false;
       const ebill = (query.state.data ?? []).find((item) => item.id === billId);
-      return ebill?.status?.payment?.paid ? false : EBILL_POLL_INTERVAL_MS;
+      return ebill?.status?.payment?.paid
+        ? false
+        : QUOTE_DETAIL_POLL_INTERVAL_MS;
     },
+    refetchIntervalInBackground: true,
   });
 
   const endorsementsQuery = useQuery({
     ...getEbillEndorsementsOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
     enabled: !!billId,
+    refetchInterval: QUOTE_DETAIL_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: true,
   });
 
   const ebill = ebillsQuery.data?.find((item) => item.id === billId);
+  const effectiveQuoteStatus = getEffectiveQuoteStatus(
+    (quoteData?.status as InfoReplyDiscriminants | undefined) ?? "Pending",
+    ebill,
+  );
   const isPaid = ebill?.status?.payment?.paid === true;
   const shouldCheckMintComplete =
-    quoteStatus === "Accepted" || quoteStatus === "MintingEnabled" || isPaid;
+    effectiveQuoteStatus === "Accepted" ||
+    effectiveQuoteStatus === "MintingEnabled" ||
+    isPaid;
 
   const feeTokenRequestRef = useRef<string | null>(null);
 
@@ -125,7 +158,7 @@ function PageBody({ id }: { id: string }) {
 
   const feeTokenFromQuote =
     quoteData && "fee" in quoteData ? quoteData.fee : null;
-  const quoteStatusForEffect = quoteData?.status;
+  const quoteStatusForEffect = effectiveQuoteStatus;
 
   useEffect(() => {
     if (!feeTokenFromQuote || quoteStatusForEffect !== "MintingEnabled") {
@@ -208,7 +241,8 @@ function PageBody({ id }: { id: string }) {
   const isInMempool =
     cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true;
   const showPayment =
-    quoteStatus === "Accepted" || quoteStatus === "MintingEnabled";
+    effectiveQuoteStatus === "Accepted" ||
+    effectiveQuoteStatus === "MintingEnabled";
 
   if (!quote || !bill) {
     return (
@@ -260,10 +294,10 @@ function PageBody({ id }: { id: string }) {
                     defaultMessage: "Quote status:",
                   })}
                 </span>
-                <Badge variant={getQuoteStatusVariant(quote.status)}>
+                <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
                   {intl.formatMessage({
-                    id: `quote.status.${quote.status}`,
-                    defaultMessage: formatStatusLabel(quote.status),
+                    id: `quote.status.${effectiveQuoteStatus}`,
+                    defaultMessage: formatStatusLabel(effectiveQuoteStatus),
                   })}
                 </Badge>
               </div>
@@ -613,7 +647,7 @@ function PageBody({ id }: { id: string }) {
         mintingEnabled={quoteStatusValue === "MintingEnabled"}
         quoteOffered={
           quoteStatusValue === "Offered" ||
-          quoteStatusValue === "Accepted" ||
+          effectiveQuoteStatus === "Accepted" ||
           quoteStatusValue === "MintingEnabled"
         }
         offeredTimestamp={
@@ -644,6 +678,17 @@ export default function QuotePage() {
       path: { qid: quoteId },
     }),
     retry: 1,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status as string | undefined;
+      if (!status) {
+        return QUOTE_STATUS_POLL_INTERVAL_MS;
+      }
+
+      return QUOTE_POLLING_TERMINAL_STATUSES.has(status)
+        ? false
+        : QUOTE_STATUS_POLL_INTERVAL_MS;
+    },
+    refetchIntervalInBackground: true,
   });
 
   const quoteDataStatus = quoteData?.status as string | undefined;

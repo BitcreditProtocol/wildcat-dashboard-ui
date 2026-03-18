@@ -35,10 +35,13 @@ type SortBy =
   | "currency-asc"
   | "currency-desc";
 
+const KEYSETS_POLL_INTERVAL_MS = 10_000;
+
 function PageBody() {
-  const { data: keysetsResponse, isLoading: keysetsLoading } = useQuery(
-    listKeysetInfosOptions(),
-  );
+  const { data: keysetsResponse, isLoading: keysetsLoading } = useQuery({
+    ...listKeysetInfosOptions(),
+    refetchInterval: KEYSETS_POLL_INTERVAL_MS,
+  });
   const keysets = keysetsResponse?.data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");

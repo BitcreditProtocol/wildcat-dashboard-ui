@@ -18,6 +18,7 @@ import { OfferConfirmation } from "./components/OfferConfirmation.tsx";
 import { RequestToPayConfirmation } from "./components/RequestToPayConfirmation.tsx";
 import { useQuoteMutations } from "./components/useQuoteMutations.ts";
 import { useIntl } from "react-intl";
+import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -40,14 +41,25 @@ export function QuoteActions({
 }: QuoteActionsProps) {
   const intl = useIntl();
   const billId = value.bill.id;
+  const EBILL_DETAIL_POLL_INTERVAL_MS = 10_000;
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
     retry: 1,
     enabled: !!billId,
+    refetchInterval: (query) => {
+      if (query.state.error) {
+        return false;
+      }
+
+      return query.state.data?.status?.payment?.paid
+        ? false
+        : EBILL_DETAIL_POLL_INTERVAL_MS;
+    },
+    refetchIntervalInBackground: true,
   });
 
   const ebill = ebillQuery.data;
-  const quoteStatus = value.status as string;
+  const effectiveQuoteStatus = getEffectiveQuoteStatus(value.status, ebill);
   const paymentStatus = ebill?.status.payment;
   const cws = ebill?.current_waiting_state;
 
@@ -115,7 +127,7 @@ export function QuoteActions({
   return (
     <>
       <div className="flex items-center gap-2">
-        {value.status === "Pending" && (
+        {effectiveQuoteStatus === "Pending" && (
           <DenyConfirmDrawer
             title={denyTitle}
             open={denyConfirmDrawerOpen}
@@ -138,7 +150,7 @@ export function QuoteActions({
           </DenyConfirmDrawer>
         )}
 
-        {value.status === "Pending" && (
+        {effectiveQuoteStatus === "Pending" && (
           <OfferFormDrawer
             title={offerTitle}
             description={offerDescription}
@@ -175,7 +187,8 @@ export function QuoteActions({
           quoteId={value.id}
         />
 
-        {(quoteStatus === "Accepted" || quoteStatus === "MintingEnabled") &&
+        {(effectiveQuoteStatus === "Accepted" ||
+          effectiveQuoteStatus === "MintingEnabled") &&
           "keyset_id" in value &&
           ebill &&
           !ebillPaidEff &&
