@@ -130,6 +130,20 @@ export const formatYearNumeric = (date: Date, locale: string): string => {
   }).format(date);
 };
 
+export const toUtcEndOfDay = (date: Date): Date => {
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      23,
+      59,
+      59,
+      999,
+    ),
+  );
+};
+
 /**
  * Calculate a smart default deadline based on maturity date.
  * maturityDate is in YYYY-MM-DD format, parsed as midnight UTC (00:00:00).
@@ -151,6 +165,5 @@ export const getDefaultDeadline = (maturityDate?: string | null): Date => {
     deadline = addDays(now, 2);
   }
 
-  deadline.setUTCHours(23, 59, 59, 999);
-  return deadline;
+  return toUtcEndOfDay(deadline);
 };

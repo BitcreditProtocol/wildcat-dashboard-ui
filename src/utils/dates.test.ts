@@ -5,6 +5,7 @@ import {
   getDefaultDeadline,
   humanReadableDuration,
   humanReadableDurationDays,
+  toUtcEndOfDay,
 } from "./dates";
 
 describe("dates utils", () => {
@@ -33,6 +34,11 @@ describe("dates utils", () => {
     const from = new Date("2026-02-20T12:00:00.000Z");
     const until = new Date("2026-02-20T09:00:00.000Z");
     expect(humanReadableDuration("en", from, until)).toBe("in 3 hours");
+  });
+
+  it("normalizes a date to the end of its UTC day", () => {
+    const date = new Date("2026-02-20T08:15:00.000Z");
+    expect(toUtcEndOfDay(date).toISOString()).toBe("2026-02-20T23:59:59.999Z");
   });
 
   it("uses maturity -2 days when maturity is in the future", () => {
