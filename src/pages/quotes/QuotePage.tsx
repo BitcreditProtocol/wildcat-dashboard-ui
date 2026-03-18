@@ -21,7 +21,10 @@ import { humanReadableDurationDays } from "@/utils/dates";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { QuoteActions } from "./QuoteActions.tsx";
 import { truncateString, formatStatusLabel } from "@/utils/strings.ts";
-import { getQuoteStatusVariant } from "@/utils/quote-status";
+import {
+  getEffectiveQuoteStatus,
+  getQuoteStatusVariant,
+} from "@/utils/quote-status";
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx";
 import { EndorsementChain } from "@/components/EndorsementChain";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
@@ -43,9 +46,17 @@ function Loader() {
   );
 }
 
+const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
+const QUOTE_DETAIL_POLL_INTERVAL_MS = 10_000;
+const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
+  "Denied",
+  "Rejected",
+  "Canceled",
+  "MintingEnabled",
+]);
+
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
-  const EBILL_POLL_INTERVAL_MS = 30_000;
   const {
     data: quoteData,
     isFetching,
@@ -56,6 +67,17 @@ function PageBody({ id }: { id: string }) {
       path: { qid: id },
     }),
     retry: 1,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status as string | undefined;
+      if (!status) {
+        return QUOTE_STATUS_POLL_INTERVAL_MS;
+      }
+
+      return QUOTE_POLLING_TERMINAL_STATUSES.has(status)
+        ? false
+        : QUOTE_STATUS_POLL_INTERVAL_MS;
+    },
+    refetchIntervalInBackground: true,
   });
 
   const billId = quoteData?.bill?.id;
@@ -68,14 +90,17 @@ function PageBody({ id }: { id: string }) {
     refetchInterval: (query) => {
       if (query.state.error) return false;
       const ebill = (query.state.data ?? []).find((item) => item.id === billId);
-      return ebill?.status?.payment?.paid ? false : EBILL_POLL_INTERVAL_MS;
+      return ebill?.status?.payment?.paid ? false : QUOTE_DETAIL_POLL_INTERVAL_MS;
     },
+    refetchIntervalInBackground: true,
   });
 
   const endorsementsQuery = useQuery({
     ...getEbillEndorsementsOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
     enabled: !!billId,
+    refetchInterval: QUOTE_DETAIL_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: true,
   });
 
   const ebill = ebillsQuery.data?.find((item) => item.id === billId);
@@ -190,6 +215,7 @@ function PageBody({ id }: { id: string }) {
     "fee" in quote && typeof quote.fee === "string" ? quote.fee : null;
 
   const billStatus = ebill?.status;
+  const effectiveQuoteStatus = getEffectiveQuoteStatus(quote.status, ebill);
   const paymentStatus = billStatus?.payment;
   const cws = ebill?.current_waiting_state;
   const isMintComplete = mintCompleteQuery.data?.complete ?? false;
@@ -260,10 +286,10 @@ function PageBody({ id }: { id: string }) {
                     defaultMessage: "Quote status:",
                   })}
                 </span>
-                <Badge variant={getQuoteStatusVariant(quote.status)}>
+                <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
                   {intl.formatMessage({
-                    id: `quote.status.${quote.status}`,
-                    defaultMessage: formatStatusLabel(quote.status),
+                    id: `quote.status.${effectiveQuoteStatus}`,
+                    defaultMessage: formatStatusLabel(effectiveQuoteStatus),
                   })}
                 </Badge>
               </div>
@@ -644,6 +670,17 @@ export default function QuotePage() {
       path: { qid: quoteId },
     }),
     retry: 1,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status as string | undefined;
+      if (!status) {
+        return QUOTE_STATUS_POLL_INTERVAL_MS;
+      }
+
+      return QUOTE_POLLING_TERMINAL_STATUSES.has(status)
+        ? false
+        : QUOTE_STATUS_POLL_INTERVAL_MS;
+    },
+    refetchIntervalInBackground: true,
   });
 
   const quoteDataStatus = quoteData?.status as string | undefined;

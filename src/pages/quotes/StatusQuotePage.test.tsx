@@ -18,6 +18,9 @@ interface GetQuoteQueryResult {
   isFetching?: boolean;
   error: Error | null;
 }
+interface ListEbillsQueryOptions {
+  queryKey: QueryKeyEntry[];
+}
 interface InfiniteQueryResult {
   data:
     | {
@@ -44,7 +47,9 @@ interface UseQueriesResultItem {
 }
 
 const mockUseQuery =
-  vi.fn<(options: GetQuoteQueryOptions) => GetQuoteQueryResult>();
+  vi.fn<
+    (options: GetQuoteQueryOptions | ListEbillsQueryOptions) => GetQuoteQueryResult
+  >();
 const mockUseInfiniteQuery = vi.fn<() => InfiniteQueryResult>();
 const mockUseQueries =
   vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
@@ -68,6 +73,7 @@ vi.mock("@tanstack/react-query", async () => {
 
 vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   listQuotesInfiniteOptions: () => ({ queryKey: [{ _id: "listQuotes" }] }),
+  listEbillsOptions: () => ({ queryKey: [{ _id: "listEbills" }] }),
   getQuoteOptions: ({ path }: { path: { qid: string } }) => ({
     queryKey: [{ _id: "getQuote", path }],
   }),
@@ -186,6 +192,15 @@ beforeEach(() => {
       };
     }
 
+    if (opts.queryKey[0]._id === "listEbills") {
+      return {
+        data: [],
+        isLoading: false,
+        isFetching: false,
+        error: null,
+      };
+    }
+
     return {
       data: undefined,
       isLoading: false,
@@ -220,6 +235,73 @@ describe("StatusQuotePage", () => {
     expect(page.textContent).toContain("Accepted quotes");
     expect(page.textContent).toContain("quote-accepted");
     expect(page.textContent).not.toContain("quote-pending");
+  });
+
+  it("treats quotes with accepted ebills as accepted in dashboard filters", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            data: [{ id: "quote-ebill-accepted", status: "Pending", sum: 300 }],
+            total: 1,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+
+    mockUseQuery.mockImplementation((opts: GetQuoteQueryOptions) => {
+      if (opts.queryKey[0]._id === "getQuote") {
+        return {
+          data: {
+            bill: {
+              id: "bill-quote-ebill-accepted",
+              maturity_date: "2026-02-20",
+              drawee: {},
+              drawer: {},
+              payee: {},
+              endorsees: [],
+            },
+          },
+          isLoading: false,
+          error: null,
+        };
+      }
+
+      if (opts.queryKey[0]._id === "listEbills") {
+        return {
+          data: [
+            {
+              id: "bill-quote-ebill-accepted",
+              status: {
+                acceptance: {
+                  accepted: true,
+                },
+              },
+            },
+          ],
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        };
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        error: null,
+      };
+    });
+
+    const page = renderPage("Accepted");
+    expect(page.textContent).toContain("quote-ebill-accepted");
+    expect(page.textContent).toContain("Accepted");
   });
 
   it("shows API error state when quotes query fails", () => {
