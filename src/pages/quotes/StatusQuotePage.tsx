@@ -330,9 +330,10 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const { data: ebills } = useQuery({
     ...listEbillsOptions(),
     enabled: shouldFetchEbills && quotes.length > 0,
-    refetchInterval: shouldFetchEbills && quotes.length > 0
-      ? QUOTE_STATUS_POLL_INTERVAL_MS
-      : false,
+    refetchInterval:
+      shouldFetchEbills && quotes.length > 0
+        ? QUOTE_STATUS_POLL_INTERVAL_MS
+        : false,
     refetchIntervalInBackground: true,
   });
 

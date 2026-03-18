@@ -441,8 +441,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       const ebill = billId
                         ? billIdToEbillMap.get(billId)
                         : null;
-                      const quoteStatus =
-                        quoteDetails?.status ?? quote.status;
+                      const quoteStatus = quoteDetails?.status ?? quote.status;
                       const effectiveQuoteStatus = getEffectiveQuoteStatus(
                         quoteStatus,
                         ebill,
