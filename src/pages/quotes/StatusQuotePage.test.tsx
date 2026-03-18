@@ -9,13 +9,30 @@ interface QueryKeyEntry {
   _id: string;
   path?: { qid: string };
 }
-interface QueryOptions {
+interface GetQuoteQueryOptions {
   queryKey: QueryKeyEntry[];
 }
-interface QueryResult {
+interface GetQuoteQueryResult {
   data: unknown;
   isLoading: boolean;
   isFetching?: boolean;
+  error: Error | null;
+}
+interface InfiniteQueryResult {
+  data:
+    | {
+        pages: {
+          data?: { id: string; status: string; sum: number }[];
+          quotes?: { id: string; status: string; sum: number }[];
+          total?: number;
+        }[];
+      }
+    | undefined;
+  isLoading: boolean;
+  isFetching?: boolean;
+  isFetchingNextPage?: boolean;
+  hasNextPage?: boolean;
+  fetchNextPage: () => Promise<unknown>;
   error: Error | null;
 }
 interface UseQueriesArgs {
@@ -26,9 +43,12 @@ interface UseQueriesResultItem {
   isLoading: boolean;
 }
 
-const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
+const mockUseQuery =
+  vi.fn<(options: GetQuoteQueryOptions) => GetQuoteQueryResult>();
+const mockUseInfiniteQuery = vi.fn<() => InfiniteQueryResult>();
 const mockUseQueries =
   vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
+const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn() },
@@ -40,16 +60,55 @@ vi.mock("@tanstack/react-query", async () => {
   );
   return {
     ...actual,
-    useQuery: (options: QueryOptions) => mockUseQuery(options),
+    useQuery: (options: GetQuoteQueryOptions) => mockUseQuery(options),
+    useInfiniteQuery: () => mockUseInfiniteQuery(),
     useQueries: (args: UseQueriesArgs) => mockUseQueries(args),
   };
 });
 
 vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
-  listQuotesOptions: () => ({ queryKey: [{ _id: "listQuotes" }] }),
+  listQuotesInfiniteOptions: () => ({ queryKey: [{ _id: "listQuotes" }] }),
   getQuoteOptions: ({ path }: { path: { qid: string } }) => ({
     queryKey: [{ _id: "getQuote", path }],
   }),
+}));
+
+vi.mock("@/components/ui/select", () => ({
+  Select: ({
+    value,
+    onValueChange,
+    children,
+  }: {
+    value: string;
+    onValueChange: (value: string) => void;
+    children: ReactElement | ReactElement[];
+  }) => (
+    <div data-select-value={value}>
+      <button
+        type="button"
+        onClick={() => onValueChange("50")}
+      >
+        SelectMock
+      </button>
+      {children}
+    </div>
+  ),
+  SelectTrigger: ({ children }: { children: ReactElement | string }) => (
+    <div>{children}</div>
+  ),
+  SelectValue: () => <span>SelectValue</span>,
+  SelectContent: ({
+    children,
+  }: {
+    children: ReactElement | ReactElement[];
+  }) => <div>{children}</div>,
+  SelectItem: ({
+    value,
+    children,
+  }: {
+    value: string;
+    children: ReactElement | string | number;
+  }) => <div data-select-item={value}>{children}</div>,
 }));
 
 let root: Root | null = null;
@@ -79,6 +138,7 @@ function renderPage(status?: "Accepted" | "Pending"): HTMLDivElement {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  fetchNextPageSpy.mockResolvedValue(undefined);
   if (root && container) {
     act(() => {
       root?.unmount();
@@ -88,23 +148,28 @@ beforeEach(() => {
     container = null;
   }
 
-  mockUseQuery.mockImplementation((opts: QueryOptions) => {
-    const id = opts.queryKey[0]._id;
-    if (id === "listQuotes") {
-      return {
-        data: {
-          quotes: [
+  mockUseInfiniteQuery.mockReturnValue({
+    data: {
+      pages: [
+        {
+          data: [
             { id: "quote-accepted", status: "Accepted", sum: 300 },
             { id: "quote-pending", status: "Pending", sum: 100 },
           ],
+          total: 2,
         },
-        isLoading: false,
-        isFetching: false,
-        error: null,
-      };
-    }
+      ],
+    },
+    isLoading: false,
+    isFetching: false,
+    isFetchingNextPage: false,
+    hasNextPage: false,
+    fetchNextPage: fetchNextPageSpy,
+    error: null,
+  });
 
-    if (id === "getQuote") {
+  mockUseQuery.mockImplementation((opts: GetQuoteQueryOptions) => {
+    if (opts.queryKey[0]._id === "getQuote") {
       return {
         data: {
           bill: {
@@ -146,6 +211,8 @@ describe("StatusQuotePage", () => {
   it("shows all quotes page title when no status filter is passed", () => {
     const page = renderPage();
     expect(page.textContent).toContain("All quotes");
+    expect(page.textContent).toContain("Items per page");
+    expect(page.textContent).toContain("All");
   });
 
   it("filters cards by status", () => {
@@ -156,21 +223,14 @@ describe("StatusQuotePage", () => {
   });
 
   it("shows API error state when quotes query fails", () => {
-    mockUseQuery.mockImplementation((opts: QueryOptions) => {
-      if (opts.queryKey[0]._id === "listQuotes") {
-        return {
-          data: undefined,
-          isLoading: false,
-          isFetching: false,
-          error: new Error("network down"),
-        };
-      }
-      return {
-        data: undefined,
-        isLoading: false,
-        isFetching: false,
-        error: null,
-      };
+    mockUseInfiniteQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: fetchNextPageSpy,
+      error: new Error("network down"),
     });
     mockUseQueries.mockReturnValue([]);
 
@@ -180,25 +240,96 @@ describe("StatusQuotePage", () => {
   });
 
   it("shows empty state when quotes list is empty", () => {
-    mockUseQuery.mockImplementation((opts: QueryOptions) => {
-      if (opts.queryKey[0]._id === "listQuotes") {
-        return {
-          data: { quotes: [] },
-          isLoading: false,
-          isFetching: false,
-          error: null,
-        };
-      }
-      return {
-        data: undefined,
-        isLoading: false,
-        isFetching: false,
-        error: null,
-      };
+    mockUseInfiniteQuery.mockReturnValue({
+      data: { pages: [{ data: [], total: 0 }] },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
     });
     mockUseQueries.mockReturnValue([]);
 
     const page = renderPage();
     expect(page.textContent).toContain("No quotes available.");
+  });
+
+  it("falls back to rendering legacy quotes response shape", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            quotes: [
+              { id: "quote-legacy", status: "Pending", sum: 1000 },
+              { id: "quote-legacy-2", status: "Accepted", sum: 2000 },
+            ],
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+    mockUseQueries.mockReturnValue([
+      {
+        data: {
+          bill: { id: "bill-quote-legacy", maturity_date: "2026-02-20" },
+        },
+        isLoading: false,
+      },
+      {
+        data: {
+          bill: { id: "bill-quote-legacy-2", maturity_date: "2026-02-21" },
+        },
+        isLoading: false,
+      },
+    ]);
+
+    const page = renderPage();
+    expect(page.textContent).toContain("quote-legacy");
+    expect(page.textContent).toContain("quote-legacy-2");
+    expect(page.textContent).not.toContain("Items per page");
+  });
+
+  it("loads the next page when load more is clicked", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            data: [{ id: "quote-accepted", status: "Accepted", sum: 300 }],
+            total: 2,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: true,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+    mockUseQueries.mockReturnValue([
+      {
+        data: {
+          bill: { id: "bill-quote-accepted", maturity_date: "2026-02-20" },
+        },
+        isLoading: false,
+      },
+    ]);
+
+    const page = renderPage();
+    expect(page.textContent).toContain("Showing 1 of 2 quotes");
+    const loadMoreButton = Array.from(page.querySelectorAll("button")).find(
+      (button) => button.textContent === "Load more",
+    );
+    expect(loadMoreButton).not.toBeUndefined();
+    act(() => {
+      loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(fetchNextPageSpy).toHaveBeenCalled();
   });
 });

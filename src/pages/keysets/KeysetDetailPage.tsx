@@ -76,12 +76,12 @@ function PageBody({ keysetId }: { keysetId: string }) {
   const { data: allQuotesData, isLoading: quotesLoading } =
     useQuery(listQuotesOptions());
   const allQuotes = useMemo(
-    () => allQuotesData?.quotes ?? [],
-    [allQuotesData?.quotes],
+    () => allQuotesData?.data ?? [],
+    [allQuotesData?.data],
   );
   const { data: ebills } = useQuery(listEbillsOptions());
 
-  const keyset = keysets?.find((k) => k.id === keysetId);
+  const keyset = keysets?.data.find((k) => k.id === keysetId);
 
   const redemptionMutation = useMutation({
     ...postEnableRedemptionMutation(),
@@ -170,7 +170,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
     queries: matchingBillIds.map((billId) => ({
       ...getEbillMintCompleteOptions({
         path: { bid: billId },
-      }),
+      } as never),
       refetchInterval: (query: {
         state: { data?: { complete?: boolean }; error?: unknown };
       }) => {

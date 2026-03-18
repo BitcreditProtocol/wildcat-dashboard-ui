@@ -385,12 +385,6 @@ export type LightBillAnonParticipant = {
     node_id: string;
 };
 
-export type LightBillIdentParticipant = {
-    type: ContactType;
-    name: string;
-    node_id: string;
-};
-
 export type LightBillIdentParticipantWithAddress = PostalAddress & {
     type: ContactType;
     name: string;
@@ -403,6 +397,11 @@ export type LightBillParticipant = {
     Ident: LightBillIdentParticipantWithAddress;
 };
 
+export type LightBillSignatory = {
+    name?: string | null;
+    node_id: string;
+};
+
 export type LightInfo = {
     id: string;
     status: InfoReplyDiscriminants;
@@ -411,11 +410,7 @@ export type LightInfo = {
 
 export type LightSignedBy = {
     data: LightBillParticipant;
-    signatory?: null | LightBillIdentParticipant;
-};
-
-export type ListReplyLight = {
-    quotes: Array<LightInfo>;
+    signatory?: null | LightBillSignatory;
 };
 
 export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc';
@@ -453,6 +448,42 @@ export type OptionalPostalAddress = {
     city?: string | null;
     zip?: string | null;
     address?: string | null;
+};
+
+export type PaginatedResponseKeySetInfo = {
+    data: Array<{
+        /**
+         * Keyset [`Id`]
+         */
+        id: string;
+        /**
+         * Keyset [`CurrencyUnit`]
+         */
+        unit: CurrencyUnit;
+        /**
+         * Keyset state
+         * Mint will only sign from an active keyset
+         */
+        active: boolean;
+        /**
+         * Input Fee PPK
+         */
+        input_fee_ppk?: number;
+        /**
+         * Expiry of the keyset
+         */
+        final_expiry?: number | null;
+    }>;
+    total: number;
+};
+
+export type PaginatedResponseLightInfo = {
+    data: Array<{
+        id: string;
+        status: InfoReplyDiscriminants;
+        sum: number;
+    }>;
+    total: number;
 };
 
 /**
@@ -678,7 +709,10 @@ export type GetKeysetInfoResponse = GetKeysetInfoResponses[keyof GetKeysetInfoRe
 export type ListKeysetInfosData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        limit?: number | null;
+        offset?: number | null;
+    };
     url: '/v1/admin/keysets';
 };
 
@@ -686,7 +720,7 @@ export type ListKeysetInfosResponses = {
     /**
      * Successful response
      */
-    200: Array<KeySetInfo>;
+    200: PaginatedResponseKeySetInfo;
 };
 
 export type ListKeysetInfosResponse = ListKeysetInfosResponses[keyof ListKeysetInfosResponses];
@@ -700,7 +734,7 @@ export type GetMintopStatusData = {
         qid: string;
     };
     query?: never;
-    url: '/v1/admin/credit/mint_op_status/{qid}';
+    url: '/v1/admin/treasury/credit/mint_op_status/{qid}';
 };
 
 export type GetMintopStatusErrors = {
@@ -728,7 +762,7 @@ export type ListMintopsData = {
         kid: Id;
     };
     query?: never;
-    url: '/v1/admin/credit/mint_ops/{kid}';
+    url: '/v1/admin/treasury/credit/mint_ops/{kid}';
 };
 
 export type ListMintopsErrors = {
@@ -855,6 +889,8 @@ export type ListQuotesData = {
         bill_payer_id?: string | null;
         bill_holder_id?: string | null;
         sort?: null | ListSort;
+        limit?: number | null;
+        offset?: number | null;
     };
     url: '/v1/admin/credit/quote';
 };
@@ -863,7 +899,7 @@ export type ListQuotesResponses = {
     /**
      * Successful response
      */
-    200: ListReplyLight;
+    200: PaginatedResponseLightInfo;
 };
 
 export type ListQuotesResponse = ListQuotesResponses[keyof ListQuotesResponses];
@@ -1191,9 +1227,7 @@ export type GetSatBalanceResponse = GetSatBalanceResponses[keyof GetSatBalanceRe
 
 export type GetEbillMintCompleteData = {
     body?: never;
-    path: {
-        bid: string;
-    };
+    path?: never;
     query?: never;
     url: '/v1/admin/treasury/ebill/payment_complete/{bid}';
 };
