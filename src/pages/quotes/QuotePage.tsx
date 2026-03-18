@@ -90,7 +90,9 @@ function PageBody({ id }: { id: string }) {
     refetchInterval: (query) => {
       if (query.state.error) return false;
       const ebill = (query.state.data ?? []).find((item) => item.id === billId);
-      return ebill?.status?.payment?.paid ? false : QUOTE_DETAIL_POLL_INTERVAL_MS;
+      return ebill?.status?.payment?.paid
+        ? false
+        : QUOTE_DETAIL_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
   });

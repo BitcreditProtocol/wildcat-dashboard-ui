@@ -395,7 +395,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   quotes.forEach((quote, index) => {
     const billId = quoteDetailsQueries[index]?.data?.bill?.id;
     const ebill = billId ? billIdToEbillMap.get(billId) : undefined;
-    const quoteStatus = quoteDetailsQueries[index]?.data?.status ?? quote.status;
+    const quoteStatus =
+      quoteDetailsQueries[index]?.data?.status ?? quote.status;
     effectiveStatusByQuoteId.set(
       quote.id,
       getEffectiveQuoteStatus(quoteStatus, ebill),
@@ -404,7 +405,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
   const filteredQuotes =
     quotes.filter((quote) => {
-      const effectiveStatus = effectiveStatusByQuoteId.get(quote.id) ?? quote.status;
+      const effectiveStatus =
+        effectiveStatusByQuoteId.get(quote.id) ?? quote.status;
 
       if (status && effectiveStatus !== status) {
         return false;

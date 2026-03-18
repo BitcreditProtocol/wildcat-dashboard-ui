@@ -503,9 +503,8 @@ function PageBody({ keysetId }: { keysetId: string }) {
                             >
                               {intl.formatMessage({
                                 id: `quote.status.${effectiveQuoteStatus}`,
-                                defaultMessage: formatStatusLabel(
-                                  effectiveQuoteStatus,
-                                ),
+                                defaultMessage:
+                                  formatStatusLabel(effectiveQuoteStatus),
                               })}
                             </Badge>
                           </td>

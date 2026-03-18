@@ -48,7 +48,9 @@ interface UseQueriesResultItem {
 
 const mockUseQuery =
   vi.fn<
-    (options: GetQuoteQueryOptions | ListEbillsQueryOptions) => GetQuoteQueryResult
+    (
+      options: GetQuoteQueryOptions | ListEbillsQueryOptions,
+    ) => GetQuoteQueryResult
   >();
 const mockUseInfiniteQuery = vi.fn<() => InfiniteQueryResult>();
 const mockUseQueries =
