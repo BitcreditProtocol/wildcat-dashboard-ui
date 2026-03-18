@@ -78,16 +78,35 @@
       "get": {
         "tags": ["admin"],
         "operationId": "list_keyset_infos",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/KeySetInfo"
-                  }
+                  "$ref": "#/components/schemas/PaginatedResponse_KeySetInfo"
                 }
               }
             }
@@ -95,7 +114,7 @@
         }
       }
     },
-    "/v1/admin/credit/mint_op_status/{qid}": {
+    "/v1/admin/treasury/credit/mint_op_status/{qid}": {
       "get": {
         "tags": ["admin"],
         "operationId": "get_mintop_status",
@@ -128,7 +147,7 @@
         }
       }
     },
-    "/v1/admin/credit/mint_ops/{kid}": {
+    "/v1/admin/treasury/credit/mint_ops/{kid}": {
       "get": {
         "tags": ["admin"],
         "operationId": "list_mintops",
@@ -388,6 +407,26 @@
                 }
               ]
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int32",
+              "minimum": 0
+            }
           }
         ],
         "responses": {
@@ -396,7 +435,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListReplyLight"
+                  "$ref": "#/components/schemas/PaginatedResponse_LightInfo"
                 }
               }
             }
@@ -785,16 +824,6 @@
       "get": {
         "tags": ["admin"],
         "operationId": "get_ebill_mint_complete",
-        "parameters": [
-          {
-            "name": "bid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful response",
@@ -2029,21 +2058,6 @@
           }
         }
       },
-      "LightBillIdentParticipant": {
-        "type": "object",
-        "required": ["type", "name", "node_id"],
-        "properties": {
-          "type": {
-            "$ref": "#/components/schemas/ContactType"
-          },
-          "name": {
-            "type": "string"
-          },
-          "node_id": {
-            "type": "string"
-          }
-        }
-      },
       "LightBillIdentParticipantWithAddress": {
         "allOf": [
           {
@@ -2088,6 +2102,18 @@
           }
         ]
       },
+      "LightBillSignatory": {
+        "type": "object",
+        "required": ["node_id"],
+        "properties": {
+          "name": {
+            "type": ["string", "null"]
+          },
+          "node_id": {
+            "type": "string"
+          }
+        }
+      },
       "LightInfo": {
         "type": "object",
         "required": ["id", "status", "sum"],
@@ -2119,21 +2145,9 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/LightBillIdentParticipant"
+                "$ref": "#/components/schemas/LightBillSignatory"
               }
             ]
-          }
-        }
-      },
-      "ListReplyLight": {
-        "type": "object",
-        "required": ["quotes"],
-        "properties": {
-          "quotes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LightInfo"
-            }
           }
         }
       },
@@ -2219,6 +2233,83 @@
           },
           "address": {
             "type": ["string", "null"]
+          }
+        }
+      },
+      "PaginatedResponse_KeySetInfo": {
+        "type": "object",
+        "required": ["data", "total"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "KeySetInfo",
+              "required": ["id", "unit", "active"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Keyset [`Id`]"
+                },
+                "unit": {
+                  "$ref": "#/components/schemas/CurrencyUnit",
+                  "description": "Keyset [`CurrencyUnit`]"
+                },
+                "active": {
+                  "type": "boolean",
+                  "description": "Keyset state\nMint will only sign from an active keyset"
+                },
+                "input_fee_ppk": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Input Fee PPK",
+                  "minimum": 0
+                },
+                "final_expiry": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Expiry of the keyset",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "PaginatedResponse_LightInfo": {
+        "type": "object",
+        "required": ["data", "total"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "status", "sum"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/InfoReplyDiscriminants"
+                },
+                "sum": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },

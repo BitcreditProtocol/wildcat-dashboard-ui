@@ -140,7 +140,10 @@ beforeEach(() => {
 
 describe("KeysetsPage", () => {
   it("shows empty state when no keysets are returned", () => {
-    mockUseQuery.mockReturnValue({ data: [], isLoading: false });
+    mockUseQuery.mockReturnValue({
+      data: { data: [], total: 0 },
+      isLoading: false,
+    });
 
     const page = renderPage();
     expect(page.textContent).toContain("No keysets found");
@@ -148,14 +151,17 @@ describe("KeysetsPage", () => {
 
   it("renders inactive keyset without expiry", () => {
     mockUseQuery.mockReturnValue({
-      data: [
-        {
-          id: "keyset-no-expiry",
-          active: false,
-          final_expiry: null,
-          unit: { Custom: "usd" },
-        },
-      ],
+      data: {
+        data: [
+          {
+            id: "keyset-no-expiry",
+            active: false,
+            final_expiry: null,
+            unit: { Custom: "usd" },
+          },
+        ],
+        total: 1,
+      },
       isLoading: false,
     });
 
@@ -167,20 +173,23 @@ describe("KeysetsPage", () => {
 
   it("filters out all rows and shows no-match state from search", () => {
     mockUseQuery.mockReturnValue({
-      data: [
-        {
-          id: "keyset-aaa",
-          active: true,
-          final_expiry: 1771545600,
-          unit: "sat",
-        },
-        {
-          id: "keyset-bbb",
-          active: false,
-          final_expiry: 1771632000,
-          unit: { Custom: "usd" },
-        },
-      ],
+      data: {
+        data: [
+          {
+            id: "keyset-aaa",
+            active: true,
+            final_expiry: 1771545600,
+            unit: "sat",
+          },
+          {
+            id: "keyset-bbb",
+            active: false,
+            final_expiry: 1771632000,
+            unit: { Custom: "usd" },
+          },
+        ],
+        total: 2,
+      },
       isLoading: false,
     });
     nextSearchQuery = "definitely-missing";
@@ -193,26 +202,29 @@ describe("KeysetsPage", () => {
 
   it("sorts by maturity, then currency, then status via sort controls", () => {
     mockUseQuery.mockReturnValue({
-      data: [
-        {
-          id: "keyset-expired",
-          active: true,
-          final_expiry: 1735689600,
-          unit: "sat",
-        },
-        {
-          id: "keyset-future",
-          active: false,
-          final_expiry: 1798761600,
-          unit: { Custom: "usd" },
-        },
-        {
-          id: "keyset-no-expiry",
-          active: false,
-          final_expiry: null,
-          unit: { Custom: "eur" },
-        },
-      ],
+      data: {
+        data: [
+          {
+            id: "keyset-expired",
+            active: true,
+            final_expiry: 1735689600,
+            unit: "sat",
+          },
+          {
+            id: "keyset-future",
+            active: false,
+            final_expiry: 1798761600,
+            unit: { Custom: "usd" },
+          },
+          {
+            id: "keyset-no-expiry",
+            active: false,
+            final_expiry: null,
+            unit: { Custom: "eur" },
+          },
+        ],
+        total: 3,
+      },
       isLoading: false,
     });
 

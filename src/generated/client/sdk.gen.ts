@@ -26,9 +26,9 @@ export const getKeysetInfo = <ThrowOnError extends boolean = false>(options: Opt
 
 export const listKeysetInfos = <ThrowOnError extends boolean = false>(options?: Options<ListKeysetInfosData, ThrowOnError>) => (options?.client ?? client).get<ListKeysetInfosResponses, unknown, ThrowOnError>({ url: '/v1/admin/keysets', ...options });
 
-export const getMintopStatus = <ThrowOnError extends boolean = false>(options: Options<GetMintopStatusData, ThrowOnError>) => (options.client ?? client).get<GetMintopStatusResponses, GetMintopStatusErrors, ThrowOnError>({ url: '/v1/admin/credit/mint_op_status/{qid}', ...options });
+export const getMintopStatus = <ThrowOnError extends boolean = false>(options: Options<GetMintopStatusData, ThrowOnError>) => (options.client ?? client).get<GetMintopStatusResponses, GetMintopStatusErrors, ThrowOnError>({ url: '/v1/admin/treasury/credit/mint_op_status/{qid}', ...options });
 
-export const listMintops = <ThrowOnError extends boolean = false>(options: Options<ListMintopsData, ThrowOnError>) => (options.client ?? client).get<ListMintopsResponses, ListMintopsErrors, ThrowOnError>({ url: '/v1/admin/credit/mint_ops/{kid}', ...options });
+export const listMintops = <ThrowOnError extends boolean = false>(options: Options<ListMintopsData, ThrowOnError>) => (options.client ?? client).get<ListMintopsResponses, ListMintopsErrors, ThrowOnError>({ url: '/v1/admin/treasury/credit/mint_ops/{kid}', ...options });
 
 export const postEnableRedemption = <ThrowOnError extends boolean = false>(options: Options<PostEnableRedemptionData, ThrowOnError>) => (options.client ?? client).post<PostEnableRedemptionResponses, PostEnableRedemptionErrors, ThrowOnError>({
     url: '/v1/admin/credit/enable_redemption',
@@ -104,4 +104,4 @@ export const postEbillReqtopay = <ThrowOnError extends boolean = false>(options:
 
 export const getSatBalance = <ThrowOnError extends boolean = false>(options?: Options<GetSatBalanceData, ThrowOnError>) => (options?.client ?? client).get<GetSatBalanceResponses, unknown, ThrowOnError>({ url: '/v1/admin/treasury/balance/sat', ...options });
 
-export const getEbillMintComplete = <ThrowOnError extends boolean = false>(options: Options<GetEbillMintCompleteData, ThrowOnError>) => (options.client ?? client).get<GetEbillMintCompleteResponses, GetEbillMintCompleteErrors, ThrowOnError>({ url: '/v1/admin/treasury/ebill/payment_complete/{bid}', ...options });
+export const getEbillMintComplete = <ThrowOnError extends boolean = false>(options?: Options<GetEbillMintCompleteData, ThrowOnError>) => (options?.client ?? client).get<GetEbillMintCompleteResponses, GetEbillMintCompleteErrors, ThrowOnError>({ url: '/v1/admin/treasury/ebill/payment_complete/{bid}', ...options });
