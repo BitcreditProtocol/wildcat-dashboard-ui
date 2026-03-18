@@ -78,6 +78,9 @@ const shouldPollStatusPage = (status?: QuoteStatus) =>
   status === "Accepted" ||
   status === "MintingEnabled";
 
+const shouldFetchEbillsForStatusPage = (status?: QuoteStatus) =>
+  status === undefined || status === "Pending" || status === "Offered";
+
 type ItemsPerPageValue = number | typeof ALL_PAGE_SIZE_VALUE;
 
 interface StatusQuotePageProps {
@@ -323,9 +326,11 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const totalQuotes = data?.pages[0]?.total ?? quotes.length;
   const usesLegacyFallback =
     data?.pages.some((page) => !isPaginatedPage(page)) ?? false;
+  const shouldFetchEbills = shouldFetchEbillsForStatusPage(status);
   const { data: ebills } = useQuery({
     ...listEbillsOptions(),
-    refetchInterval: shouldPollStatusPage(status)
+    enabled: shouldFetchEbills && quotes.length > 0,
+    refetchInterval: shouldFetchEbills && quotes.length > 0
       ? QUOTE_STATUS_POLL_INTERVAL_MS
       : false,
     refetchIntervalInBackground: true,

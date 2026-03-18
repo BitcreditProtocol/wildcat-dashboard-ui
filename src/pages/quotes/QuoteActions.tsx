@@ -127,7 +127,7 @@ export function QuoteActions({
   return (
     <>
       <div className="flex items-center gap-2">
-        {value.status === "Pending" && (
+        {effectiveQuoteStatus === "Pending" && (
           <DenyConfirmDrawer
             title={denyTitle}
             open={denyConfirmDrawerOpen}
@@ -150,7 +150,7 @@ export function QuoteActions({
           </DenyConfirmDrawer>
         )}
 
-        {value.status === "Pending" && (
+        {effectiveQuoteStatus === "Pending" && (
           <OfferFormDrawer
             title={offerTitle}
             description={offerDescription}

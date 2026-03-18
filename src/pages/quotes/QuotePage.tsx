@@ -17,6 +17,7 @@ import {
 } from "@/generated/client/@tanstack/react-query.gen";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
+import type { InfoReplyDiscriminants } from "@/generated/client/types.gen";
 import { humanReadableDurationDays } from "@/utils/dates";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { QuoteActions } from "./QuoteActions.tsx";
@@ -81,7 +82,6 @@ function PageBody({ id }: { id: string }) {
   });
 
   const billId = quoteData?.bill?.id;
-  const quoteStatus = quoteData?.status as string | undefined;
 
   const ebillsQuery = useQuery({
     ...listEbillsOptions(),
@@ -106,9 +106,15 @@ function PageBody({ id }: { id: string }) {
   });
 
   const ebill = ebillsQuery.data?.find((item) => item.id === billId);
+  const effectiveQuoteStatus = getEffectiveQuoteStatus(
+    (quoteData?.status as InfoReplyDiscriminants | undefined) ?? "Pending",
+    ebill,
+  );
   const isPaid = ebill?.status?.payment?.paid === true;
   const shouldCheckMintComplete =
-    quoteStatus === "Accepted" || quoteStatus === "MintingEnabled" || isPaid;
+    effectiveQuoteStatus === "Accepted" ||
+    effectiveQuoteStatus === "MintingEnabled" ||
+    isPaid;
 
   const feeTokenRequestRef = useRef<string | null>(null);
 
@@ -152,7 +158,7 @@ function PageBody({ id }: { id: string }) {
 
   const feeTokenFromQuote =
     quoteData && "fee" in quoteData ? quoteData.fee : null;
-  const quoteStatusForEffect = quoteData?.status;
+  const quoteStatusForEffect = effectiveQuoteStatus;
 
   useEffect(() => {
     if (!feeTokenFromQuote || quoteStatusForEffect !== "MintingEnabled") {
@@ -217,7 +223,6 @@ function PageBody({ id }: { id: string }) {
     "fee" in quote && typeof quote.fee === "string" ? quote.fee : null;
 
   const billStatus = ebill?.status;
-  const effectiveQuoteStatus = getEffectiveQuoteStatus(quote.status, ebill);
   const paymentStatus = billStatus?.payment;
   const cws = ebill?.current_waiting_state;
   const isMintComplete = mintCompleteQuery.data?.complete ?? false;
@@ -236,7 +241,8 @@ function PageBody({ id }: { id: string }) {
   const isInMempool =
     cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true;
   const showPayment =
-    quoteStatus === "Accepted" || quoteStatus === "MintingEnabled";
+    effectiveQuoteStatus === "Accepted" ||
+    effectiveQuoteStatus === "MintingEnabled";
 
   if (!quote || !bill) {
     return (
@@ -641,7 +647,7 @@ function PageBody({ id }: { id: string }) {
         mintingEnabled={quoteStatusValue === "MintingEnabled"}
         quoteOffered={
           quoteStatusValue === "Offered" ||
-          quoteStatusValue === "Accepted" ||
+          effectiveQuoteStatus === "Accepted" ||
           quoteStatusValue === "MintingEnabled"
         }
         offeredTimestamp={

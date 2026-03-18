@@ -10,7 +10,7 @@ export type QuoteStatusVariant =
   | "success"
   | "outline";
 
-export type EffectiveQuoteStatus = InfoReplyDiscriminants | "Minting";
+export type EffectiveQuoteStatus = InfoReplyDiscriminants;
 
 const terminalQuoteStatuses = new Set<InfoReplyDiscriminants>([
   "Accepted",

@@ -41,7 +41,6 @@ function PageBody() {
   const { data: keysetsResponse, isLoading: keysetsLoading } = useQuery({
     ...listKeysetInfosOptions(),
     refetchInterval: KEYSETS_POLL_INTERVAL_MS,
-    refetchIntervalInBackground: true,
   });
   const keysets = keysetsResponse?.data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
