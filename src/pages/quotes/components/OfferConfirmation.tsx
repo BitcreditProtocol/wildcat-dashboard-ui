@@ -6,6 +6,7 @@ import type { OfferFormResult } from "./OfferFormDrawer.tsx";
 import { addDays, addYears } from "date-fns";
 import { getItem, removeItem, setItem } from "@/utils/local-storage";
 import { useIntl } from "react-intl";
+import { toUtcEndOfDay } from "@/utils/dates";
 
 interface OfferConfirmationProps {
   offerFormData?: OfferFormResult;
@@ -97,7 +98,7 @@ export function OfferConfirmation({
 
           const finalOfferData = {
             ...offerFormData,
-            ttl: { ttl: validUntilDate },
+            ttl: { ttl: toUtcEndOfDay(validUntilDate) },
           };
 
           onSubmit(finalOfferData);
@@ -177,9 +178,10 @@ export function OfferConfirmation({
         onDateChange={setDraftValidUntilDate}
         onConfirm={() => {
           if (draftValidUntilDate) {
-            setValidUntilDate(draftValidUntilDate);
+            const utcValidUntilDate = toUtcEndOfDay(draftValidUntilDate);
+            setValidUntilDate(utcValidUntilDate);
             if (storageKey) {
-              setItem(storageKey, draftValidUntilDate.toISOString());
+              setItem(storageKey, utcValidUntilDate.toISOString());
             }
           }
           setShowValidUntilCalendar(false);
