@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
+import {
+  getEbillOptions,
+  getMintInfoOptions,
+} from "@/generated/client/@tanstack/react-query.gen";
 import type {
   InfoReply,
   BillWaitingStatePaymentData,
@@ -19,6 +22,7 @@ import { RequestToPayConfirmation } from "./components/RequestToPayConfirmation.
 import { useQuoteMutations } from "./components/useQuoteMutations.ts";
 import { useIntl } from "react-intl";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
+import { buildMempoolTransactionUrl } from "@/utils/mempool";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -84,8 +88,18 @@ export function QuoteActions({
     paymentStatus?.payment_deadline_timestamp ??
     waitingPaymentData?.payment_deadline ??
     null;
+  const mintInfoQuery = useQuery({
+    ...getMintInfoOptions(),
+    retry: 1,
+    enabled: Boolean(waitingPaymentData?.tx_id),
+    staleTime: 5 * 60 * 1000,
+  });
   const linkToPay: string | undefined =
-    waitingPaymentData?.mempool_link_for_address_to_pay;
+    waitingPaymentData?.mempool_link_for_address_to_pay ??
+    buildMempoolTransactionUrl({
+      txId: waitingPaymentData?.tx_id,
+      network: mintInfoQuery.data?.network,
+    });
   const addressToPay: string | undefined = waitingPaymentData?.address_to_pay;
 
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>();

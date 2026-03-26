@@ -4,6 +4,7 @@ type RuntimeEnv = Partial<{
   VITE_KEYCLOAK_URL: string;
   VITE_KEYCLOAK_REALM: string;
   VITE_KEYCLOAK_CLIENT_ID: string;
+  VITE_ESPLORA_BASE_URL: string;
   VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: string;
 }>;
 
@@ -34,6 +35,8 @@ export const env = {
   keycloakUrl: getEnvValue("VITE_KEYCLOAK_URL")!,
   keycloakRealm: getEnvValue("VITE_KEYCLOAK_REALM")!,
   keycloakClientId: getEnvValue("VITE_KEYCLOAK_CLIENT_ID")!,
+  esploraBaseUrl:
+    getEnvValue("VITE_ESPLORA_BASE_URL") ?? "https://esplora.minibill.tech",
   crowdinInContextToolingEnabled:
     (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ??
       "false") === "true",
