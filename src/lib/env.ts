@@ -15,16 +15,26 @@ const runtimeEnv: RuntimeEnv =
 
 const fallbackEnv = import.meta.env as ImportMetaEnv & RuntimeEnv;
 
+const normalizeEnvValue = <K extends keyof RuntimeEnv>(
+  value: RuntimeEnv[K] | undefined,
+): RuntimeEnv[K] | undefined => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  return value;
+};
+
 const getEnvValue = <K extends keyof RuntimeEnv>(
   key: K,
 ): RuntimeEnv[K] | undefined => {
-  const value = runtimeEnv[key];
+  const runtimeValue = normalizeEnvValue(runtimeEnv[key]);
 
-  if (value !== undefined && value !== null && value !== "") {
-    return value;
+  if (runtimeValue !== undefined) {
+    return runtimeValue;
   }
 
-  return fallbackEnv[key];
+  return normalizeEnvValue(fallbackEnv[key]);
 };
 
 export const env = {

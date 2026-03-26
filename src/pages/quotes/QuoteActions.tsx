@@ -88,14 +88,16 @@ export function QuoteActions({
     paymentStatus?.payment_deadline_timestamp ??
     waitingPaymentData?.payment_deadline ??
     null;
+  const backendMempoolLink =
+    waitingPaymentData?.mempool_link_for_address_to_pay?.trim() || undefined;
   const mintInfoQuery = useQuery({
     ...getMintInfoOptions(),
     retry: 1,
-    enabled: Boolean(waitingPaymentData?.tx_id),
+    enabled: Boolean(waitingPaymentData?.tx_id && !backendMempoolLink),
     staleTime: 5 * 60 * 1000,
   });
   const linkToPay: string | undefined =
-    waitingPaymentData?.mempool_link_for_address_to_pay ??
+    backendMempoolLink ??
     buildMempoolTransactionUrl({
       txId: waitingPaymentData?.tx_id,
       network: mintInfoQuery.data?.network,
