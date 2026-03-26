@@ -4,6 +4,7 @@ type RuntimeEnv = Partial<{
   VITE_KEYCLOAK_URL: string;
   VITE_KEYCLOAK_REALM: string;
   VITE_KEYCLOAK_CLIENT_ID: string;
+  VITE_ESPLORA_BASE_URL: string;
   VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: string;
 }>;
 
@@ -14,16 +15,26 @@ const runtimeEnv: RuntimeEnv =
 
 const fallbackEnv = import.meta.env as ImportMetaEnv & RuntimeEnv;
 
+const normalizeEnvValue = <K extends keyof RuntimeEnv>(
+  value: RuntimeEnv[K] | undefined,
+): RuntimeEnv[K] | undefined => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  return value;
+};
+
 const getEnvValue = <K extends keyof RuntimeEnv>(
   key: K,
 ): RuntimeEnv[K] | undefined => {
-  const value = runtimeEnv[key];
+  const runtimeValue = normalizeEnvValue(runtimeEnv[key]);
 
-  if (value !== undefined && value !== null && value !== "") {
-    return value;
+  if (runtimeValue !== undefined) {
+    return runtimeValue;
   }
 
-  return fallbackEnv[key];
+  return normalizeEnvValue(fallbackEnv[key]);
 };
 
 export const env = {
@@ -34,6 +45,8 @@ export const env = {
   keycloakUrl: getEnvValue("VITE_KEYCLOAK_URL")!,
   keycloakRealm: getEnvValue("VITE_KEYCLOAK_REALM")!,
   keycloakClientId: getEnvValue("VITE_KEYCLOAK_CLIENT_ID")!,
+  esploraBaseUrl:
+    getEnvValue("VITE_ESPLORA_BASE_URL") ?? "https://esplora.minibill.tech",
   crowdinInContextToolingEnabled:
     (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ??
       "false") === "true",

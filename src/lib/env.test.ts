@@ -17,6 +17,7 @@ describe("env runtime resolution", () => {
     vi.stubEnv("VITE_KEYCLOAK_URL", "https://fallback-keycloak.example.com");
     vi.stubEnv("VITE_KEYCLOAK_REALM", "fallback-realm");
     vi.stubEnv("VITE_KEYCLOAK_CLIENT_ID", "fallback-client");
+    vi.stubEnv("VITE_ESPLORA_BASE_URL", "https://fallback-esplora.example.com");
 
     vi.stubGlobal("window", {
       __ENV__: {
@@ -25,6 +26,7 @@ describe("env runtime resolution", () => {
         VITE_KEYCLOAK_URL: "https://runtime-keycloak.example.com",
         VITE_KEYCLOAK_REALM: "runtime-realm",
         VITE_KEYCLOAK_CLIENT_ID: "runtime-client",
+        VITE_ESPLORA_BASE_URL: "https://runtime-esplora.example.com",
         VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: "true",
       },
     });
@@ -36,6 +38,7 @@ describe("env runtime resolution", () => {
     expect(env.keycloakUrl).toBe("https://runtime-keycloak.example.com");
     expect(env.keycloakRealm).toBe("runtime-realm");
     expect(env.keycloakClientId).toBe("runtime-client");
+    expect(env.esploraBaseUrl).toBe("https://runtime-esplora.example.com");
     expect(env.crowdinInContextToolingEnabled).toBe(true);
   });
 
@@ -45,6 +48,7 @@ describe("env runtime resolution", () => {
     vi.stubEnv("VITE_KEYCLOAK_URL", "https://fallback-keycloak.example.com");
     vi.stubEnv("VITE_KEYCLOAK_REALM", "fallback-realm");
     vi.stubEnv("VITE_KEYCLOAK_CLIENT_ID", "fallback-client");
+    vi.stubEnv("VITE_ESPLORA_BASE_URL", "https://fallback-esplora.example.com");
     vi.stubEnv("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING", "false");
 
     vi.stubGlobal("window", {
@@ -54,6 +58,7 @@ describe("env runtime resolution", () => {
         VITE_KEYCLOAK_URL: "",
         VITE_KEYCLOAK_REALM: "",
         VITE_KEYCLOAK_CLIENT_ID: "",
+        VITE_ESPLORA_BASE_URL: "",
         VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: "",
       },
     });
@@ -65,6 +70,7 @@ describe("env runtime resolution", () => {
     expect(env.keycloakUrl).toBe("https://fallback-keycloak.example.com");
     expect(env.keycloakRealm).toBe("fallback-realm");
     expect(env.keycloakClientId).toBe("fallback-client");
+    expect(env.esploraBaseUrl).toBe("https://fallback-esplora.example.com");
     expect(env.crowdinInContextToolingEnabled).toBe(false);
   });
 
@@ -73,6 +79,7 @@ describe("env runtime resolution", () => {
     vi.stubEnv("VITE_KEYCLOAK_URL", "https://fallback-keycloak.example.com");
     vi.stubEnv("VITE_KEYCLOAK_REALM", "fallback-realm");
     vi.stubEnv("VITE_KEYCLOAK_CLIENT_ID", "fallback-client");
+    vi.stubEnv("VITE_ESPLORA_BASE_URL", "");
 
     vi.stubGlobal("window", undefined);
 
@@ -82,5 +89,6 @@ describe("env runtime resolution", () => {
     expect(env.keycloakUrl).toBe("https://fallback-keycloak.example.com");
     expect(env.keycloakRealm).toBe("fallback-realm");
     expect(env.keycloakClientId).toBe("fallback-client");
+    expect(env.esploraBaseUrl).toBe("https://esplora.minibill.tech");
   });
 });
