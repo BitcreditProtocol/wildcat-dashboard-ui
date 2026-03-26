@@ -4,7 +4,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { QuoteActions } from "./QuoteActions";
 
-const mockUseQuery = vi.fn();
+interface MockQueryOptions {
+  queryKey: [{ _id: string; path?: { bid: string } }];
+  enabled?: boolean;
+}
+
+interface MockQueryResult {
+  data: unknown;
+  error: Error | null;
+}
+
+const seenQueryOptions: MockQueryOptions[] = [];
+const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
@@ -12,7 +23,10 @@ vi.mock("@tanstack/react-query", async () => {
   );
   return {
     ...actual,
-    useQuery: (options: unknown) => mockUseQuery(options),
+    useQuery: (options: MockQueryOptions) => {
+      seenQueryOptions.push(options);
+      return mockUseQuery(options);
+    },
   };
 });
 
@@ -98,6 +112,7 @@ function renderComponent() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  seenQueryOptions.length = 0;
   vi.stubGlobal("matchMedia", () => ({
     matches: false,
     media: "",
@@ -158,7 +173,7 @@ describe("QuoteActions", () => {
 
     expect(page.textContent).toContain("https://backend.example/tx/abc");
     expect(mockUseQuery).toHaveBeenCalledTimes(2);
-    expect(mockUseQuery.mock.calls[1][0].enabled).toBe(false);
+    expect(seenQueryOptions[1]?.enabled).toBe(false);
   });
 
   it("builds a fallback mempool link when backend value is blank", () => {
@@ -205,6 +220,6 @@ describe("QuoteActions", () => {
     );
 
     expect(link).not.toBeNull();
-    expect(mockUseQuery.mock.calls[1][0].enabled).toBe(true);
+    expect(seenQueryOptions[1]?.enabled).toBe(true);
   });
 });

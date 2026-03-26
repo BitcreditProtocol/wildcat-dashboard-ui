@@ -88,8 +88,10 @@ export function QuoteActions({
     paymentStatus?.payment_deadline_timestamp ??
     waitingPaymentData?.payment_deadline ??
     null;
+  const rawBackendMempoolLink =
+    waitingPaymentData?.mempool_link_for_address_to_pay?.trim();
   const backendMempoolLink =
-    waitingPaymentData?.mempool_link_for_address_to_pay?.trim() || undefined;
+    rawBackendMempoolLink === "" ? undefined : rawBackendMempoolLink;
   const mintInfoQuery = useQuery({
     ...getMintInfoOptions(),
     retry: 1,
