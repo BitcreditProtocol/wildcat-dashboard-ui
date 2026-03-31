@@ -24,15 +24,16 @@ export function QuoteDocuments({
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  console.log(documents);
   return (
     <Card>
-      <CardHeader
-        className="cursor-pointer"
-        onClick={() => setIsExpanded((value) => !value)}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <CardHeader className="p-0">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between p-6 text-left"
+          onClick={() => setIsExpanded((value) => !value)}
+          aria-expanded={isExpanded}
+        >
+          <span className="flex items-center gap-2">
             <CardTitle>
               {intl.formatMessage({
                 id: "quotes.documents.title",
@@ -49,12 +50,8 @@ export function QuoteDocuments({
                 { count: documents.length },
               )}
             </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 py-0 gap-1"
-          >
+          </span>
+          <span className="flex h-8 items-center gap-1 px-2 py-0">
             <span className="text-xs text-muted-foreground">
               {isExpanded
                 ? intl.formatMessage({
@@ -71,8 +68,8 @@ export function QuoteDocuments({
             ) : (
               <ChevronDown className="h-4 w-4" />
             )}
-          </Button>
-        </div>
+          </span>
+        </button>
       </CardHeader>
 
       {isExpanded && (

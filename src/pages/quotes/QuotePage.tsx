@@ -263,6 +263,7 @@ function PageBody({ id }: { id: string }) {
           bill_id: billId,
           file_name: fileName,
         },
+        responseStyle: "data",
         url: "/v1/admin/bill/attachment/{bill_id}/{file_name}",
         parseAs: "blob",
       });
