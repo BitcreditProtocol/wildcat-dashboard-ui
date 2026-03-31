@@ -1358,9 +1358,7 @@
           "time_of_request",
           "currency",
           "sum",
-          "link_to_pay",
           "address_to_pay",
-          "mempool_link_for_address_to_pay",
           "in_mempool",
           "confirmations"
         ],
@@ -1376,13 +1374,7 @@
           "sum": {
             "type": "string"
           },
-          "link_to_pay": {
-            "type": "string"
-          },
           "address_to_pay": {
-            "type": "string"
-          },
-          "mempool_link_for_address_to_pay": {
             "type": "string"
           },
           "tx_id": {

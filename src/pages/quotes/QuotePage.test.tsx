@@ -26,6 +26,10 @@ interface MutationResult {
   data: unknown;
 }
 
+const { mockClientGet } = vi.hoisted(() => ({
+  mockClientGet: vi.fn(),
+}));
+
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const mockUseMutation = vi.fn<() => MutationResult>();
 
@@ -35,6 +39,12 @@ vi.mock("sonner", () => ({
 
 vi.mock("./QuoteActions.tsx", () => ({
   QuoteActions: () => <div>QuoteActionsMock</div>,
+}));
+
+vi.mock("@/lib/api-client", () => ({
+  client: {
+    get: mockClientGet,
+  },
 }));
 
 vi.mock("@/components/EndorsementChain", () => ({
@@ -121,6 +131,7 @@ beforeEach(() => {
     isError: false,
     data: undefined,
   });
+  mockClientGet.mockReset();
 
   mockUseQuery.mockImplementation((opts: QueryOptions) => {
     const id = opts.queryKey[0]._id;
@@ -147,7 +158,27 @@ beforeEach(() => {
     }
 
     if (id === "listEbills") {
-      return { data: [], isLoading: false, error: null };
+      return {
+        data: [
+          {
+            id: "bill-1",
+            data: {
+              files: [
+                {
+                  name: "invoice.pdf",
+                  hash: "hash-1",
+                  nostr_hash: "nostr-hash-1",
+                },
+              ],
+            },
+            status: {
+              payment: { paid: true },
+            },
+          },
+        ],
+        isLoading: false,
+        error: null,
+      };
     }
 
     if (id === "getEbillEndorsements") {
@@ -155,7 +186,7 @@ beforeEach(() => {
     }
 
     if (id === "getEbillMintComplete") {
-      return { data: { complete: false }, isLoading: false, error: null };
+      return { data: { complete: true }, isLoading: false, error: null };
     }
 
     return {
@@ -261,5 +292,12 @@ describe("QuotePage", () => {
     const page = renderPage("/quotes/quote-2");
     const keysetLink = page.querySelector('a[href^="/keysets/"]');
     expect(keysetLink).toBeNull();
+  });
+
+  it("shows a collapsible documents section", () => {
+    const page = renderPage("/quotes/quote-1");
+    expect(page.textContent).toContain("Documents");
+    expect(page.textContent).toContain("Show documents");
+    expect(page.textContent).not.toContain("invoice.pdf");
   });
 });
