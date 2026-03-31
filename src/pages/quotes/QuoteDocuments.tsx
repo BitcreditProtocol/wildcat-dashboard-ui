@@ -24,7 +24,7 @@ export function QuoteDocuments({
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  console.log(documents)
+  console.log(documents);
   return (
     <Card>
       <CardHeader

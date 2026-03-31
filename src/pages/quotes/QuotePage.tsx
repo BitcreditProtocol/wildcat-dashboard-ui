@@ -277,7 +277,11 @@ function PageBody({ id }: { id: string }) {
       }
 
       const blobUrl = window.URL.createObjectURL(attachment);
-      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      const openedWindow = window.open(
+        blobUrl,
+        "_blank",
+        "noopener,noreferrer",
+      );
 
       if (!openedWindow) {
         const link = document.createElement("a");
