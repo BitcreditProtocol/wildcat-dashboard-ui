@@ -87,11 +87,11 @@ describe("QuoteDocuments", () => {
       />,
     );
 
-    const header = page.querySelector('[data-slot="card-header"]');
-    expect(header).not.toBeNull();
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+    expect(toggleButton).not.toBeNull();
 
     act(() => {
-      header?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(page.textContent).toContain("Hide documents");
