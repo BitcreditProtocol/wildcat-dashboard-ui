@@ -296,12 +296,14 @@ export function EndorsementChain({
 
   return (
     <Card>
-      <CardHeader
-        className="cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <CardHeader className="p-0">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between p-6 text-left"
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+        >
+          <span className="flex items-center gap-2">
             <CardTitle>{titleLabel}</CardTitle>
             <span className="text-sm text-muted-foreground">
               {intl.formatMessage(
@@ -313,12 +315,8 @@ export function EndorsementChain({
                 { count: eventCount },
               )}
             </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 py-0 gap-1"
-          >
+          </span>
+          <span className="flex h-8 items-center gap-1 px-2 py-0">
             <span className="text-xs text-muted-foreground">
               {isExpanded
                 ? intl.formatMessage({
@@ -335,8 +333,8 @@ export function EndorsementChain({
             ) : (
               <ChevronDown className="h-4 w-4" />
             )}
-          </Button>
-        </div>
+          </span>
+        </button>
       </CardHeader>
 
       {isExpanded && (

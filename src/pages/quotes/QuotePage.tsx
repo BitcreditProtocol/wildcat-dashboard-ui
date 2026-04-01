@@ -31,9 +31,11 @@ import { EndorsementChain } from "@/components/EndorsementChain";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { client } from "@/lib/api-client";
+import { QuoteDocuments } from "./QuoteDocuments";
 
 interface LocationState {
   from?: string;
@@ -117,6 +119,9 @@ function PageBody({ id }: { id: string }) {
     isPaid;
 
   const feeTokenRequestRef = useRef<string | null>(null);
+  const [openingDocumentName, setOpeningDocumentName] = useState<string | null>(
+    null,
+  );
 
   const {
     mutate: requestFeeTokenStatus,
@@ -243,6 +248,67 @@ function PageBody({ id }: { id: string }) {
   const showPayment =
     effectiveQuoteStatus === "Accepted" ||
     effectiveQuoteStatus === "MintingEnabled";
+  const documentFiles = ebill?.data?.files ?? [];
+
+  const handleOpenDocument = async (fileName: string) => {
+    if (!billId || !fileName || openingDocumentName) {
+      return;
+    }
+
+    setOpeningDocumentName(fileName);
+
+    try {
+      const attachment = await client.get({
+        path: {
+          bill_id: billId,
+          file_name: fileName,
+        },
+        responseStyle: "data",
+        url: "/v1/admin/bill/attachment/{bill_id}/{file_name}",
+        parseAs: "blob",
+      });
+
+      if (!(attachment instanceof Blob)) {
+        throw new Error(
+          intl.formatMessage({
+            id: "quotes.documents.invalidResponse",
+            defaultMessage: "Document attachment could not be opened.",
+          }),
+        );
+      }
+
+      const blobUrl = window.URL.createObjectURL(attachment);
+      const openedWindow = window.open(
+        blobUrl,
+        "_blank",
+        "noopener,noreferrer",
+      );
+
+      if (!openedWindow) {
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.click();
+      }
+
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 60_000);
+    } catch (error) {
+      toast.error(
+        intl.formatMessage({
+          id: "quotes.documents.openError",
+          defaultMessage: "Failed to open document",
+        }),
+        {
+          description: getApiErrorMessage(error),
+        },
+      );
+    } finally {
+      setOpeningDocumentName(null);
+    }
+  };
 
   if (!quote || !bill) {
     return (
@@ -614,50 +680,57 @@ function PageBody({ id }: { id: string }) {
         timeOfRequestToPay={timeOfRequestToPay}
       />
 
-      {/* Endorsement Chain & Bill History */}
-      <EndorsementChain
-        endorsements={endorsementsQuery.data}
-        isLoading={endorsementsQuery.isLoading}
-        issueDate={ebill?.data?.issue_date}
-        maturityDate={bill.maturity_date}
-        requestToPayTimestamp={
-          ebill?.status?.payment?.time_of_request_to_pay ?? undefined
-        }
-        rejectedToPayTimestamp={
-          ebill?.status?.payment?.rejected_to_pay
-            ? (ebill?.status?.last_block_time ?? undefined)
-            : undefined
-        }
-        paymentTimestamp={
-          ebill?.status?.payment?.paid
-            ? (ebill?.status?.last_block_time ?? undefined)
-            : undefined
-        }
-        acceptanceTimestamp={
-          ebill?.status?.acceptance?.accepted
-            ? (ebill?.status?.acceptance?.time_of_request_to_accept ??
-              undefined)
-            : undefined
-        }
-        rejectionTimestamp={
-          ebill?.status?.acceptance?.rejected_to_accept
-            ? (ebill?.status?.last_block_time ?? undefined)
-            : undefined
-        }
-        mintingEnabled={quoteStatusValue === "MintingEnabled"}
-        quoteOffered={
-          quoteStatusValue === "Offered" ||
-          effectiveQuoteStatus === "Accepted" ||
-          quoteStatusValue === "MintingEnabled"
-        }
-        offeredTimestamp={
-          "submitted" in quote
-            ? Math.floor(new Date(quote.submitted).getTime() / 1000)
-            : "tstamp" in quote
-              ? Math.floor(new Date(quote.tstamp).getTime() / 1000)
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+        <QuoteDocuments
+          documents={documentFiles}
+          openingDocumentName={openingDocumentName}
+          onOpenDocument={handleOpenDocument}
+        />
+
+        <EndorsementChain
+          endorsements={endorsementsQuery.data}
+          isLoading={endorsementsQuery.isLoading}
+          issueDate={ebill?.data?.issue_date}
+          maturityDate={bill.maturity_date}
+          requestToPayTimestamp={
+            ebill?.status?.payment?.time_of_request_to_pay ?? undefined
+          }
+          rejectedToPayTimestamp={
+            ebill?.status?.payment?.rejected_to_pay
+              ? (ebill?.status?.last_block_time ?? undefined)
               : undefined
-        }
-      />
+          }
+          paymentTimestamp={
+            ebill?.status?.payment?.paid
+              ? (ebill?.status?.last_block_time ?? undefined)
+              : undefined
+          }
+          acceptanceTimestamp={
+            ebill?.status?.acceptance?.accepted
+              ? (ebill?.status?.acceptance?.time_of_request_to_accept ??
+                undefined)
+              : undefined
+          }
+          rejectionTimestamp={
+            ebill?.status?.acceptance?.rejected_to_accept
+              ? (ebill?.status?.last_block_time ?? undefined)
+              : undefined
+          }
+          mintingEnabled={quoteStatusValue === "MintingEnabled"}
+          quoteOffered={
+            quoteStatusValue === "Offered" ||
+            effectiveQuoteStatus === "Accepted" ||
+            quoteStatusValue === "MintingEnabled"
+          }
+          offeredTimestamp={
+            "submitted" in quote
+              ? Math.floor(new Date(quote.submitted).getTime() / 1000)
+              : "tstamp" in quote
+                ? Math.floor(new Date(quote.tstamp).getTime() / 1000)
+                : undefined
+          }
+        />
+      </div>
     </div>
   );
 }
