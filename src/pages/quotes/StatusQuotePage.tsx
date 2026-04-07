@@ -380,7 +380,9 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     itemsPerPage === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_LIMIT : itemsPerPage;
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const todayIsoDate = new Date().toISOString().split("T")[0];
-  const paymentSearchRequested = matchesRequestToPaySearch(normalizedSearchQuery);
+  const paymentSearchRequested = matchesRequestToPaySearch(
+    normalizedSearchQuery,
+  );
   const feeTokenSearchRequested =
     normalizedSearchQuery.includes("fee token") ||
     normalizedSearchQuery.includes("active fee");
