@@ -92,7 +92,7 @@ vi.mock("@/generated/client/sdk.gen", () => ({
 
 vi.mock("@/components/ui/select", async () => {
   const React = await vi.importActual<typeof import("react")>("react");
-  const SelectContext = React.createContext<(value: string) => void>(() => {});
+  const SelectContext = React.createContext<(value: string) => void>(vi.fn());
 
   return {
     Select: ({
@@ -164,23 +164,25 @@ function renderPage(status?: "Accepted" | "Pending"): HTMLDivElement {
 }
 
 function changeSearchValue(page: HTMLDivElement, value: string) {
-  const input = page.querySelector(
-    'input[type="text"]',
-  ) as HTMLInputElement | null;
+  const input = page.querySelector('input[type="text"]');
   expect(input).not.toBeNull();
+  if (!(input instanceof HTMLInputElement)) {
+    throw new Error("Missing search input");
+  }
   act(() => {
-    input!.value = value;
-    input!.dispatchEvent(new Event("input", { bubbles: true }));
+    input.value = value;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
 
 function clickSelectItem(page: HTMLDivElement, value: string) {
-  const button = page.querySelector(
-    `[data-select-item="${value}"]`,
-  ) as HTMLButtonElement | null;
+  const button = page.querySelector(`[data-select-item="${value}"]`);
   expect(button).not.toBeNull();
+  if (!(button instanceof HTMLButtonElement)) {
+    throw new Error(`Missing select item: ${value}`);
+  }
   act(() => {
-    button!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
 }
 
@@ -683,7 +685,7 @@ describe("StatusQuotePage", () => {
     expect(page.textContent).not.toContain("quote-requested");
   });
 
-  it("filters quotes with active fee tokens", () => {
+  it("filters quotes with active fee tokens", async () => {
     mockUseInfiniteQuery.mockReturnValue({
       data: {
         pages: [
@@ -707,17 +709,6 @@ describe("StatusQuotePage", () => {
     mockUseQueries.mockImplementation(({ queries }: UseQueriesArgs) =>
       queries.map((query) => {
         const firstKey = query.queryKey?.[0];
-
-        if (firstKey === "quote-fee-token-status") {
-          const quoteId = String(query.queryKey?.[1]);
-          return {
-            data: {
-              state: quoteId === "quote-active-fee" ? "Unspent" : "Spent",
-            },
-            isLoading: false,
-          };
-        }
-
         const qid =
           typeof firstKey === "object" &&
           firstKey !== null &&
@@ -747,9 +738,21 @@ describe("StatusQuotePage", () => {
         };
       }),
     );
+    postTokenStatusMock.mockImplementation(
+      ({ body }: { body: { token: string } }) =>
+        Promise.resolve({
+          data: {
+            state: body.token === "token-a" ? "Unspent" : "Spent",
+          },
+        }),
+    );
 
     const page = renderPage();
-    clickSelectItem(page, "active-fee-token");
+    await act(async () => {
+      clickSelectItem(page, "active-fee-token");
+      await Promise.resolve();
+      await Promise.resolve();
+    });
 
     expect(page.textContent).toContain("quote-active-fee");
     expect(page.textContent).not.toContain("quote-spent-fee");

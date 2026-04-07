@@ -99,7 +99,7 @@ function PageBody() {
         }
         break;
       case "no-expiry":
-        if (keyset.final_expiry !== null) {
+        if (keyset.final_expiry != null) {
           return false;
         }
         break;

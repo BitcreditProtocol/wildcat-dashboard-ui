@@ -76,6 +76,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const ALL_PAGE_SIZE_VALUE = "all";
 const ALL_PAGE_SIZE_LIMIT = 100_000;
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
+const FEE_TOKEN_STATUS_CONCURRENCY = 5;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
   "Denied",
   "Rejected",
@@ -191,6 +192,14 @@ function canRequestToPay(args: {
     !payment?.paid &&
     !payment?.requested_to_pay
   );
+}
+
+function matchesRequestToPaySearch(query: string): boolean {
+  return /\b(request(?:ed)?(?:\s+to)?\s+pay|req\s+to\s+pay)\b/i.test(query);
+}
+
+function isDefined<T>(value: T | null | undefined): value is T {
+  return value != null;
 }
 
 function Loader() {
@@ -364,13 +373,14 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [itemsPerPage, setItemsPerPage] =
     useState<ItemsPerPageValue>(PAGE_SIZE);
+  const [feeTokenStatusByQuoteId, setFeeTokenStatusByQuoteId] = useState<
+    Map<string, TokenStateResponse>
+  >(new Map());
   const limit =
     itemsPerPage === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_LIMIT : itemsPerPage;
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const todayIsoDate = new Date().toISOString().split("T")[0];
-  const paymentSearchRequested =
-    normalizedSearchQuery.includes("request") ||
-    normalizedSearchQuery.includes("pay");
+  const paymentSearchRequested = matchesRequestToPaySearch(normalizedSearchQuery);
   const feeTokenSearchRequested =
     normalizedSearchQuery.includes("fee token") ||
     normalizedSearchQuery.includes("active fee");
@@ -406,7 +416,10 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     retry: RETRY_COUNT,
     retryDelay,
   });
-  const quotes = data?.pages.flatMap((page) => getPageQuotes(page)) ?? [];
+  const quotes = React.useMemo(
+    () => data?.pages.flatMap((page) => getPageQuotes(page)) ?? [],
+    [data],
+  );
   const totalQuotes = data?.pages[0]?.total ?? quotes.length;
   const usesLegacyFallback =
     data?.pages.some((page) => !isPaginatedPage(page)) ?? false;
@@ -444,32 +457,94 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   });
   const shouldFetchFeeTokenStatuses =
     quickFilter === "active-fee-token" || feeTokenSearchRequested;
-  const feeTokenStatusQueries = useQueries({
-    queries: quotes.map((quote, index) => {
-      const quoteDetails = quoteDetailsQueries[index]?.data;
-      const feeToken =
-        quoteDetails &&
-        "fee" in quoteDetails &&
-        typeof quoteDetails.fee === "string"
-          ? quoteDetails.fee
-          : undefined;
 
-      return {
-        queryKey: ["quote-fee-token-status", quote.id, feeToken],
-        enabled: shouldFetchFeeTokenStatuses && Boolean(feeToken),
-        staleTime: 60_000,
-        retry: RETRY_COUNT,
-        retryDelay,
-        queryFn: async (): Promise<TokenStateResponse> => {
+  React.useEffect(() => {
+    if (!shouldFetchFeeTokenStatuses) {
+      return;
+    }
+
+    const feeTokenQuotes = quotes
+      .map((quote, index) => {
+        const quoteDetails = quoteDetailsQueries[index]?.data;
+        const feeToken =
+          quoteDetails &&
+          "fee" in quoteDetails &&
+          typeof quoteDetails.fee === "string"
+            ? quoteDetails.fee
+            : undefined;
+
+        if (!feeToken) {
+          return null;
+        }
+
+        return { quoteId: quote.id, feeToken };
+      })
+      .filter(isDefined);
+
+    const pendingQuotes = feeTokenQuotes.filter(
+      (entry) => !feeTokenStatusByQuoteId.has(entry.quoteId),
+    );
+
+    if (pendingQuotes.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    let nextIndex = 0;
+
+    const runWorker = async () => {
+      while (!cancelled) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+
+        if (currentIndex >= pendingQuotes.length) {
+          return;
+        }
+
+        const entry = pendingQuotes[currentIndex];
+
+        try {
           const { data } = await postTokenStatus({
-            body: { token: feeToken! },
+            body: { token: entry.feeToken },
             throwOnError: true,
           });
-          return data;
-        },
-      };
-    }),
-  });
+
+          if (cancelled) {
+            return;
+          }
+
+          setFeeTokenStatusByQuoteId((current) => {
+            if (current.has(entry.quoteId)) {
+              return current;
+            }
+
+            const next = new Map(current);
+            next.set(entry.quoteId, data);
+            return next;
+          });
+        } catch {
+          if (cancelled) {
+            return;
+          }
+        }
+      }
+    };
+
+    const workers = Array.from({
+      length: Math.min(FEE_TOKEN_STATUS_CONCURRENCY, pendingQuotes.length),
+    }).map(() => runWorker());
+
+    void Promise.allSettled(workers);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    feeTokenStatusByQuoteId,
+    quoteDetailsQueries,
+    quotes,
+    shouldFetchFeeTokenStatuses,
+  ]);
 
   const noQuotesMessage = intl.formatMessage({
     id: "quotes.list.empty",
@@ -537,7 +612,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       quoteDetails,
       ebill,
     });
-    const feeTokenStatus = feeTokenStatusQueries[index]?.data;
+    const feeTokenStatus = feeTokenStatusByQuoteId.get(quote.id);
     const hasActiveFeeToken = feeTokenStatus?.state === "Unspent";
     const matchesMaturityToday = isMaturityToday(
       bill?.maturity_date,

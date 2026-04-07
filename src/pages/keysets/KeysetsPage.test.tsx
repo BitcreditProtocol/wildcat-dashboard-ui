@@ -74,7 +74,7 @@ vi.mock("@/components/SortButtons.tsx", () => ({
 }));
 
 vi.mock("@/components/ui/select", () => {
-  const SelectContext = React.createContext<(value: string) => void>(() => {});
+  const SelectContext = React.createContext<(value: string) => void>(vi.fn());
 
   return {
     Select: ({
@@ -158,12 +158,13 @@ function clickButtonByText(page: HTMLDivElement, label: string) {
 }
 
 function clickSelectItem(page: HTMLDivElement, value: string) {
-  const button = page.querySelector(
-    `[data-select-item="${value}"]`,
-  ) as HTMLButtonElement | null;
+  const button = page.querySelector(`[data-select-item="${value}"]`);
   expect(button).not.toBeNull();
+  if (!(button instanceof HTMLButtonElement)) {
+    throw new Error(`Missing select item: ${value}`);
+  }
   act(() => {
-    button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
 }
 
