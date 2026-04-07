@@ -131,7 +131,9 @@ function isPaginatedPage(page: QuoteListPage | undefined): boolean {
   return Array.isArray(page?.data) && typeof page?.total === "number";
 }
 
-function getParticipantSearchValues(bill: BillInfo | null | undefined): string[] {
+function getParticipantSearchValues(
+  bill: BillInfo | null | undefined,
+): string[] {
   if (!bill) {
     return [];
   }
@@ -154,14 +156,23 @@ function getParticipantSearchValues(bill: BillInfo | null | undefined): string[]
     })
     .filter(Boolean);
 
-  return [...participantValues, bill.drawee.name, bill.drawer.name, bill.drawee.node_id, bill.drawer.node_id];
+  return [
+    ...participantValues,
+    bill.drawee.name,
+    bill.drawer.name,
+    bill.drawee.node_id,
+    bill.drawer.node_id,
+  ];
 }
 
 function hasKeysetId(quoteDetails: InfoReply | undefined): boolean {
   return Boolean(quoteDetails && "keyset_id" in quoteDetails);
 }
 
-function isMaturityToday(maturityDate: string | undefined, todayIsoDate: string): boolean {
+function isMaturityToday(
+  maturityDate: string | undefined,
+  todayIsoDate: string,
+): boolean {
   return maturityDate === todayIsoDate;
 }
 
@@ -517,7 +528,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const filteredQuotes = quotes.filter((quote, index) => {
     const quoteDetails = quoteDetailsQueries[index]?.data;
     const bill = quoteDetails?.bill;
-    const effectiveStatus = effectiveStatusByQuoteId.get(quote.id) ?? quote.status;
+    const effectiveStatus =
+      effectiveStatusByQuoteId.get(quote.id) ?? quote.status;
     const ebill = bill?.id ? billIdToEbillMap.get(bill.id) : undefined;
     const payment = ebill?.status?.payment;
     const isReadyToRequestToPay = canRequestToPay({
@@ -527,7 +539,10 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     });
     const feeTokenStatus = feeTokenStatusQueries[index]?.data;
     const hasActiveFeeToken = feeTokenStatus?.state === "Unspent";
-    const matchesMaturityToday = isMaturityToday(bill?.maturity_date, todayIsoDate);
+    const matchesMaturityToday = isMaturityToday(
+      bill?.maturity_date,
+      todayIsoDate,
+    );
 
     if (status && effectiveStatus !== status) {
       return false;
@@ -568,7 +583,9 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       quote.sum.toString(),
       bill?.maturity_date ?? "",
       ...getParticipantSearchValues(bill),
-      payment?.requested_to_pay ? "request to pay requested requested to pay req to pay" : "",
+      payment?.requested_to_pay
+        ? "request to pay requested requested to pay req to pay"
+        : "",
       isReadyToRequestToPay
         ? "ready request to pay ready req to pay can request to pay"
         : "",
@@ -659,7 +676,8 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       }),
     },
   ];
-  const hasActiveFilters = normalizedSearchQuery.length > 0 || quickFilter !== "all";
+  const hasActiveFilters =
+    normalizedSearchQuery.length > 0 || quickFilter !== "all";
   const quickFilterOptions = [
     {
       value: "all" as const,

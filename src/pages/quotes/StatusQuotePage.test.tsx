@@ -56,9 +56,10 @@ const mockUseInfiniteQuery = vi.fn<() => InfiniteQueryResult>();
 const mockUseQueries =
   vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
 const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
-const postTokenStatusMock = vi.fn<
-  (args: { body: { token: string } }) => Promise<{ data: { state: string } }>
->();
+const postTokenStatusMock =
+  vi.fn<
+    (args: { body: { token: string } }) => Promise<{ data: { state: string } }>
+  >();
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn() },
@@ -163,7 +164,9 @@ function renderPage(status?: "Accepted" | "Pending"): HTMLDivElement {
 }
 
 function changeSearchValue(page: HTMLDivElement, value: string) {
-  const input = page.querySelector('input[type="text"]') as HTMLInputElement | null;
+  const input = page.querySelector(
+    'input[type="text"]',
+  ) as HTMLInputElement | null;
   expect(input).not.toBeNull();
   act(() => {
     input!.value = value;

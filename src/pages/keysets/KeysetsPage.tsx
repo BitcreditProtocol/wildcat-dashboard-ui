@@ -41,12 +41,7 @@ type SortBy =
   | "status-desc"
   | "currency-asc"
   | "currency-desc";
-type KeysetFilter =
-  | "all"
-  | "active"
-  | "inactive"
-  | "expired"
-  | "no-expiry";
+type KeysetFilter = "all" | "active" | "inactive" | "expired" | "no-expiry";
 
 const KEYSETS_POLL_INTERVAL_MS = 10_000;
 
