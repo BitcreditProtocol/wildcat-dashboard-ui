@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
+import React from "react";
 
 interface QueryOptions {
   queryKey: { _id: string }[];
@@ -72,6 +73,53 @@ vi.mock("@/components/SortButtons.tsx", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/select", () => {
+  const SelectContext = React.createContext<(value: string) => void>(vi.fn());
+
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value: string;
+      onValueChange: (value: string) => void;
+      children: ReactElement | ReactElement[];
+    }) => (
+      <SelectContext.Provider value={onValueChange}>
+        <div data-select-value={value}>{children}</div>
+      </SelectContext.Provider>
+    ),
+    SelectTrigger: ({ children }: { children: ReactElement | string }) => (
+      <div>{children}</div>
+    ),
+    SelectValue: () => <span>SelectValue</span>,
+    SelectContent: ({
+      children,
+    }: {
+      children: ReactElement | ReactElement[];
+    }) => <div>{children}</div>,
+    SelectItem: ({
+      value,
+      children,
+    }: {
+      value: string;
+      children: ReactElement | string | number;
+    }) => {
+      const onValueChange = React.useContext(SelectContext);
+      return (
+        <button
+          type="button"
+          data-select-item={value}
+          onClick={() => onValueChange(value)}
+        >
+          {children}
+        </button>
+      );
+    },
+  };
+});
+
 import KeysetsPage from "./KeysetsPage";
 
 let root: Root | null = null;
@@ -106,6 +154,17 @@ function clickButtonByText(page: HTMLDivElement, label: string) {
   expect(button).not.toBeUndefined();
   act(() => {
     button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
+
+function clickSelectItem(page: HTMLDivElement, value: string) {
+  const button = page.querySelector(`[data-select-item="${value}"]`);
+  expect(button).not.toBeNull();
+  if (!(button instanceof HTMLButtonElement)) {
+    throw new Error(`Missing select item: ${value}`);
+  }
+  act(() => {
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
 }
 
@@ -248,5 +307,33 @@ describe("KeysetsPage", () => {
     // Status-asc in this implementation sorts active first.
     clickButtonByText(page, "sort-status");
     expect(orderedKeysetHrefs(page)[0]).toBe("/keysets/keyset-expired");
+  });
+
+  it("filters keysets through the dropdown", () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "keyset-active",
+            active: true,
+            final_expiry: 1798761600,
+            unit: "sat",
+          },
+          {
+            id: "keyset-inactive",
+            active: false,
+            final_expiry: null,
+            unit: { Custom: "usd" },
+          },
+        ],
+        total: 2,
+      },
+      isLoading: false,
+    });
+
+    const page = renderPage();
+    clickSelectItem(page, "inactive");
+
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-inactive"]);
   });
 });

@@ -8,6 +8,7 @@ import {
   getQuoteOptions,
   listEbillsOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
+import { postTokenStatus } from "@/generated/client/sdk.gen";
 import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router";
@@ -22,7 +23,13 @@ import {
 } from "@/utils/quote-status";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { BitcreditBill, LightInfo } from "@/generated/client/types.gen";
+import type {
+  BitcreditBill,
+  BillInfo,
+  InfoReply,
+  LightInfo,
+  TokenStateResponse,
+} from "@/generated/client/types.gen";
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
 import { toast } from "sonner";
 import * as React from "react";
@@ -56,6 +63,12 @@ type SortBy =
   | "sum-desc"
   | "maturity-asc"
   | "maturity-desc";
+type QuickFilter =
+  | "all"
+  | "requested-to-pay"
+  | "ready-to-request-to-pay"
+  | "active-fee-token"
+  | "maturity-today";
 
 const RETRY_COUNT = 2;
 const PAGE_SIZE = 25;
@@ -63,6 +76,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const ALL_PAGE_SIZE_VALUE = "all";
 const ALL_PAGE_SIZE_LIMIT = 100_000;
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
+const FEE_TOKEN_STATUS_CONCURRENCY = 5;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
   "Denied",
   "Rejected",
@@ -116,6 +130,76 @@ function getPageQuotes(page: QuoteListPage | undefined): LightInfo[] {
 
 function isPaginatedPage(page: QuoteListPage | undefined): boolean {
   return Array.isArray(page?.data) && typeof page?.total === "number";
+}
+
+function getParticipantSearchValues(
+  bill: BillInfo | null | undefined,
+): string[] {
+  if (!bill) {
+    return [];
+  }
+
+  const participantValues = [bill.payee, ...bill.endorsees]
+    .flatMap((participant) => {
+      if (!participant) {
+        return [];
+      }
+
+      if ("Ident" in participant) {
+        return [
+          participant.Ident.name,
+          participant.Ident.node_id,
+          participant.Ident.email ?? "",
+        ];
+      }
+
+      return [participant.Anon.node_id];
+    })
+    .filter(Boolean);
+
+  return [
+    ...participantValues,
+    bill.drawee.name,
+    bill.drawer.name,
+    bill.drawee.node_id,
+    bill.drawer.node_id,
+  ];
+}
+
+function hasKeysetId(quoteDetails: InfoReply | undefined): boolean {
+  return Boolean(quoteDetails && "keyset_id" in quoteDetails);
+}
+
+function isMaturityToday(
+  maturityDate: string | undefined,
+  todayIsoDate: string,
+): boolean {
+  return maturityDate === todayIsoDate;
+}
+
+function canRequestToPay(args: {
+  effectiveStatus: string;
+  quoteDetails: InfoReply | undefined;
+  ebill: BitcreditBill | undefined;
+}): boolean {
+  const { effectiveStatus, quoteDetails, ebill } = args;
+  const payment = ebill?.status?.payment;
+
+  return (
+    (effectiveStatus === "Accepted" || effectiveStatus === "MintingEnabled") &&
+    hasKeysetId(quoteDetails) &&
+    Boolean(ebill) &&
+    !payment?.paid &&
+    !payment?.requested_to_pay
+  );
+}
+
+function matchesRequestToPaySearch(query: string): boolean {
+  return /\b(request(?:ed)?(?:\s+to)?\s+pay|req\s+to\s+pay)\b/i.test(query);
+}
+
+function isDefined<T>(value: T | null | undefined): value is T {
+  return value != null;
 }
 
 function Loader() {
@@ -286,10 +370,22 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   const intl = useIntl();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [itemsPerPage, setItemsPerPage] =
     useState<ItemsPerPageValue>(PAGE_SIZE);
+  const [feeTokenStatusByQuoteId, setFeeTokenStatusByQuoteId] = useState<
+    Map<string, TokenStateResponse>
+  >(new Map());
   const limit =
     itemsPerPage === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_LIMIT : itemsPerPage;
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const todayIsoDate = new Date().toISOString().split("T")[0];
+  const paymentSearchRequested = matchesRequestToPaySearch(
+    normalizedSearchQuery,
+  );
+  const feeTokenSearchRequested =
+    normalizedSearchQuery.includes("fee token") ||
+    normalizedSearchQuery.includes("active fee");
 
   const {
     data,
@@ -322,11 +418,18 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     retry: RETRY_COUNT,
     retryDelay,
   });
-  const quotes = data?.pages.flatMap((page) => getPageQuotes(page)) ?? [];
+  const quotes = React.useMemo(
+    () => data?.pages.flatMap((page) => getPageQuotes(page)) ?? [],
+    [data],
+  );
   const totalQuotes = data?.pages[0]?.total ?? quotes.length;
   const usesLegacyFallback =
     data?.pages.some((page) => !isPaginatedPage(page)) ?? false;
-  const shouldFetchEbills = shouldFetchEbillsForStatusPage(status);
+  const shouldFetchEbills =
+    shouldFetchEbillsForStatusPage(status) ||
+    quickFilter === "requested-to-pay" ||
+    quickFilter === "ready-to-request-to-pay" ||
+    paymentSearchRequested;
   const { data: ebills } = useQuery({
     ...listEbillsOptions(),
     enabled: shouldFetchEbills && quotes.length > 0,
@@ -354,6 +457,96 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       refetchIntervalInBackground: true,
     })),
   });
+  const shouldFetchFeeTokenStatuses =
+    quickFilter === "active-fee-token" || feeTokenSearchRequested;
+
+  React.useEffect(() => {
+    if (!shouldFetchFeeTokenStatuses) {
+      return;
+    }
+
+    const feeTokenQuotes = quotes
+      .map((quote, index) => {
+        const quoteDetails = quoteDetailsQueries[index]?.data;
+        const feeToken =
+          quoteDetails &&
+          "fee" in quoteDetails &&
+          typeof quoteDetails.fee === "string"
+            ? quoteDetails.fee
+            : undefined;
+
+        if (!feeToken) {
+          return null;
+        }
+
+        return { quoteId: quote.id, feeToken };
+      })
+      .filter(isDefined);
+
+    const pendingQuotes = feeTokenQuotes.filter(
+      (entry) => !feeTokenStatusByQuoteId.has(entry.quoteId),
+    );
+
+    if (pendingQuotes.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    let nextIndex = 0;
+
+    const runWorker = async () => {
+      while (!cancelled) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+
+        if (currentIndex >= pendingQuotes.length) {
+          return;
+        }
+
+        const entry = pendingQuotes[currentIndex];
+
+        try {
+          const { data } = await postTokenStatus({
+            body: { token: entry.feeToken },
+            throwOnError: true,
+          });
+
+          if (cancelled) {
+            return;
+          }
+
+          setFeeTokenStatusByQuoteId((current) => {
+            if (current.has(entry.quoteId)) {
+              return current;
+            }
+
+            const next = new Map(current);
+            next.set(entry.quoteId, data);
+            return next;
+          });
+        } catch {
+          if (cancelled) {
+            return;
+          }
+        }
+      }
+    };
+
+    const workers = Array.from({
+      length: Math.min(FEE_TOKEN_STATUS_CONCURRENCY, pendingQuotes.length),
+    }).map(() => runWorker());
+
+    void Promise.allSettled(workers);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    feeTokenStatusByQuoteId,
+    quoteDetailsQueries,
+    quotes,
+    shouldFetchFeeTokenStatuses,
+  ]);
 
   const noQuotesMessage = intl.formatMessage({
     id: "quotes.list.empty",
@@ -409,30 +602,78 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     );
   });
 
-  const filteredQuotes =
-    quotes.filter((quote) => {
-      const effectiveStatus =
-        effectiveStatusByQuoteId.get(quote.id) ?? quote.status;
+  const filteredQuotes = quotes.filter((quote, index) => {
+    const quoteDetails = quoteDetailsQueries[index]?.data;
+    const bill = quoteDetails?.bill;
+    const effectiveStatus =
+      effectiveStatusByQuoteId.get(quote.id) ?? quote.status;
+    const ebill = bill?.id ? billIdToEbillMap.get(bill.id) : undefined;
+    const payment = ebill?.status?.payment;
+    const isReadyToRequestToPay = canRequestToPay({
+      effectiveStatus,
+      quoteDetails,
+      ebill,
+    });
+    const feeTokenStatus = feeTokenStatusByQuoteId.get(quote.id);
+    const hasActiveFeeToken = feeTokenStatus?.state === "Unspent";
+    const matchesMaturityToday = isMaturityToday(
+      bill?.maturity_date,
+      todayIsoDate,
+    );
 
-      if (status && effectiveStatus !== status) {
-        return false;
-      }
+    if (status && effectiveStatus !== status) {
+      return false;
+    }
 
-      if (!searchQuery) {
-        return true;
-      }
+    switch (quickFilter) {
+      case "requested-to-pay":
+        if (!payment?.requested_to_pay) {
+          return false;
+        }
+        break;
+      case "ready-to-request-to-pay":
+        if (!isReadyToRequestToPay) {
+          return false;
+        }
+        break;
+      case "active-fee-token":
+        if (!hasActiveFeeToken) {
+          return false;
+        }
+        break;
+      case "maturity-today":
+        if (!matchesMaturityToday) {
+          return false;
+        }
+        break;
+      default:
+        break;
+    }
 
-      const query = searchQuery.toLowerCase();
-      const quoteId = quote.id.toLowerCase();
-      const quoteStatus = effectiveStatus.toLowerCase();
-      const quoteSum = quote.sum.toString();
+    if (!normalizedSearchQuery) {
+      return true;
+    }
 
-      return (
-        quoteId.includes(query) ||
-        quoteStatus.includes(query) ||
-        quoteSum.includes(query)
-      );
-    }) ?? [];
+    const searchableContent = [
+      quote.id,
+      effectiveStatus,
+      quote.sum.toString(),
+      bill?.maturity_date ?? "",
+      ...getParticipantSearchValues(bill),
+      payment?.requested_to_pay
+        ? "request to pay requested requested to pay req to pay"
+        : "",
+      isReadyToRequestToPay
+        ? "ready request to pay ready req to pay can request to pay"
+        : "",
+      hasActiveFeeToken ? "active fee token fee token active" : "",
+      matchesMaturityToday ? "maturity today due today" : "",
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableContent.includes(normalizedSearchQuery);
+  });
 
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
     const aIndex = quotes.findIndex((q) => q.id === a.id);
@@ -512,21 +753,86 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       }),
     },
   ];
+  const hasActiveFilters =
+    normalizedSearchQuery.length > 0 || quickFilter !== "all";
+  const quickFilterOptions = [
+    {
+      value: "all" as const,
+      label: intl.formatMessage({
+        id: "quotes.filter.all",
+        defaultMessage: "All quotes",
+      }),
+    },
+    {
+      value: "requested-to-pay" as const,
+      label: intl.formatMessage({
+        id: "quotes.filter.requestedToPay",
+        defaultMessage: "Requested to pay",
+      }),
+    },
+    {
+      value: "ready-to-request-to-pay" as const,
+      label: intl.formatMessage({
+        id: "quotes.filter.readyToRequestToPay",
+        defaultMessage: "Ready to request to pay",
+      }),
+    },
+    {
+      value: "active-fee-token" as const,
+      label: intl.formatMessage({
+        id: "quotes.filter.activeFeeToken",
+        defaultMessage: "Active fee token",
+      }),
+    },
+    {
+      value: "maturity-today" as const,
+      label: intl.formatMessage({
+        id: "quotes.filter.maturityToday",
+        defaultMessage: "Maturity today",
+      }),
+    },
+  ];
 
   return (
     <>
-      <div className="flex gap-4 items-center justify-between">
-        <SearchComponent
-          value={searchQuery}
-          className="flex-1 max-w-md"
-          placeholder={intl.formatMessage({
-            id: "quotes.search.placeholder",
-            defaultMessage: "Search by quote ID, status, or amount...",
-          })}
-          onSearch={setSearchQuery}
-          onChange={setSearchQuery}
-          size="sm"
-        />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+          <SearchComponent
+            value={searchQuery}
+            className="flex-1 max-w-md"
+            placeholder={intl.formatMessage({
+              id: "quotes.search.placeholder",
+              defaultMessage:
+                "Search by quote ID, participant, status, amount, or maturity...",
+            })}
+            onSearch={setSearchQuery}
+            onChange={setSearchQuery}
+            size="sm"
+          />
+          <Select
+            value={quickFilter}
+            onValueChange={(value) => setQuickFilter(value as QuickFilter)}
+          >
+            <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64">
+              <SelectValue
+                placeholder={intl.formatMessage({
+                  id: "quotes.filter.label",
+                  defaultMessage: "Quick filter",
+                })}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {quickFilterOptions.map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <SortButtons
           sortBy={sortBy}
           onSortChange={toggleSort}
@@ -598,7 +904,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       </div>
 
       <div className="flex flex-col gap-1.5 my-2">
-        {sortedQuotes.length === 0 && searchQuery && (
+        {sortedQuotes.length === 0 && hasActiveFilters && (
           <div className="py-2 text-center text-muted-foreground">
             {intl.formatMessage({
               id: "quotes.search.noMatch",
@@ -606,7 +912,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             })}
           </div>
         )}
-        {sortedQuotes.length === 0 && !searchQuery && (
+        {sortedQuotes.length === 0 && !hasActiveFilters && (
           <div className="py-2 font-bold">{noQuotesMessage}</div>
         )}
         {sortedQuotes.map((quote, index) => {

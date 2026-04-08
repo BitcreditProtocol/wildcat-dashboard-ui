@@ -17,6 +17,13 @@ import { useState } from "react";
 import SearchComponent, { HighlightText } from "@/components/ui/search";
 import { SortButtons } from "@/components/SortButtons.tsx";
 import { FormattedMessage, useIntl } from "react-intl";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function Loader() {
   return (
@@ -34,6 +41,7 @@ type SortBy =
   | "status-desc"
   | "currency-asc"
   | "currency-desc";
+type KeysetFilter = "all" | "active" | "inactive" | "expired" | "no-expiry";
 
 const KEYSETS_POLL_INTERVAL_MS = 10_000;
 
@@ -45,11 +53,13 @@ function PageBody() {
   const keysets = keysetsResponse?.data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
+  const [keysetFilter, setKeysetFilter] = useState<KeysetFilter>("all");
   const intl = useIntl();
   const noExpiryText = intl.formatMessage({
     id: "keysets.noExpiry",
     defaultMessage: "No expiry",
   });
+  const now = new Date();
 
   if (keysetsLoading) {
     return <Loader />;
@@ -67,6 +77,36 @@ function PageBody() {
   }
 
   const filteredKeysets = keysets.filter((keyset) => {
+    const expiryDate = keyset.final_expiry
+      ? new Date(keyset.final_expiry * 1000)
+      : null;
+    const isExpired = Boolean(expiryDate && expiryDate < now);
+
+    switch (keysetFilter) {
+      case "active":
+        if (!keyset.active) {
+          return false;
+        }
+        break;
+      case "inactive":
+        if (keyset.active) {
+          return false;
+        }
+        break;
+      case "expired":
+        if (!isExpired) {
+          return false;
+        }
+        break;
+      case "no-expiry":
+        if (keyset.final_expiry != null) {
+          return false;
+        }
+        break;
+      default:
+        break;
+    }
+
     if (!searchQuery) {
       return true;
     }
@@ -202,22 +242,84 @@ function PageBody() {
       }),
     },
   ];
+  const filterOptions = [
+    {
+      value: "all" as const,
+      label: intl.formatMessage({
+        id: "keysets.filter.all",
+        defaultMessage: "All keysets",
+      }),
+    },
+    {
+      value: "active" as const,
+      label: intl.formatMessage({
+        id: "keysets.filter.active",
+        defaultMessage: "Active",
+      }),
+    },
+    {
+      value: "inactive" as const,
+      label: intl.formatMessage({
+        id: "keysets.filter.inactive",
+        defaultMessage: "Inactive",
+      }),
+    },
+    {
+      value: "expired" as const,
+      label: intl.formatMessage({
+        id: "keysets.filter.expired",
+        defaultMessage: "Expired",
+      }),
+    },
+    {
+      value: "no-expiry" as const,
+      label: intl.formatMessage({
+        id: "keysets.filter.noExpiry",
+        defaultMessage: "No expiry",
+      }),
+    },
+  ];
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 items-center justify-between">
-        <SearchComponent
-          value={searchQuery}
-          className="flex-1 max-w-md"
-          placeholder={intl.formatMessage({
-            id: "keysets.search.placeholder",
-            defaultMessage:
-              "Search by keyset ID, currency, maturity date, or status...",
-          })}
-          onSearch={setSearchQuery}
-          onChange={setSearchQuery}
-          size="sm"
-        />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+          <SearchComponent
+            value={searchQuery}
+            className="flex-1 max-w-md"
+            placeholder={intl.formatMessage({
+              id: "keysets.search.placeholder",
+              defaultMessage:
+                "Search by keyset ID, currency, maturity date, or status...",
+            })}
+            onSearch={setSearchQuery}
+            onChange={setSearchQuery}
+            size="sm"
+          />
+          <Select
+            value={keysetFilter}
+            onValueChange={(value) => setKeysetFilter(value as KeysetFilter)}
+          >
+            <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64">
+              <SelectValue
+                placeholder={intl.formatMessage({
+                  id: "keysets.filter.label",
+                  defaultMessage: "Filter",
+                })}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {filterOptions.map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <SortButtons
           sortBy={sortBy}
           onSortChange={toggleSort}
