@@ -340,7 +340,8 @@ function PageBody({ keysetId }: { keysetId: string }) {
                     toast.error(
                       intl.formatMessage({
                         id: "keyset.detail.redeem.invalidId",
-                        defaultMessage: "Cannot redeem keyset with invalid keyset id",
+                        defaultMessage:
+                          "Cannot redeem keyset with invalid keyset id",
                       }),
                     );
                     return;

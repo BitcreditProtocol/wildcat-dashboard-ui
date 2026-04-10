@@ -40,7 +40,9 @@ const mockUseQueries =
 const mockUseMutation = vi.fn<() => MutationResult>();
 const mutateSpy = vi.fn<
   (value: {
-    body: { kid: { version: string; id: { V1: number[] } | { V2: number[] } } };
+    body: {
+      kid: { version: string; id: { V1: number[] } | { V2: number[] } };
+    };
   }) => void
 >();
 
