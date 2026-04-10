@@ -4,12 +4,12 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
-import { Button } from "@/components/ui/button.tsx";
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router";
-import type { KeySetInfo } from "@/generated/client/types.gen.ts";
-import SearchComponent, { HighlightText } from "@/components/ui/search.tsx";
+import type { KeySetInfo } from "@/generated/client/types.gen";
+import SearchComponent, { HighlightText } from "@/components/ui/search";
 import { FormattedMessage, useIntl } from "react-intl";
 
 interface KeysetCardProps {

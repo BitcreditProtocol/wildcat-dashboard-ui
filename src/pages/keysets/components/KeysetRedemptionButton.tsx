@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button.tsx";
-import type { Id } from "@/generated/client/types.gen.ts";
+import { Button } from "@/components/ui/button";
+import type { Id } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
 
 interface KeysetRedemptionButtonProps {

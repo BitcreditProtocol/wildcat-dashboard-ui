@@ -171,7 +171,7 @@ export function RequestToPayConfirmation({
               <button
                 type="button"
                 className="text-xs text-muted-foreground underline self-start"
-                onClick={() => ebillQuery.refetch()}
+                onClick={() => { void ebillQuery.refetch(); }}
               >
                 {intl.formatMessage({
                   id: "quotes.requestToPay.retry",

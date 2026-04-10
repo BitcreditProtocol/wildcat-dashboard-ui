@@ -12,8 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader.tsx";
-import { KeysetCard } from "@/pages/keysets/components/KeysetCard.tsx";
+import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
+import { KeysetCard } from "@/pages/keysets/components/KeysetCard";
 import { useKeysetFiltering } from "@/hooks/use-keyset-filtering";
 
 const KEYSETS_POLL_INTERVAL_MS = 10_000;

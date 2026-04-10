@@ -14,9 +14,9 @@ import { Button } from "@/components/ui/button";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { truncateString } from "@/utils/strings";
 import { FormattedMessage, useIntl } from "react-intl";
-import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader.tsx";
-import { KeysetRedemptionButton } from "@/pages/keysets/components/KeysetRedemptionButton.tsx";
-import { KeysetQuoteTableRow } from "@/pages/keysets/components/KeysetQuoteTableRow.tsx";
+import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
+import { KeysetRedemptionButton } from "@/pages/keysets/components/KeysetRedemptionButton";
+import { KeysetQuoteTableRow } from "@/pages/keysets/components/KeysetQuoteTableRow";
 import { useKeysetDetail } from "@/hooks/use-keyset-detail";
 
 interface LocationState {
