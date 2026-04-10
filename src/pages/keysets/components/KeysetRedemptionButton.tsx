@@ -26,16 +26,34 @@ export function KeysetRedemptionButton({
   const intl = useIntl();
 
   const label = isPending
-    ? intl.formatMessage({ id: "keyset.detail.redeem.enabling", defaultMessage: "Enabling redemption..." })
+    ? intl.formatMessage({
+        id: "keyset.detail.redeem.enabling",
+        defaultMessage: "Enabling redemption...",
+      })
     : hasNoMatchingBills
-      ? intl.formatMessage({ id: "keyset.detail.redeem.noMatchingBills", defaultMessage: "No matching bills found" })
+      ? intl.formatMessage({
+          id: "keyset.detail.redeem.noMatchingBills",
+          defaultMessage: "No matching bills found",
+        })
       : !allBillsPaid
-        ? intl.formatMessage({ id: "keyset.detail.redeem.waitingPayments", defaultMessage: "Waiting for e-bill payments..." })
+        ? intl.formatMessage({
+            id: "keyset.detail.redeem.waitingPayments",
+            defaultMessage: "Waiting for e-bill payments...",
+          })
         : anyMintCompleteLoading
-          ? intl.formatMessage({ id: "keyset.detail.redeem.checkingMintStatus", defaultMessage: "Checking mint status..." })
+          ? intl.formatMessage({
+              id: "keyset.detail.redeem.checkingMintStatus",
+              defaultMessage: "Checking mint status...",
+            })
           : !allMintComplete
-            ? intl.formatMessage({ id: "keyset.detail.redeem.waitingMintCompletion", defaultMessage: "Waiting for mint completion..." })
-            : intl.formatMessage({ id: "keyset.detail.redeem.action", defaultMessage: "Redeem" });
+            ? intl.formatMessage({
+                id: "keyset.detail.redeem.waitingMintCompletion",
+                defaultMessage: "Waiting for mint completion...",
+              })
+            : intl.formatMessage({
+                id: "keyset.detail.redeem.action",
+                defaultMessage: "Redeem",
+              });
 
   return (
     <Button

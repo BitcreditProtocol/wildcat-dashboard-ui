@@ -168,4 +168,3 @@ export function QuoteItemCard({
     </Card>
   );
 }
-

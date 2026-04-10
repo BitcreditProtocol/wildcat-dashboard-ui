@@ -225,17 +225,19 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         {sortedQuotes.length === 0 && !hasActiveFilters && (
           <div className="py-2 font-bold">{noQuotesMessage}</div>
         )}
-        {sortedQuotes.filter((q) => q.id).map((quote) => (
-          <div key={quote.id}>
-            <QuoteItemCard
-              quote={quote}
-              effectiveStatus={
-                effectiveStatusByQuoteId.get(quote.id) ?? quote.status
-              }
-              searchQuery={searchQuery}
-            />
-          </div>
-        ))}
+        {sortedQuotes
+          .filter((q) => q.id)
+          .map((quote) => (
+            <div key={quote.id}>
+              <QuoteItemCard
+                quote={quote}
+                effectiveStatus={
+                  effectiveStatusByQuoteId.get(quote.id) ?? quote.status
+                }
+                searchQuery={searchQuery}
+              />
+            </div>
+          ))}
       </div>
 
       {hasNextPage && (

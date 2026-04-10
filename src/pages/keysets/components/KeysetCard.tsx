@@ -18,7 +18,11 @@ interface KeysetCardProps {
   noExpiryText: string;
 }
 
-export function KeysetCard({ keyset, searchQuery, noExpiryText }: KeysetCardProps) {
+export function KeysetCard({
+  keyset,
+  searchQuery,
+  noExpiryText,
+}: KeysetCardProps) {
   const intl = useIntl();
 
   const finalExpiryDate = keyset.final_expiry
@@ -36,17 +40,29 @@ export function KeysetCard({ keyset, searchQuery, noExpiryText }: KeysetCardProp
     typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom;
 
   const statusText = keyset.active
-    ? intl.formatMessage({ id: "keysets.status.active", defaultMessage: "Active" })
-    : intl.formatMessage({ id: "keysets.status.inactive", defaultMessage: "Inactive" });
+    ? intl.formatMessage({
+        id: "keysets.status.active",
+        defaultMessage: "Active",
+      })
+    : intl.formatMessage({
+        id: "keysets.status.inactive",
+        defaultMessage: "Inactive",
+      });
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <Link to={`/keysets/${keyset.id}`} className="block">
+            <Link
+              to={`/keysets/${keyset.id}`}
+              className="block"
+            >
               <CardTitle className="font-mono text-sm">
-                <HighlightText text={keyset.id} highlight={searchQuery} />
+                <HighlightText
+                  text={keyset.id}
+                  highlight={searchQuery}
+                />
               </CardTitle>
             </Link>
             <CardDescription className="mt-1">
@@ -55,10 +71,16 @@ export function KeysetCard({ keyset, searchQuery, noExpiryText }: KeysetCardProp
                 defaultMessage="Currency: {currency} | Maturity date: {maturityDate}"
                 values={{
                   currency: (
-                    <HighlightText text={currencyUnit} highlight={searchQuery} />
+                    <HighlightText
+                      text={currencyUnit}
+                      highlight={searchQuery}
+                    />
                   ),
                   maturityDate: (
-                    <HighlightText text={finalExpiryDate} highlight={searchQuery} />
+                    <HighlightText
+                      text={finalExpiryDate}
+                      highlight={searchQuery}
+                    />
                   ),
                 }}
               />
@@ -66,15 +88,26 @@ export function KeysetCard({ keyset, searchQuery, noExpiryText }: KeysetCardProp
           </div>
           <div className="flex gap-2 items-center">
             <Badge variant={keyset.active ? "default" : "secondary"}>
-              <HighlightText text={statusText} highlight={searchQuery} />
+              <HighlightText
+                text={statusText}
+                highlight={searchQuery}
+              />
             </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <Button size="sm" variant="default" className="max-w-sm px-12" asChild>
+        <Button
+          size="sm"
+          variant="default"
+          className="max-w-sm px-12"
+          asChild
+        >
           <Link to={`/keysets/${keyset.id}`}>
-            <FormattedMessage id="keysets.view" defaultMessage="View" />
+            <FormattedMessage
+              id="keysets.view"
+              defaultMessage="View"
+            />
           </Link>
         </Button>
       </CardContent>

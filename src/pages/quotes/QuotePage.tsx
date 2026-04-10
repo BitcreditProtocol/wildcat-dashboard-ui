@@ -45,7 +45,7 @@ function PageBody({ id }: { id: string }) {
     null,
   );
 
-  const blobUrlTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blobUrlTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {

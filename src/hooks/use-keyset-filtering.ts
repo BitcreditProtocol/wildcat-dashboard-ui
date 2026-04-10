@@ -10,7 +10,12 @@ type SortBy =
   | "currency-asc"
   | "currency-desc";
 
-export type KeysetFilter = "all" | "active" | "inactive" | "expired" | "no-expiry";
+export type KeysetFilter =
+  | "all"
+  | "active"
+  | "inactive"
+  | "expired"
+  | "no-expiry";
 
 export function useKeysetFiltering(keysets: KeySetInfo[]) {
   const intl = useIntl();
@@ -68,10 +73,16 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
       : noExpiryText.toLowerCase();
     const status = keyset.active
       ? intl
-          .formatMessage({ id: "keysets.status.active", defaultMessage: "Active" })
+          .formatMessage({
+            id: "keysets.status.active",
+            defaultMessage: "Active",
+          })
           .toLowerCase()
       : intl
-          .formatMessage({ id: "keysets.status.inactive", defaultMessage: "Inactive" })
+          .formatMessage({
+            id: "keysets.status.inactive",
+            defaultMessage: "Inactive",
+          })
           .toLowerCase();
 
     return (
@@ -90,8 +101,12 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
         switch (sortBy) {
           case "maturity-asc":
           case "maturity-desc": {
-            const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null;
-            const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null;
+            const aExpiry = a.final_expiry
+              ? new Date(a.final_expiry * 1000)
+              : null;
+            const bExpiry = b.final_expiry
+              ? new Date(b.final_expiry * 1000)
+              : null;
 
             if (!aExpiry && !bExpiry) {
               comparison = 0;
@@ -124,8 +139,10 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
           }
           case "currency-asc":
           case "currency-desc": {
-            const aCurrency = typeof a.unit === "string" ? a.unit : a.unit.Custom;
-            const bCurrency = typeof b.unit === "string" ? b.unit : b.unit.Custom;
+            const aCurrency =
+              typeof a.unit === "string" ? a.unit : a.unit.Custom;
+            const bCurrency =
+              typeof b.unit === "string" ? b.unit : b.unit.Custom;
             comparison = aCurrency.localeCompare(bCurrency);
             if (sortBy === "currency-desc") comparison = -comparison;
             break;
@@ -153,38 +170,62 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
   const sortOptions = [
     {
       field: "currency" as const,
-      label: intl.formatMessage({ id: "keysets.sort.currency", defaultMessage: "Currency" }),
+      label: intl.formatMessage({
+        id: "keysets.sort.currency",
+        defaultMessage: "Currency",
+      }),
     },
     {
       field: "maturity" as const,
-      label: intl.formatMessage({ id: "keysets.sort.maturity", defaultMessage: "Maturity" }),
+      label: intl.formatMessage({
+        id: "keysets.sort.maturity",
+        defaultMessage: "Maturity",
+      }),
     },
     {
       field: "status" as const,
-      label: intl.formatMessage({ id: "keysets.sort.status", defaultMessage: "Status" }),
+      label: intl.formatMessage({
+        id: "keysets.sort.status",
+        defaultMessage: "Status",
+      }),
     },
   ];
 
   const filterOptions = [
     {
       value: "all" as const,
-      label: intl.formatMessage({ id: "keysets.filter.all", defaultMessage: "All keysets" }),
+      label: intl.formatMessage({
+        id: "keysets.filter.all",
+        defaultMessage: "All keysets",
+      }),
     },
     {
       value: "active" as const,
-      label: intl.formatMessage({ id: "keysets.filter.active", defaultMessage: "Active" }),
+      label: intl.formatMessage({
+        id: "keysets.filter.active",
+        defaultMessage: "Active",
+      }),
     },
     {
       value: "inactive" as const,
-      label: intl.formatMessage({ id: "keysets.filter.inactive", defaultMessage: "Inactive" }),
+      label: intl.formatMessage({
+        id: "keysets.filter.inactive",
+        defaultMessage: "Inactive",
+      }),
     },
     {
       value: "expired" as const,
-      label: intl.formatMessage({ id: "keysets.filter.expired", defaultMessage: "Expired" }),
+      label: intl.formatMessage({
+        id: "keysets.filter.expired",
+        defaultMessage: "Expired",
+      }),
     },
     {
       value: "no-expiry" as const,
-      label: intl.formatMessage({ id: "keysets.filter.noExpiry", defaultMessage: "No expiry" }),
+      label: intl.formatMessage({
+        id: "keysets.filter.noExpiry",
+        defaultMessage: "No expiry",
+      }),
     },
   ];
 

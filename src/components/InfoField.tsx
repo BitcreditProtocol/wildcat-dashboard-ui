@@ -15,7 +15,12 @@ export function InfoField({ label, value, mono, copyLabel }: InfoFieldProps) {
         <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
           {label}
         </span>
-        {copyLabel && <CopyButton value={value} label={copyLabel} />}
+        {copyLabel && (
+          <CopyButton
+            value={value}
+            label={copyLabel}
+          />
+        )}
       </div>
       {mono ? (
         <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">

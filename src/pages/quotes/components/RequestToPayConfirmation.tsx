@@ -161,7 +161,9 @@ export function RequestToPayConfirmation({
                     id: "quotes.requestToPay.button",
                     defaultMessage: "Request to pay",
                   })}{" "}
-                  {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                  {isPending && (
+                    <LoaderIcon className="stroke-1 animate-spin" />
+                  )}
                 </span>
               )}
             </Button>

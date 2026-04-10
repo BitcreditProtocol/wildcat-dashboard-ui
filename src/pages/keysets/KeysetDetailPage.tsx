@@ -268,7 +268,10 @@ export default function KeysetDetailPage() {
     <>
       <Breadcrumbs
         parents={[
-          <BreadcrumbLink key="keysets" asChild>
+          <BreadcrumbLink
+            key="keysets"
+            asChild
+          >
             <Link to="/keysets">
               <FormattedMessage
                 id="keysets.page.title"

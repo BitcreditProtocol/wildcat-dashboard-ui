@@ -9,7 +9,10 @@ import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
 import { humanReadableDurationDays } from "@/utils/dates";
-import type { InfoReply, TokenStateResponse } from "@/generated/client/types.gen";
+import type {
+  InfoReply,
+  TokenStateResponse,
+} from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
 
 interface QuoteDetailCardProps {

@@ -1,5 +1,10 @@
 import { useMemo } from "react";
-import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueries,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   listKeysetInfosOptions,
   listKeysetInfosQueryKey,
@@ -12,7 +17,10 @@ import type { BitcreditBill } from "@/generated/client/types.gen";
 import { toast } from "sonner";
 import { useIntl } from "react-intl";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
-import { deserializeKeysetId, doesBillMatchKeysetMaturity } from "@/utils/keyset";
+import {
+  deserializeKeysetId,
+  doesBillMatchKeysetMaturity,
+} from "@/utils/keyset";
 
 const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
 const MINT_COMPLETE_POLL_INTERVAL_MS = 60_000;
@@ -136,7 +144,12 @@ export function useKeysetDetail(keysetId: string) {
 
     return billIds;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyset?.final_expiry, allQuotes, quoteDetailsDepsKey, quoteDetailsLoading]);
+  }, [
+    keyset?.final_expiry,
+    allQuotes,
+    quoteDetailsDepsKey,
+    quoteDetailsLoading,
+  ]);
 
   const mintCompleteQueries = useQueries({
     queries: matchingBillIds.map((billId) => ({
