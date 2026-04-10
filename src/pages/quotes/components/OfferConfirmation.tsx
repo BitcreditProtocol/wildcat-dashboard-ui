@@ -67,13 +67,14 @@ export function OfferConfirmation({
     }
   }, [open, validUntilDate, storageKey, minDate, maxDate]);
 
-  const effectiveDiscount = offerFormData
-    ? new Big(1).minus(
-        offerFormData.discount.net.value.div(
-          offerFormData.discount.gross.value,
-        ),
-      )
-    : undefined;
+  const effectiveDiscount =
+    offerFormData && !offerFormData.discount.gross.value.eq(0)
+      ? new Big(1).minus(
+          offerFormData.discount.net.value.div(
+            offerFormData.discount.gross.value,
+          ),
+        )
+      : undefined;
 
   return (
     <>
