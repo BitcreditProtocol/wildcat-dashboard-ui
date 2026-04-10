@@ -37,7 +37,7 @@ vi.mock("sonner", () => ({
   toast: { error: vi.fn() },
 }));
 
-vi.mock("./QuoteActions.tsx", () => ({
+vi.mock("./QuoteActions", () => ({
   QuoteActions: () => <div>QuoteActionsMock</div>,
 }));
 
@@ -45,6 +45,12 @@ vi.mock("@/lib/api-client", () => ({
   client: {
     get: mockClientGet,
   },
+}));
+
+vi.mock("@/lib/ebill-mint-complete", () => ({
+  getEbillMintCompleteQueryOptions: ({ billId }: { billId: string }) => ({
+    queryKey: [{ _id: "getEbillMintComplete", path: { bid: billId } }],
+  }),
 }));
 
 vi.mock("@/components/EndorsementChain", () => ({
@@ -74,9 +80,6 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   listEbillsOptions: () => ({ queryKey: [{ _id: "listEbills" }] }),
   getEbillEndorsementsOptions: ({ path }: { path: { bid: string } }) => ({
     queryKey: [{ _id: "getEbillEndorsements", path }],
-  }),
-  getEbillMintCompleteOptions: ({ path }: { path: { bid: string } }) => ({
-    queryKey: [{ _id: "getEbillMintComplete", path }],
   }),
   postTokenStatusMutation: () => ({ mutationFn: vi.fn() }),
 }));

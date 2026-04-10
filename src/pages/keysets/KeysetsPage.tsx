@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router";
 import { useState } from "react";
 import SearchComponent, { HighlightText } from "@/components/ui/search";
-import { SortButtons } from "@/components/SortButtons.tsx";
+import { SortButtons } from "@/components/SortButtons";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
   Select,

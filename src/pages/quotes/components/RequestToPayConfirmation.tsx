@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button.tsx";
-import { ConfirmDrawer } from "@/components/Drawers.tsx";
+import { Button } from "@/components/ui/button";
+import { ConfirmDrawer } from "@/components/Drawers";
 import { LoaderIcon } from "lucide-react";
-import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx";
+import { CalendarModal, DatePickerButton } from "./CalendarModal";
 import { useQuery } from "@tanstack/react-query";
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useIntl } from "react-intl";

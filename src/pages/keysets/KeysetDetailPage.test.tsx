@@ -28,7 +28,9 @@ interface UseQueriesResultItem {
 }
 
 interface MutationResult {
-  mutate: (value: { body: { kid: string } }) => void;
+  mutate: (value: {
+    body: { kid: { version: string; id: { V1: number[] } | { V2: number[] } } };
+  }) => void;
   isPending: boolean;
 }
 
@@ -36,7 +38,11 @@ const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const mockUseQueries =
   vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
 const mockUseMutation = vi.fn<() => MutationResult>();
-const mutateSpy = vi.fn<(value: { body: { kid: string } }) => void>();
+const mutateSpy = vi.fn<
+  (value: {
+    body: { kid: { version: string; id: { V1: number[] } | { V2: number[] } } };
+  }) => void
+>();
 
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -62,11 +68,14 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getQuoteOptions: ({ path }: { path: { qid: string } }) => ({
     queryKey: [{ _id: "getQuote", path }],
   }),
-  getEbillMintCompleteOptions: ({ path }: { path: { bid: string } }) => ({
-    queryKey: [{ _id: "getEbillMintComplete", path }],
-  }),
   postEnableRedemptionMutation: () => ({ mutationFn: vi.fn() }),
   listKeysetInfosQueryKey: () => [{ _id: "listKeysetInfos" }],
+}));
+
+vi.mock("@/lib/ebill-mint-complete", () => ({
+  getEbillMintCompleteQueryOptions: ({ billId }: { billId: string }) => ({
+    queryKey: [{ _id: "getEbillMintComplete", path: { bid: billId } }],
+  }),
 }));
 
 let root: Root | null = null;
@@ -160,6 +169,8 @@ describe("KeysetDetailPage", () => {
   });
 
   it("enables redemption and calls mutation when Redeem is clicked", () => {
+    const serializedKeysetId = "000001ff";
+
     mockUseQuery.mockImplementation((opts: QueryOptions) => {
       const id = opts.queryKey[0]._id;
       if (id === "listKeysetInfos") {
@@ -167,7 +178,7 @@ describe("KeysetDetailPage", () => {
           data: {
             data: [
               {
-                id: "keyset-1",
+                id: serializedKeysetId,
                 active: true,
                 final_expiry: 1771545600,
                 unit: "sat",
@@ -196,7 +207,7 @@ describe("KeysetDetailPage", () => {
       return { data: undefined, isLoading: false };
     });
 
-    const page = renderPage("/keysets/keyset-1");
+    const page = renderPage(`/keysets/${serializedKeysetId}`);
     const redeemButton = Array.from(page.querySelectorAll("button")).find(
       (button) => button.textContent === "Redeem",
     );
@@ -204,6 +215,13 @@ describe("KeysetDetailPage", () => {
     act(() => {
       redeemButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(mutateSpy).toHaveBeenCalledWith({ body: { kid: "keyset-1" } });
+    expect(mutateSpy).toHaveBeenCalledWith({
+      body: {
+        kid: {
+          version: "Version00",
+          id: { V1: [0, 1, 255] },
+        },
+      },
+    });
   });
 });

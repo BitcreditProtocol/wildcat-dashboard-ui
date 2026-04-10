@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { ConfirmDrawer } from "@/components/Drawers.tsx";
-import { CalendarModal, DatePickerButton } from "./CalendarModal.tsx";
+import { ConfirmDrawer } from "@/components/Drawers";
+import { CalendarModal, DatePickerButton } from "./CalendarModal";
 import Big from "big.js";
-import type { OfferFormResult } from "./OfferFormDrawer.tsx";
+import type { OfferFormResult } from "./OfferFormDrawer";
 import { addDays, addYears } from "date-fns";
 import { getItem, removeItem, setItem } from "@/utils/local-storage";
 import { useIntl } from "react-intl";

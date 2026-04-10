@@ -1,7 +1,7 @@
 import Big from "big.js";
-import { BaseDrawer } from "@/components/Drawers.tsx";
-import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm.tsx";
-import type { InfoReply } from "@/generated/client/types.gen.ts";
+import { BaseDrawer } from "@/components/Drawers";
+import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm";
+import type { InfoReply } from "@/generated/client/types.gen";
 import type { ReactNode } from "react";
 
 export interface OfferFormResult {

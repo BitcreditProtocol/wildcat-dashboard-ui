@@ -1,4 +1,4 @@
-import { Id } from "@/generated/client/types.gen";
+import type { Id, IdBytes, KeySetVersion } from "@/generated/client/types.gen";
 
 /**
  * Serializes an Id object to a string format suitable for URLs.
@@ -35,4 +35,37 @@ export function serializeKeysetId(id: Id | string): string {
   const versionPrefix = id.version === "Version00" ? "00" : "01";
 
   return `${versionPrefix}${hexString}`;
+}
+
+export function deserializeKeysetId(serializedId: string): Id | null {
+  if (serializedId.length < 4 || serializedId.length % 2 !== 0) {
+    return null;
+  }
+
+  const versionByPrefix: Record<string, KeySetVersion> = {
+    "00": "Version00",
+    "01": "Version01",
+  };
+  const version = versionByPrefix[serializedId.slice(0, 2)];
+
+  if (!version) {
+    return null;
+  }
+
+  const hexBytes = serializedId.slice(2);
+  const bytes: number[] = [];
+
+  for (let index = 0; index < hexBytes.length; index += 2) {
+    const byte = Number.parseInt(hexBytes.slice(index, index + 2), 16);
+
+    if (Number.isNaN(byte)) {
+      return null;
+    }
+
+    bytes.push(byte);
+  }
+
+  const id: IdBytes = version === "Version00" ? { V1: bytes } : { V2: bytes };
+
+  return { version, id };
 }

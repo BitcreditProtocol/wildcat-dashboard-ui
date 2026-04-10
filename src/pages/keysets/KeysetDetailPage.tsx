@@ -14,7 +14,6 @@ import {
   getQuoteOptions,
   listEbillsOptions,
   postEnableRedemptionMutation,
-  getEbillMintCompleteOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
 import {
   Card,
@@ -36,6 +35,8 @@ import {
 import { toast } from "sonner";
 import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
+import { deserializeKeysetId } from "@/utils/keyset";
 
 /**
  * Check if a bill's maturity date matches a keyset's final expiry date
@@ -102,6 +103,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
   });
 
   const keyset = keysets?.data.find((k) => k.id === keysetId);
+  const parsedKeysetId = keyset ? deserializeKeysetId(keyset.id) : null;
 
   const redemptionMutation = useMutation({
     ...postEnableRedemptionMutation(),
@@ -195,9 +197,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
 
   const mintCompleteQueries = useQueries({
     queries: matchingBillIds.map((billId) => ({
-      ...getEbillMintCompleteOptions({
-        path: { bid: billId },
-      } as never),
+      ...getEbillMintCompleteQueryOptions({ billId }),
       refetchInterval: (query: {
         state: { data?: { complete?: boolean }; error?: unknown };
       }) => {
@@ -330,14 +330,24 @@ function PageBody({ keysetId }: { keysetId: string }) {
                 variant="default"
                 disabled={
                   redemptionMutation.isPending ||
+                  !parsedKeysetId ||
                   !canEnableRedemption ||
                   anyMintCompleteLoading ||
                   hasNoMatchingBills
                 }
                 onClick={() => {
+                  if (!parsedKeysetId) {
+                    toast.error(
+                      intl.formatMessage({
+                        id: "keyset.detail.redeem.invalidId",
+                        defaultMessage: "Cannot redeem keyset with invalid keyset id",
+                      }),
+                    );
+                    return;
+                  }
+
                   redemptionMutation.mutate({
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-                    body: { kid: keyset.id as any },
+                    body: { kid: parsedKeysetId },
                   });
                 }}
               >
