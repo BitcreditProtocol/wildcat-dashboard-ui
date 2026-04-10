@@ -55,14 +55,16 @@ export function deserializeKeysetId(serializedId: string): Id | null {
   const hexBytes = serializedId.slice(2);
   const bytes: number[] = [];
 
-  for (let index = 0; index < hexBytes.length; index += 2) {
-    const byte = Number.parseInt(hexBytes.slice(index, index + 2), 16);
+  const validHexByte = /^[0-9a-fA-F]{2}$/;
 
-    if (Number.isNaN(byte)) {
+  for (let index = 0; index < hexBytes.length; index += 2) {
+    const chunk = hexBytes.slice(index, index + 2);
+
+    if (!validHexByte.test(chunk)) {
       return null;
     }
 
-    bytes.push(byte);
+    bytes.push(Number.parseInt(chunk, 16));
   }
 
   const id: IdBytes = version === "Version00" ? { V1: bytes } : { V2: bytes };

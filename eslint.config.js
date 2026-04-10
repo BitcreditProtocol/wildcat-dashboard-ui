@@ -54,10 +54,10 @@ export default tseslint.config(
           patterns: [
             {
               group: [
-                "./*.ts",
-                "./*.tsx",
-                "../*.ts",
-                "../*.tsx",
+                "./**/*.ts",
+                "./**/*.tsx",
+                "../**/*.ts",
+                "../**/*.tsx",
                 "@/components/**/*.ts",
                 "@/components/**/*.tsx",
                 "@/generated/**/*.ts",

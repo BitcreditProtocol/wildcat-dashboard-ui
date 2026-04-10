@@ -19,7 +19,7 @@ export function getEbillMintCompleteQueryOptions({
     EbillPaymentComplete
   >({
     queryKey: ["ebill-mint-complete", billId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data } = await client.get<
         GetEbillMintCompleteResponses,
         GetEbillMintCompleteErrors,
@@ -27,6 +27,7 @@ export function getEbillMintCompleteQueryOptions({
       >({
         url: `/v1/admin/treasury/ebill/payment_complete/${billId}`,
         throwOnError: true,
+        signal,
       });
 
       return data;

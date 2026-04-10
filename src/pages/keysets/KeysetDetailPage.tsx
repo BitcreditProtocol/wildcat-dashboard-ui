@@ -336,19 +336,8 @@ function PageBody({ keysetId }: { keysetId: string }) {
                   hasNoMatchingBills
                 }
                 onClick={() => {
-                  if (!parsedKeysetId) {
-                    toast.error(
-                      intl.formatMessage({
-                        id: "keyset.detail.redeem.invalidId",
-                        defaultMessage:
-                          "Cannot redeem keyset with invalid keyset id",
-                      }),
-                    );
-                    return;
-                  }
-
                   redemptionMutation.mutate({
-                    body: { kid: parsedKeysetId },
+                    body: { kid: parsedKeysetId! },
                   });
                 }}
               >
