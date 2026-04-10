@@ -2,236 +2,50 @@ import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useParams, Link, useLocation } from "react-router";
 import {
-  useQuery,
-  useQueries,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  listKeysetInfosOptions,
-  listKeysetInfosQueryKey,
-  listQuotesOptions,
-  getQuoteOptions,
-  listEbillsOptions,
-  postEnableRedemptionMutation,
-} from "@/generated/client/@tanstack/react-query.gen";
-import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
-import { truncateString, formatStatusLabel } from "@/utils/strings";
-import {
-  getEffectiveQuoteStatus,
-  getQuoteStatusVariant,
-} from "@/utils/quote-status";
-import { toast } from "sonner";
-import { useMemo } from "react";
+import { truncateString } from "@/utils/strings";
 import { FormattedMessage, useIntl } from "react-intl";
-import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
-import { deserializeKeysetId } from "@/utils/keyset";
-
-/**
- * Check if a bill's maturity date matches a keyset's final expiry date
- * @param keysetFinalExpiry - Keyset final expiry timestamp (seconds)
- * @param billMaturityDate - Bill maturity date string (YYYY-MM-DD)
- * @returns true if dates match (year, month, day)
- */
-function doesBillMatchKeysetMaturity(
-  keysetFinalExpiry: number,
-  billMaturityDate: string,
-): boolean {
-  const keysetDate = new Date(keysetFinalExpiry * 1000);
-  const billDate = new Date(billMaturityDate);
-
-  return (
-    keysetDate.getFullYear() === billDate.getFullYear() &&
-    keysetDate.getMonth() === billDate.getMonth() &&
-    keysetDate.getDate() === billDate.getDate()
-  );
-}
+import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader.tsx";
+import { KeysetRedemptionButton } from "@/pages/keysets/components/KeysetRedemptionButton.tsx";
+import { KeysetQuoteTableRow } from "@/pages/keysets/components/KeysetQuoteTableRow.tsx";
+import { useKeysetDetail } from "@/hooks/use-keyset-detail";
 
 interface LocationState {
   from?: string;
 }
 
-function Loader() {
-  return (
-    <div className="space-y-4">
-      <Skeleton className="h-32 w-full" />
-      <Skeleton className="h-32 w-full" />
-    </div>
-  );
-}
-
-const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
-const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
-  "Denied",
-  "Rejected",
-  "Canceled",
-  "MintingEnabled",
-]);
-
 function PageBody({ keysetId }: { keysetId: string }) {
   const intl = useIntl();
-  const queryClient = useQueryClient();
-  const { data: keysets, isLoading: keysetsLoading } = useQuery({
-    ...listKeysetInfosOptions(),
-    refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
-    refetchIntervalInBackground: true,
-  });
-  const { data: allQuotesData, isLoading: quotesLoading } = useQuery({
-    ...listQuotesOptions(),
-    refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
-    refetchIntervalInBackground: true,
-  });
-  const allQuotes = useMemo(
-    () => allQuotesData?.data ?? [],
-    [allQuotesData?.data],
-  );
-  const { data: ebills } = useQuery({
-    ...listEbillsOptions(),
-    refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
-    refetchIntervalInBackground: true,
-  });
-
-  const keyset = keysets?.data.find((k) => k.id === keysetId);
-  const parsedKeysetId = keyset ? deserializeKeysetId(keyset.id) : null;
-
-  const redemptionMutation = useMutation({
-    ...postEnableRedemptionMutation(),
-    onSuccess: () => {
-      toast.success(
-        intl.formatMessage({
-          id: "keyset.detail.redeem.success",
-          defaultMessage: "Redemption enabled successfully",
-        }),
-      );
-      void queryClient.invalidateQueries({
-        queryKey: listKeysetInfosQueryKey(),
-        exact: false,
-      });
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      toast.error(
-        intl.formatMessage(
-          {
-            id: "keyset.detail.redeem.error",
-            defaultMessage: "Failed to enable redemption: {error}",
-          },
-          { error: message },
-        ),
-      );
-    },
-  });
-
-  const quoteDetailsQueries = useQueries({
-    queries: allQuotes.map((quote) => ({
-      ...getQuoteOptions({
-        path: { qid: quote.id },
-      }),
-      refetchInterval: (query: { state: { data?: { status?: string } } }) => {
-        const currentStatus = query.state.data?.status ?? quote.status;
-        return QUOTE_POLLING_TERMINAL_STATUSES.has(currentStatus)
-          ? false
-          : KEYSET_DETAIL_POLL_INTERVAL_MS;
-      },
-      refetchIntervalInBackground: true,
-    })),
-  });
-
-  const quoteDetailsLoading = quoteDetailsQueries.some((q) => q.isLoading);
-
-  const quoteDetailsDepsKey = useMemo(() => {
-    const billKeys = quoteDetailsQueries.map((query) => {
-      const billId = query.data?.bill?.id ?? "";
-      const maturityDate = query.data?.bill?.maturity_date ?? "";
-      return `${billId}|${maturityDate}`;
-    });
-    return billKeys.join(",");
-  }, [quoteDetailsQueries]);
-
-  const matchingBillIds = useMemo(() => {
-    const billIds: string[] = [];
-
-    if (!keyset?.final_expiry || quoteDetailsLoading) {
-      return billIds;
-    }
-
-    const keysetFinalExpiry = keyset.final_expiry;
-
-    allQuotes.forEach((_quote, index) => {
-      const quoteDetails = quoteDetailsQueries[index]?.data;
-      const billMaturityDate = quoteDetails?.bill?.maturity_date;
-      const billId = quoteDetails?.bill?.id;
-
-      if (!billMaturityDate || !billId) {
-        return;
-      }
-
-      if (doesBillMatchKeysetMaturity(keysetFinalExpiry, billMaturityDate)) {
-        billIds.push(billId);
-      }
-    });
-
-    return billIds;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    keyset?.final_expiry,
+  const {
+    keyset,
+    parsedKeysetId,
+    redemptionMutation,
     allQuotes,
-    quoteDetailsDepsKey,
-    quoteDetailsLoading,
-  ]);
-
-  const MINT_COMPLETE_POLL_INTERVAL_MS = 60_000;
-  const MINT_COMPLETE_RETRY_COUNT = 3;
-  const MINT_COMPLETE_RETRY_DELAY_MS = 30_000;
-
-  const mintCompleteQueries = useQueries({
-    queries: matchingBillIds.map((billId) => ({
-      ...getEbillMintCompleteQueryOptions({ billId }),
-      refetchInterval: (query: {
-        state: { data?: { complete?: boolean }; error?: unknown };
-      }) => {
-        if (query.state.error) return false;
-        return query.state.data?.complete === false
-          ? MINT_COMPLETE_POLL_INTERVAL_MS
-          : false;
-      },
-      retry: MINT_COMPLETE_RETRY_COUNT,
-      retryDelay: MINT_COMPLETE_RETRY_DELAY_MS,
-      refetchOnWindowFocus: false,
-    })),
-  });
-
-  const allBillsPaid =
-    matchingBillIds.length > 0 &&
-    matchingBillIds.every((billId) => {
-      const ebill = ebills?.find((e) => e.id === billId);
-      return ebill?.status?.payment?.paid === true;
-    });
-
-  const allMintComplete =
-    matchingBillIds.length > 0 &&
-    mintCompleteQueries.every((query) => query.data?.complete === true);
-
-  const canEnableRedemption = allBillsPaid && allMintComplete;
-  const anyMintCompleteLoading = mintCompleteQueries.some(
-    (query) => query.isLoading,
-  );
-
-  const hasNoMatchingBills = matchingBillIds.length === 0;
+    quoteDetailsQueries,
+    matchingBillIds,
+    mintCompleteQueries,
+    allBillsPaid,
+    allMintComplete,
+    canEnableRedemption,
+    anyMintCompleteLoading,
+    hasNoMatchingBills,
+    matchingQuotes,
+    billIdToEbillMap,
+    keysetsLoading,
+    quotesLoading,
+  } = useKeysetDetail(keysetId);
 
   if (keysetsLoading) {
-    return <Loader />;
+    return <KeysetLoader />;
   }
 
   if (!keyset) {
@@ -266,27 +80,9 @@ function PageBody({ keysetId }: { keysetId: string }) {
         })
         .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
     : noExpiryText;
+
   const currencyUnit =
     typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom;
-
-  type EbillType = NonNullable<typeof ebills>[number];
-  const billIdToEbillMap = new Map<string, EbillType>();
-  if (ebills) {
-    for (const ebill of ebills) {
-      billIdToEbillMap.set(ebill.id, ebill);
-    }
-  }
-
-  const matchingQuotes = allQuotes.filter((_quote, index) => {
-    const quoteDetails = quoteDetailsQueries[index]?.data;
-    const billMaturityDate = quoteDetails?.bill?.maturity_date;
-
-    if (!keyset.final_expiry || !billMaturityDate) {
-      return false;
-    }
-
-    return doesBillMatchKeysetMaturity(keyset.final_expiry, billMaturityDate);
-  });
 
   return (
     <div className="space-y-4">
@@ -324,53 +120,18 @@ function PageBody({ keysetId }: { keysetId: string }) {
           </div>
           {keyset.active && (
             <div className="w-full my-4">
-              <Button
-                className="w-full max-w-sm"
-                size="sm"
-                variant="default"
-                disabled={
-                  redemptionMutation.isPending ||
-                  !parsedKeysetId ||
-                  !canEnableRedemption ||
-                  anyMintCompleteLoading ||
-                  hasNoMatchingBills
+              <KeysetRedemptionButton
+                onRedeem={() =>
+                  redemptionMutation.mutate({ body: { kid: parsedKeysetId! } })
                 }
-                onClick={() => {
-                  redemptionMutation.mutate({
-                    body: { kid: parsedKeysetId! },
-                  });
-                }}
-              >
-                {redemptionMutation.isPending
-                  ? intl.formatMessage({
-                      id: "keyset.detail.redeem.enabling",
-                      defaultMessage: "Enabling redemption...",
-                    })
-                  : hasNoMatchingBills
-                    ? intl.formatMessage({
-                        id: "keyset.detail.redeem.noMatchingBills",
-                        defaultMessage: "No matching bills found",
-                      })
-                    : !allBillsPaid
-                      ? intl.formatMessage({
-                          id: "keyset.detail.redeem.waitingPayments",
-                          defaultMessage: "Waiting for e-bill payments...",
-                        })
-                      : anyMintCompleteLoading
-                        ? intl.formatMessage({
-                            id: "keyset.detail.redeem.checkingMintStatus",
-                            defaultMessage: "Checking mint status...",
-                          })
-                        : !allMintComplete
-                          ? intl.formatMessage({
-                              id: "keyset.detail.redeem.waitingMintCompletion",
-                              defaultMessage: "Waiting for mint completion...",
-                            })
-                          : intl.formatMessage({
-                              id: "keyset.detail.redeem.action",
-                              defaultMessage: "Redeem",
-                            })}
-              </Button>
+                isPending={redemptionMutation.isPending}
+                parsedKeysetId={parsedKeysetId}
+                canEnableRedemption={canEnableRedemption}
+                anyMintCompleteLoading={anyMintCompleteLoading}
+                hasNoMatchingBills={hasNoMatchingBills}
+                allBillsPaid={allBillsPaid}
+                allMintComplete={allMintComplete}
+              />
             </div>
           )}
         </CardHeader>
@@ -441,30 +202,6 @@ function PageBody({ keysetId }: { keysetId: string }) {
                       const ebill = billId
                         ? billIdToEbillMap.get(billId)
                         : null;
-                      const quoteStatus = quoteDetails?.status ?? quote.status;
-                      const effectiveQuoteStatus = getEffectiveQuoteStatus(
-                        quoteStatus,
-                        ebill,
-                      );
-                      const paymentStatus = ebill?.status?.payment;
-                      const cws = ebill?.current_waiting_state;
-                      const isPaid = paymentStatus?.paid === true;
-                      const isInMempool =
-                        cws &&
-                        "Payment" in cws &&
-                        cws.Payment.payment_data?.in_mempool === true;
-                      const hasPaymentRequestInWaitingState = Boolean(
-                        cws && "Payment" in cws,
-                      );
-                      const requestedToPay = Boolean(
-                        paymentStatus?.requested_to_pay ??
-                        ebill?.status?.has_requested_funds ??
-                        hasPaymentRequestInWaitingState,
-                      );
-                      const rejectedToPay = Boolean(
-                        paymentStatus?.rejected_to_pay,
-                      );
-
                       const billIdIndex = billId
                         ? matchingBillIds.indexOf(billId)
                         : -1;
@@ -472,176 +209,16 @@ function PageBody({ keysetId }: { keysetId: string }) {
                         billId && billIdIndex >= 0
                           ? mintCompleteQueries[billIdIndex]
                           : null;
-                      const isMintComplete =
-                        mintCompleteQuery?.data?.complete === true;
-                      const isMintLoading = mintCompleteQuery?.isLoading;
-
-                      let paymentAddress: string | undefined;
-                      if (cws && "Payment" in cws) {
-                        paymentAddress =
-                          cws.Payment.payment_data?.address_to_pay;
-                      }
 
                       return (
-                        <tr
+                        <KeysetQuoteTableRow
                           key={quote.id}
-                          className="border-t hover:bg-gray-50"
-                        >
-                          <td className="p-2 font-mono">
-                            <Link
-                              to={{ pathname: `/quotes/${quote.id}` }}
-                              state={{ from: `/keysets/${keysetId}` }}
-                              className="text-blue-600 hover:underline"
-                            >
-                              {truncateString(quote.id, 16)}
-                            </Link>
-                          </td>
-                          <td className="p-2">
-                            <Badge
-                              variant={getQuoteStatusVariant(
-                                effectiveQuoteStatus,
-                              )}
-                            >
-                              {intl.formatMessage({
-                                id: `quote.status.${effectiveQuoteStatus}`,
-                                defaultMessage:
-                                  formatStatusLabel(effectiveQuoteStatus),
-                              })}
-                            </Badge>
-                          </td>
-                          <td className="p-2">
-                            {ebill ? (
-                              isPaid ? (
-                                <Badge
-                                  variant="default"
-                                  className="bg-green-600"
-                                >
-                                  <FormattedMessage
-                                    id="quotes.payment.paid"
-                                    defaultMessage="Paid"
-                                  />
-                                </Badge>
-                              ) : rejectedToPay ? (
-                                <Badge
-                                  variant="destructive"
-                                  className="bg-red-600"
-                                >
-                                  <FormattedMessage
-                                    id="quotes.payment.rejected"
-                                    defaultMessage="Rejected to pay"
-                                  />
-                                </Badge>
-                              ) : isInMempool ? (
-                                <Badge
-                                  variant="default"
-                                  className="bg-orange-500"
-                                >
-                                  <FormattedMessage
-                                    id="quotes.payment.inMempool"
-                                    defaultMessage="In mempool"
-                                  />
-                                </Badge>
-                              ) : !requestedToPay ? (
-                                <Badge
-                                  variant="secondary"
-                                  className="border border-border"
-                                >
-                                  <FormattedMessage
-                                    id="quotes.payment.notRequested"
-                                    defaultMessage="Not requested"
-                                  />
-                                </Badge>
-                              ) : (
-                                <Badge
-                                  variant="default"
-                                  className="bg-blue-500"
-                                >
-                                  <FormattedMessage
-                                    id="quotes.payment.requested"
-                                    defaultMessage="Requested"
-                                  />
-                                </Badge>
-                              )
-                            ) : (
-                              <Badge
-                                variant="secondary"
-                                className="border border-border"
-                              >
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="p-2">
-                            {!isPaid ? (
-                              <Badge
-                                variant="secondary"
-                                className="border border-border"
-                              >
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </Badge>
-                            ) : isMintLoading || !mintCompleteQuery ? (
-                              <Badge
-                                variant="default"
-                                className="bg-yellow-500"
-                              >
-                                <FormattedMessage
-                                  id="keyset.detail.table.mintPending"
-                                  defaultMessage="Pending"
-                                />
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="default"
-                                className={
-                                  isMintComplete
-                                    ? "bg-green-600"
-                                    : "bg-yellow-500"
-                                }
-                              >
-                                {isMintComplete ? (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.mintComplete"
-                                    defaultMessage="Complete"
-                                  />
-                                ) : (
-                                  <FormattedMessage
-                                    id="keyset.detail.table.mintPending"
-                                    defaultMessage="Pending"
-                                  />
-                                )}
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="p-2 font-mono text-xs break-all">
-                            {paymentAddress ?? (
-                              <Badge
-                                variant="secondary"
-                                className="border border-border"
-                              >
-                                <FormattedMessage
-                                  id="keyset.detail.table.na"
-                                  defaultMessage="N/A"
-                                />
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="p-2 text-right">{quote.sum} sat</td>
-                          <td className="p-2 text-right">
-                            <Link
-                              to={{ pathname: `/quotes/${quote.id}` }}
-                              state={{ from: `/keysets/${keysetId}` }}
-                              className="text-blue-600 hover:text-blue-800 inline-flex items-center"
-                            >
-                              <ArrowRight className="h-4 w-4" />
-                            </Link>
-                          </td>
-                        </tr>
+                          quote={quote}
+                          quoteDetails={quoteDetails}
+                          ebill={ebill}
+                          mintCompleteQuery={mintCompleteQuery ?? null}
+                          keysetId={keysetId}
+                        />
                       );
                     })}
                   </tbody>
@@ -691,10 +268,7 @@ export default function KeysetDetailPage() {
     <>
       <Breadcrumbs
         parents={[
-          <BreadcrumbLink
-            key="keysets"
-            asChild
-          >
+          <BreadcrumbLink key="keysets" asChild>
             <Link to="/keysets">
               <FormattedMessage
                 id="keysets.page.title"
