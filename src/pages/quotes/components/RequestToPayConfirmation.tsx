@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDrawer } from "@/components/Drawers";
-import { LoaderIcon } from "lucide-react";
+import { AlertCircleIcon, LoaderIcon } from "lucide-react";
 import { CalendarModal, DatePickerButton } from "./CalendarModal";
 import { useQuery } from "@tanstack/react-query";
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
@@ -128,34 +128,56 @@ export function RequestToPayConfirmation({
         })}
         submitButtonDisabled={!validUntilDate}
         trigger={
-          <Button
-            className="flex-1 max-w-sm"
-            disabled={isFetching || isPending || !ebillAvailable}
-            variant="default"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onOpenChange(true);
-            }}
-          >
-            {!ebillAvailable ? (
-              <span className="flex items-center gap-2">
-                <LoaderIcon className="stroke-1 animate-spin" />
+          <div className="flex flex-col items-start gap-1 flex-1 max-w-sm">
+            <Button
+              className="w-full"
+              disabled={isFetching || isPending || !ebillAvailable}
+              variant="default"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onOpenChange(true);
+              }}
+            >
+              {ebillQuery.isError ? (
+                <span className="flex items-center gap-2">
+                  <AlertCircleIcon className="stroke-1" />
+                  {intl.formatMessage({
+                    id: "quotes.requestToPay.errorInfo",
+                    defaultMessage: "Failed to load payment info",
+                  })}
+                </span>
+              ) : !ebillAvailable ? (
+                <span className="flex items-center gap-2">
+                  <LoaderIcon className="stroke-1 animate-spin" />
+                  {intl.formatMessage({
+                    id: "quotes.requestToPay.loadingInfo",
+                    defaultMessage: "Loading information for payment",
+                  })}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  {intl.formatMessage({
+                    id: "quotes.requestToPay.button",
+                    defaultMessage: "Request to pay",
+                  })}{" "}
+                  {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                </span>
+              )}
+            </Button>
+            {ebillQuery.isError && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline self-start"
+                onClick={() => ebillQuery.refetch()}
+              >
                 {intl.formatMessage({
-                  id: "quotes.requestToPay.loadingInfo",
-                  defaultMessage: "Loading information for payment",
+                  id: "quotes.requestToPay.retry",
+                  defaultMessage: "Retry",
                 })}
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                {intl.formatMessage({
-                  id: "quotes.requestToPay.button",
-                  defaultMessage: "Request to pay",
-                })}{" "}
-                {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-              </span>
+              </button>
             )}
-          </Button>
+          </div>
         }
       >
         <div className="flex flex-col gap-4 px-4 py-4">
