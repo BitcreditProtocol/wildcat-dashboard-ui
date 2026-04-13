@@ -1,4 +1,4 @@
-import { ConfirmDrawer } from "@/components/Drawers.tsx";
+import { ConfirmDrawer } from "@/components/Drawers";
 import type { ReactNode } from "react";
 import { useIntl } from "react-intl";
 

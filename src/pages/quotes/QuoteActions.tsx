@@ -13,13 +13,13 @@ import type {
 import {
   OfferFormDrawer,
   type OfferFormResult,
-} from "./components/OfferFormDrawer.tsx";
-import { DenyConfirmDrawer } from "./components/DenyConfirmDrawer.tsx";
+} from "./components/OfferFormDrawer";
+import { DenyConfirmDrawer } from "./components/DenyConfirmDrawer";
 import { removeItem } from "@/utils/local-storage";
-import { PaymentRequestCard } from "./components/PaymentRequestCard.tsx";
-import { OfferConfirmation } from "./components/OfferConfirmation.tsx";
-import { RequestToPayConfirmation } from "./components/RequestToPayConfirmation.tsx";
-import { useQuoteMutations } from "./components/useQuoteMutations.ts";
+import { PaymentRequestCard } from "./components/PaymentRequestCard";
+import { OfferConfirmation } from "./components/OfferConfirmation";
+import { RequestToPayConfirmation } from "./components/RequestToPayConfirmation";
+import { useQuoteMutations } from "./components/useQuoteMutations";
 import { useIntl } from "react-intl";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { buildMempoolTransactionUrl } from "@/utils/mempool";

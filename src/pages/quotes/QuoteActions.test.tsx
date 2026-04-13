@@ -39,23 +39,23 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   }),
 }));
 
-vi.mock("./components/OfferFormDrawer.tsx", () => ({
+vi.mock("./components/OfferFormDrawer", () => ({
   OfferFormDrawer: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock("./components/DenyConfirmDrawer.tsx", () => ({
+vi.mock("./components/DenyConfirmDrawer", () => ({
   DenyConfirmDrawer: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock("./components/OfferConfirmation.tsx", () => ({
+vi.mock("./components/OfferConfirmation", () => ({
   OfferConfirmation: () => null,
 }));
 
-vi.mock("./components/RequestToPayConfirmation.tsx", () => ({
+vi.mock("./components/RequestToPayConfirmation", () => ({
   RequestToPayConfirmation: () => null,
 }));
 
-vi.mock("./components/useQuoteMutations.ts", () => ({
+vi.mock("./components/useQuoteMutations", () => ({
   useQuoteMutations: () => ({
     denyQuote: { isPending: false },
     offerQuote: { isPending: false },

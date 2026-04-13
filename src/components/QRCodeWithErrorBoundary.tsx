@@ -13,7 +13,7 @@ import {
   canGenerateQRCode,
   canGenerateQRCodeAsync,
   QR_CODE_MAX_LENGTH,
-} from "@/utils/qrCodeUtils.ts";
+} from "@/utils/qrCodeUtils";
 import { useIntl } from "react-intl";
 
 /**

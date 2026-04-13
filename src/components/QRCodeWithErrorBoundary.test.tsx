@@ -16,7 +16,7 @@ vi.mock("qrcode.react", () => ({
   QRCodeSVG: ({ value }: { value: string }) => mockQrSvg({ value }),
 }));
 
-vi.mock("@/utils/qrCodeUtils.ts", () => ({
+vi.mock("@/utils/qrCodeUtils", () => ({
   QR_CODE_MAX_LENGTH: 4296,
   canGenerateQRCode: (value: string) => mockCanGenerateQRCode(value),
   canGenerateQRCodeAsync: (value: string) => mockCanGenerateQRCodeAsync(value),

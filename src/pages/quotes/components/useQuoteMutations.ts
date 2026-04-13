@@ -5,8 +5,8 @@ import {
   postEbillReqtopayMutation,
   getQuoteOptions,
   getEbillOptions,
-} from "@/generated/client/@tanstack/react-query.gen.ts";
-import type { OfferFormResult } from "./OfferFormDrawer.tsx";
+} from "@/generated/client/@tanstack/react-query.gen";
+import type { OfferFormResult } from "./OfferFormDrawer";
 import Big from "big.js";
 import { getApiErrorMessage } from "@/lib/api-error";
 

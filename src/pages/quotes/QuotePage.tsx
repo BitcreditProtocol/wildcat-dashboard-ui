@@ -12,7 +12,6 @@ import {
   getQuoteOptions,
   listEbillsOptions,
   getEbillEndorsementsOptions,
-  getEbillMintCompleteOptions,
   postTokenStatusMutation,
 } from "@/generated/client/@tanstack/react-query.gen";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -20,13 +19,13 @@ import { useParams, Link, useLocation } from "react-router";
 import type { InfoReplyDiscriminants } from "@/generated/client/types.gen";
 import { humanReadableDurationDays } from "@/utils/dates";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
-import { QuoteActions } from "./QuoteActions.tsx";
-import { truncateString, formatStatusLabel } from "@/utils/strings.ts";
+import { QuoteActions } from "./QuoteActions";
+import { truncateString, formatStatusLabel } from "@/utils/strings";
 import {
   getEffectiveQuoteStatus,
   getQuoteStatusVariant,
 } from "@/utils/quote-status";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx";
+import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
 import { EndorsementChain } from "@/components/EndorsementChain";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { serializeKeysetId } from "@/utils/keyset";
@@ -35,6 +34,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { client } from "@/lib/api-client";
+import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
 import { QuoteDocuments } from "./QuoteDocuments";
 
 interface LocationState {
@@ -148,7 +148,7 @@ function PageBody({ id }: { id: string }) {
   });
 
   const mintCompleteQuery = useQuery({
-    ...getEbillMintCompleteOptions({ path: { bid: billId ?? "" } } as never),
+    ...getEbillMintCompleteQueryOptions({ billId: billId ?? "" }),
     retry: 1,
     enabled: !!billId && shouldCheckMintComplete,
     refetchInterval: (query) => {

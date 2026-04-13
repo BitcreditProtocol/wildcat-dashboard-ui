@@ -1,4 +1,4 @@
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover.tsx";
+import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
 import { useIntl } from "react-intl";
 
 interface PaymentRequestCardProps {

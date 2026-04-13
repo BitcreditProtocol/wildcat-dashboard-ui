@@ -34,12 +34,7 @@ heyApiClient.interceptors.request.use(async (request) => {
   }
   headers.set("Authorization", `Bearer ${token}`);
 
-  if (!(request.headers instanceof Headers)) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    (request as any).headers = headers;
-  }
-
-  return request;
+  return new Request(request, { headers });
 });
 
 export const client = heyApiClient;

@@ -51,7 +51,7 @@ vi.mock("@/components/ui/search", () => ({
   HighlightText: ({ text }: { text: string }) => <>{text}</>,
 }));
 
-vi.mock("@/components/SortButtons.tsx", () => ({
+vi.mock("@/components/SortButtons", () => ({
   SortButtons: ({
     options,
     onSortChange,

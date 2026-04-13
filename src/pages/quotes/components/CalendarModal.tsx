@@ -1,8 +1,8 @@
-import { Button } from "@/components/ui/button.tsx";
-import { Calendar } from "@/components/DatePicker/calendar.tsx";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/DatePicker/calendar";
 import { CalendarIcon } from "lucide-react";
 import { addDays, isAfter, isBefore, isSameDay } from "date-fns";
-import { cn } from "@/lib/utils.ts";
+import { cn } from "@/lib/utils";
 import { useIntl } from "react-intl";
 import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
 
