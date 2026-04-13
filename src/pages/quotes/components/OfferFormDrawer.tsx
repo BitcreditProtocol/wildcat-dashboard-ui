@@ -32,6 +32,8 @@ interface OfferFormDrawerProps {
   children: ReactNode;
 }
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
 export function OfferFormDrawer({
   title,
   description,
@@ -41,22 +43,20 @@ export function OfferFormDrawer({
   onSubmit,
   children,
 }: OfferFormDrawerProps) {
-  const addDays = 30 * 24 * 60 * 60 * 1000;
-
   const handleFormSubmit = (values: {
     days: number;
     discountRate: Big;
     net: { value: Big; currency: string };
     gross: { value: Big; currency: string };
   }) => {
-    const endDate =
+    const ttl =
       value.status === "Pending"
         ? new Date(value.suggested_expiration)
-        : new Date(Date.now() + addDays);
+        : new Date(Date.now() + THIRTY_DAYS_MS);
 
     const result: OfferFormResult = {
       discount: values,
-      ttl: { ttl: endDate },
+      ttl: { ttl },
     };
 
     onSubmit(result);
