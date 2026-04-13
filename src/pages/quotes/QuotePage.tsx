@@ -2,35 +2,12 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-<<<<<<< HEAD
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
-=======
-import {
-  ParticipantsOverviewCard,
-  ParticipantDetail,
-} from "@/components/ParticipantsOverview";
-import {
-  getQuoteOptions,
-  listEbillsOptions,
-  getEbillEndorsementsOptions,
-  postTokenStatusMutation,
-} from "@/generated/client/@tanstack/react-query.gen";
-import { useMutation, useQuery } from "@tanstack/react-query";
->>>>>>> afd48dc12a2e5c6102f2faa072babec9676ef75c
 import { useParams, Link, useLocation } from "react-router";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { QuoteActions } from "./QuoteActions";
-<<<<<<< HEAD
 import { truncateString } from "@/utils/strings";
-=======
-import { truncateString, formatStatusLabel } from "@/utils/strings";
-import {
-  getEffectiveQuoteStatus,
-  getQuoteStatusVariant,
-} from "@/utils/quote-status";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
->>>>>>> afd48dc12a2e5c6102f2faa072babec9676ef75c
 import { EndorsementChain } from "@/components/EndorsementChain";
 import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
@@ -38,7 +15,6 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { client } from "@/lib/api-client";
-import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
 import { QuoteDocuments } from "./QuoteDocuments";
 import { useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
@@ -69,51 +45,7 @@ function PageBody({ id }: { id: string }) {
     null,
   );
 
-<<<<<<< HEAD
   const blobUrlTimerRef = useRef<number | null>(null);
-=======
-  const {
-    mutate: requestFeeTokenStatus,
-    isPending: isFeeTokenStatusPending,
-    isSuccess: isFeeTokenStatusSuccess,
-    isError: isFeeTokenStatusError,
-    data: feeTokenStatusData,
-  } = useMutation({
-    ...postTokenStatusMutation(),
-    retry: 5,
-    onError: (error) => {
-      const message = getApiErrorMessage(error);
-      toast.error(
-        intl.formatMessage(
-          {
-            id: "quotes.feeToken.check.error",
-            defaultMessage: "Failed to check fee token: {error}",
-          },
-          { error: message },
-        ),
-      );
-      feeTokenRequestRef.current = null;
-    },
-  });
-
-  const mintCompleteQuery = useQuery({
-    ...getEbillMintCompleteQueryOptions({ billId: billId ?? "" }),
-    retry: 1,
-    enabled: !!billId && shouldCheckMintComplete,
-    refetchInterval: (query) => {
-      if (!shouldCheckMintComplete) {
-        return false;
-      }
-
-      const data = query.state.data;
-      return data?.complete === false ? 60000 : false;
-    },
-  });
-
-  const feeTokenFromQuote =
-    quoteData && "fee" in quoteData ? quoteData.fee : null;
-  const quoteStatusForEffect = effectiveQuoteStatus;
->>>>>>> afd48dc12a2e5c6102f2faa072babec9676ef75c
 
   useEffect(() => {
     return () => {
