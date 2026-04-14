@@ -18,6 +18,7 @@ import "./lib/api-client";
 import KeysetsPage from "@/pages/keysets/KeysetsPage";
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
+import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { ThemeProvider } from "@/context/theme/ThemeProvider";
 
 const queryClient = new QueryClient();
@@ -112,8 +113,10 @@ void prepare().then(() => {
     <StrictMode>
       <ThemeProvider>
         <LanguageProvider>
-          <App />
-          <Toaster />
+          <PreferencesProvider>
+            <App />
+            <Toaster />
+          </PreferencesProvider>
         </LanguageProvider>
       </ThemeProvider>
     </StrictMode>,

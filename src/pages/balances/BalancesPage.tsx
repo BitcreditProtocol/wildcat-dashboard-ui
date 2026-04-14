@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/chart";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
+import { useAmountFormatter } from "@/utils/amount-format";
 
 function Loader() {
   return (
@@ -207,10 +208,12 @@ export function BalanceText({
   unit,
   children,
 }: PropsWithChildren<BalanceDisplay>) {
+  const { formatAmount } = useAmountFormatter();
+
   return (
     <>
       <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
-        {amount} {unit}
+        {formatAmount(amount)} {unit}
       </h3>
       {children}
     </>

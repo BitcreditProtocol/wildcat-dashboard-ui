@@ -7,6 +7,7 @@ import { addDays, addYears } from "date-fns";
 import { getItem, removeItem, setItem } from "@/utils/local-storage";
 import { useIntl } from "react-intl";
 import { toUtcEndOfDay } from "@/utils/dates";
+import { useAmountFormatter } from "@/utils/amount-format";
 
 interface OfferConfirmationProps {
   offerFormData?: OfferFormResult;
@@ -26,6 +27,7 @@ export function OfferConfirmation({
   quoteId,
 }: OfferConfirmationProps) {
   const intl = useIntl();
+  const { formatAmount } = useAmountFormatter();
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(
     undefined,
   );
@@ -125,9 +127,13 @@ export function OfferConfirmation({
               })}
             </span>
             <span className="text-sm text-right">
-              {offerFormData?.discount.gross.value
-                .minus(offerFormData?.discount.net.value)
-                .toFixed(0)}{" "}
+              {offerFormData
+                ? formatAmount(
+                    offerFormData.discount.gross.value
+                      .minus(offerFormData.discount.net.value)
+                      .toFixed(0),
+                  )
+                : undefined}{" "}
               {offerFormData?.discount.net.currency}
             </span>
           </div>
@@ -139,7 +145,11 @@ export function OfferConfirmation({
               })}
             </span>
             <span className="text-sm text-right">
-              {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
+              {offerFormData
+                ? formatAmount(
+                    offerFormData.discount.net.value.round(0).toFixed(0),
+                  )
+                : undefined}{" "}
               {offerFormData?.discount.net.currency}
             </span>
           </div>

@@ -14,6 +14,7 @@ import type {
   TokenStateResponse,
 } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
+import { useAmountFormatter } from "@/utils/amount-format";
 
 interface QuoteDetailCardProps {
   quote: InfoReply;
@@ -47,6 +48,7 @@ export function QuoteDetailCard({
   isFeeTokenStatusError,
 }: QuoteDetailCardProps) {
   const intl = useIntl();
+  const { formatAmount } = useAmountFormatter();
   const bill = quote.bill;
 
   const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
@@ -213,7 +215,7 @@ export function QuoteDetailCard({
                 defaultMessage: "Sum:",
               })}
             </span>
-            <span className="text-lg font-bold">{bill.sum} sat</span>
+            <span className="text-lg font-bold">{formatAmount(bill.sum)} sat</span>
           </div>
           {"discounted" in quote && quote.discounted && (
             <>
@@ -225,7 +227,7 @@ export function QuoteDetailCard({
                   })}
                 </span>
                 <span className="text-lg font-bold">
-                  {quote.discounted} sat
+                  {formatAmount(quote.discounted)} sat
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -236,7 +238,7 @@ export function QuoteDetailCard({
                   })}
                 </span>
                 <span className="text-sm font-mono">
-                  {bill.sum - quote.discounted} sat
+                  {formatAmount(bill.sum - quote.discounted)} sat
                 </span>
               </div>
               <div className="flex items-center gap-2">

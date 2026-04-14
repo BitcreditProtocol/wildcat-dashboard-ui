@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { DrawerFooter, DrawerClose } from "./ui/drawer";
 import { setItem, getItem } from "@/utils/local-storage"; // , removeItem
 import { useIntl } from "react-intl";
+import { useAmountFormatter } from "@/utils/amount-format";
 
 interface CurrencyAmount {
   value: Big;
@@ -56,6 +57,7 @@ const GrossToNetDiscountForm = ({
   quoteId,
 }: GrossToNetProps) => {
   const intl = useIntl();
+  const { formatAmount: formatAmountByPreference } = useAmountFormatter();
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false);
   const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null);
   const isSat = gross.currency === "sat";
@@ -314,9 +316,9 @@ const GrossToNetDiscountForm = ({
 
   const formatAmount = (value: Big, currency: string) => {
     if (currency === "sat") {
-      return value.round(0, Big.roundDown).toFixed(0);
+      return formatAmountByPreference(value.round(0, Big.roundDown).toFixed(0));
     }
-    return value.toFixed(NET_INPUT_DECIMALS);
+    return formatAmountByPreference(value.toFixed(NET_INPUT_DECIMALS));
   };
 
   useEffect(() => {

@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
 import { ThemeSelector } from "@/components/ThemeSelector";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
@@ -142,6 +143,7 @@ export function AppSidebar() {
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
         <div className="flex flex-col gap-4">
           <ThemeSelector className="flex flex-col gap-2" />
+          <DecimalFormatSelector className="flex flex-col gap-2" />
           <LanguageSelector />
         </div>
       </SidebarFooter>

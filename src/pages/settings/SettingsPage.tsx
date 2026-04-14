@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
 import { PageTitle } from "@/components/PageTitle";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import {
@@ -25,7 +26,7 @@ function PageBody() {
 
   return (
     <div className="my-2 max-w-xl">
-      <Card>
+      <Card className="mb-4">
         <CardHeader>
           <CardTitle>
             {intl.formatMessage({
@@ -42,6 +43,26 @@ function PageBody() {
         </CardHeader>
         <CardContent>
           <ThemeSelector className="flex flex-col gap-2" />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {intl.formatMessage({
+              id: "settings.decimalSeparator.title",
+              defaultMessage: "Decimals",
+            })}
+          </CardTitle>
+          <CardDescription>
+            {intl.formatMessage({
+              id: "settings.decimalSeparator.description",
+              defaultMessage:
+                "Choose your preferred decimal and thousands separator format.",
+            })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DecimalFormatSelector className="flex flex-col gap-2" />
         </CardContent>
       </Card>
     </div>

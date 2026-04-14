@@ -7,7 +7,6 @@ import { LoaderIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { truncateString, formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
-import { formatNumber } from "@/utils/strings";
 import type { LightInfo } from "@/generated/client/types.gen";
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
 import { toast } from "sonner";
@@ -15,6 +14,7 @@ import * as React from "react";
 import { HighlightText } from "@/components/ui/search";
 import { useIntl } from "react-intl";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { useAmountFormatter } from "@/utils/amount-format";
 
 const RETRY_COUNT = 2;
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
@@ -30,6 +30,7 @@ export function QuoteItemCard({
 }) {
   const intl = useIntl();
   const navigate = useNavigate();
+  const { formatAmount } = useAmountFormatter();
 
   const queryResult = useQuery({
     ...getQuoteOptions({
@@ -103,7 +104,7 @@ export function QuoteItemCard({
         <div className="flex gap-2">
           <div className="leading-none font-semibold tracking-tight text-3xl">
             <HighlightText
-              text={`${formatNumber(intl.locale, quote.sum)} sat`}
+              text={`${formatAmount(quote.sum)} sat`}
               highlight={searchQuery}
             />
           </div>
