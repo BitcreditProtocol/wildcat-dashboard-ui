@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
+import { Currency } from "@/components/Currency";
 import { ArrowRight } from "lucide-react";
 import type {
   BitcreditBill,
@@ -14,7 +15,6 @@ import {
   getQuoteStatusVariant,
 } from "@/utils/quote-status";
 import { FormattedMessage, useIntl } from "react-intl";
-import { useAmountFormatter } from "@/utils/amount-format";
 
 interface KeysetQuoteTableRowProps {
   quote: LightInfo;
@@ -32,7 +32,6 @@ export function KeysetQuoteTableRow({
   keysetId,
 }: KeysetQuoteTableRowProps) {
   const intl = useIntl();
-  const { formatAmount } = useAmountFormatter();
 
   const quoteStatus = quoteDetails?.status ?? quote.status;
   const effectiveQuoteStatus = getEffectiveQuoteStatus(quoteStatus, ebill);
@@ -197,7 +196,13 @@ export function KeysetQuoteTableRow({
           </Badge>
         )}
       </td>
-      <td className="p-2 text-right">{formatAmount(quote.sum)} sat</td>
+      <td className="p-2 text-right">
+        <Currency
+          value={quote.sum}
+          sourceCurrency="sat"
+          amountClassName="text-current"
+        />
+      </td>
       <td className="p-2 text-right">
         <Link
           to={{ pathname: `/quotes/${quote.id}` }}

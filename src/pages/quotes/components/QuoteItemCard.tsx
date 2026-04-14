@@ -14,7 +14,7 @@ import * as React from "react";
 import { HighlightText } from "@/components/ui/search";
 import { useIntl } from "react-intl";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { useAmountFormatter } from "@/utils/amount-format";
+import { Currency } from "@/components/Currency";
 
 const RETRY_COUNT = 2;
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
@@ -30,7 +30,6 @@ export function QuoteItemCard({
 }) {
   const intl = useIntl();
   const navigate = useNavigate();
-  const { formatAmount } = useAmountFormatter();
 
   const queryResult = useQuery({
     ...getQuoteOptions({
@@ -103,9 +102,12 @@ export function QuoteItemCard({
         </CardTitle>
         <div className="flex gap-2">
           <div className="leading-none font-semibold tracking-tight text-3xl">
-            <HighlightText
-              text={`${formatAmount(quote.sum)} sat`}
-              highlight={searchQuery}
+            <Currency
+              value={quote.sum}
+              sourceCurrency="sat"
+              amountClassName="text-current"
+              currencyClassName="text-xs font-normal text-muted-foreground"
+              secondaryClassName="text-base"
             />
           </div>
           <Badge variant={getQuoteStatusVariant(effectiveStatus)}>

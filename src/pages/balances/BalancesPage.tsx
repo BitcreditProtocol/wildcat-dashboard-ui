@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/chart";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
-import { useAmountFormatter } from "@/utils/amount-format";
+import { Currency } from "@/components/Currency";
 
 function Loader() {
   return (
@@ -208,12 +208,19 @@ export function BalanceText({
   unit,
   children,
 }: PropsWithChildren<BalanceDisplay>) {
-  const { formatAmount } = useAmountFormatter();
-
   return (
     <>
       <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
-        {formatAmount(amount)} {unit}
+        {unit === "sat" ? (
+          <Currency
+            value={Number(amount)}
+            sourceCurrency="sat"
+            amountClassName="text-current"
+            currencyClassName="text-sm font-medium text-muted-foreground"
+          />
+        ) : (
+          `${amount} ${unit}`
+        )}
       </h3>
       {children}
     </>

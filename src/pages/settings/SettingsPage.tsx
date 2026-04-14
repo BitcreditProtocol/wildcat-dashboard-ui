@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { CurrencySelector } from "@/components/CurrencySelector";
 import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
 import { PageTitle } from "@/components/PageTitle";
 import { ThemeSelector } from "@/components/ThemeSelector";
@@ -43,6 +44,26 @@ function PageBody() {
         </CardHeader>
         <CardContent>
           <ThemeSelector className="flex flex-col gap-2" />
+        </CardContent>
+      </Card>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>
+            {intl.formatMessage({
+              id: "settings.currency.title",
+              defaultMessage: "Currency",
+            })}
+          </CardTitle>
+          <CardDescription>
+            {intl.formatMessage({
+              id: "settings.currency.description",
+              defaultMessage:
+                "Choose how dashboard amounts should be displayed.",
+            })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CurrencySelector className="flex flex-col gap-2" />
         </CardContent>
       </Card>
       <Card>

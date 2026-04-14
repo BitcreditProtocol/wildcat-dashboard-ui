@@ -4,6 +4,7 @@ import {
   ParticipantsOverviewCard,
   ParticipantDetail,
 } from "@/components/ParticipantsOverview";
+import { Currency } from "@/components/Currency";
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { formatStatusLabel } from "@/utils/strings";
@@ -14,7 +15,6 @@ import type {
   TokenStateResponse,
 } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
-import { useAmountFormatter } from "@/utils/amount-format";
 
 interface QuoteDetailCardProps {
   quote: InfoReply;
@@ -48,7 +48,6 @@ export function QuoteDetailCard({
   isFeeTokenStatusError,
 }: QuoteDetailCardProps) {
   const intl = useIntl();
-  const { formatAmount } = useAmountFormatter();
   const bill = quote.bill;
 
   const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
@@ -215,7 +214,12 @@ export function QuoteDetailCard({
                 defaultMessage: "Sum:",
               })}
             </span>
-            <span className="text-lg font-bold">{formatAmount(bill.sum)} sat</span>
+            <Currency
+              value={bill.sum}
+              sourceCurrency="sat"
+              className="text-lg font-bold"
+              amountClassName="text-current"
+            />
           </div>
           {"discounted" in quote && quote.discounted && (
             <>
@@ -226,9 +230,12 @@ export function QuoteDetailCard({
                     defaultMessage: "Fee:",
                   })}
                 </span>
-                <span className="text-lg font-bold">
-                  {formatAmount(quote.discounted)} sat
-                </span>
+                <Currency
+                  value={quote.discounted}
+                  sourceCurrency="sat"
+                  className="text-lg font-bold"
+                  amountClassName="text-current"
+                />
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold w-32">
@@ -237,9 +244,12 @@ export function QuoteDetailCard({
                     defaultMessage: "Effective fee (absolute):",
                   })}
                 </span>
-                <span className="text-sm font-mono">
-                  {formatAmount(bill.sum - quote.discounted)} sat
-                </span>
+                <Currency
+                  value={bill.sum - quote.discounted}
+                  sourceCurrency="sat"
+                  className="text-sm font-mono"
+                  amountClassName="text-current"
+                />
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold w-32">
