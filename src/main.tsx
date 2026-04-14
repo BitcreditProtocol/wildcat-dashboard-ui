@@ -18,6 +18,7 @@ import "./lib/api-client";
 import KeysetsPage from "@/pages/keysets/KeysetsPage";
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
+import { ThemeProvider } from "@/context/theme/ThemeProvider";
 
 const queryClient = new QueryClient();
 
@@ -109,10 +110,12 @@ function App() {
 void prepare().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <LanguageProvider>
-        <App />
-        <Toaster />
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <App />
+          <Toaster />
+        </LanguageProvider>
+      </ThemeProvider>
     </StrictMode>,
   );
 });

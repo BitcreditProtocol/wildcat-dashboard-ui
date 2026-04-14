@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ThemeSelector } from "@/components/ThemeSelector";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
 // import { useKeycloak } from "../lib/keycloak-user"
@@ -139,7 +140,10 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarSeparator className="my-2" />
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
-        <LanguageSelector />
+        <div className="flex flex-col gap-4">
+          <ThemeSelector className="flex flex-col gap-2" />
+          <LanguageSelector />
+        </div>
       </SidebarFooter>
       {/* https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/131
         <SidebarFooter>{!isLoading && user && <NavUser user={user} />}</SidebarFooter>
