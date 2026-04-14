@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { TruncatedTextPopover } from "./TruncatedTextPopover";
+import { getTruncatedTextState } from "./truncated-text";
 
 const toastSuccess = vi.fn<(msg: string) => void>();
 const toastError = vi.fn<(msg: string) => void>();
@@ -16,6 +17,9 @@ vi.mock("sonner", () => ({
 
 vi.mock("@/components/ui/popover", () => ({
   Popover: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  PopoverAnchor: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
   PopoverTrigger: ({ children }: { children: React.ReactNode }) => (
@@ -71,6 +75,16 @@ beforeEach(() => {
 });
 
 describe("TruncatedTextPopover", () => {
+  it("truncates likely node ids from the middle", () => {
+    const state = getTruncatedTextState(
+      "bitcrx1234567890abcdef1234567890",
+      12,
+    );
+
+    expect(state.visibleLines[0]).toBe("bitcrx…67890");
+    expect(state.hasComputedTruncation).toBe(true);
+  });
+
   it("renders plain text when no truncation is needed", () => {
     const page = renderWithIntl(
       <TruncatedTextPopover
@@ -87,16 +101,15 @@ describe("TruncatedTextPopover", () => {
       configurable: true,
       value: 320,
     });
-    const longText = "12345678901234567890";
+    const longText = "abcdefghijklmno";
     const page = renderWithIntl(
       <TruncatedTextPopover
         text={longText}
         maxLength={10}
       />,
     );
-    expect(page.textContent).toContain("123");
+    expect(page.textContent).toContain("abcdefghijk…");
     expect(page.textContent).toContain("…");
-    expect(page.textContent).toContain("890");
     expect(page.textContent).toContain(longText);
   });
 
