@@ -114,7 +114,7 @@ describe("GrossToNetDiscountForm", () => {
 
     await flush();
 
-    expect((page.querySelector("#netInput") as HTMLInputElement | null)?.value).toBe("991");
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("991");
     expect(page.textContent).toContain("9");
     expect(page.textContent).toContain("+1 000");
     expect(page.textContent).toContain("sat");

@@ -4,10 +4,10 @@ import { useTheme } from "@/context/theme/useTheme";
 import { Theme } from "@/context/theme/ThemeContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type ThemeSelectorProps = {
+interface ThemeSelectorProps {
   className?: string;
   showLabel?: boolean;
-};
+}
 
 const themeIcons = {
   light: Sun,

@@ -2,10 +2,10 @@ import type { CurrencyCode, DecimalFormat } from "@/context/preferences/Preferen
 
 export type FiatCurrencyCode = "usd" | "eur";
 export type CryptoCurrencyCode = "btc" | "sat";
-export type Rates = {
+export interface Rates {
   usdPerBtc: number;
   eurPerUsd: number;
-};
+}
 
 export const SATS_PER_BTC = 100_000_000 as const;
 

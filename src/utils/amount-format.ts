@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { type DecimalFormat, usePreferences } from "@/context/preferences/PreferencesContext";
 
 function getSeparators(decimalFormat: DecimalFormat) {
@@ -18,7 +19,7 @@ export function formatAmountString(value: string | number, decimalFormat: Decima
     return raw;
   }
 
-  const match = raw.match(/^(-?)(\d+)(?:\.(\d+))?$/);
+  const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(raw);
   if (!match) {
     return raw;
   }
@@ -38,6 +39,6 @@ export function useAmountFormatter() {
   const { decimalFormat } = usePreferences();
 
   return {
-    formatAmount: (value: string | number) => formatAmountString(value, decimalFormat),
+    formatAmount: useCallback((value: string | number) => formatAmountString(value, decimalFormat), [decimalFormat]),
   };
 }

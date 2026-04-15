@@ -9,7 +9,7 @@ import { YearPicker } from "./yearPicker";
 import { MonthPicker } from "./monthPicker";
 import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
 
-export type CalendarProps = Omit<DayPickerProps, "mode" | "onSelect" | "selected"> & {
+export interface CalendarProps extends Omit<DayPickerProps, "mode" | "onSelect" | "selected"> {
   mode: "single" | "range";
   onSelect?: OnSelectHandler<DateRange | undefined>;
   selected: DateRange;
@@ -24,7 +24,7 @@ export type CalendarProps = Omit<DayPickerProps, "mode" | "onSelect" | "selected
   initialFocus?: boolean;
   modifiers?: Record<string, (date: Date) => boolean>;
   modifiersClassNames?: Record<string, string>;
-};
+}
 
 const classNames = {
   root: "w-full",
@@ -165,7 +165,13 @@ function Calendar({
 
   const canGoForward = disableFutureNavigation ? !isAtOrBeyondCurrentMonth(month) : true;
 
-  const NavigationHeader = () => (
+  const handleCaptionClick = () => {
+    setShowYearPicker(!showYearPicker);
+    setShowMonthPicker(false);
+    onCaptionLabelClicked?.();
+  };
+
+  const renderNavigationHeader = () => (
     <div className="flex justify-center relative items-center mb-4">
       <button
         type="button"
@@ -186,52 +192,26 @@ function Calendar({
         tabIndex={0}
       >
         {mode === "single" && selectedDate ? (
-          <span
-            className="text-sm font-medium flex gap-1"
-            onClick={() => {
-              setShowYearPicker(!showYearPicker);
-              setShowMonthPicker(false);
-              if (onCaptionLabelClicked) {
-                onCaptionLabelClicked();
-              }
-            }}
-          >
+          <span className="text-sm font-medium flex gap-1" onClick={handleCaptionClick}>
             <span>
               {formatMonthShort(month)} {formatDay2Digit(month)},
             </span>
             <span
               onClick={(e) => {
                 e.stopPropagation();
-                setShowYearPicker(!showYearPicker);
-                setShowMonthPicker(false);
-                if (onCaptionLabelClicked) {
-                  onCaptionLabelClicked();
-                }
+                handleCaptionClick();
               }}
             >
               {formatYearNumeric(month)}
             </span>
           </span>
         ) : (
-          <span
-            className="text-sm font-medium flex gap-1"
-            onClick={() => {
-              setShowYearPicker(!showYearPicker);
-              setShowMonthPicker(false);
-              if (onCaptionLabelClicked) {
-                onCaptionLabelClicked();
-              }
-            }}
-          >
+          <span className="text-sm font-medium flex gap-1" onClick={handleCaptionClick}>
             <span>{formatMonthShort(month)} </span>
             <span
               onClick={(e) => {
                 e.stopPropagation();
-                setShowYearPicker(!showYearPicker);
-                setShowMonthPicker(false);
-                if (onCaptionLabelClicked) {
-                  onCaptionLabelClicked();
-                }
+                handleCaptionClick();
               }}
             >
               {formatYearNumeric(month)}
@@ -239,25 +219,12 @@ function Calendar({
           </span>
         )}
         {mode === "range" && (
-          <span
-            className="text-sm font-medium flex gap-1"
-            onClick={() => {
-              setShowYearPicker(!showYearPicker);
-              setShowMonthPicker(false);
-              if (onCaptionLabelClicked) {
-                onCaptionLabelClicked();
-              }
-            }}
-          >
+          <span className="text-sm font-medium flex gap-1" onClick={handleCaptionClick}>
             <span>{formatMonthShort(month)}</span>
             <span
               onClick={(e) => {
                 e.stopPropagation();
-                setShowYearPicker(!showYearPicker);
-                setShowMonthPicker(false);
-                if (onCaptionLabelClicked) {
-                  onCaptionLabelClicked();
-                }
+                handleCaptionClick();
               }}
               className="hover:underline"
             >
@@ -301,7 +268,7 @@ function Calendar({
 
   return (
     <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ touchAction: "pan-y" }}>
-      {!showYearPicker && !showMonthPicker && <NavigationHeader />}
+      {!showYearPicker && !showMonthPicker && renderNavigationHeader()}
       {showYearPicker ? (
         <YearPicker
           value={month}

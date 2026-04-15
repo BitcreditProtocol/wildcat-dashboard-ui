@@ -2,12 +2,12 @@ import { useIntl } from "react-intl";
 import { type DecimalFormat, usePreferences } from "@/context/preferences/PreferencesContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const DECIMAL_FORMATS: Array<{
+const DECIMAL_FORMATS: {
   value: DecimalFormat;
   labelId: string;
   defaultLabel: string;
   example: string;
-}> = [
+}[] = [
   {
     value: "point",
     labelId: "settings.decimalFormat.point",

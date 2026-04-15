@@ -4,7 +4,7 @@ import { extractTextFromNode, getTruncatedTextState } from "@/components/truncat
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-type TruncatedLinkPopoverProps = {
+interface TruncatedLinkPopoverProps {
   href: string;
   text?: React.ReactNode;
   maxLength?: number;
@@ -15,7 +15,7 @@ type TruncatedLinkPopoverProps = {
   pressOpenDelay?: number;
   target?: React.HTMLAttributeAnchorTarget;
   rel?: string;
-};
+}
 
 export function TruncatedLinkPopover({
   href,

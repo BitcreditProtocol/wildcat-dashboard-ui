@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import Big from "big.js";
 import { parseFloatSafe, parseIntSafe } from "@/utils/numbers";
@@ -285,12 +285,15 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
 
   const prevNetInputRef = useRef<string | undefined>(undefined);
 
-  const formatAmount = (value: Big, currency: string) => {
-    if (currency === "sat") {
-      return formatAmountByPreference(value.round(0, Big.roundDown).toFixed(0));
-    }
-    return formatAmountByPreference(value.toFixed(NET_INPUT_DECIMALS));
-  };
+  const formatAmount = useCallback(
+    (value: Big, currency: string) => {
+      if (currency === "sat") {
+        return formatAmountByPreference(value.round(0, Big.roundDown).toFixed(0));
+      }
+      return formatAmountByPreference(value.toFixed(NET_INPUT_DECIMALS));
+    },
+    [formatAmountByPreference]
+  );
 
   useEffect(() => {
     if (hasSetInitialDays) {
@@ -380,7 +383,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
       skipNetToRateRef.current = true;
       setValue("netInput", formattedNet, { shouldValidate: true });
     }
-  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput]);
+  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatAmount]);
 
   useEffect(() => {
     if (skipNetToRateRef.current) {

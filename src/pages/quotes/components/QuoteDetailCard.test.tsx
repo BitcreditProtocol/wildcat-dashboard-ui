@@ -4,9 +4,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
+import type { Rates } from "@/lib/currency";
+import type { InfoReply } from "@/generated/client/types.gen";
 import { QuoteDetailCard } from "./QuoteDetailCard";
 
-const mockUseRates = vi.fn();
+const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
 
 vi.mock("@/hooks/useRates", () => ({
   useRates: () => mockUseRates(),
@@ -51,7 +53,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
   );
 }
 
-const baseQuote = {
+const baseQuote: InfoReply = {
   id: "quote-1",
   status: "Accepted",
   discounted: 80_000_000,
@@ -64,7 +66,8 @@ const baseQuote = {
     payee: {},
     endorsees: [],
   },
-} as never;
+  keyset_id: "keyset-1",
+};
 
 beforeEach(() => {
   vi.clearAllMocks();

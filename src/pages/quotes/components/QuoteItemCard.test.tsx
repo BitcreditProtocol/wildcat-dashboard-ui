@@ -5,10 +5,27 @@ import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
+import type { Rates } from "@/lib/currency";
+import type { LightInfo } from "@/generated/client/types.gen";
 import { QuoteItemCard } from "./QuoteItemCard";
 
-const mockUseRates = vi.fn();
-const mockUseQuery = vi.fn();
+interface MockQuoteQuery {
+  data:
+    | {
+        bill: {
+          drawee: object;
+          drawer: object;
+          payee: object;
+          endorsees: never[];
+        };
+      }
+    | undefined;
+  isLoading: boolean;
+  error: unknown;
+}
+
+const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
+const mockUseQuery = vi.fn<() => MockQuoteQuery>();
 
 vi.mock("@/hooks/useRates", () => ({
   useRates: () => mockUseRates(),
@@ -18,7 +35,7 @@ vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
-    useQuery: (options: unknown) => mockUseQuery(options),
+    useQuery: () => mockUseQuery(),
   };
 });
 
@@ -112,7 +129,11 @@ describe("QuoteItemCard", () => {
     });
 
     const page = renderWithProviders(
-      <QuoteItemCard quote={{ id: "quote-1", sum: 100_000_000 } as never} effectiveStatus="Accepted" searchQuery="" />
+      <QuoteItemCard
+        quote={{ id: "quote-1", status: "Accepted", sum: 100_000_000 } satisfies LightInfo}
+        effectiveStatus="Accepted"
+        searchQuery=""
+      />
     );
 
     expect(page.textContent).toContain("100,000,000");
@@ -133,7 +154,11 @@ describe("QuoteItemCard", () => {
     });
 
     const page = renderWithProviders(
-      <QuoteItemCard quote={{ id: "quote-1", sum: 12_345 } as never} effectiveStatus="Accepted" searchQuery="" />
+      <QuoteItemCard
+        quote={{ id: "quote-1", status: "Accepted", sum: 12_345 } satisfies LightInfo}
+        effectiveStatus="Accepted"
+        searchQuery=""
+      />
     );
 
     expect(page.textContent).toContain("12,345");

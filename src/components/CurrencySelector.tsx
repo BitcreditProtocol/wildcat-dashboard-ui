@@ -2,11 +2,11 @@ import { useIntl } from "react-intl";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type CurrencyCode, usePreferences } from "@/context/preferences/PreferencesContext";
 
-const CURRENCIES: Array<{
+const CURRENCIES: {
   value: CurrencyCode;
   labelId: string;
   defaultLabel: string;
-}> = [
+}[] = [
   {
     value: "sat",
     labelId: "settings.currency.sat",

@@ -37,10 +37,14 @@ export function isLikelyNodeId(value: string): boolean {
   return /^bitcr[a-z0-9][0-9a-f]{20,}$/i.test(trimmed);
 }
 
-type SegmentPart = { segment: string };
-type SegmenterInstance = {
+interface SegmentPart {
+  segment: string;
+}
+
+interface SegmenterInstance {
   segment: (input: string) => Iterable<SegmentPart>;
-};
+}
+
 type SegmenterCtor = new (locales?: string | string[], options?: { granularity: "grapheme" }) => SegmenterInstance;
 
 function splitIntoGraphemes(value: string): string[] {
@@ -127,14 +131,14 @@ export function extractTextFromNode(node: unknown): string {
   return "";
 }
 
-export type TruncatedTextState = {
+export interface TruncatedTextState {
   flatLabel: string;
   hasComputedTruncation: boolean;
   hasLengthFallbackOverflow: boolean;
   lines: string[];
   shouldShowPopover: boolean;
   visibleLines: string[];
-};
+}
 
 export function getTruncatedTextState(text: React.ReactNode, maxLength?: number): TruncatedTextState {
   const effectiveMaxLength = maxLength ?? 24;

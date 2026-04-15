@@ -67,14 +67,15 @@ describe("useRates", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({
-          data: {
-            rates: {
-              USD: "100000",
-              EUR: "90000",
+        json: () =>
+          Promise.resolve({
+            data: {
+              rates: {
+                USD: "100000",
+                EUR: "90000",
+              },
             },
-          },
-        }),
+          }),
       })
     );
 
@@ -101,7 +102,7 @@ describe("useRates", () => {
         ok: false,
         status: 500,
         statusText: "Server Error",
-        text: async () => "Server Error",
+        text: () => Promise.resolve("Server Error"),
       })
     );
 
