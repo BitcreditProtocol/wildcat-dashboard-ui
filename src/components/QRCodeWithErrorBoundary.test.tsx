@@ -2,11 +2,7 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
-import {
-  FeeTokenQRCodeModal,
-  QRCode,
-  QRCodeModal,
-} from "./QRCodeWithErrorBoundary";
+import { FeeTokenQRCodeModal, QRCode, QRCodeModal } from "./QRCodeWithErrorBoundary";
 
 const mockCanGenerateQRCode = vi.fn<(value: string) => boolean>();
 const mockCanGenerateQRCodeAsync = vi.fn<(value: string) => Promise<boolean>>();
@@ -23,21 +19,11 @@ vi.mock("@/utils/qrCodeUtils", () => ({
 }));
 
 vi.mock("@/components/ui/drawer", () => ({
-  Drawer: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DrawerTrigger: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DrawerContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DrawerHeader: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DrawerTitle: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  Drawer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DrawerTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DrawerContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DrawerHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DrawerTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 let root: Root | null = null;
@@ -63,9 +49,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockCanGenerateQRCode.mockReturnValue(true);
   mockCanGenerateQRCodeAsync.mockResolvedValue(true);
-  mockQrSvg.mockImplementation(({ value }: { value: string }) => (
-    <svg data-value={value} />
-  ));
+  mockQrSvg.mockImplementation(({ value }: { value: string }) => <svg data-value={value} />);
 
   if (root && container) {
     act(() => {
@@ -85,20 +69,13 @@ describe("QRCodeWithErrorBoundary", () => {
   });
 
   it("renders QRCode with label when generation is allowed", () => {
-    const page = renderWithIntl(
-      <QRCode
-        value="hello-qr"
-        label="Scan me"
-      />,
-    );
+    const page = renderWithIntl(<QRCode value="hello-qr" label="Scan me" />);
     expect(page.querySelector('svg[data-value="hello-qr"]')).not.toBeNull();
     expect(page.textContent).toContain("Scan me");
   });
 
   it("renders fallback when QR renderer throws", () => {
-    const errorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     mockQrSvg.mockImplementation(() => {
       throw new Error("render error");
     });
@@ -118,15 +95,11 @@ describe("QRCodeWithErrorBoundary", () => {
   });
 
   it("renders modal trigger and fee-token wrapper labels", async () => {
-    const page = renderWithIntl(
-      <FeeTokenQRCodeModal feeToken="fee-token-abc" />,
-    );
+    const page = renderWithIntl(<FeeTokenQRCodeModal feeToken="fee-token-abc" />);
     await act(async () => {
       await Promise.resolve();
     });
-    const triggerButton = page.querySelector(
-      'button[aria-label="Show QR code for fee token"]',
-    );
+    const triggerButton = page.querySelector('button[aria-label="Show QR code for fee token"]');
     expect(triggerButton).not.toBeNull();
     expect(page.textContent).toContain("Fee Token QR Code");
   });

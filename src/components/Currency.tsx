@@ -2,11 +2,7 @@ import { useMemo } from "react";
 import { useIntl } from "react-intl";
 import { cn } from "@/lib/utils";
 import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
-import {
-  convertAmount,
-  formatAmountNumber,
-  getLocaleForFormat,
-} from "@/lib/currency";
+import { convertAmount, formatAmountNumber, getLocaleForFormat } from "@/lib/currency";
 import { useRates } from "@/hooks/useRates";
 
 export type CurrencyProps = {
@@ -34,28 +30,19 @@ export function Currency({
   const resolvedCurrency = currency ?? preferredCurrency;
   const locale = getLocaleForFormat(intl.locale, decimalFormat);
 
-  const primaryFormatted = useMemo(
-    () => formatAmountNumber(Math.abs(value), sourceCurrency, locale),
-    [locale, sourceCurrency, value],
-  );
+  const primaryFormatted = useMemo(() => formatAmountNumber(Math.abs(value), sourceCurrency, locale), [locale, sourceCurrency, value]);
 
-  const resolvedValue = useMemo(
-    () => {
-      try {
-        return convertAmount(value, sourceCurrency, resolvedCurrency, rates);
-      } catch {
-        return null;
-      }
-    },
-    [rates, resolvedCurrency, sourceCurrency, value],
-  );
+  const resolvedValue = useMemo(() => {
+    try {
+      return convertAmount(value, sourceCurrency, resolvedCurrency, rates);
+    } catch {
+      return null;
+    }
+  }, [rates, resolvedCurrency, sourceCurrency, value]);
 
   const formatted = useMemo(
-    () =>
-      resolvedValue === null
-        ? null
-        : formatAmountNumber(Math.abs(resolvedValue), resolvedCurrency, locale),
-    [locale, resolvedCurrency, resolvedValue],
+    () => (resolvedValue === null ? null : formatAmountNumber(Math.abs(resolvedValue), resolvedCurrency, locale)),
+    [locale, resolvedCurrency, resolvedValue]
   );
 
   const primarySign = value < 0 ? "-" : "";
@@ -69,34 +56,15 @@ export function Currency({
           {primarySign}
           {primaryFormatted}
         </span>
-        <span
-          className={cn(
-            "text-xs font-normal leading-normal text-muted-foreground",
-            currencyClassName,
-          )}
-        >
-          {sourceCurrency}
-        </span>
+        <span className={cn("text-xs font-normal leading-normal text-muted-foreground", currencyClassName)}>{sourceCurrency}</span>
       </span>
       {showSecondary ? (
-        <span
-          className={cn(
-            "inline-flex items-baseline gap-1 text-sm text-muted-foreground",
-            secondaryClassName,
-          )}
-        >
+        <span className={cn("inline-flex items-baseline gap-1 text-sm text-muted-foreground", secondaryClassName)}>
           <span>
             {secondarySign}
             {formatted}
           </span>
-          <span
-            className={cn(
-              "text-xs font-normal leading-normal text-muted-foreground",
-              currencyClassName,
-            )}
-          >
-            {resolvedCurrency}
-          </span>
+          <span className={cn("text-xs font-normal leading-normal text-muted-foreground", currencyClassName)}>{resolvedCurrency}</span>
         </span>
       ) : null}
     </span>

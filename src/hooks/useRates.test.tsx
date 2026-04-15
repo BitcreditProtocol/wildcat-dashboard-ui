@@ -39,10 +39,7 @@ async function flush() {
   });
 }
 
-async function waitForSettled(
-  getStatus: () => string | null,
-  maxAttempts = 10,
-) {
+async function waitForSettled(getStatus: () => string | null, maxAttempts = 10) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     await flush();
     if (getStatus() !== "pending") {
@@ -78,18 +75,16 @@ describe("useRates", () => {
             },
           },
         }),
-      }),
+      })
     );
 
     const page = renderIntoDom(
       <QueryClientProvider client={new QueryClient()}>
         <HookProbe />
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
 
-    await waitForSettled(
-      () => page.firstElementChild?.getAttribute("data-status") ?? null,
-    );
+    await waitForSettled(() => page.firstElementChild?.getAttribute("data-status") ?? null);
 
     const probe = page.firstElementChild;
     expect(probe?.getAttribute("data-status")).toBe("success");
@@ -107,18 +102,16 @@ describe("useRates", () => {
         status: 500,
         statusText: "Server Error",
         text: async () => "Server Error",
-      }),
+      })
     );
 
     const page = renderIntoDom(
       <QueryClientProvider client={new QueryClient()}>
         <HookProbe />
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
 
-    await waitForSettled(
-      () => page.firstElementChild?.getAttribute("data-status") ?? null,
-    );
+    await waitForSettled(() => page.firstElementChild?.getAttribute("data-status") ?? null);
 
     const probe = page.firstElementChild;
     expect(probe?.getAttribute("data-status")).toBe("error");

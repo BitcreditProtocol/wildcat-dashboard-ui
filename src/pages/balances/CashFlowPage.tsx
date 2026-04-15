@@ -1,22 +1,10 @@
 import { Suspense } from "react";
 import { Link } from "react-router";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-} from "@/components/ui/chart";
+import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { FormattedMessage, useIntl } from "react-intl";
 
 function Loader() {
@@ -73,10 +61,7 @@ function CashFlowChart() {
   ];
 
   return (
-    <ChartContainer
-      config={config}
-      className="max-h-[300px] min-h-[200px] w-full"
-    >
+    <ChartContainer config={config} className="max-h-[300px] min-h-[200px] w-full">
       <LineChart
         accessibilityLayer
         data={data}
@@ -88,29 +73,10 @@ function CashFlowChart() {
         }}
       >
         <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-          tickFormatter={(value: string) => value}
-        />
-        <YAxis
-          dataKey="bitcoin"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-        />
-        <Tooltip
-          cursor={true}
-          isAnimationActive={true}
-        />
-        <Line
-          type="step"
-          dataKey="bitcoin"
-          fill="var(--color-bitcoin)"
-          radius={4}
-        />
+        <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value: string) => value} />
+        <YAxis dataKey="bitcoin" tickLine={false} tickMargin={10} axisLine={false} />
+        <Tooltip cursor={true} isAnimationActive={true} />
+        <Line type="step" dataKey="bitcoin" fill="var(--color-bitcoin)" radius={4} />
         <ChartLegend content={<ChartLegendContent />} />
       </LineChart>
     </ChartContainer>
@@ -140,24 +106,15 @@ export default function CashFlowPage() {
         parents={[
           <>
             <Link to="/earnings">
-              <FormattedMessage
-                id="earnings.page.title"
-                defaultMessage="Earnings"
-              />
+              <FormattedMessage id="earnings.page.title" defaultMessage="Earnings" />
             </Link>
           </>,
         ]}
       >
-        <FormattedMessage
-          id="cashflow.page.title"
-          defaultMessage="CashFlow"
-        />
+        <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage
-          id="cashflow.page.title"
-          defaultMessage="CashFlow"
-        />
+        <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
       </PageTitle>
 
       <Suspense fallback={<Loader />}>

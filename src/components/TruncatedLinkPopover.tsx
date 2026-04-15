@@ -1,14 +1,7 @@
 import * as React from "react";
 
-import {
-  extractTextFromNode,
-  getTruncatedTextState,
-} from "@/components/truncated-text";
-import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { extractTextFromNode, getTruncatedTextState } from "@/components/truncated-text";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 type TruncatedLinkPopoverProps = {
@@ -44,12 +37,7 @@ export function TruncatedLinkPopover({
   const [hasWidthOverflow, setHasWidthOverflow] = React.useState(false);
   const displayText = text ?? href;
   const textStr = extractTextFromNode(displayText);
-  const {
-    flatLabel,
-    hasComputedTruncation,
-    hasLengthFallbackOverflow,
-    visibleLines,
-  } = getTruncatedTextState(displayText, maxLength);
+  const { flatLabel, hasComputedTruncation, hasLengthFallbackOverflow, visibleLines } = getTruncatedTextState(displayText, maxLength);
 
   const clearHoverTimeout = React.useCallback(() => {
     if (hoverTimeoutRef.current !== null) {
@@ -118,16 +106,10 @@ export function TruncatedLinkPopover({
     }
 
     const measureOverflow = () => {
-      const lineElements = Array.from(
-        element.querySelectorAll<HTMLElement>("[data-truncated-text-line]"),
-      );
+      const lineElements = Array.from(element.querySelectorAll<HTMLElement>("[data-truncated-text-line]"));
 
       if (lineElements.length > 0) {
-        setHasWidthOverflow(
-          lineElements.some(
-            (lineElement) => lineElement.scrollWidth - lineElement.clientWidth > 1,
-          ),
-        );
+        setHasWidthOverflow(lineElements.some((lineElement) => lineElement.scrollWidth - lineElement.clientWidth > 1));
         return;
       }
 
@@ -139,9 +121,7 @@ export function TruncatedLinkPopover({
     if (typeof ResizeObserver === "function") {
       const resizeObserver = new ResizeObserver(measureOverflow);
       resizeObserver.observe(element);
-      for (const lineElement of element.querySelectorAll<HTMLElement>(
-        "[data-truncated-text-line]",
-      )) {
+      for (const lineElement of element.querySelectorAll<HTMLElement>("[data-truncated-text-line]")) {
         resizeObserver.observe(lineElement);
       }
 
@@ -156,19 +136,14 @@ export function TruncatedLinkPopover({
     };
   }, [hasComputedTruncation, textStr]);
 
-  const shouldShowPopover =
-    hasComputedTruncation || hasWidthOverflow || hasLengthFallbackOverflow;
+  const shouldShowPopover = hasComputedTruncation || hasWidthOverflow || hasLengthFallbackOverflow;
   const visibleTextNode = visibleLines.map((line) => (
-    <span
-      key={line}
-      data-truncated-text-line
-      className="block w-full min-w-0 max-w-full truncate"
-    >
+    <span key={line} data-truncated-text-line className="block w-full min-w-0 max-w-full truncate">
       {line}
     </span>
   ));
 
-  const resolvedTitle = shouldShowPopover ? undefined : title ?? flatLabel;
+  const resolvedTitle = shouldShowPopover ? undefined : (title ?? flatLabel);
 
   if (!shouldShowPopover) {
     return (
@@ -177,10 +152,7 @@ export function TruncatedLinkPopover({
         href={href}
         target={target}
         rel={rel}
-        className={cn(
-          "block w-full min-w-0 max-w-full overflow-hidden align-top hover:underline focus:outline-none",
-          className,
-        )}
+        className={cn("block w-full min-w-0 max-w-full overflow-hidden align-top hover:underline focus:outline-none", className)}
         title={resolvedTitle}
         aria-label={title ?? flatLabel}
       >
@@ -197,10 +169,7 @@ export function TruncatedLinkPopover({
           href={href}
           target={target}
           rel={rel}
-          className={cn(
-            "block w-full min-w-0 max-w-full overflow-hidden align-top hover:underline focus:outline-none",
-            className,
-          )}
+          className={cn("block w-full min-w-0 max-w-full overflow-hidden align-top hover:underline focus:outline-none", className)}
           aria-label={title ?? flatLabel}
           aria-expanded={isOpen}
           aria-haspopup="dialog"
@@ -231,7 +200,7 @@ export function TruncatedLinkPopover({
         collisionPadding={16}
         className={cn(
           "z-50 break-all rounded-lg border border-[#1B0F004D] bg-elevation-50 p-4 text-center shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          contentClassName,
+          contentClassName
         )}
       >
         <span className="text-sm whitespace-pre-line">{textStr}</span>

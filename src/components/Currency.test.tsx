@@ -28,7 +28,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
       <IntlProvider locale="en-US">
         <PreferencesProvider>{element}</PreferencesProvider>
       </IntlProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -84,15 +84,10 @@ describe("Currency", () => {
             },
           },
         }),
-      }),
+      })
     );
 
-    const page = renderWithProviders(
-      <Currency
-        value={100_000_000}
-        sourceCurrency="sat"
-      />,
-    );
+    const page = renderWithProviders(<Currency value={100_000_000} sourceCurrency="sat" />);
 
     await flush();
 
@@ -116,15 +111,10 @@ describe("Currency", () => {
             },
           },
         }),
-      }),
+      })
     );
 
-    const page = renderWithProviders(
-      <Currency
-        value={12345}
-        sourceCurrency="sat"
-      />,
-    );
+    const page = renderWithProviders(<Currency value={12345} sourceCurrency="sat" />);
 
     await flush();
 
@@ -145,15 +135,10 @@ describe("Currency", () => {
         status: 500,
         statusText: "Server Error",
         text: async () => "Server Error",
-      }),
+      })
     );
 
-    const page = renderWithProviders(
-      <Currency
-        value={12345}
-        sourceCurrency="sat"
-      />,
-    );
+    const page = renderWithProviders(<Currency value={12345} sourceCurrency="sat" />);
 
     await flush();
 

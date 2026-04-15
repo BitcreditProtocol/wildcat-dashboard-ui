@@ -16,18 +16,10 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/components/ui/popover", () => ({
-  Popover: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  PopoverAnchor: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  PopoverTrigger: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PopoverAnchor: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PopoverTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PopoverContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 let root: Root | null = null;
@@ -60,9 +52,7 @@ beforeEach(() => {
     configurable: true,
     value: 0,
   });
-  window.matchMedia = vi
-    .fn()
-    .mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
 
   if (root && container) {
     act(() => {
@@ -76,22 +66,14 @@ beforeEach(() => {
 
 describe("TruncatedTextPopover", () => {
   it("truncates likely node ids from the middle", () => {
-    const state = getTruncatedTextState(
-      "bitcrx1234567890abcdef1234567890",
-      12,
-    );
+    const state = getTruncatedTextState("bitcrx1234567890abcdef1234567890", 12);
 
     expect(state.visibleLines[0]).toBe("bitcrx…67890");
     expect(state.hasComputedTruncation).toBe(true);
   });
 
   it("renders plain text when no truncation is needed", () => {
-    const page = renderWithIntl(
-      <TruncatedTextPopover
-        text="short text"
-        maxLength={50}
-      />,
-    );
+    const page = renderWithIntl(<TruncatedTextPopover text="short text" maxLength={50} />);
     expect(page.textContent).toContain("short text");
     expect(page.querySelector("button")).toBeNull();
   });
@@ -102,12 +84,7 @@ describe("TruncatedTextPopover", () => {
       value: 320,
     });
     const longText = "abcdefghijklmno";
-    const page = renderWithIntl(
-      <TruncatedTextPopover
-        text={longText}
-        maxLength={10}
-      />,
-    );
+    const page = renderWithIntl(<TruncatedTextPopover text={longText} maxLength={10} />);
     expect(page.textContent).toContain("abcdefghijk…");
     expect(page.textContent).toContain("…");
     expect(page.textContent).toContain(longText);
@@ -121,13 +98,7 @@ describe("TruncatedTextPopover", () => {
       },
     });
 
-    const page = renderWithIntl(
-      <TruncatedTextPopover
-        text="copy me"
-        showCopyButton
-        maxLength={4}
-      />,
-    );
+    const page = renderWithIntl(<TruncatedTextPopover text="copy me" showCopyButton maxLength={4} />);
     const button = page.querySelector('button[title="Copy to clipboard"]');
     expect(button).not.toBeNull();
 
@@ -150,16 +121,8 @@ describe("TruncatedTextPopover", () => {
       },
     });
 
-    const errorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-    const page = renderWithIntl(
-      <TruncatedTextPopover
-        text="copy me"
-        showCopyButton
-        maxLength={4}
-      />,
-    );
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const page = renderWithIntl(<TruncatedTextPopover text="copy me" showCopyButton maxLength={4} />);
     const button = page.querySelector('button[title="Copy to clipboard"]');
 
     await act(async () => {

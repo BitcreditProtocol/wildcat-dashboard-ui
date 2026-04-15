@@ -2,53 +2,28 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
-import {
-  ParticipantDetail,
-  ParticipantsOverviewCard,
-} from "./ParticipantsOverview";
+import { ParticipantDetail, ParticipantsOverviewCard } from "./ParticipantsOverview";
 
 vi.mock("@/components/ui/avatar", () => ({
-  Avatar: ({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => <div className={className}>{children}</div>,
-  AvatarFallback: ({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => <div className={className}>{children}</div>,
+  Avatar: ({ children, className }: { children: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
+  AvatarFallback: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div className={className}>{children}</div>
+  ),
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
-  TooltipProvider: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  Tooltip: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  TooltipTrigger: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  TooltipContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/TruncatedTextPopover", () => ({
-  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => (
-    <span>{text}</span>
-  ),
+  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => <span>{text}</span>,
 }));
 
 vi.mock("@/components/icons/UserAnonymous", () => ({
-  UserAnonymousIcon: ({ className }: { className?: string }) => (
-    <span className={className}>AnonIcon</span>
-  ),
+  UserAnonymousIcon: ({ className }: { className?: string }) => <span className={className}>AnonIcon</span>,
 }));
 
 let root: Root | null = null;
@@ -125,7 +100,7 @@ describe("ParticipantsOverview", () => {
             },
           },
         ]}
-      />,
+      />
     );
 
     expect(page.textContent).toContain("Drawee");
@@ -146,7 +121,7 @@ describe("ParticipantsOverview", () => {
             nostr_relays: [],
           },
         }}
-      />,
+      />
     );
 
     expect(page.textContent).toContain("AnonIcon");
@@ -167,15 +142,13 @@ describe("ParticipantsOverview", () => {
           email: "ident@example.com",
           nostr_relays: [],
         }}
-      />,
+      />
     );
 
     expect(page.textContent).toContain("Ident Name");
     expect(page.textContent).toContain("Paris, FR");
     expect(page.textContent).toContain("ident-node-123");
-    expect(
-      page.querySelector('a[href="mailto:ident@example.com"]'),
-    ).not.toBeNull();
+    expect(page.querySelector('a[href="mailto:ident@example.com"]')).not.toBeNull();
   });
 
   it("returns nothing when participant detail input is missing", () => {

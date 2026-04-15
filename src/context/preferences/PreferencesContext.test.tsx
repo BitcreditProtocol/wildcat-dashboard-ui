@@ -1,10 +1,7 @@
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  PreferencesProvider,
-  usePreferences,
-} from "./PreferencesContext";
+import { PreferencesProvider, usePreferences } from "./PreferencesContext";
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -23,23 +20,14 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 }
 
 function Probe() {
-  const { currency, decimalFormat, setCurrency, setDecimalFormat } =
-    usePreferences();
+  const { currency, decimalFormat, setCurrency, setDecimalFormat } = usePreferences();
 
   return (
     <div>
       <span data-testid="currency">{currency}</span>
       <span data-testid="decimal">{decimalFormat}</span>
-      <button
-        type="button"
-        data-testid="set-currency"
-        onClick={() => setCurrency("eur")}
-      />
-      <button
-        type="button"
-        data-testid="set-decimal"
-        onClick={() => setDecimalFormat("space")}
-      />
+      <button type="button" data-testid="set-currency" onClick={() => setCurrency("eur")} />
+      <button type="button" data-testid="set-decimal" onClick={() => setDecimalFormat("space")} />
     </div>
   );
 }
@@ -77,31 +65,23 @@ describe("PreferencesProvider", () => {
     const page = renderIntoDom(
       <PreferencesProvider>
         <Probe />
-      </PreferencesProvider>,
+      </PreferencesProvider>
     );
 
-    expect(
-      page.querySelector('[data-testid="currency"]')?.textContent,
-    ).toBe("usd");
-    expect(
-      page.querySelector('[data-testid="decimal"]')?.textContent,
-    ).toBe("point");
+    expect(page.querySelector('[data-testid="currency"]')?.textContent).toBe("usd");
+    expect(page.querySelector('[data-testid="decimal"]')?.textContent).toBe("point");
   });
 
   it("persists updates to storage", () => {
     const page = renderIntoDom(
       <PreferencesProvider>
         <Probe />
-      </PreferencesProvider>,
+      </PreferencesProvider>
     );
 
     act(() => {
-      page
-        .querySelector('[data-testid="set-currency"]')
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      page
-        .querySelector('[data-testid="set-decimal"]')
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      page.querySelector('[data-testid="set-currency"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      page.querySelector('[data-testid="set-decimal"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(storageData["display-currency"]).toBe(JSON.stringify("eur"));

@@ -19,15 +19,7 @@ import { Currency } from "@/components/Currency";
 const RETRY_COUNT = 2;
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
 
-export function QuoteItemCard({
-  quote,
-  effectiveStatus,
-  searchQuery,
-}: {
-  quote: LightInfo;
-  effectiveStatus: string;
-  searchQuery: string;
-}) {
+export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: LightInfo; effectiveStatus: string; searchQuery: string }) {
   const intl = useIntl();
   const navigate = useNavigate();
 
@@ -40,11 +32,7 @@ export function QuoteItemCard({
     enabled: !!quote.id,
   });
 
-  const {
-    data: quoteDetails,
-    isLoading: isLoadingDetails,
-    error: detailsError,
-  } = queryResult;
+  const { data: quoteDetails, isLoading: isLoadingDetails, error: detailsError } = queryResult;
   const bill = quoteDetails?.bill;
 
   const handleQuoteClick = (e: React.MouseEvent) => {
@@ -70,11 +58,11 @@ export function QuoteItemCard({
                   id: "quotes.error.tryAgain",
                   defaultMessage: "Please try again later.",
                 }),
-            },
+            }
           ),
           id: `quote-error-${quote.id}`,
           duration: 5000,
-        },
+        }
       );
     } else {
       void navigate(`/quotes/${quote.id}`);
@@ -87,14 +75,8 @@ export function QuoteItemCard({
         <CardTitle className="text-xl">
           <div className="items-center flex gap-1">
             <span className="font-mono pt-2">
-              <Link
-                to={`/quotes/${quote.id}`}
-                onClick={handleQuoteClick}
-              >
-                <HighlightText
-                  text={quote.id}
-                  highlight={searchQuery}
-                />
+              <Link to={`/quotes/${quote.id}`} onClick={handleQuoteClick}>
+                <HighlightText text={quote.id} highlight={searchQuery} />
               </Link>
             </span>
             <span></span>
@@ -123,11 +105,7 @@ export function QuoteItemCard({
       </div>
       <div className="flex justify-between items-center gap-4 px-4 py-2">
         <div>
-          <Button
-            size="sm"
-            className="max-w-sm px-12"
-            onClick={handleQuoteClick}
-          >
+          <Button size="sm" className="max-w-sm px-12" onClick={handleQuoteClick}>
             {intl.formatMessage({
               id: "quotes.card.view",
               defaultMessage: "View",
@@ -151,14 +129,7 @@ export function QuoteItemCard({
             })}
           </div>
         )}
-        {bill && (
-          <ParticipantsOverviewCard
-            drawee={bill.drawee}
-            drawer={bill.drawer}
-            payee={bill.payee}
-            holder={bill.endorsees}
-          />
-        )}
+        {bill && <ParticipantsOverviewCard drawee={bill.drawee} drawer={bill.drawer} payee={bill.payee} holder={bill.endorsees} />}
         {!isLoadingDetails && !detailsError && !bill && (
           <div className="text-sm text-gray-400">
             {intl.formatMessage({

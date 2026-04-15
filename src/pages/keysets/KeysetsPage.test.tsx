@@ -17,9 +17,7 @@ const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 let nextSearchQuery = "";
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
     useQuery: (options: QueryOptions) => mockUseQuery(options),
@@ -31,13 +29,7 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 }));
 
 vi.mock("@/components/ui/search", () => ({
-  default: ({
-    onChange,
-    onSearch,
-  }: {
-    onChange?: (value: string) => void;
-    onSearch: (value: string) => void;
-  }) => (
+  default: ({ onChange, onSearch }: { onChange?: (value: string) => void; onSearch: (value: string) => void }) => (
     <button
       onClick={() => {
         onChange?.(nextSearchQuery);
@@ -61,11 +53,7 @@ vi.mock("@/components/SortButtons", () => ({
   }) => (
     <div>
       {options.map((option) => (
-        <button
-          key={option.field}
-          onClick={() => onSortChange(option.field)}
-          type="button"
-        >
+        <button key={option.field} onClick={() => onSortChange(option.field)} type="button">
           {`sort-${option.field}`}
         </button>
       ))}
@@ -90,29 +78,13 @@ vi.mock("@/components/ui/select", () => {
         <div data-select-value={value}>{children}</div>
       </SelectContext.Provider>
     ),
-    SelectTrigger: ({ children }: { children: ReactElement | string }) => (
-      <div>{children}</div>
-    ),
+    SelectTrigger: ({ children }: { children: ReactElement | string }) => <div>{children}</div>,
     SelectValue: () => <span>SelectValue</span>,
-    SelectContent: ({
-      children,
-    }: {
-      children: ReactElement | ReactElement[];
-    }) => <div>{children}</div>,
-    SelectItem: ({
-      value,
-      children,
-    }: {
-      value: string;
-      children: ReactElement | string | number;
-    }) => {
+    SelectContent: ({ children }: { children: ReactElement | ReactElement[] }) => <div>{children}</div>,
+    SelectItem: ({ value, children }: { value: string; children: ReactElement | string | number }) => {
       const onValueChange = React.useContext(SelectContext);
       return (
-        <button
-          type="button"
-          data-select-item={value}
-          onClick={() => onValueChange(value)}
-        >
+        <button type="button" data-select-item={value} onClick={() => onValueChange(value)}>
           {children}
         </button>
       );
@@ -143,14 +115,12 @@ function renderPage(): HTMLDivElement {
       <MemoryRouter>
         <KeysetsPage />
       </MemoryRouter>
-    </IntlProvider>,
+    </IntlProvider>
   );
 }
 
 function clickButtonByText(page: HTMLDivElement, label: string) {
-  const button = Array.from(page.querySelectorAll("button")).find(
-    (node) => node.textContent === label,
-  );
+  const button = Array.from(page.querySelectorAll("button")).find((node) => node.textContent === label);
   expect(button).not.toBeUndefined();
   act(() => {
     button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -169,9 +139,7 @@ function clickSelectItem(page: HTMLDivElement, value: string) {
 }
 
 function orderedKeysetHrefs(page: HTMLDivElement): string[] {
-  const hrefs = Array.from(page.querySelectorAll('a[href^="/keysets/"]')).map(
-    (node) => node.getAttribute("href") ?? "",
-  );
+  const hrefs = Array.from(page.querySelectorAll('a[href^="/keysets/"]')).map((node) => node.getAttribute("href") ?? "");
   const unique: string[] = [];
   for (const href of hrefs) {
     if (!unique.includes(href)) {
@@ -290,19 +258,11 @@ describe("KeysetsPage", () => {
     const page = renderPage();
 
     // Default maturity-asc: expired first, no-expiry last.
-    expect(orderedKeysetHrefs(page)).toEqual([
-      "/keysets/keyset-expired",
-      "/keysets/keyset-future",
-      "/keysets/keyset-no-expiry",
-    ]);
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-expired", "/keysets/keyset-future", "/keysets/keyset-no-expiry"]);
 
     // Currency-asc: eur, sat, usd.
     clickButtonByText(page, "sort-currency");
-    expect(orderedKeysetHrefs(page)).toEqual([
-      "/keysets/keyset-no-expiry",
-      "/keysets/keyset-expired",
-      "/keysets/keyset-future",
-    ]);
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-no-expiry", "/keysets/keyset-expired", "/keysets/keyset-future"]);
 
     // Status-asc in this implementation sorts active first.
     clickButtonByText(page, "sort-status");

@@ -32,18 +32,11 @@ function Loader() {
 }
 
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
-const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
-  "Denied",
-  "Rejected",
-  "Canceled",
-  "MintingEnabled",
-]);
+const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
-  const [openingDocumentName, setOpeningDocumentName] = useState<string | null>(
-    null,
-  );
+  const [openingDocumentName, setOpeningDocumentName] = useState<string | null>(null);
 
   const blobUrlTimerRef = useRef<number | null>(null);
 
@@ -137,16 +130,12 @@ function PageBody({ id }: { id: string }) {
           intl.formatMessage({
             id: "quotes.documents.invalidResponse",
             defaultMessage: "Document attachment could not be opened.",
-          }),
+          })
         );
       }
 
       const blobUrl = window.URL.createObjectURL(attachment);
-      const openedWindow = window.open(
-        blobUrl,
-        "_blank",
-        "noopener,noreferrer",
-      );
+      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
 
       if (!openedWindow) {
         const link = document.createElement("a");
@@ -171,7 +160,7 @@ function PageBody({ id }: { id: string }) {
         }),
         {
           description: getApiErrorMessage(error),
-        },
+        }
       );
     } finally {
       setOpeningDocumentName(null);
@@ -220,47 +209,22 @@ function PageBody({ id }: { id: string }) {
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-        <QuoteDocuments
-          documents={documentFiles}
-          openingDocumentName={openingDocumentName}
-          onOpenDocument={handleOpenDocument}
-        />
+        <QuoteDocuments documents={documentFiles} openingDocumentName={openingDocumentName} onOpenDocument={handleOpenDocument} />
 
         <EndorsementChain
           endorsements={endorsementsQuery.data}
           isLoading={endorsementsQuery.isLoading}
           issueDate={ebill?.data?.issue_date}
           maturityDate={bill.maturity_date}
-          requestToPayTimestamp={
-            ebill?.status?.payment?.time_of_request_to_pay ?? undefined
-          }
-          rejectedToPayTimestamp={
-            ebill?.status?.payment?.rejected_to_pay
-              ? (ebill?.status?.last_block_time ?? undefined)
-              : undefined
-          }
-          paymentTimestamp={
-            ebill?.status?.payment?.paid
-              ? (ebill?.status?.last_block_time ?? undefined)
-              : undefined
-          }
+          requestToPayTimestamp={ebill?.status?.payment?.time_of_request_to_pay ?? undefined}
+          rejectedToPayTimestamp={ebill?.status?.payment?.rejected_to_pay ? (ebill?.status?.last_block_time ?? undefined) : undefined}
+          paymentTimestamp={ebill?.status?.payment?.paid ? (ebill?.status?.last_block_time ?? undefined) : undefined}
           acceptanceTimestamp={
-            ebill?.status?.acceptance?.accepted
-              ? (ebill?.status?.acceptance?.time_of_request_to_accept ??
-                undefined)
-              : undefined
+            ebill?.status?.acceptance?.accepted ? (ebill?.status?.acceptance?.time_of_request_to_accept ?? undefined) : undefined
           }
-          rejectionTimestamp={
-            ebill?.status?.acceptance?.rejected_to_accept
-              ? (ebill?.status?.last_block_time ?? undefined)
-              : undefined
-          }
+          rejectionTimestamp={ebill?.status?.acceptance?.rejected_to_accept ? (ebill?.status?.last_block_time ?? undefined) : undefined}
           mintingEnabled={quoteStatusValue === "MintingEnabled"}
-          quoteOffered={
-            quoteStatusValue === "Offered" ||
-            effectiveQuoteStatus === "Accepted" ||
-            quoteStatusValue === "MintingEnabled"
-          }
+          quoteOffered={quoteStatusValue === "Offered" || effectiveQuoteStatus === "Accepted" || quoteStatusValue === "MintingEnabled"}
           offeredTimestamp={
             "submitted" in quote
               ? Math.floor(new Date(quote.submitted).getTime() / 1000)
@@ -282,8 +246,7 @@ export default function QuotePage() {
   const state = location.state as LocationState | null;
   const fromPath = state?.from;
   const fromKeyset = fromPath?.startsWith("/keysets/");
-  const keysetIdFromState =
-    fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
+  const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
 
   const { data: quoteData } = useQuery({
     ...getQuoteOptions({
@@ -296,27 +259,19 @@ export default function QuotePage() {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
       }
 
-      return QUOTE_POLLING_TERMINAL_STATUSES.has(status)
-        ? false
-        : QUOTE_STATUS_POLL_INTERVAL_MS;
+      return QUOTE_POLLING_TERMINAL_STATUSES.has(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
   });
 
   const quoteDataStatus = quoteData?.status as string | undefined;
-  const hasKeysetId =
-    quoteData &&
-    (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") &&
-    "keyset_id" in quoteData;
+  const hasKeysetId = quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData;
 
   return (
     <>
       <Breadcrumbs
         parents={[
-          <BreadcrumbLink
-            key="quotes"
-            asChild
-          >
+          <BreadcrumbLink key="quotes" asChild>
             <Link to="/quotes">
               {intl.formatMessage({
                 id: "quotes.breadcrumb",
@@ -338,41 +293,23 @@ export default function QuotePage() {
           <span className="font-mono">{truncateString(quoteId, 16)}</span>
         </PageTitle>
         {fromKeyset && keysetIdFromState ? (
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-          >
-            <Link
-              to={`/keysets/${keysetIdFromState}`}
-              state={{ from: `/quotes/${quoteId}` }}
-            >
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/keysets/${keysetIdFromState}`} state={{ from: `/quotes/${quoteId}` }}>
               {intl.formatMessage({
                 id: "quotes.detail.backToKeyset",
                 defaultMessage: "Back to keyset",
               })}{" "}
-              <span className="font-mono">
-                {truncateString(keysetIdFromState, 16)}
-              </span>
+              <span className="font-mono">{truncateString(keysetIdFromState, 16)}</span>
             </Link>
           </Button>
         ) : hasKeysetId ? (
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-          >
-            <Link
-              to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
-              state={{ from: `/quotes/${quoteId}` }}
-            >
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
               {intl.formatMessage({
                 id: "quotes.detail.goToKeyset",
                 defaultMessage: "Go to keyset",
               })}{" "}
-              <span className="font-mono">
-                {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
-              </span>
+              <span className="font-mono">{truncateString(serializeKeysetId(quoteData.keyset_id), 16)}</span>
             </Link>
           </Button>
         ) : null}

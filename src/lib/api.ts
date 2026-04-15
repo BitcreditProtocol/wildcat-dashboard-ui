@@ -1,10 +1,7 @@
 import { API_URL } from "@/constants/api";
 import { INFO } from "@/constants/endpoints";
 
-const apiFetch = async <T = unknown>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> => {
+const apiFetch = async <T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${API_URL}${endpoint}`;
 
   const response = await fetch(url, {
@@ -22,10 +19,7 @@ const apiFetch = async <T = unknown>(
 
   const contentLength = response.headers.get("Content-Length");
 
-  if (
-    contentLength === "0" ||
-    response.headers.get("Content-Type")?.includes("application/json") === false
-  ) {
+  if (contentLength === "0" || response.headers.get("Content-Type")?.includes("application/json") === false) {
     return {} as T;
   }
 

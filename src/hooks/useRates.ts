@@ -12,9 +12,7 @@ type CoinbaseResponse = {
   };
 };
 
-async function fetchCoinbaseRates(
-  signal?: AbortSignal,
-): Promise<Rates | undefined> {
+async function fetchCoinbaseRates(signal?: AbortSignal): Promise<Rates | undefined> {
   const url = "https://api.coinbase.com/v2/exchange-rates?currency=BTC";
   const res = await fetch(url, {
     signal,
@@ -38,12 +36,7 @@ async function fetchCoinbaseRates(
   const usdPerBtc = parseFloat(usdRate);
   const eurPerBtc = parseFloat(eurRate);
 
-  if (
-    !isFinite(usdPerBtc) ||
-    usdPerBtc <= 0 ||
-    !isFinite(eurPerBtc) ||
-    eurPerBtc <= 0
-  ) {
+  if (!isFinite(usdPerBtc) || usdPerBtc <= 0 || !isFinite(eurPerBtc) || eurPerBtc <= 0) {
     throw new Error("Invalid rates from Coinbase API");
   }
 

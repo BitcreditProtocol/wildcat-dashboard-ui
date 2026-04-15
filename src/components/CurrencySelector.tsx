@@ -1,15 +1,6 @@
 import { useIntl } from "react-intl";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  type CurrencyCode,
-  usePreferences,
-} from "@/context/preferences/PreferencesContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { type CurrencyCode, usePreferences } from "@/context/preferences/PreferencesContext";
 
 const CURRENCIES: Array<{
   value: CurrencyCode;
@@ -38,11 +29,7 @@ const CURRENCIES: Array<{
   },
 ];
 
-export function CurrencySelector({
-  className,
-}: {
-  className?: string;
-}) {
+export function CurrencySelector({ className }: { className?: string }) {
   const intl = useIntl();
   const { currency, setCurrency } = usePreferences();
 
@@ -54,10 +41,7 @@ export function CurrencySelector({
           defaultMessage: "Currency",
         })}
       </span>
-      <Select
-        value={currency}
-        onValueChange={(value) => setCurrency(value as CurrencyCode)}
-      >
+      <Select value={currency} onValueChange={(value) => setCurrency(value as CurrencyCode)}>
         <SelectTrigger className="h-9">
           <SelectValue
             placeholder={intl.formatMessage({
@@ -68,10 +52,7 @@ export function CurrencySelector({
         </SelectTrigger>
         <SelectContent>
           {CURRENCIES.map((item) => (
-            <SelectItem
-              key={item.value}
-              value={item.value}
-            >
+            <SelectItem key={item.value} value={item.value}>
               {intl.formatMessage({
                 id: item.labelId,
                 defaultMessage: item.defaultLabel,

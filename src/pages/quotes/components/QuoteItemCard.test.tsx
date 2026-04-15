@@ -15,9 +15,7 @@ vi.mock("@/hooks/useRates", () => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
     useQuery: (options: unknown) => mockUseQuery(options),
@@ -35,11 +33,7 @@ vi.mock("@/components/ParticipantsOverview", () => ({
 }));
 
 vi.mock("@/components/ui/search", () => ({
-  HighlightText: ({
-    text,
-  }: {
-    text: string;
-  }) => <span>{text}</span>,
+  HighlightText: ({ text }: { text: string }) => <span>{text}</span>,
 }));
 
 let root: Root | null = null;
@@ -66,7 +60,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
           <MemoryRouter>{element}</MemoryRouter>
         </PreferencesProvider>
       </IntlProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -118,11 +112,7 @@ describe("QuoteItemCard", () => {
     });
 
     const page = renderWithProviders(
-      <QuoteItemCard
-        quote={{ id: "quote-1", sum: 100_000_000 } as never}
-        effectiveStatus="Accepted"
-        searchQuery=""
-      />,
+      <QuoteItemCard quote={{ id: "quote-1", sum: 100_000_000 } as never} effectiveStatus="Accepted" searchQuery="" />
     );
 
     expect(page.textContent).toContain("100,000,000");
@@ -143,11 +133,7 @@ describe("QuoteItemCard", () => {
     });
 
     const page = renderWithProviders(
-      <QuoteItemCard
-        quote={{ id: "quote-1", sum: 12_345 } as never}
-        effectiveStatus="Accepted"
-        searchQuery=""
-      />,
+      <QuoteItemCard quote={{ id: "quote-1", sum: 12_345 } as never} effectiveStatus="Accepted" searchQuery="" />
     );
 
     expect(page.textContent).toContain("12,345");

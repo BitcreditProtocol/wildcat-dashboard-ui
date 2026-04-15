@@ -1,7 +1,4 @@
-import type {
-  CurrencyCode,
-  DecimalFormat,
-} from "@/context/preferences/PreferencesContext";
+import type { CurrencyCode, DecimalFormat } from "@/context/preferences/PreferencesContext";
 
 export type FiatCurrencyCode = "usd" | "eur";
 export type CryptoCurrencyCode = "btc" | "sat";
@@ -12,10 +9,7 @@ export type Rates = {
 
 export const SATS_PER_BTC = 100_000_000 as const;
 
-export function getLocaleForFormat(
-  baseLocale: string,
-  format: DecimalFormat,
-): string {
+export function getLocaleForFormat(baseLocale: string, format: DecimalFormat): string {
   switch (format) {
     case "point":
       return "de-DE";
@@ -58,11 +52,7 @@ function fiatToBtc(amount: number, currency: FiatCurrencyCode, rates: Rates): nu
   }
 }
 
-export function convertFromSat(
-  sat: number,
-  target: CurrencyCode,
-  rates?: Rates,
-): number {
+export function convertFromSat(sat: number, target: CurrencyCode, rates?: Rates): number {
   const btc = satToBtc(sat);
 
   switch (target) {
@@ -83,11 +73,7 @@ export function convertFromSat(
   }
 }
 
-export function convertToSat(
-  amount: number,
-  source: CurrencyCode,
-  rates?: Rates,
-): number {
+export function convertToSat(amount: number, source: CurrencyCode, rates?: Rates): number {
   switch (source) {
     case "sat":
       return Math.round(amount);
@@ -102,12 +88,7 @@ export function convertToSat(
   }
 }
 
-export function convertAmount(
-  amount: number,
-  source: CurrencyCode,
-  target: CurrencyCode,
-  rates?: Rates,
-): number {
+export function convertAmount(amount: number, source: CurrencyCode, target: CurrencyCode, rates?: Rates): number {
   if (source === target) {
     return amount;
   }
@@ -116,11 +97,7 @@ export function convertAmount(
   return convertFromSat(sat, target, rates);
 }
 
-export function formatAmountNumber(
-  value: number,
-  currency: CurrencyCode,
-  locale: string,
-): string {
+export function formatAmountNumber(value: number, currency: CurrencyCode, locale: string): string {
   if (currency === "usd" || currency === "eur") {
     return new Intl.NumberFormat(locale, {
       style: "currency",

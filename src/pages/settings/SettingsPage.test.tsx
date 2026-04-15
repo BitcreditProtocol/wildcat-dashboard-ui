@@ -56,7 +56,7 @@ describe("SettingsPage", () => {
     const page = renderIntoDom(
       <IntlProvider locale="en-US">
         <SettingsPage />
-      </IntlProvider>,
+      </IntlProvider>
     );
 
     expect(page.textContent).toContain("Settings");

@@ -150,9 +150,7 @@ export function DatePicker({
 
     // single mode
     if (mode === "single") {
-      const isDisabled = disabled
-        ? dateMatchModifiers(draft.from, [disabled as Matcher])
-        : false;
+      const isDisabled = disabled ? dateMatchModifiers(draft.from, [disabled as Matcher]) : false;
       setCanSelect(!isDisabled);
     }
 
@@ -162,12 +160,8 @@ export function DatePicker({
         setCanSelect(false);
         return;
       }
-      const isDisabledFrom = disabled
-        ? dateMatchModifiers(draft.from, [disabled as Matcher])
-        : false;
-      const isDisabledTo = disabled
-        ? dateMatchModifiers(draft.to, [disabled as Matcher])
-        : false;
+      const isDisabledFrom = disabled ? dateMatchModifiers(draft.from, [disabled as Matcher]) : false;
+      const isDisabledTo = disabled ? dateMatchModifiers(draft.to, [disabled as Matcher]) : false;
       setCanSelect(!isDisabledFrom && !isDisabledTo);
     }
   }, [draft, disabled, mode]);
@@ -186,10 +180,7 @@ export function DatePicker({
           }
           onClick={toggleCalendar}
         >
-          <CalendarIcon
-            className="text-text-300 w-5 h-5"
-            strokeWidth={1}
-          />
+          <CalendarIcon className="text-text-300 w-5 h-5" strokeWidth={1} />
 
           {mode === "single" ? (
             current.from ? (
@@ -210,7 +201,7 @@ export function DatePicker({
       <div
         className={cn(
           "fixed inset-0 bg-black/30 transition-opacity duration-300 max-w-[375px] mx-auto z-10",
-          showCalendar ? "opacity-100" : "opacity-0 pointer-events-none",
+          showCalendar ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={() => {
           setShowCalendar(false);
@@ -222,7 +213,7 @@ export function DatePicker({
         className={cn(
           `fixed bottom-0 z-10 left-1/2 -translate-x-1/2 max-w-[375px] w-full h-auto max-h-[62.5vh] bg-elevation-50 dark:bg-elevation-250 p-3 transition-transform duration-300 ease-in-out rounded-t-2xl justify-center overflow-y-auto`,
           showCalendar ? "translate-y-0" : "translate-y-full",
-          className,
+          className
         )}
       >
         <div className="flex flex-col gap-2 min-h-full">
@@ -247,20 +238,10 @@ export function DatePicker({
                   className="w-full"
                 >
                   <TabsList className="gap-0.5 w-full p-0 border-divider-50 bg-elevation-200">
-                    <TabsTrigger
-                      value="issue"
-                      className="flex items-center gap-1 py-2 bg-transparent"
-                    >
-                      <FormattedMessage
-                        id="bills.list.filter.date.issue"
-                        defaultMessage="Issue date"
-                        description="Filter by issue date"
-                      />
+                    <TabsTrigger value="issue" className="flex items-center gap-1 py-2 bg-transparent">
+                      <FormattedMessage id="bills.list.filter.date.issue" defaultMessage="Issue date" description="Filter by issue date" />
                     </TabsTrigger>
-                    <TabsTrigger
-                      value="maturity"
-                      className="flex items-center gap-1 py-2 bg-transparent"
-                    >
+                    <TabsTrigger value="maturity" className="flex items-center gap-1 py-2 bg-transparent">
                       <FormattedMessage
                         id="bills.list.filter.date.maturity"
                         defaultMessage="Maturity date"
@@ -295,29 +276,20 @@ export function DatePicker({
                       }}
                       className={cn(
                         "h-[46px] py-3 px-4 w-full bg-elevation-200 border rounded-lg truncate text-left",
-                        rangeFocus === "from"
-                          ? "border-brand-200"
-                          : "border-gray-200",
+                        rangeFocus === "from" ? "border-brand-200" : "border-gray-200"
                       )}
                     >
                       {draft.from && formatDateShort(draft.from, lang.locale)}
                       {!draft.from && (
                         <span className="text-text-200">
-                          <FormattedMessage
-                            id="range.start"
-                            defaultMessage="Start"
-                          />
+                          <FormattedMessage id="range.start" defaultMessage="Start" />
                         </span>
                       )}
                     </button>
                   </div>
 
                   <div className="col-auto flex justify-center items-center">
-                    <ArrowRight
-                      className="text-text-200"
-                      strokeWidth={1}
-                      size={24}
-                    />
+                    <ArrowRight className="text-text-200" strokeWidth={1} size={24} />
                   </div>
 
                   <div className="col-span-4">
@@ -328,18 +300,13 @@ export function DatePicker({
                       }}
                       className={cn(
                         "h-[46px] py-3 pl-4 pr-2 w-full bg-elevation-200 border rounded-lg truncate text-left",
-                        rangeFocus === "to"
-                          ? "border-brand-200"
-                          : "border-gray-200",
+                        rangeFocus === "to" ? "border-brand-200" : "border-gray-200"
                       )}
                     >
                       {draft.to && formatDateShort(draft.to, lang.locale)}
                       {!draft.to && (
                         <span className="text-text-200">
-                          <FormattedMessage
-                            id="range.end"
-                            defaultMessage="End"
-                          />
+                          <FormattedMessage id="range.end" defaultMessage="End" />
                         </span>
                       )}
                     </button>
@@ -368,10 +335,7 @@ export function DatePicker({
 
                             setDraft({
                               from: newDate,
-                              to:
-                                mode === "range"
-                                  ? addDays(newDate, days)
-                                  : undefined,
+                              to: mode === "range" ? addDays(newDate, days) : undefined,
                             });
                           }}
                         >
@@ -381,9 +345,7 @@ export function DatePicker({
                     </div>
                   )}
                 </div>
-                <div className="text-base">
-                  {current.from ? formatDateMmmDdYyyy(current.from) : "-"}
-                </div>
+                <div className="text-base">{current.from ? formatDateMmmDdYyyy(current.from) : "-"}</div>
               </div>
             )}
           </div>
@@ -436,18 +398,13 @@ export function DatePicker({
                 onSelect={(_ignored: DateRange | undefined, selectedDay) => {
                   setDraft((prev) => {
                     if (rangeFocus === "from") {
-                      const newTo =
-                        prev.to && selectedDay <= prev.to ? prev.to : undefined;
+                      const newTo = prev.to && selectedDay <= prev.to ? prev.to : undefined;
                       return { from: selectedDay, to: newTo };
                     }
                     const from = prev.from ?? selectedDay;
-                    return selectedDay < from
-                      ? { from: selectedDay, to: from }
-                      : { from, to: selectedDay };
+                    return selectedDay < from ? { from: selectedDay, to: from } : { from, to: selectedDay };
                   });
-                  setRangeFocus((prevFocus) =>
-                    prevFocus === "from" ? "to" : "from",
-                  );
+                  setRangeFocus((prevFocus) => (prevFocus === "from" ? "to" : "from"));
                 }}
                 initialFocus
                 disabled={disabled}
@@ -476,21 +433,13 @@ export function DatePicker({
                 setShowCalendar(false);
               }}
             >
-              <FormattedMessage
-                id="Cancel"
-                defaultMessage="Cancel"
-                description="Cancel button text in datepicker form"
-              />
+              <FormattedMessage id="Cancel" defaultMessage="Cancel" description="Cancel button text in datepicker form" />
             </Button>
             <Button
               className="w-full"
               size="sm"
               type="button"
-              disabled={
-                !canSelect ||
-                draft.from === undefined ||
-                (mode === "range" && draft.to === undefined)
-              }
+              disabled={!canSelect || draft.from === undefined || (mode === "range" && draft.to === undefined)}
               onClick={() => {
                 setCurrent(draft);
                 onChange(draft);
@@ -499,11 +448,7 @@ export function DatePicker({
                 setShowCalendar(false);
               }}
             >
-              <FormattedMessage
-                id="Confirm"
-                defaultMessage="Confirm"
-                description="Confirm button text in datepicker form"
-              />
+              <FormattedMessage id="Confirm" defaultMessage="Confirm" description="Confirm button text in datepicker form" />
             </Button>
           </div>
         </div>

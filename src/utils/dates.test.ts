@@ -1,12 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  daysBetween,
-  formatDate,
-  getDefaultDeadline,
-  humanReadableDuration,
-  humanReadableDurationDays,
-  toUtcEndOfDay,
-} from "./dates";
+import { daysBetween, formatDate, getDefaultDeadline, humanReadableDuration, humanReadableDurationDays, toUtcEndOfDay } from "./dates";
 
 describe("dates utils", () => {
   beforeEach(() => {

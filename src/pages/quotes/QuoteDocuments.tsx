@@ -16,11 +16,7 @@ interface QuoteDocumentsProps {
   onOpenDocument: (fileName: string) => void | Promise<void>;
 }
 
-export function QuoteDocuments({
-  documents,
-  openingDocumentName,
-  onOpenDocument,
-}: QuoteDocumentsProps) {
+export function QuoteDocuments({ documents, openingDocumentName, onOpenDocument }: QuoteDocumentsProps) {
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -44,10 +40,9 @@ export function QuoteDocuments({
               {intl.formatMessage(
                 {
                   id: "quotes.documents.count",
-                  defaultMessage:
-                    "({count, plural, one {# document} other {# documents}})",
+                  defaultMessage: "({count, plural, one {# document} other {# documents}})",
                 },
-                { count: documents.length },
+                { count: documents.length }
               )}
             </span>
           </span>
@@ -63,11 +58,7 @@ export function QuoteDocuments({
                     defaultMessage: "Show documents",
                   })}
             </span>
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </span>
         </button>
       </CardHeader>
@@ -79,16 +70,9 @@ export function QuoteDocuments({
               const isOpening = openingDocumentName === file.name;
 
               return (
-                <div
-                  key={`${file.hash}-${file.name}-${index}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border p-3"
-                >
+                <div key={`${file.hash}-${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border p-3">
                   <div className="min-w-0">
-                    <TruncatedTextPopover
-                      text={file.name}
-                      maxLength={35}
-                      className="text-sm font-medium"
-                    />
+                    <TruncatedTextPopover text={file.name} maxLength={35} className="text-sm font-medium" />
                   </div>
                   <Button
                     variant="outline"

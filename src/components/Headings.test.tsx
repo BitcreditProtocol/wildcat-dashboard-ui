@@ -36,7 +36,7 @@ describe("Headings", () => {
         <H1>Title One</H1>
         <H2>Title Two</H2>
         <H3>Title Three</H3>
-      </div>,
+      </div>
     );
 
     expect(page.querySelector("h1")?.textContent).toBe("Title One");

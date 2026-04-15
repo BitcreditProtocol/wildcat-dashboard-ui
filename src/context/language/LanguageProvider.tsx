@@ -1,9 +1,6 @@
 import { ReactNode, useMemo, useState } from "react";
 import { IntlProvider } from "react-intl";
-import {
-  LanguageContext,
-  DEFAULT_LOCALE,
-} from "@/context/language/LanguageContext";
+import { LanguageContext, DEFAULT_LOCALE } from "@/context/language/LanguageContext";
 import { messagesByLocale, supportedLocales } from "@/i18n/messages";
 import { getItem, setItem } from "@/utils/local-storage";
 
@@ -14,9 +11,7 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
-  const [locale, setLocaleState] = useState(
-    () => getItem<string>(LOCALE_STORAGE_KEY) ?? DEFAULT_LOCALE,
-  );
+  const [locale, setLocaleState] = useState(() => getItem<string>(LOCALE_STORAGE_KEY) ?? DEFAULT_LOCALE);
 
   const setLocale = (nextLocale: string) => {
     setLocaleState(nextLocale);
@@ -32,16 +27,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       setLocale,
       availableLocales,
     }),
-    [locale],
+    [locale]
   );
 
   return (
     <LanguageContext.Provider value={contextValue}>
-      <IntlProvider
-        locale={locale}
-        defaultLocale={DEFAULT_LOCALE}
-        messages={messages}
-      >
+      <IntlProvider locale={locale} defaultLocale={DEFAULT_LOCALE} messages={messages}>
         {children}
       </IntlProvider>
     </LanguageContext.Provider>

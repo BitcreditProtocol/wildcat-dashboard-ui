@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  convertAmount,
-  formatAmountNumber,
-  getLocaleForFormat,
-  type Rates,
-} from "./currency";
+import { convertAmount, formatAmountNumber, getLocaleForFormat, type Rates } from "./currency";
 
 const rates: Rates = {
   usdPerBtc: 100_000,

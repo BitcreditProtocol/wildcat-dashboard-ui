@@ -33,9 +33,7 @@ beforeEach(() => {
     configurable: true,
     value: 0,
   });
-  window.matchMedia = vi
-    .fn()
-    .mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
 
   if (root && container) {
     act(() => {
@@ -59,7 +57,7 @@ describe("QuoteDocuments", () => {
         ]}
         openingDocumentName={null}
         onOpenDocument={() => undefined}
-      />,
+      />
     );
 
     expect(page.textContent).toContain("Documents");
@@ -84,7 +82,7 @@ describe("QuoteDocuments", () => {
         ]}
         openingDocumentName={null}
         onOpenDocument={onOpenDocument}
-      />,
+      />
     );
 
     const toggleButton = page.querySelector('button[aria-expanded="false"]');

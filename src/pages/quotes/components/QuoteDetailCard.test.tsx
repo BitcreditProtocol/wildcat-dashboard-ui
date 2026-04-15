@@ -47,7 +47,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
       <IntlProvider locale="en-US">
         <PreferencesProvider>{element}</PreferencesProvider>
       </IntlProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -116,7 +116,7 @@ describe("QuoteDetailCard", () => {
         isFeeTokenStatusPending={false}
         feeTokenStatusData={undefined}
         isFeeTokenStatusError={false}
-      />,
+      />
     );
 
     expect(page.textContent).toContain("100,000,000");
@@ -148,7 +148,7 @@ describe("QuoteDetailCard", () => {
         isFeeTokenStatusPending={false}
         feeTokenStatusData={undefined}
         isFeeTokenStatusError={false}
-      />,
+      />
     );
 
     expect(page.textContent).toContain("100,000,000");

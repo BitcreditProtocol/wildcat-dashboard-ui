@@ -3,13 +3,7 @@ import { CurrencySelector } from "@/components/CurrencySelector";
 import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
 import { PageTitle } from "@/components/PageTitle";
 import { ThemeSelector } from "@/components/ThemeSelector";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 import { useIntl } from "react-intl";
@@ -57,8 +51,7 @@ function PageBody() {
           <CardDescription>
             {intl.formatMessage({
               id: "settings.currency.description",
-              defaultMessage:
-                "Choose how dashboard amounts should be displayed.",
+              defaultMessage: "Choose how dashboard amounts should be displayed.",
             })}
           </CardDescription>
         </CardHeader>
@@ -77,8 +70,7 @@ function PageBody() {
           <CardDescription>
             {intl.formatMessage({
               id: "settings.decimalSeparator.description",
-              defaultMessage:
-                "Choose your preferred decimal and thousands separator format.",
+              defaultMessage: "Choose your preferred decimal and thousands separator format.",
             })}
           </CardDescription>
         </CardHeader>

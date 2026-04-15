@@ -1,13 +1,6 @@
 import * as React from "react";
-import {
-  extractTextFromNode,
-  getTruncatedTextState,
-} from "@/components/truncated-text";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { extractTextFromNode, getTruncatedTextState } from "@/components/truncated-text";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Copy, Check } from "lucide-react";
@@ -25,10 +18,7 @@ interface TruncatedTextPopoverProps {
   showCopyButton?: boolean;
 }
 
-function useResponsiveMaxLength(
-  maxLength: number,
-  showFullOnDesktop: boolean,
-): number {
+function useResponsiveMaxLength(maxLength: number, showFullOnDesktop: boolean): number {
   const [effectiveMaxLength, setEffectiveMaxLength] = React.useState(maxLength);
 
   React.useEffect(() => {
@@ -38,10 +28,7 @@ function useResponsiveMaxLength(
       const width = document.documentElement.clientWidth || window.innerWidth;
 
       // Modern touch device detection using multiple signals
-      const isTouchDevice =
-        window.matchMedia("(pointer: coarse)").matches ||
-        navigator.maxTouchPoints > 0 ||
-        "ontouchstart" in window;
+      const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0 || "ontouchstart" in window;
 
       // If showFullOnDesktop is true and we're on a large screen without touch, skip truncation
       if (showFullOnDesktop && width >= 1024 && !isTouchDevice) {
@@ -88,22 +75,14 @@ export function TruncatedTextPopover({
   showCopyButton = false,
 }: TruncatedTextPopoverProps) {
   const intl = useIntl();
-  const effectiveMaxLength = useResponsiveMaxLength(
-    maxLength ?? 24,
-    showFullOnDesktop,
-  );
+  const effectiveMaxLength = useResponsiveMaxLength(maxLength ?? 24, showFullOnDesktop);
   const triggerRef = React.useRef<HTMLElement | null>(null);
   const [hasWidthOverflow, setHasWidthOverflow] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const textStr = extractTextFromNode(text);
-  const {
-    flatLabel,
-    hasComputedTruncation,
-    hasLengthFallbackOverflow,
-    visibleLines,
-  } = getTruncatedTextState(
+  const { flatLabel, hasComputedTruncation, hasLengthFallbackOverflow, visibleLines } = getTruncatedTextState(
     text,
-    Number.isFinite(effectiveMaxLength) ? effectiveMaxLength : undefined,
+    Number.isFinite(effectiveMaxLength) ? effectiveMaxLength : undefined
   );
 
   const handleCopy = async () => {
@@ -114,7 +93,7 @@ export function TruncatedTextPopover({
         intl.formatMessage({
           id: "truncatedTextPopover.copied",
           defaultMessage: "Copied to clipboard",
-        }),
+        })
       );
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -123,7 +102,7 @@ export function TruncatedTextPopover({
         intl.formatMessage({
           id: "truncatedTextPopover.copyFailed",
           defaultMessage: "Failed to copy to clipboard",
-        }),
+        })
       );
     }
   };
@@ -139,16 +118,10 @@ export function TruncatedTextPopover({
     }
 
     const measureOverflow = () => {
-      const lineElements = Array.from(
-        element.querySelectorAll<HTMLElement>("[data-truncated-text-line]"),
-      );
+      const lineElements = Array.from(element.querySelectorAll<HTMLElement>("[data-truncated-text-line]"));
 
       if (lineElements.length > 0) {
-        setHasWidthOverflow(
-          lineElements.some(
-            (lineElement) => lineElement.scrollWidth - lineElement.clientWidth > 1,
-          ),
-        );
+        setHasWidthOverflow(lineElements.some((lineElement) => lineElement.scrollWidth - lineElement.clientWidth > 1));
         return;
       }
 
@@ -160,9 +133,7 @@ export function TruncatedTextPopover({
     if (typeof ResizeObserver === "function") {
       const resizeObserver = new ResizeObserver(measureOverflow);
       resizeObserver.observe(element);
-      for (const lineElement of element.querySelectorAll<HTMLElement>(
-        "[data-truncated-text-line]",
-      )) {
+      for (const lineElement of element.querySelectorAll<HTMLElement>("[data-truncated-text-line]")) {
         resizeObserver.observe(lineElement);
       }
 
@@ -177,14 +148,9 @@ export function TruncatedTextPopover({
     };
   }, [hasComputedTruncation, textStr]);
 
-  const shouldShowPopover =
-    hasComputedTruncation || hasWidthOverflow || hasLengthFallbackOverflow;
+  const shouldShowPopover = hasComputedTruncation || hasWidthOverflow || hasLengthFallbackOverflow;
   const visibleTextNode = visibleLines.map((line) => (
-    <span
-      key={line}
-      data-truncated-text-line
-      className="block w-full min-w-0 max-w-full truncate"
-    >
+    <span key={line} data-truncated-text-line className="block w-full min-w-0 max-w-full truncate">
       {line}
     </span>
   ));
@@ -193,10 +159,7 @@ export function TruncatedTextPopover({
     return (
       <span
         ref={triggerRef as React.Ref<HTMLSpanElement>}
-        className={cn(
-          "block w-full min-w-0 max-w-full overflow-hidden align-top",
-          className,
-        )}
+        className={cn("block w-full min-w-0 max-w-full overflow-hidden align-top", className)}
         title={title ?? flatLabel}
       >
         {visibleTextNode}
@@ -213,7 +176,7 @@ export function TruncatedTextPopover({
             type="button"
             className={cn(
               "block w-full min-w-0 max-w-full overflow-hidden align-top text-left hover:underline focus:outline-none",
-              className,
+              className
             )}
             title={title ?? flatLabel}
             aria-label={title ?? flatLabel}
@@ -225,10 +188,7 @@ export function TruncatedTextPopover({
             ref={triggerRef as React.Ref<HTMLSpanElement>}
             role="button"
             tabIndex={0}
-            className={cn(
-              "block w-full min-w-0 max-w-full overflow-hidden align-top hover:underline focus:outline-none",
-              className,
-            )}
+            className={cn("block w-full min-w-0 max-w-full overflow-hidden align-top hover:underline focus:outline-none", className)}
             title={title ?? flatLabel}
             aria-label={title ?? flatLabel}
           >
@@ -243,7 +203,7 @@ export function TruncatedTextPopover({
         collisionPadding={16}
         className={cn(
           "bg-white z-50 break-all rounded-lg border border-[#1B0F004D] p-4 text-center shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          contentClassName,
+          contentClassName
         )}
       >
         <span className="text-sm whitespace-pre-line">{textStr}</span>
@@ -284,11 +244,7 @@ export function TruncatedTextPopover({
                 })
           }
         >
-          {copied ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Copy className="h-4 w-4" />
-          )}
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         </Button>
       </div>
     );

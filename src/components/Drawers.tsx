@@ -19,13 +19,7 @@ type BaseDrawerProps = DrawerProps & {
   trigger?: React.ReactNode;
   children?: React.ReactNode;
 };
-export function BaseDrawer({
-  title,
-  description = "",
-  trigger,
-  children,
-  ...drawerProps
-}: BaseDrawerProps) {
+export function BaseDrawer({ title, description = "", trigger, children, ...drawerProps }: BaseDrawerProps) {
   return (
     <Drawer {...drawerProps}>
       {trigger && <DrawerTrigger asChild>{trigger}</DrawerTrigger>}
@@ -33,9 +27,7 @@ export function BaseDrawer({
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
-            {description && (
-              <DrawerDescription>{description}</DrawerDescription>
-            )}
+            {description && <DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
           {children}
         </div>
@@ -89,11 +81,7 @@ export function ConfirmDrawer({
             {resolvedSubmitText}
           </Button>
           <DrawerClose asChild>
-            <Button
-              className="w-full max-w-sm"
-              variant="outline"
-              size="lg"
-            >
+            <Button className="w-full max-w-sm" variant="outline" size="lg">
               {resolvedCancelText}
             </Button>
           </DrawerClose>

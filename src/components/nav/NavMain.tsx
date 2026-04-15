@@ -1,10 +1,6 @@
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { NavLink } from "react-router";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIntl } from "react-intl";
 import {
   SidebarGroup,
@@ -57,11 +53,7 @@ export function NavMain({
 
           return (item.items ?? []).length === 0 || state === "collapsed" ? (
             <SidebarMenuItem key={item.titleId}>
-              <SidebarMenuButton
-                asChild
-                tooltip={title}
-                disabled={item.disabled}
-              >
+              <SidebarMenuButton asChild tooltip={title} disabled={item.disabled}>
                 {item.disabled === true ? (
                   <>
                     {item.icon && <item.icon />}
@@ -76,19 +68,10 @@ export function NavMain({
               </SidebarMenuButton>
             </SidebarMenuItem>
           ) : (
-            <Collapsible
-              key={item.titleId}
-              asChild
-              defaultOpen={item.isActive}
-              className="group/collapsible"
-            >
+            <Collapsible key={item.titleId} asChild defaultOpen={item.isActive} className="group/collapsible">
               <SidebarMenuItem>
                 <div className="relative flex items-center">
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={title}
-                    className="flex-1 pr-8"
-                  >
+                  <SidebarMenuButton asChild tooltip={title} className="flex-1 pr-8">
                     <NavLink to={item.url}>
                       {item.icon && <item.icon />}
                       <span>{title}</span>
@@ -102,7 +85,7 @@ export function NavMain({
                           id: "nav.toggleSubmenu",
                           defaultMessage: "Toggle {title} submenu",
                         },
-                        { title },
+                        { title }
                       )}
                     >
                       <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -122,11 +105,7 @@ export function NavMain({
                           <SidebarMenuSubButton asChild>
                             <NavLink
                               to={subItem.url}
-                              onClick={
-                                subItem.disabled
-                                  ? (e) => e.preventDefault()
-                                  : undefined
-                              }
+                              onClick={subItem.disabled ? (e) => e.preventDefault() : undefined}
                               className={cn({
                                 "opacity-50": subItem.disabled,
                                 "cursor-not-allowed": subItem.disabled,
