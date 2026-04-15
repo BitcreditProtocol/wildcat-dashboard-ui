@@ -12,9 +12,7 @@ interface CoinbaseResponse {
   };
 }
 
-async function fetchCoinbaseRates(
-  signal?: AbortSignal,
-): Promise<Rates> {
+async function fetchCoinbaseRates(signal?: AbortSignal): Promise<Rates> {
   const url = "https://api.coinbase.com/v2/exchange-rates?currency=BTC";
   const res = await fetch(url, {
     signal,
