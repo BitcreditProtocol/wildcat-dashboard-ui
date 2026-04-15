@@ -1,10 +1,7 @@
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  PreferencesProvider,
-  usePreferences,
-} from "./PreferencesContext";
+import { PreferencesProvider, usePreferences } from "./PreferencesContext";
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -80,12 +77,12 @@ describe("PreferencesProvider", () => {
       </PreferencesProvider>,
     );
 
-    expect(
-      page.querySelector('[data-testid="currency"]')?.textContent,
-    ).toBe("usd");
-    expect(
-      page.querySelector('[data-testid="decimal"]')?.textContent,
-    ).toBe("point");
+    expect(page.querySelector('[data-testid="currency"]')?.textContent).toBe(
+      "usd",
+    );
+    expect(page.querySelector('[data-testid="decimal"]')?.textContent).toBe(
+      "point",
+    );
   });
 
   it("persists updates to storage", () => {

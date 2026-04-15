@@ -46,7 +46,9 @@ vi.mock("@/components/ParticipantsOverview", () => ({
 }));
 
 vi.mock("@/components/TruncatedTextPopover", () => ({
-  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => <span>{text}</span>,
+  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => (
+    <span>{text}</span>
+  ),
 }));
 
 vi.mock("@/components/QRCodeWithErrorBoundary", () => ({

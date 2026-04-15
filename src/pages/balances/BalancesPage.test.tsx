@@ -43,22 +43,30 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 }));
 
 vi.mock("@/components/Breadcrumbs", () => ({
-  Breadcrumbs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Breadcrumbs: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("@/components/PageTitle", () => ({
-  PageTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PageTitle: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("@/components/ui/chart", () => ({
-  ChartContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ChartContainer: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   ChartLegend: () => null,
   ChartLegendContent: () => null,
 }));
 
 vi.mock("recharts", () => ({
   Bar: () => null,
-  BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,

@@ -78,13 +78,13 @@ describe("Currency", () => {
         ok: true,
         json: () =>
           Promise.resolve({
-          data: {
-            rates: {
-              USD: "100000",
-              EUR: "90000",
+            data: {
+              rates: {
+                USD: "100000",
+                EUR: "90000",
+              },
             },
-          },
-        }),
+          }),
       }),
     );
 
@@ -111,13 +111,13 @@ describe("Currency", () => {
         ok: true,
         json: () =>
           Promise.resolve({
-          data: {
-            rates: {
-              USD: "100000",
-              EUR: "90000",
+            data: {
+              rates: {
+                USD: "100000",
+                EUR: "90000",
+              },
             },
-          },
-        }),
+          }),
       }),
     );
 
@@ -138,7 +138,9 @@ describe("Currency", () => {
   });
 
   it("falls back to primary-only output when fiat conversion rates are unavailable", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     window.localStorage.setItem("display-currency", JSON.stringify("eur"));
     vi.stubGlobal(
       "fetch",

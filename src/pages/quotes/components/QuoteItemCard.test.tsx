@@ -52,11 +52,7 @@ vi.mock("@/components/ParticipantsOverview", () => ({
 }));
 
 vi.mock("@/components/ui/search", () => ({
-  HighlightText: ({
-    text,
-  }: {
-    text: string;
-  }) => <span>{text}</span>,
+  HighlightText: ({ text }: { text: string }) => <span>{text}</span>,
 }));
 
 let root: Root | null = null;
@@ -136,7 +132,13 @@ describe("QuoteItemCard", () => {
 
     const page = renderWithProviders(
       <QuoteItemCard
-        quote={{ id: "quote-1", status: "Accepted", sum: 100_000_000 } satisfies LightInfo}
+        quote={
+          {
+            id: "quote-1",
+            status: "Accepted",
+            sum: 100_000_000,
+          } satisfies LightInfo
+        }
         effectiveStatus="Accepted"
         searchQuery=""
       />,
@@ -161,7 +163,9 @@ describe("QuoteItemCard", () => {
 
     const page = renderWithProviders(
       <QuoteItemCard
-        quote={{ id: "quote-1", status: "Accepted", sum: 12_345 } satisfies LightInfo}
+        quote={
+          { id: "quote-1", status: "Accepted", sum: 12_345 } satisfies LightInfo
+        }
         effectiveStatus="Accepted"
         searchQuery=""
       />,

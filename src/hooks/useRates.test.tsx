@@ -72,13 +72,13 @@ describe("useRates", () => {
         ok: true,
         json: () =>
           Promise.resolve({
-          data: {
-            rates: {
-              USD: "100000",
-              EUR: "90000",
+            data: {
+              rates: {
+                USD: "100000",
+                EUR: "90000",
+              },
             },
-          },
-        }),
+          }),
       }),
     );
 
@@ -100,7 +100,9 @@ describe("useRates", () => {
   });
 
   it("falls back to undefined when the request fails", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
