@@ -137,8 +137,8 @@ export function TruncatedLinkPopover({
   }, [hasComputedTruncation, textStr]);
 
   const shouldShowPopover = hasComputedTruncation || hasWidthOverflow || hasLengthFallbackOverflow;
-  const visibleTextNode = visibleLines.map((line) => (
-    <span key={line} data-truncated-text-line className="block w-full min-w-0 max-w-full truncate">
+  const visibleTextNode = visibleLines.map((line, index) => (
+    <span key={`${index}-${line}`} data-truncated-text-line className="block w-full min-w-0 max-w-full truncate">
       {line}
     </span>
   ));

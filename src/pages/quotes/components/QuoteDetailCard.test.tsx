@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
-import type { Rates } from "@/lib/currency";
 import type { BillIdentParticipant, BillParticipant, Id, InfoReply } from "@/generated/client/types.gen";
+import type { Rates } from "@/lib/currency";
 import { QuoteDetailCard } from "./QuoteDetailCard";
 
 const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
@@ -146,10 +146,10 @@ describe("QuoteDetailCard", () => {
 
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
-    expect(page.textContent).toContain("€90,000.00");
+    expect(page.textContent).toContain("90,000.00");
     expect(page.textContent).toContain("eur");
-    expect(page.textContent).toContain("€72,000.00");
-    expect(page.textContent).toContain("€18,000.00");
+    expect(page.textContent).toContain("72,000.00");
+    expect(page.textContent).toContain("18,000.00");
   });
 
   it("falls back to sat-only values when fiat rates are unavailable", () => {
@@ -178,7 +178,6 @@ describe("QuoteDetailCard", () => {
 
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
-    expect(page.textContent).not.toContain("€");
     expect(page.textContent).not.toContain("eur");
   });
 });

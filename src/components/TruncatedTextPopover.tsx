@@ -80,10 +80,7 @@ export function TruncatedTextPopover({
   const [hasWidthOverflow, setHasWidthOverflow] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const textStr = extractTextFromNode(text);
-  const { flatLabel, hasComputedTruncation, hasLengthFallbackOverflow, visibleLines } = getTruncatedTextState(
-    text,
-    Number.isFinite(effectiveMaxLength) ? effectiveMaxLength : undefined
-  );
+  const { flatLabel, hasComputedTruncation, hasLengthFallbackOverflow, visibleLines } = getTruncatedTextState(text, effectiveMaxLength);
 
   const handleCopy = async () => {
     try {
@@ -149,8 +146,8 @@ export function TruncatedTextPopover({
   }, [hasComputedTruncation, textStr]);
 
   const shouldShowPopover = hasComputedTruncation || hasWidthOverflow || hasLengthFallbackOverflow;
-  const visibleTextNode = visibleLines.map((line) => (
-    <span key={line} data-truncated-text-line className="block w-full min-w-0 max-w-full truncate">
+  const visibleTextNode = visibleLines.map((line, index) => (
+    <span key={`${index}-${line}`} data-truncated-text-line className="block w-full min-w-0 max-w-full truncate">
       {line}
     </span>
   ));

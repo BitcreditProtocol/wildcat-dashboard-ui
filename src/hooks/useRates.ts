@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import type { Rates } from "@/lib/currency";
 
@@ -12,7 +12,7 @@ interface CoinbaseResponse {
   };
 }
 
-async function fetchCoinbaseRates(signal?: AbortSignal): Promise<Rates | undefined> {
+async function fetchCoinbaseRates(signal?: AbortSignal): Promise<Rates> {
   const url = "https://api.coinbase.com/v2/exchange-rates?currency=BTC";
   const res = await fetch(url, {
     signal,
@@ -49,15 +49,15 @@ async function fetchCoinbaseRates(signal?: AbortSignal): Promise<Rates | undefin
   return { usdPerBtc, eurPerUsd };
 }
 
-export function useRates() {
-  return useQuery<Rates | undefined>({
+export function useRates(): UseQueryResult<Rates | null, Error> {
+  return useQuery<Rates | null, Error>({
     queryKey: ["rates", "coinbase"],
     queryFn: async ({ signal }) => {
       try {
         return await fetchCoinbaseRates(signal);
       } catch (error) {
         console.error("[useRates] Failed to fetch rates", error);
-        return undefined;
+        return null;
       }
     },
     staleTime: 60_000,

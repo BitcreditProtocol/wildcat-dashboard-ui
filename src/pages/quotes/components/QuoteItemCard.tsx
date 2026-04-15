@@ -87,6 +87,7 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
             <Currency
               value={quote.sum}
               sourceCurrency="sat"
+              highlightQuery={searchQuery}
               amountClassName="text-current"
               currencyClassName="text-xs font-normal text-muted-foreground"
               secondaryClassName="text-base"

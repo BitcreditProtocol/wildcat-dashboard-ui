@@ -138,9 +138,9 @@ describe("BalancesPage", () => {
     const page = renderWithProviders(<BalancesPage />);
 
     expect(page.textContent).toContain("100,000,000");
-    expect(page.textContent).toContain("€90,000.00");
+    expect(page.textContent).toContain("90,000.00");
     expect(page.textContent).toContain("50,000,000");
-    expect(page.textContent).toContain("€45,000.00");
+    expect(page.textContent).toContain("45,000.00");
     expect(page.textContent).toContain("555 e-IOU");
     expect(page.textContent).toContain("777 crsat");
   });

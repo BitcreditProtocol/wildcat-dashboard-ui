@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.11/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,7 +7,18 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!dev-dist", "!dev-dist/**", "!public", "!public/**"]
+    "includes": [
+      "**",
+      "!dev-dist",
+      "!dev-dist/**",
+      "!public",
+      "!public/**",
+      "!src/generated",
+      "!src/generated/**",
+      "!src/components/ui",
+      "!src/components/ui/**",
+      "!opt/wildcat/openapi.json"
+    ]
   },
   "formatter": {
     "enabled": true,

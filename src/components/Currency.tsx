@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useIntl } from "react-intl";
+import { HighlightText } from "@/components/ui/search";
 import { cn } from "@/lib/utils";
 import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
 import { convertAmount, formatAmountNumber, getLocaleForFormat } from "@/lib/currency";
@@ -9,6 +10,7 @@ export interface CurrencyProps {
   value: number;
   sourceCurrency?: CurrencyCode;
   currency?: CurrencyCode;
+  highlightQuery?: string;
   className?: string;
   amountClassName?: string;
   currencyClassName?: string;
@@ -19,6 +21,7 @@ export function Currency({
   value,
   sourceCurrency = "sat",
   currency,
+  highlightQuery,
   className,
   amountClassName,
   currencyClassName,
@@ -26,7 +29,8 @@ export function Currency({
 }: CurrencyProps) {
   const intl = useIntl();
   const { currency: preferredCurrency, decimalFormat } = usePreferences();
-  const { data: rates } = useRates();
+  const { data: ratesData } = useRates();
+  const rates = ratesData ?? undefined;
   const resolvedCurrency = currency ?? preferredCurrency;
   const locale = getLocaleForFormat(intl.locale, decimalFormat);
 
@@ -54,7 +58,7 @@ export function Currency({
       <span className="inline-flex items-baseline gap-1">
         <span className={amountClassName}>
           {primarySign}
-          {primaryFormatted}
+          <HighlightText text={primaryFormatted} highlight={highlightQuery ?? ""} />
         </span>
         <span className={cn("text-xs font-normal leading-normal text-muted-foreground", currencyClassName)}>{sourceCurrency}</span>
       </span>
@@ -62,7 +66,7 @@ export function Currency({
         <span className={cn("inline-flex items-baseline gap-1 text-sm text-muted-foreground", secondaryClassName)}>
           <span>
             {secondarySign}
-            {formatted}
+            {formatted ? <HighlightText text={formatted} highlight={highlightQuery ?? ""} /> : null}
           </span>
           <span className={cn("text-xs font-normal leading-normal text-muted-foreground", currencyClassName)}>{resolvedCurrency}</span>
         </span>

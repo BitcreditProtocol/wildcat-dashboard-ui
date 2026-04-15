@@ -115,7 +115,7 @@ describe("useRates", () => {
     await waitForSettled(() => page.firstElementChild?.getAttribute("data-status") ?? null);
 
     const probe = page.firstElementChild;
-    expect(probe?.getAttribute("data-status")).toBe("error");
+    expect(probe?.getAttribute("data-status")).toBe("success");
     expect(probe?.getAttribute("data-has-data")).toBe("false");
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();

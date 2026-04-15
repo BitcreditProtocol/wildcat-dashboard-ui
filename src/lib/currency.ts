@@ -100,8 +100,7 @@ export function convertAmount(amount: number, source: CurrencyCode, target: Curr
 export function formatAmountNumber(value: number, currency: CurrencyCode, locale: string): string {
   if (currency === "usd" || currency === "eur") {
     return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: currency.toUpperCase(),
+      style: "decimal",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
