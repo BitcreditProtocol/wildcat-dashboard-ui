@@ -11,11 +11,11 @@ import {
   usePreferences,
 } from "@/context/preferences/PreferencesContext";
 
-const CURRENCIES: Array<{
+const CURRENCIES: {
   value: CurrencyCode;
   labelId: string;
   defaultLabel: string;
-}> = [
+}[] = [
   {
     value: "sat",
     labelId: "settings.currency.sat",
@@ -38,11 +38,7 @@ const CURRENCIES: Array<{
   },
 ];
 
-export function CurrencySelector({
-  className,
-}: {
-  className?: string;
-}) {
+export function CurrencySelector({ className }: { className?: string }) {
   const intl = useIntl();
   const { currency, setCurrency } = usePreferences();
 

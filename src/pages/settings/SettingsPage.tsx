@@ -38,7 +38,8 @@ function PageBody() {
           <CardDescription>
             {intl.formatMessage({
               id: "settings.theme.description",
-              defaultMessage: "Choose how the dashboard should look on this device.",
+              defaultMessage:
+                "Choose how the dashboard should look on this device.",
             })}
           </CardDescription>
         </CardHeader>

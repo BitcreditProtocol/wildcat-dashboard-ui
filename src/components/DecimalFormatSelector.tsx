@@ -11,12 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const DECIMAL_FORMATS: Array<{
+const DECIMAL_FORMATS: {
   value: DecimalFormat;
   labelId: string;
   defaultLabel: string;
   example: string;
-}> = [
+}[] = [
   {
     value: "point",
     labelId: "settings.decimalFormat.point",
@@ -37,11 +37,7 @@ const DECIMAL_FORMATS: Array<{
   },
 ];
 
-export function DecimalFormatSelector({
-  className,
-}: {
-  className?: string;
-}) {
+export function DecimalFormatSelector({ className }: { className?: string }) {
   const intl = useIntl();
   const { decimalFormat, setDecimalFormat } = usePreferences();
 

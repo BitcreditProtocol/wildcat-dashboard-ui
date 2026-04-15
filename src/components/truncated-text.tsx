@@ -37,10 +37,14 @@ export function isLikelyNodeId(value: string): boolean {
   return /^bitcr[a-z0-9][0-9a-f]{20,}$/i.test(trimmed);
 }
 
-type SegmentPart = { segment: string };
-type SegmenterInstance = {
+interface SegmentPart {
+  segment: string;
+}
+
+interface SegmenterInstance {
   segment: (input: string) => Iterable<SegmentPart>;
-};
+}
+
 type SegmenterCtor = new (
   locales?: string | string[],
   options?: { granularity: "grapheme" },
@@ -141,19 +145,35 @@ export function extractTextFromNode(node: unknown): string {
   return "";
 }
 
-export type TruncatedTextState = {
+export interface TruncatedTextState {
   flatLabel: string;
   hasComputedTruncation: boolean;
   hasLengthFallbackOverflow: boolean;
   lines: string[];
   shouldShowPopover: boolean;
   visibleLines: string[];
-};
+}
 
 export function getTruncatedTextState(
   text: React.ReactNode,
   maxLength?: number,
 ): TruncatedTextState {
+  if (maxLength !== undefined && !Number.isFinite(maxLength)) {
+    const textStr = extractTextFromNode(text);
+    const lines = textStr
+      .split(/\r?\n/)
+      .map((line) => line.replace(/\s+$/g, ""));
+
+    return {
+      flatLabel: lines.join(", "),
+      hasComputedTruncation: false,
+      hasLengthFallbackOverflow: false,
+      lines,
+      shouldShowPopover: false,
+      visibleLines: lines,
+    };
+  }
+
   const effectiveMaxLength = maxLength ?? 24;
   const hasExplicitMaxLength = maxLength !== undefined;
   const textStr = extractTextFromNode(text);
@@ -186,7 +206,8 @@ export function getTruncatedTextState(
 
     if (hasExplicitMaxLength) {
       const hasExceededLimit =
-        line.length > effectiveMaxLength || visualWidth(line) > effectiveMaxLength;
+        line.length > effectiveMaxLength ||
+        visualWidth(line) > effectiveMaxLength;
       const canUseExplicitEndTruncation =
         !containsRtl(line) && visualWidth(line) === line.length;
 

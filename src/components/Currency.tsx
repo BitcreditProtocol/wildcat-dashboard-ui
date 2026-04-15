@@ -1,7 +1,11 @@
 import { useMemo } from "react";
 import { useIntl } from "react-intl";
+import { HighlightText } from "@/components/ui/search";
 import { cn } from "@/lib/utils";
-import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
+import {
+  usePreferences,
+  type CurrencyCode,
+} from "@/context/preferences/PreferencesContext";
 import {
   convertAmount,
   formatAmountNumber,
@@ -9,20 +13,22 @@ import {
 } from "@/lib/currency";
 import { useRates } from "@/hooks/useRates";
 
-export type CurrencyProps = {
+export interface CurrencyProps {
   value: number;
   sourceCurrency?: CurrencyCode;
   currency?: CurrencyCode;
+  highlightQuery?: string;
   className?: string;
   amountClassName?: string;
   currencyClassName?: string;
   secondaryClassName?: string;
-};
+}
 
 export function Currency({
   value,
   sourceCurrency = "sat",
   currency,
+  highlightQuery,
   className,
   amountClassName,
   currencyClassName,
@@ -39,16 +45,13 @@ export function Currency({
     [locale, sourceCurrency, value],
   );
 
-  const resolvedValue = useMemo(
-    () => {
-      try {
-        return convertAmount(value, sourceCurrency, resolvedCurrency, rates);
-      } catch {
-        return null;
-      }
-    },
-    [rates, resolvedCurrency, sourceCurrency, value],
-  );
+  const resolvedValue = useMemo(() => {
+    try {
+      return convertAmount(value, sourceCurrency, resolvedCurrency, rates);
+    } catch {
+      return null;
+    }
+  }, [rates, resolvedCurrency, sourceCurrency, value]);
 
   const formatted = useMemo(
     () =>
@@ -60,14 +63,18 @@ export function Currency({
 
   const primarySign = value < 0 ? "-" : "";
   const secondarySign = resolvedValue !== null && resolvedValue < 0 ? "-" : "";
-  const showSecondary = resolvedValue !== null && resolvedCurrency !== sourceCurrency;
+  const showSecondary =
+    resolvedValue !== null && resolvedCurrency !== sourceCurrency;
 
   return (
     <span className={cn("inline-flex items-baseline gap-2", className)}>
       <span className="inline-flex items-baseline gap-1">
         <span className={amountClassName}>
           {primarySign}
-          {primaryFormatted}
+          <HighlightText
+            text={primaryFormatted}
+            highlight={highlightQuery ?? ""}
+          />
         </span>
         <span
           className={cn(
@@ -87,7 +94,12 @@ export function Currency({
         >
           <span>
             {secondarySign}
-            {formatted}
+            {formatted ? (
+              <HighlightText
+                text={formatted}
+                highlight={highlightQuery ?? ""}
+              />
+            ) : null}
           </span>
           <span
             className={cn(

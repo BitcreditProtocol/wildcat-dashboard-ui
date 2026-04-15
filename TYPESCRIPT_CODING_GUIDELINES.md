@@ -227,6 +227,7 @@ These should be treated as non-optional.
 ## 18. Improvements Still Missing or Worth Adding
 
 The current codebase is in a decent place, but these gaps remain:
+
 1. Consider enforcing naming conventions for types and boolean variables through ESLint.
 2. Consider documenting service-layer contracts and payload conventions more explicitly.
    Several recent bugs came from subtle payload and optional-field behavior.
@@ -237,6 +238,7 @@ The current codebase is in a decent place, but these gaps remain:
 ## 19. Practical Rule of Thumb
 
 When there is tension between speed and style:
+
 1. Keep the code correct.
 2. Keep the code readable.
 3. Match existing repo patterns unless they are clearly causing bugs.
