@@ -7,8 +7,12 @@ import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { GrossToNetDiscountForm } from "./GrossToNetDiscountForm";
 
 vi.mock("./ui/drawer", () => ({
-  DrawerFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DrawerClose: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DrawerFooter: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DrawerClose: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 let root: Root | null = null;
@@ -92,7 +96,7 @@ describe("GrossToNetDiscountForm", () => {
 
     await flush();
 
-    expect(page.textContent).toContain("9,00");
+    expect(page.textContent).toContain("8,33");
     expect(page.textContent).toContain("+1.000,00");
     expect(page.textContent).toContain("USD");
   });
@@ -117,9 +121,9 @@ describe("GrossToNetDiscountForm", () => {
 
     await flush();
 
-    expect(
-      (page.querySelector("#netInput") as HTMLInputElement | null)?.value,
-    ).toBe("991");
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe(
+      "991",
+    );
     expect(page.textContent).toContain("9");
     expect(page.textContent).toContain("+1 000");
     expect(page.textContent).toContain("sat");

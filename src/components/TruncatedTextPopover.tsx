@@ -101,10 +101,7 @@ export function TruncatedTextPopover({
     hasComputedTruncation,
     hasLengthFallbackOverflow,
     visibleLines,
-  } = getTruncatedTextState(
-    text,
-    Number.isFinite(effectiveMaxLength) ? effectiveMaxLength : undefined,
-  );
+  } = getTruncatedTextState(text, effectiveMaxLength);
 
   const handleCopy = async () => {
     try {
@@ -146,7 +143,8 @@ export function TruncatedTextPopover({
       if (lineElements.length > 0) {
         setHasWidthOverflow(
           lineElements.some(
-            (lineElement) => lineElement.scrollWidth - lineElement.clientWidth > 1,
+            (lineElement) =>
+              lineElement.scrollWidth - lineElement.clientWidth > 1,
           ),
         );
         return;
@@ -179,9 +177,9 @@ export function TruncatedTextPopover({
 
   const shouldShowPopover =
     hasComputedTruncation || hasWidthOverflow || hasLengthFallbackOverflow;
-  const visibleTextNode = visibleLines.map((line) => (
+  const visibleTextNode = visibleLines.map((line, index) => (
     <span
-      key={line}
+      key={`${index}-${line}`}
       data-truncated-text-line
       className="block w-full min-w-0 max-w-full truncate"
     >

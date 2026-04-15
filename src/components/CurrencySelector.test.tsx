@@ -23,9 +23,13 @@ vi.mock("@/components/ui/select", () => ({
       {children}
     </select>
   ),
-  SelectTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
   SelectValue: () => null,
-  SelectContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  SelectContent: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
   SelectItem: ({
     value,
     children,
@@ -96,9 +100,9 @@ describe("CurrencySelector", () => {
 
   it("persists the selected currency preference", () => {
     const page = renderWithProviders(<CurrencySelector />);
-    const select = page.querySelector(
+    const select = page.querySelector<HTMLSelectElement>(
       '[data-testid="currency-select"]',
-    ) as HTMLSelectElement | null;
+    );
 
     expect(select?.value).toBe("sat");
 

@@ -5,10 +5,10 @@ import type {
 
 export type FiatCurrencyCode = "usd" | "eur";
 export type CryptoCurrencyCode = "btc" | "sat";
-export type Rates = {
+export interface Rates {
   usdPerBtc: number;
   eurPerUsd: number;
-};
+}
 
 export const SATS_PER_BTC = 100_000_000 as const;
 
@@ -40,7 +40,11 @@ export function getEurPerBtc(rates: Rates): number {
   return rates.usdPerBtc * rates.eurPerUsd;
 }
 
-function btcToFiat(btc: number, currency: FiatCurrencyCode, rates: Rates): number {
+function btcToFiat(
+  btc: number,
+  currency: FiatCurrencyCode,
+  rates: Rates,
+): number {
   switch (currency) {
     case "usd":
       return btc * rates.usdPerBtc;
@@ -49,7 +53,11 @@ function btcToFiat(btc: number, currency: FiatCurrencyCode, rates: Rates): numbe
   }
 }
 
-function fiatToBtc(amount: number, currency: FiatCurrencyCode, rates: Rates): number {
+function fiatToBtc(
+  amount: number,
+  currency: FiatCurrencyCode,
+  rates: Rates,
+): number {
   switch (currency) {
     case "usd":
       return amount / rates.usdPerBtc;
@@ -123,8 +131,7 @@ export function formatAmountNumber(
 ): string {
   if (currency === "usd" || currency === "eur") {
     return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: currency.toUpperCase(),
+      style: "decimal",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);

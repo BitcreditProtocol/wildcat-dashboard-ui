@@ -5,10 +5,22 @@ import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
+import type { Rates } from "@/lib/currency";
 import BalancesPage from "./BalancesPage";
 
-const mockUseRates = vi.fn();
-const mockUseQuery = vi.fn();
+interface MockCoverage {
+  data?: {
+    onchain_collateral: number;
+    eiou_collateral: number;
+    credit_circulating_supply: number;
+    debit_circulating_supply: number;
+  };
+  isError: boolean;
+  refetch: ReturnType<typeof vi.fn>;
+}
+
+const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
+const mockUseQuery = vi.fn<() => MockCoverage>();
 
 vi.mock("@/hooks/useRates", () => ({
   useRates: () => mockUseRates(),
@@ -20,7 +32,7 @@ vi.mock("@tanstack/react-query", async () => {
   );
   return {
     ...actual,
-    useQuery: (options: unknown) => mockUseQuery(options),
+    useQuery: () => mockUseQuery(),
   };
 });
 
@@ -31,22 +43,30 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 }));
 
 vi.mock("@/components/Breadcrumbs", () => ({
-  Breadcrumbs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Breadcrumbs: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("@/components/PageTitle", () => ({
-  PageTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PageTitle: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("@/components/ui/chart", () => ({
-  ChartContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ChartContainer: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   ChartLegend: () => null,
   ChartLegendContent: () => null,
 }));
 
 vi.mock("recharts", () => ({
   Bar: () => null,
-  BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
@@ -128,9 +148,9 @@ describe("BalancesPage", () => {
     const page = renderWithProviders(<BalancesPage />);
 
     expect(page.textContent).toContain("100,000,000");
-    expect(page.textContent).toContain("€90,000.00");
+    expect(page.textContent).toContain("90,000.00");
     expect(page.textContent).toContain("50,000,000");
-    expect(page.textContent).toContain("€45,000.00");
+    expect(page.textContent).toContain("45,000.00");
     expect(page.textContent).toContain("555 e-IOU");
     expect(page.textContent).toContain("777 crsat");
   });

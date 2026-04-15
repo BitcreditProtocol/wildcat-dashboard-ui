@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-type TruncatedLinkPopoverProps = {
+interface TruncatedLinkPopoverProps {
   href: string;
   text?: React.ReactNode;
   maxLength?: number;
@@ -22,7 +22,7 @@ type TruncatedLinkPopoverProps = {
   pressOpenDelay?: number;
   target?: React.HTMLAttributeAnchorTarget;
   rel?: string;
-};
+}
 
 export function TruncatedLinkPopover({
   href,
@@ -125,7 +125,8 @@ export function TruncatedLinkPopover({
       if (lineElements.length > 0) {
         setHasWidthOverflow(
           lineElements.some(
-            (lineElement) => lineElement.scrollWidth - lineElement.clientWidth > 1,
+            (lineElement) =>
+              lineElement.scrollWidth - lineElement.clientWidth > 1,
           ),
         );
         return;
@@ -158,9 +159,9 @@ export function TruncatedLinkPopover({
 
   const shouldShowPopover =
     hasComputedTruncation || hasWidthOverflow || hasLengthFallbackOverflow;
-  const visibleTextNode = visibleLines.map((line) => (
+  const visibleTextNode = visibleLines.map((line, index) => (
     <span
-      key={line}
+      key={`${index}-${line}`}
       data-truncated-text-line
       className="block w-full min-w-0 max-w-full truncate"
     >
@@ -168,7 +169,7 @@ export function TruncatedLinkPopover({
     </span>
   ));
 
-  const resolvedTitle = shouldShowPopover ? undefined : title ?? flatLabel;
+  const resolvedTitle = shouldShowPopover ? undefined : (title ?? flatLabel);
 
   if (!shouldShowPopover) {
     return (
@@ -190,7 +191,10 @@ export function TruncatedLinkPopover({
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
       <PopoverAnchor asChild>
         <a
           ref={triggerRef}

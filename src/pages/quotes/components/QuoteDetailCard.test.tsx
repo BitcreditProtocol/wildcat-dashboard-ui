@@ -4,9 +4,37 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
+import type {
+  BillIdentParticipant,
+  BillParticipant,
+  Id,
+  InfoReply,
+} from "@/generated/client/types.gen";
+import type { Rates } from "@/lib/currency";
 import { QuoteDetailCard } from "./QuoteDetailCard";
 
-const mockUseRates = vi.fn();
+const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
+
+const participant: BillIdentParticipant = {
+  type: "Company",
+  node_id: "node-1",
+  name: "ACME Corp",
+  country: "AT",
+  city: "Vienna",
+  address: "Street 1",
+  nostr_relays: [],
+};
+
+const payee: BillParticipant = {
+  Ident: participant,
+};
+
+const keysetId: Id = {
+  version: "Version00",
+  id: {
+    V1: [1, 2, 3, 4],
+  },
+};
 
 vi.mock("@/hooks/useRates", () => ({
   useRates: () => mockUseRates(),
@@ -18,7 +46,9 @@ vi.mock("@/components/ParticipantsOverview", () => ({
 }));
 
 vi.mock("@/components/TruncatedTextPopover", () => ({
-  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => <span>{text}</span>,
+  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => (
+    <span>{text}</span>
+  ),
 }));
 
 vi.mock("@/components/QRCodeWithErrorBoundary", () => ({
@@ -51,7 +81,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
   );
 }
 
-const baseQuote = {
+const baseQuote: InfoReply = {
   id: "quote-1",
   status: "Accepted",
   discounted: 80_000_000,
@@ -59,12 +89,14 @@ const baseQuote = {
     id: "bill-1",
     sum: 100_000_000,
     maturity_date: "2026-03-01",
-    drawee: {},
-    drawer: {},
-    payee: {},
+    drawee: participant,
+    drawer: participant,
+    payee,
     endorsees: [],
+    file_urls: [],
   },
-} as never;
+  keyset_id: keysetId,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -121,10 +153,10 @@ describe("QuoteDetailCard", () => {
 
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
-    expect(page.textContent).toContain("€90,000.00");
+    expect(page.textContent).toContain("90,000.00");
     expect(page.textContent).toContain("eur");
-    expect(page.textContent).toContain("€72,000.00");
-    expect(page.textContent).toContain("€18,000.00");
+    expect(page.textContent).toContain("72,000.00");
+    expect(page.textContent).toContain("18,000.00");
   });
 
   it("falls back to sat-only values when fiat rates are unavailable", () => {
@@ -153,7 +185,6 @@ describe("QuoteDetailCard", () => {
 
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
-    expect(page.textContent).not.toContain("€");
     expect(page.textContent).not.toContain("eur");
   });
 });

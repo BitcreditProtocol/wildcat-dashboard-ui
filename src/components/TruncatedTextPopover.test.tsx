@@ -76,13 +76,20 @@ beforeEach(() => {
 
 describe("TruncatedTextPopover", () => {
   it("truncates likely node ids from the middle", () => {
-    const state = getTruncatedTextState(
-      "bitcrx1234567890abcdef1234567890",
-      12,
-    );
+    const state = getTruncatedTextState("bitcrx1234567890abcdef1234567890", 12);
 
     expect(state.visibleLines[0]).toBe("bitcrx…67890");
     expect(state.hasComputedTruncation).toBe(true);
+  });
+
+  it("skips truncation entirely when maxLength is Infinity", () => {
+    const nodeId = "bitcrx1234567890abcdef1234567890";
+    const state = getTruncatedTextState(nodeId, Infinity);
+
+    expect(state.visibleLines[0]).toBe(nodeId);
+    expect(state.hasComputedTruncation).toBe(false);
+    expect(state.hasLengthFallbackOverflow).toBe(false);
+    expect(state.shouldShowPopover).toBe(false);
   });
 
   it("renders plain text when no truncation is needed", () => {
