@@ -69,10 +69,7 @@ export function parseAmountString(
     return undefined;
   }
 
-  const normalized = raw
-    .split(group)
-    .join("")
-    .replace(decimal, ".");
+  const normalized = raw.split(group).join("").replace(decimal, ".");
 
   if (!/^-?\d+(?:\.\d+)?$/.test(normalized)) {
     return undefined;

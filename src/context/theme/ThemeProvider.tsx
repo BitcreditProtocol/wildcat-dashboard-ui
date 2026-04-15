@@ -35,7 +35,10 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const getSystemPrefersDark = useCallback(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return false;
     }
 
@@ -48,7 +51,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   );
 
   const currentTheme = useMemo<"light" | "dark">(() => {
-    const isDark = theme === "dark" || (theme === "system" && isSystemPrefersDark);
+    const isDark =
+      theme === "dark" || (theme === "system" && isSystemPrefersDark);
     return isDark ? "dark" : "light";
   }, [theme, isSystemPrefersDark]);
 
@@ -59,7 +63,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     applyTheme(currentTheme);
 
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return;
     }
 

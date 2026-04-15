@@ -2,7 +2,10 @@ import { useMemo } from "react";
 import { useIntl } from "react-intl";
 import { HighlightText } from "@/components/ui/search";
 import { cn } from "@/lib/utils";
-import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
+import {
+  usePreferences,
+  type CurrencyCode,
+} from "@/context/preferences/PreferencesContext";
 import {
   convertAmount,
   formatAmountNumber,
@@ -42,16 +45,13 @@ export function Currency({
     [locale, sourceCurrency, value],
   );
 
-  const resolvedValue = useMemo(
-    () => {
-      try {
-        return convertAmount(value, sourceCurrency, resolvedCurrency, rates);
-      } catch {
-        return null;
-      }
-    },
-    [rates, resolvedCurrency, sourceCurrency, value],
-  );
+  const resolvedValue = useMemo(() => {
+    try {
+      return convertAmount(value, sourceCurrency, resolvedCurrency, rates);
+    } catch {
+      return null;
+    }
+  }, [rates, resolvedCurrency, sourceCurrency, value]);
 
   const formatted = useMemo(
     () =>
@@ -63,14 +63,18 @@ export function Currency({
 
   const primarySign = value < 0 ? "-" : "";
   const secondarySign = resolvedValue !== null && resolvedValue < 0 ? "-" : "";
-  const showSecondary = resolvedValue !== null && resolvedCurrency !== sourceCurrency;
+  const showSecondary =
+    resolvedValue !== null && resolvedCurrency !== sourceCurrency;
 
   return (
     <span className={cn("inline-flex items-baseline gap-2", className)}>
       <span className="inline-flex items-baseline gap-1">
         <span className={amountClassName}>
           {primarySign}
-          <HighlightText text={primaryFormatted} highlight={highlightQuery ?? ""} />
+          <HighlightText
+            text={primaryFormatted}
+            highlight={highlightQuery ?? ""}
+          />
         </span>
         <span
           className={cn(
@@ -90,7 +94,12 @@ export function Currency({
         >
           <span>
             {secondarySign}
-            {formatted ? <HighlightText text={formatted} highlight={highlightQuery ?? ""} /> : null}
+            {formatted ? (
+              <HighlightText
+                text={formatted}
+                highlight={highlightQuery ?? ""}
+              />
+            ) : null}
           </span>
           <span
             className={cn(

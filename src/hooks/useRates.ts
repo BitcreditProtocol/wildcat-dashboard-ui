@@ -32,7 +32,9 @@ async function fetchCoinbaseRates(
   const eurRate = response.data?.rates?.EUR;
 
   if (typeof usdRate !== "string" || typeof eurRate !== "string") {
-    throw new Error("Unexpected Coinbase payload: missing rates.USD or rates.EUR");
+    throw new Error(
+      "Unexpected Coinbase payload: missing rates.USD or rates.EUR",
+    );
   }
 
   const usdPerBtc = parseFloat(usdRate);

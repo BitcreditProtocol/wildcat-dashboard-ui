@@ -125,7 +125,8 @@ export function TruncatedLinkPopover({
       if (lineElements.length > 0) {
         setHasWidthOverflow(
           lineElements.some(
-            (lineElement) => lineElement.scrollWidth - lineElement.clientWidth > 1,
+            (lineElement) =>
+              lineElement.scrollWidth - lineElement.clientWidth > 1,
           ),
         );
         return;
@@ -168,7 +169,7 @@ export function TruncatedLinkPopover({
     </span>
   ));
 
-  const resolvedTitle = shouldShowPopover ? undefined : title ?? flatLabel;
+  const resolvedTitle = shouldShowPopover ? undefined : (title ?? flatLabel);
 
   if (!shouldShowPopover) {
     return (
@@ -190,7 +191,10 @@ export function TruncatedLinkPopover({
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
       <PopoverAnchor asChild>
         <a
           ref={triggerRef}

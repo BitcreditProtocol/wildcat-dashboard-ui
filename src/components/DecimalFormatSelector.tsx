@@ -37,11 +37,7 @@ const DECIMAL_FORMATS: Array<{
   },
 ];
 
-export function DecimalFormatSelector({
-  className,
-}: {
-  className?: string;
-}) {
+export function DecimalFormatSelector({ className }: { className?: string }) {
   const intl = useIntl();
   const { decimalFormat, setDecimalFormat } = usePreferences();
 

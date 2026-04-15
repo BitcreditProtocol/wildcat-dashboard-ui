@@ -432,7 +432,16 @@ const GrossToNetDiscountForm = ({
       skipNetToRateRef.current = true;
       setValue("netInput", formattedNet, { shouldValidate: true });
     }
-  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatAmount]);
+  }, [
+    gross,
+    days,
+    discountRate,
+    lastEdited,
+    setValue,
+    isSat,
+    netInput,
+    formatAmount,
+  ]);
 
   useEffect(() => {
     if (skipNetToRateRef.current) {

@@ -40,7 +40,11 @@ export function getEurPerBtc(rates: Rates): number {
   return rates.usdPerBtc * rates.eurPerUsd;
 }
 
-function btcToFiat(btc: number, currency: FiatCurrencyCode, rates: Rates): number {
+function btcToFiat(
+  btc: number,
+  currency: FiatCurrencyCode,
+  rates: Rates,
+): number {
   switch (currency) {
     case "usd":
       return btc * rates.usdPerBtc;
@@ -49,7 +53,11 @@ function btcToFiat(btc: number, currency: FiatCurrencyCode, rates: Rates): numbe
   }
 }
 
-function fiatToBtc(amount: number, currency: FiatCurrencyCode, rates: Rates): number {
+function fiatToBtc(
+  amount: number,
+  currency: FiatCurrencyCode,
+  rates: Rates,
+): number {
   switch (currency) {
     case "usd":
       return amount / rates.usdPerBtc;

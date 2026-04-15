@@ -156,7 +156,9 @@ export function getTruncatedTextState(
 ): TruncatedTextState {
   if (maxLength !== undefined && !Number.isFinite(maxLength)) {
     const textStr = extractTextFromNode(text);
-    const lines = textStr.split(/\r?\n/).map((line) => line.replace(/\s+$/g, ""));
+    const lines = textStr
+      .split(/\r?\n/)
+      .map((line) => line.replace(/\s+$/g, ""));
 
     return {
       flatLabel: lines.join(", "),
@@ -200,7 +202,8 @@ export function getTruncatedTextState(
 
     if (hasExplicitMaxLength) {
       const hasExceededLimit =
-        line.length > effectiveMaxLength || visualWidth(line) > effectiveMaxLength;
+        line.length > effectiveMaxLength ||
+        visualWidth(line) > effectiveMaxLength;
       const canUseExplicitEndTruncation =
         !containsRtl(line) && visualWidth(line) === line.length;
 

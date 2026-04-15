@@ -25,7 +25,12 @@ const getStoredDecimalFormat = (): DecimalFormat => {
 
 const getStoredCurrency = (): CurrencyCode => {
   const stored = getItem<CurrencyCode>(CURRENCY_STORAGE_KEY);
-  if (stored === "sat" || stored === "btc" || stored === "eur" || stored === "usd") {
+  if (
+    stored === "sat" ||
+    stored === "btc" ||
+    stored === "eur" ||
+    stored === "usd"
+  ) {
     return stored;
   }
 

@@ -76,10 +76,7 @@ beforeEach(() => {
 
 describe("TruncatedTextPopover", () => {
   it("truncates likely node ids from the middle", () => {
-    const state = getTruncatedTextState(
-      "bitcrx1234567890abcdef1234567890",
-      12,
-    );
+    const state = getTruncatedTextState("bitcrx1234567890abcdef1234567890", 12);
 
     expect(state.visibleLines[0]).toBe("bitcrx…67890");
     expect(state.hasComputedTruncation).toBe(true);

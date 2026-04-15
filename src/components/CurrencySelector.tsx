@@ -38,11 +38,7 @@ const CURRENCIES: Array<{
   },
 ];
 
-export function CurrencySelector({
-  className,
-}: {
-  className?: string;
-}) {
+export function CurrencySelector({ className }: { className?: string }) {
   const intl = useIntl();
   const { currency, setCurrency } = usePreferences();
 
