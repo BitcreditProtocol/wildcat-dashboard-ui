@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useIntl } from "react-intl";
+import { HighlightText } from "@/components/ui/search";
 import { cn } from "@/lib/utils";
 import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
 import {
@@ -13,6 +14,7 @@ export type CurrencyProps = {
   value: number;
   sourceCurrency?: CurrencyCode;
   currency?: CurrencyCode;
+  highlightQuery?: string;
   className?: string;
   amountClassName?: string;
   currencyClassName?: string;
@@ -23,6 +25,7 @@ export function Currency({
   value,
   sourceCurrency = "sat",
   currency,
+  highlightQuery,
   className,
   amountClassName,
   currencyClassName,
@@ -67,7 +70,7 @@ export function Currency({
       <span className="inline-flex items-baseline gap-1">
         <span className={amountClassName}>
           {primarySign}
-          {primaryFormatted}
+          <HighlightText text={primaryFormatted} highlight={highlightQuery ?? ""} />
         </span>
         <span
           className={cn(
@@ -87,7 +90,7 @@ export function Currency({
         >
           <span>
             {secondarySign}
-            {formatted}
+            {formatted ? <HighlightText text={formatted} highlight={highlightQuery ?? ""} /> : null}
           </span>
           <span
             className={cn(

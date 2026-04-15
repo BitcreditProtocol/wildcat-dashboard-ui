@@ -154,6 +154,20 @@ export function getTruncatedTextState(
   text: React.ReactNode,
   maxLength?: number,
 ): TruncatedTextState {
+  if (maxLength !== undefined && !Number.isFinite(maxLength)) {
+    const textStr = extractTextFromNode(text);
+    const lines = textStr.split(/\r?\n/).map((line) => line.replace(/\s+$/g, ""));
+
+    return {
+      flatLabel: lines.join(", "),
+      hasComputedTruncation: false,
+      hasLengthFallbackOverflow: false,
+      lines,
+      shouldShowPopover: false,
+      visibleLines: lines,
+    };
+  }
+
   const effectiveMaxLength = maxLength ?? 24;
   const hasExplicitMaxLength = maxLength !== undefined;
   const textStr = extractTextFromNode(text);

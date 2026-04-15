@@ -123,8 +123,7 @@ export function formatAmountNumber(
 ): string {
   if (currency === "usd" || currency === "eur") {
     return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: currency.toUpperCase(),
+      style: "decimal",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);

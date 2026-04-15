@@ -85,6 +85,16 @@ describe("TruncatedTextPopover", () => {
     expect(state.hasComputedTruncation).toBe(true);
   });
 
+  it("skips truncation entirely when maxLength is Infinity", () => {
+    const nodeId = "bitcrx1234567890abcdef1234567890";
+    const state = getTruncatedTextState(nodeId, Infinity);
+
+    expect(state.visibleLines[0]).toBe(nodeId);
+    expect(state.hasComputedTruncation).toBe(false);
+    expect(state.hasLengthFallbackOverflow).toBe(false);
+    expect(state.shouldShowPopover).toBe(false);
+  });
+
   it("renders plain text when no truncation is needed", () => {
     const page = renderWithIntl(
       <TruncatedTextPopover

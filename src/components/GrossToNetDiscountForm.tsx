@@ -57,7 +57,10 @@ const GrossToNetDiscountForm = ({
   quoteId,
 }: GrossToNetProps) => {
   const intl = useIntl();
-  const { formatAmount: formatAmountByPreference } = useAmountFormatter();
+  const {
+    formatAmount: formatAmountByPreference,
+    parseAmount: parseAmountByPreference,
+  } = useAmountFormatter();
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false);
   const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null);
   const isSat = gross.currency === "sat";
@@ -98,7 +101,7 @@ const GrossToNetDiscountForm = ({
       });
     }
 
-    const parsed = isSat ? parseIntSafe(value) : parseFloatSafe(value);
+    const parsed = isSat ? parseIntSafe(value) : parseAmountByPreference(value);
     if (parsed === undefined || Number.isNaN(parsed)) {
       return intl.formatMessage({
         id: "discountForm.validation.net.invalid",
@@ -299,9 +302,9 @@ const GrossToNetDiscountForm = ({
       const parsed = parseIntSafe(netInput);
       return parsed === undefined ? undefined : new Big(parsed);
     }
-    const parsed = parseFloatSafe(netInput);
+    const parsed = parseAmountByPreference(netInput);
     return parsed === undefined ? undefined : new Big(parsed);
-  }, [netInput, isSat]);
+  }, [netInput, isSat, parseAmountByPreference]);
 
   const discount = useMemo<CurrencyAmount | undefined>(() => {
     return net === undefined
@@ -314,12 +317,17 @@ const GrossToNetDiscountForm = ({
 
   const prevNetInputRef = useRef<string | undefined>(undefined);
 
-  const formatAmount = (value: Big, currency: string) => {
-    if (currency === "sat") {
-      return formatAmountByPreference(value.round(0, Big.roundDown).toFixed(0));
-    }
-    return formatAmountByPreference(value.toFixed(NET_INPUT_DECIMALS));
-  };
+  const formatAmount = React.useCallback(
+    (value: Big, currency: string) => {
+      if (currency === "sat") {
+        return formatAmountByPreference(
+          value.round(0, Big.roundDown).toFixed(0),
+        );
+      }
+      return formatAmountByPreference(value.toFixed(NET_INPUT_DECIMALS));
+    },
+    [formatAmountByPreference],
+  );
 
   useEffect(() => {
     if (hasSetInitialDays) {
@@ -424,7 +432,7 @@ const GrossToNetDiscountForm = ({
       skipNetToRateRef.current = true;
       setValue("netInput", formattedNet, { shouldValidate: true });
     }
-  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput]);
+  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatAmount]);
 
   useEffect(() => {
     if (skipNetToRateRef.current) {
@@ -627,7 +635,7 @@ const GrossToNetDiscountForm = ({
                 <input
                   id="netInput"
                   step={isSat ? "1" : "0.01"}
-                  type="number"
+                  type={isSat ? "number" : "text"}
                   inputMode={isSat ? "numeric" : "decimal"}
                   className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-green-600 dark:text-green-400 w-28"
                   {...netInputRegister}
