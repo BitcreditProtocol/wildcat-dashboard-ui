@@ -5,10 +5,31 @@ import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import type { Rates } from "@/lib/currency";
-import type { InfoReply } from "@/generated/client/types.gen";
+import type { BillIdentParticipant, BillParticipant, Id, InfoReply } from "@/generated/client/types.gen";
 import { QuoteDetailCard } from "./QuoteDetailCard";
 
 const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
+
+const participant: BillIdentParticipant = {
+  type: "Company",
+  node_id: "node-1",
+  name: "ACME Corp",
+  country: "AT",
+  city: "Vienna",
+  address: "Street 1",
+  nostr_relays: [],
+};
+
+const payee: BillParticipant = {
+  Ident: participant,
+};
+
+const keysetId: Id = {
+  version: "Version00",
+  id: {
+    V1: [1, 2, 3, 4],
+  },
+};
 
 vi.mock("@/hooks/useRates", () => ({
   useRates: () => mockUseRates(),
@@ -61,12 +82,13 @@ const baseQuote: InfoReply = {
     id: "bill-1",
     sum: 100_000_000,
     maturity_date: "2026-03-01",
-    drawee: {},
-    drawer: {},
-    payee: {},
+    drawee: participant,
+    drawer: participant,
+    payee,
     endorsees: [],
+    file_urls: [],
   },
-  keyset_id: "keyset-1",
+  keyset_id: keysetId,
 };
 
 beforeEach(() => {
