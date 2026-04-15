@@ -11,11 +11,11 @@ import {
   usePreferences,
 } from "@/context/preferences/PreferencesContext";
 
-const CURRENCIES: Array<{
+const CURRENCIES: {
   value: CurrencyCode;
   labelId: string;
   defaultLabel: string;
-}> = [
+}[] = [
   {
     value: "sat",
     labelId: "settings.currency.sat",

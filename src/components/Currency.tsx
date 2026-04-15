@@ -13,7 +13,7 @@ import {
 } from "@/lib/currency";
 import { useRates } from "@/hooks/useRates";
 
-export type CurrencyProps = {
+export interface CurrencyProps {
   value: number;
   sourceCurrency?: CurrencyCode;
   currency?: CurrencyCode;
@@ -22,7 +22,7 @@ export type CurrencyProps = {
   amountClassName?: string;
   currencyClassName?: string;
   secondaryClassName?: string;
-};
+}
 
 export function Currency({
   value,

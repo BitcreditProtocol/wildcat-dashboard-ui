@@ -10,10 +10,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type ThemeSelectorProps = {
+interface ThemeSelectorProps {
   className?: string;
   showLabel?: boolean;
-};
+}
 
 const themeIcons = {
   light: Sun,

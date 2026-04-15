@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { Rates } from "@/lib/currency";
 
-type CoinbaseResponse = {
+interface CoinbaseResponse {
   data?: {
     currency?: string;
     rates?: {
@@ -10,7 +10,7 @@ type CoinbaseResponse = {
       EUR?: string;
     };
   };
-};
+}
 
 async function fetchCoinbaseRates(
   signal?: AbortSignal,
@@ -77,7 +77,7 @@ export function useRates() {
       if (failureCount >= 3) {
         return false;
       }
-      const message = (error as { message?: string }).message || "";
+      const message = (error as { message?: string }).message ?? "";
       return /429|5\d\d|network|fetch/i.test(message);
     },
     retryDelay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 10_000),

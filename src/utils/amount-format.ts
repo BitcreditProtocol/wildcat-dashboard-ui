@@ -29,7 +29,7 @@ export function formatAmountString(
     return raw;
   }
 
-  const match = raw.match(/^(-?)(\d+)(?:\.(\d+))?$/);
+  const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(raw);
   if (!match) {
     return raw;
   }
