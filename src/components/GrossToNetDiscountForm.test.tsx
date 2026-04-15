@@ -96,7 +96,7 @@ describe("GrossToNetDiscountForm", () => {
 
     await flush();
 
-    expect(page.textContent).toContain("9,00");
+    expect(page.textContent).toContain("8,33");
     expect(page.textContent).toContain("+1.000,00");
     expect(page.textContent).toContain("USD");
   });
