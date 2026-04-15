@@ -36,7 +36,8 @@ export function Currency({
 }: CurrencyProps) {
   const intl = useIntl();
   const { currency: preferredCurrency, decimalFormat } = usePreferences();
-  const { data: rates } = useRates();
+  const { data: ratesData } = useRates();
+  const rates = ratesData ?? undefined;
   const resolvedCurrency = currency ?? preferredCurrency;
   const locale = getLocaleForFormat(intl.locale, decimalFormat);
 

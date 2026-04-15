@@ -76,7 +76,8 @@ describe("Currency", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({
+        json: () =>
+          Promise.resolve({
           data: {
             rates: {
               USD: "100000",
@@ -108,7 +109,8 @@ describe("Currency", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({
+        json: () =>
+          Promise.resolve({
           data: {
             rates: {
               USD: "100000",
@@ -144,7 +146,7 @@ describe("Currency", () => {
         ok: false,
         status: 500,
         statusText: "Server Error",
-        text: async () => "Server Error",
+        text: () => Promise.resolve("Server Error"),
       }),
     );
 

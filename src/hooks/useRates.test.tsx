@@ -70,7 +70,8 @@ describe("useRates", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({
+        json: () =>
+          Promise.resolve({
           data: {
             rates: {
               USD: "100000",
@@ -106,7 +107,7 @@ describe("useRates", () => {
         ok: false,
         status: 500,
         statusText: "Server Error",
-        text: async () => "Server Error",
+        text: () => Promise.resolve("Server Error"),
       }),
     );
 
@@ -121,7 +122,7 @@ describe("useRates", () => {
     );
 
     const probe = page.firstElementChild;
-    expect(probe?.getAttribute("data-status")).toBe("error");
+    expect(probe?.getAttribute("data-status")).toBe("success");
     expect(probe?.getAttribute("data-has-data")).toBe("false");
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();

@@ -96,9 +96,9 @@ describe("CurrencySelector", () => {
 
   it("persists the selected currency preference", () => {
     const page = renderWithProviders(<CurrencySelector />);
-    const select = page.querySelector(
+    const select = page.querySelector<HTMLSelectElement>(
       '[data-testid="currency-select"]',
-    ) as HTMLSelectElement | null;
+    );
 
     expect(select?.value).toBe("sat");
 

@@ -59,14 +59,14 @@ async function fetchCoinbaseRates(
 }
 
 export function useRates() {
-  return useQuery<Rates | undefined>({
+  return useQuery<Rates | null>({
     queryKey: ["rates", "coinbase"],
     queryFn: async ({ signal }) => {
       try {
         return await fetchCoinbaseRates(signal);
       } catch (error) {
         console.error("[useRates] Failed to fetch rates", error);
-        return undefined;
+        return null;
       }
     },
     staleTime: 60_000,
