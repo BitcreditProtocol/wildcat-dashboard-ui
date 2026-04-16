@@ -36,18 +36,10 @@ describe("currency conversions", () => {
   });
 
   it("throws when fiat conversions are attempted without rates", () => {
-    expect(() => convertFromSat(1_000, "usd")).toThrowError(
-      "Rates required for USD conversion",
-    );
-    expect(() => convertFromSat(1_000, "eur")).toThrowError(
-      "Rates required for EUR conversion",
-    );
-    expect(() => convertToSat(10, "usd")).toThrowError(
-      "Rates required for fiat conversion",
-    );
-    expect(() => convertToSat(10, "eur")).toThrowError(
-      "Rates required for fiat conversion",
-    );
+    expect(() => convertFromSat(1_000, "usd")).toThrowError("Rates required for USD conversion");
+    expect(() => convertFromSat(1_000, "eur")).toThrowError("Rates required for EUR conversion");
+    expect(() => convertToSat(10, "usd")).toThrowError("Rates required for fiat conversion");
+    expect(() => convertToSat(10, "eur")).toThrowError("Rates required for fiat conversion");
   });
 
   it("computes the eur per btc cross-rate from usd and eur/usd", () => {

@@ -15,13 +15,7 @@ interface MonthPickerProps {
   minDate?: Date;
 }
 
-const MonthPicker = ({
-  value,
-  onChange,
-  onCaptionLabelClicked,
-  disableFutureNavigation = false,
-  minDate,
-}: MonthPickerProps) => {
+const MonthPicker = ({ value, onChange, onCaptionLabelClicked, disableFutureNavigation = false, minDate }: MonthPickerProps) => {
   const lang = useContext(LanguageContext);
   const now = new Date();
   const currentYear = now.getUTCFullYear();
@@ -61,16 +55,11 @@ const MonthPicker = ({
   };
 
   const addYears = (years: number) => {
-    setBase(
-      (val) =>
-        new Date(Date.UTC(val.getUTCFullYear() + years, val.getUTCMonth(), 1)),
-    );
+    setBase((val) => new Date(Date.UTC(val.getUTCFullYear() + years, val.getUTCMonth(), 1)));
   };
 
-  const canGoBackward =
-    minYear === undefined || base.getUTCFullYear() > minYear;
-  const canGoForward =
-    !disableFutureNavigation || base.getUTCFullYear() < currentYear;
+  const canGoBackward = minYear === undefined || base.getUTCFullYear() > minYear;
+  const canGoForward = !disableFutureNavigation || base.getUTCFullYear() < currentYear;
 
   const nextYear = () => {
     if (!canGoForward) {
@@ -96,15 +85,9 @@ const MonthPicker = ({
           })}
           onClick={prevYear}
         />
-        <div
-          className="flex justify-between items-center gap-2 cursor-pointer"
-          onClick={onCaptionLabelClicked}
-        >
+        <div className="flex justify-between items-center gap-2 cursor-pointer" onClick={onCaptionLabelClicked}>
           {formatMonthYear(base, lang.locale)}
-          <ChevronUp
-            strokeWidth={3}
-            size={15}
-          />
+          <ChevronUp strokeWidth={3} size={15} />
         </div>
         <ChevronRight
           className={cn("mx-1", {
@@ -119,17 +102,11 @@ const MonthPicker = ({
           const date = new Date(Date.UTC(base.getUTCFullYear(), index, 1));
           const isFutureMonth =
             disableFutureNavigation &&
-            (date.getUTCFullYear() > currentYear ||
-              (date.getUTCFullYear() === currentYear && index > currentMonth));
+            (date.getUTCFullYear() > currentYear || (date.getUTCFullYear() === currentYear && index > currentMonth));
           const isPastMonth =
             minYear !== undefined &&
-            (date.getUTCFullYear() < minYear ||
-              (date.getUTCFullYear() === minYear &&
-                minMonth !== undefined &&
-                index < minMonth));
-          const isSelected =
-            date.getUTCFullYear() === value.getUTCFullYear() &&
-            date.getUTCMonth() === value.getUTCMonth();
+            (date.getUTCFullYear() < minYear || (date.getUTCFullYear() === minYear && minMonth !== undefined && index < minMonth));
+          const isSelected = date.getUTCFullYear() === value.getUTCFullYear() && date.getUTCMonth() === value.getUTCMonth();
 
           return (
             <div
@@ -138,17 +115,11 @@ const MonthPicker = ({
               onClick={() => {
                 if (!isFutureMonth && !isPastMonth) handleOnChange(index);
               }}
-              className={cn(
-                "h-[42px] flex justify-center items-center",
-                buttonVariants({ variant: "ghost" }),
-                {
-                  "cursor-pointer": !isFutureMonth && !isPastMonth,
-                  "opacity-40 text-text-200 pointer-events-none":
-                    isFutureMonth || isPastMonth,
-                  "bg-elevation-200 hover:bg-elevation-200 border border-divider-100":
-                    isSelected,
-                },
-              )}
+              className={cn("h-[42px] flex justify-center items-center", buttonVariants({ variant: "ghost" }), {
+                "cursor-pointer": !isFutureMonth && !isPastMonth,
+                "opacity-40 text-text-200 pointer-events-none": isFutureMonth || isPastMonth,
+                "bg-elevation-200 hover:bg-elevation-200 border border-divider-100": isSelected,
+              })}
             >
               {formatMonthLong(date, lang.locale)}
             </div>

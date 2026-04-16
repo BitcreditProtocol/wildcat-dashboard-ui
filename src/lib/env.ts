@@ -8,16 +8,11 @@ type RuntimeEnv = Partial<{
   VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: string;
 }>;
 
-const runtimeEnv: RuntimeEnv =
-  typeof window !== "undefined"
-    ? ((window as { __ENV__?: RuntimeEnv }).__ENV__ ?? {})
-    : {};
+const runtimeEnv: RuntimeEnv = typeof window !== "undefined" ? ((window as { __ENV__?: RuntimeEnv }).__ENV__ ?? {}) : {};
 
 const fallbackEnv = import.meta.env as ImportMetaEnv & RuntimeEnv;
 
-const normalizeEnvValue = <K extends keyof RuntimeEnv>(
-  value: RuntimeEnv[K] | undefined,
-): RuntimeEnv[K] | undefined => {
+const normalizeEnvValue = <K extends keyof RuntimeEnv>(value: RuntimeEnv[K] | undefined): RuntimeEnv[K] | undefined => {
   if (value === undefined || value === null || value === "") {
     return undefined;
   }
@@ -25,9 +20,7 @@ const normalizeEnvValue = <K extends keyof RuntimeEnv>(
   return value;
 };
 
-const getEnvValue = <K extends keyof RuntimeEnv>(
-  key: K,
-): RuntimeEnv[K] | undefined => {
+const getEnvValue = <K extends keyof RuntimeEnv>(key: K): RuntimeEnv[K] | undefined => {
   const runtimeValue = normalizeEnvValue(runtimeEnv[key]);
 
   if (runtimeValue !== undefined) {
@@ -40,14 +33,10 @@ const getEnvValue = <K extends keyof RuntimeEnv>(
 export const env = {
   devModeEnabled: fallbackEnv.DEV,
   apiBaseUrl: getEnvValue("VITE_API_BASE_URL")!,
-  apiMocksEnabled:
-    (getEnvValue("VITE_API_MOCKING_ENABLED") ?? "false") === "true",
+  apiMocksEnabled: (getEnvValue("VITE_API_MOCKING_ENABLED") ?? "false") === "true",
   keycloakUrl: getEnvValue("VITE_KEYCLOAK_URL")!,
   keycloakRealm: getEnvValue("VITE_KEYCLOAK_REALM")!,
   keycloakClientId: getEnvValue("VITE_KEYCLOAK_CLIENT_ID")!,
-  esploraBaseUrl:
-    getEnvValue("VITE_ESPLORA_BASE_URL") ?? "https://esplora.minibill.tech",
-  crowdinInContextToolingEnabled:
-    (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ??
-      "false") === "true",
+  esploraBaseUrl: getEnvValue("VITE_ESPLORA_BASE_URL") ?? "https://esplora.minibill.tech",
+  crowdinInContextToolingEnabled: (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ?? "false") === "true",
 };

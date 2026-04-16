@@ -5,8 +5,6 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 import react from "eslint-plugin-react";
 
-import eslintConfigPrettier from "eslint-config-prettier";
-
 export default tseslint.config(
   {
     languageOptions: {
@@ -17,21 +15,10 @@ export default tseslint.config(
     },
   },
   {
-    ignores: [
-      "dist",
-      ".storybook",
-      "coverage",
-      "opt",
-      "public/mockServiceWorker.js",
-      "src/generated",
-    ],
+    ignores: ["dist", ".storybook", "coverage", "opt", "public/mockServiceWorker.js", "src/generated"],
   },
   {
-    extends: [
-      js.configs.recommended,
-      ...tseslint.configs.recommendedTypeChecked,
-      ...tseslint.configs.stylisticTypeChecked,
-    ],
+    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked, ...tseslint.configs.stylisticTypeChecked],
     ignores: ["src/components/ui/*"],
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
@@ -80,11 +67,7 @@ export default tseslint.config(
       "react-hooks/purity": "off",
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/incompatible-library": "off",
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     },
-  },
-  eslintConfigPrettier,
+  }
 );

@@ -2,18 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  getEbillOptions,
-  getMintInfoOptions,
-} from "@/generated/client/@tanstack/react-query.gen";
-import type {
-  InfoReply,
-  BillWaitingStatePaymentData,
-} from "@/generated/client/types.gen";
-import {
-  OfferFormDrawer,
-  type OfferFormResult,
-} from "./components/OfferFormDrawer";
+import { getEbillOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
+import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen";
+import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer";
 import { DenyConfirmDrawer } from "./components/DenyConfirmDrawer";
 import { removeItem } from "@/utils/local-storage";
 import { PaymentRequestCard } from "./components/PaymentRequestCard";
@@ -55,9 +46,7 @@ export function QuoteActions({
         return false;
       }
 
-      return query.state.data?.status?.payment?.paid
-        ? false
-        : EBILL_DETAIL_POLL_INTERVAL_MS;
+      return query.state.data?.status?.payment?.paid ? false : EBILL_DETAIL_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
   });
@@ -72,26 +61,13 @@ export function QuoteActions({
     waitingPaymentData = cws.Payment.payment_data;
   }
 
-  const requestedToPayEff = Boolean(
-    requestedToPay || paymentStatus?.requested_to_pay,
-  );
-  const ebillPaidEff = Boolean(
-    ebillPaid || (paymentStatus?.paid && isMintComplete),
-  );
-  const effectiveRequestTime =
-    timeOfRequestToPay ??
-    paymentStatus?.time_of_request_to_pay ??
-    waitingPaymentData?.time_of_request ??
-    null;
+  const requestedToPayEff = Boolean(requestedToPay || paymentStatus?.requested_to_pay);
+  const ebillPaidEff = Boolean(ebillPaid || (paymentStatus?.paid && isMintComplete));
+  const effectiveRequestTime = timeOfRequestToPay ?? paymentStatus?.time_of_request_to_pay ?? waitingPaymentData?.time_of_request ?? null;
   const effectiveDeadlineTs =
-    paymentDeadlineTs ??
-    paymentStatus?.payment_deadline_timestamp ??
-    waitingPaymentData?.payment_deadline ??
-    null;
-  const rawBackendMempoolLink =
-    waitingPaymentData?.mempool_link_for_address_to_pay?.trim();
-  const backendMempoolLink =
-    rawBackendMempoolLink === "" ? undefined : rawBackendMempoolLink;
+    paymentDeadlineTs ?? paymentStatus?.payment_deadline_timestamp ?? waitingPaymentData?.payment_deadline ?? null;
+  const rawBackendMempoolLink = waitingPaymentData?.mempool_link_for_address_to_pay?.trim();
+  const backendMempoolLink = rawBackendMempoolLink === "" ? undefined : rawBackendMempoolLink;
   const mintInfoQuery = useQuery({
     ...getMintInfoOptions(),
     retry: 1,
@@ -110,8 +86,7 @@ export function QuoteActions({
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false);
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false);
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false);
-  const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] =
-    useState(false);
+  const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
 
   const denyTitle = intl.formatMessage({
     id: "quotes.actions.deny.title",
@@ -133,14 +108,10 @@ export function QuoteActions({
     id: "quotes.actions.offer.button",
     defaultMessage: "Offer",
   });
-  const {
-    denyQuote,
-    offerQuote,
-    requestToPayMutation,
-    handleDenyQuote,
-    handleOfferQuote,
-    handleRequestToPay,
-  } = useQuoteMutations(value.id, billId);
+  const { denyQuote, offerQuote, requestToPayMutation, handleDenyQuote, handleOfferQuote, handleRequestToPay } = useQuoteMutations(
+    value.id,
+    billId
+  );
 
   return (
     <>
@@ -155,15 +126,8 @@ export function QuoteActions({
               setDenyConfirmDrawerOpen(false);
             }}
           >
-            <Button
-              className="flex-1 max-w-sm"
-              disabled={isFetching || denyQuote.isPending}
-              variant="destructive"
-            >
-              {denyButtonLabel}{" "}
-              {denyQuote.isPending && (
-                <LoaderIcon className="stroke-1 animate-spin" />
-              )}
+            <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
+              {denyButtonLabel} {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </DenyConfirmDrawer>
         )}
@@ -181,14 +145,8 @@ export function QuoteActions({
               setOfferFormDrawerOpen(false);
             }}
           >
-            <Button
-              className="flex-1 max-w-sm"
-              disabled={isFetching || offerQuote.isPending}
-            >
-              {offerButtonLabel}{" "}
-              {offerQuote.isPending && (
-                <LoaderIcon className="stroke-1 animate-spin" />
-              )}
+            <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
+              {offerButtonLabel} {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
             </Button>
           </OfferFormDrawer>
         )}
@@ -205,8 +163,7 @@ export function QuoteActions({
           quoteId={value.id}
         />
 
-        {(effectiveQuoteStatus === "Accepted" ||
-          effectiveQuoteStatus === "MintingEnabled") &&
+        {(effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
           "keyset_id" in value &&
           ebill &&
           !ebillPaidEff &&

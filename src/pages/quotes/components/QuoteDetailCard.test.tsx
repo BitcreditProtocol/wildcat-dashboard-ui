@@ -4,12 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
-import type {
-  BillIdentParticipant,
-  BillParticipant,
-  Id,
-  InfoReply,
-} from "@/generated/client/types.gen";
+import type { BillIdentParticipant, BillParticipant, Id, InfoReply } from "@/generated/client/types.gen";
 import type { Rates } from "@/lib/currency";
 import { QuoteDetailCard } from "./QuoteDetailCard";
 
@@ -46,9 +41,7 @@ vi.mock("@/components/ParticipantsOverview", () => ({
 }));
 
 vi.mock("@/components/TruncatedTextPopover", () => ({
-  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => (
-    <span>{text}</span>
-  ),
+  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => <span>{text}</span>,
 }));
 
 vi.mock("@/components/QRCodeWithErrorBoundary", () => ({
@@ -77,7 +70,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
       <IntlProvider locale="en-US">
         <PreferencesProvider>{element}</PreferencesProvider>
       </IntlProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -148,7 +141,7 @@ describe("QuoteDetailCard", () => {
         isFeeTokenStatusPending={false}
         feeTokenStatusData={undefined}
         isFeeTokenStatusError={false}
-      />,
+      />
     );
 
     expect(page.textContent).toContain("100,000,000");
@@ -180,7 +173,7 @@ describe("QuoteDetailCard", () => {
         isFeeTokenStatusPending={false}
         feeTokenStatusData={undefined}
         isFeeTokenStatusError={false}
-      />,
+      />
     );
 
     expect(page.textContent).toContain("100,000,000");

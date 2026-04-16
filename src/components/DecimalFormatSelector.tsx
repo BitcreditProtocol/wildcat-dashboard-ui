@@ -1,15 +1,6 @@
 import { useIntl } from "react-intl";
-import {
-  type DecimalFormat,
-  usePreferences,
-} from "@/context/preferences/PreferencesContext";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { type DecimalFormat, usePreferences } from "@/context/preferences/PreferencesContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const DECIMAL_FORMATS: {
   value: DecimalFormat;
@@ -49,10 +40,7 @@ export function DecimalFormatSelector({ className }: { className?: string }) {
           defaultMessage: "Decimals",
         })}
       </span>
-      <Select
-        value={decimalFormat}
-        onValueChange={(value) => setDecimalFormat(value as DecimalFormat)}
-      >
+      <Select value={decimalFormat} onValueChange={(value) => setDecimalFormat(value as DecimalFormat)}>
         <SelectTrigger className="h-9">
           <SelectValue
             placeholder={intl.formatMessage({
@@ -63,10 +51,7 @@ export function DecimalFormatSelector({ className }: { className?: string }) {
         </SelectTrigger>
         <SelectContent>
           {DECIMAL_FORMATS.map((format) => (
-            <SelectItem
-              key={format.value}
-              value={format.value}
-            >
+            <SelectItem key={format.value} value={format.value}>
               {intl.formatMessage({
                 id: format.labelId,
                 defaultMessage: format.defaultLabel,

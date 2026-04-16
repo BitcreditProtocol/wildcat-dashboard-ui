@@ -6,11 +6,7 @@ const THEME_STORAGE_KEY = "theme";
 const getStorage = (): Storage | null => {
   try {
     const storage = globalThis.localStorage as Partial<Storage> | undefined;
-    if (
-      storage &&
-      typeof storage.getItem === "function" &&
-      typeof storage.setItem === "function"
-    ) {
+    if (storage && typeof storage.getItem === "function" && typeof storage.setItem === "function") {
       return storage as Storage;
     }
   } catch {
@@ -35,10 +31,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const getSystemPrefersDark = useCallback(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return false;
     }
 
@@ -46,13 +39,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }, []);
 
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
-  const [isSystemPrefersDark, setSystemPrefersDark] = useState<boolean>(() =>
-    getSystemPrefersDark(),
-  );
+  const [isSystemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => getSystemPrefersDark());
 
   const currentTheme = useMemo<"light" | "dark">(() => {
-    const isDark =
-      theme === "dark" || (theme === "system" && isSystemPrefersDark);
+    const isDark = theme === "dark" || (theme === "system" && isSystemPrefersDark);
     return isDark ? "dark" : "light";
   }, [theme, isSystemPrefersDark]);
 
@@ -63,10 +53,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     applyTheme(currentTheme);
 
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return;
     }
 
@@ -91,13 +78,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
       const storedTheme = getStoredTheme();
       setThemeState(storedTheme);
-      applyTheme(
-        storedTheme === "system"
-          ? getSystemPrefersDark()
-            ? "dark"
-            : "light"
-          : storedTheme,
-      );
+      applyTheme(storedTheme === "system" ? (getSystemPrefersDark() ? "dark" : "light") : storedTheme);
     };
 
     const onStorageChange = (event: StorageEvent) => {
@@ -123,15 +104,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     (nextTheme: Theme) => {
       setThemeState(nextTheme);
       getStorage()?.setItem(THEME_STORAGE_KEY, nextTheme);
-      applyTheme(
-        nextTheme === "system"
-          ? getSystemPrefersDark()
-            ? "dark"
-            : "light"
-          : nextTheme,
-      );
+      applyTheme(nextTheme === "system" ? (getSystemPrefersDark() ? "dark" : "light") : nextTheme);
     },
-    [applyTheme, getSystemPrefersDark],
+    [applyTheme, getSystemPrefersDark]
   );
 
   const contextValue = useMemo(
@@ -140,12 +115,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       setTheme,
       currentTheme,
     }),
-    [currentTheme, setTheme, theme],
+    [currentTheme, setTheme, theme]
   );
 
-  return (
-    <ThemeContext.Provider value={contextValue}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 }

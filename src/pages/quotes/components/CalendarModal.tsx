@@ -19,31 +19,9 @@ interface CalendarModalProps {
   onCancel: () => void;
 }
 
-const toUtcStartOfDay = (date: Date) =>
-  new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      0,
-      0,
-      0,
-      0,
-    ),
-  );
+const toUtcStartOfDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
 
-const toUtcEndOfDay = (date: Date) =>
-  new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      23,
-      59,
-      59,
-      999,
-    ),
-  );
+const toUtcEndOfDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
 
 export function CalendarModal({
   isOpen,
@@ -62,8 +40,7 @@ export function CalendarModal({
   const fallbackMin = addDays(new Date(Date.now()), 1);
   const minDay = toUtcStartOfDay(minDate ?? fallbackMin);
   const maxDay = maxDate ? toUtcEndOfDay(maxDate) : null;
-  const disabled = (date: Date) =>
-    isBefore(date, minDay) || (maxDay ? isAfter(date, maxDay) : false);
+  const disabled = (date: Date) => isBefore(date, minDay) || (maxDay ? isAfter(date, maxDay) : false);
   const displayMonth = draftDate ?? selectedDate ?? minDate ?? new Date();
 
   return (
@@ -71,7 +48,7 @@ export function CalendarModal({
       <div
         className={cn(
           "fixed inset-0 bg-black/30 transition-opacity duration-300 z-40",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
       />
@@ -79,7 +56,7 @@ export function CalendarModal({
       <div
         className={cn(
           "fixed bottom-0 z-40 left-0 right-0 w-full bg-white dark:bg-gray-900 transition-transform duration-300 ease-in-out rounded-t-2xl",
-          isOpen ? "translate-y-0" : "translate-y-full",
+          isOpen ? "translate-y-0" : "translate-y-full"
         )}
       >
         <div
@@ -88,9 +65,7 @@ export function CalendarModal({
         >
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
-            <div className="text-base">
-              {draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}
-            </div>
+            <div className="text-base">{draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}</div>
 
             <Calendar
               mode="single"
@@ -113,25 +88,13 @@ export function CalendarModal({
             />
 
             <div className="flex gap-2 items-center mt-auto">
-              <Button
-                className="w-full border-text-300 max-w-sm"
-                variant="outline"
-                size="sm"
-                type="button"
-                onClick={onCancel}
-              >
+              <Button className="w-full border-text-300 max-w-sm" variant="outline" size="sm" type="button" onClick={onCancel}>
                 {intl.formatMessage({
                   id: "Cancel",
                   defaultMessage: "Cancel",
                 })}
               </Button>
-              <Button
-                className="w-full max-w-sm"
-                size="sm"
-                type="button"
-                disabled={!draftDate}
-                onClick={onConfirm}
-              >
+              <Button className="w-full max-w-sm" size="sm" type="button" disabled={!draftDate} onClick={onConfirm}>
                 {intl.formatMessage({
                   id: "Confirm",
                   defaultMessage: "Confirm",
@@ -160,10 +123,7 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
       onClick={onClick}
       className="w-full cursor-pointer flex gap-2 justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
     >
-      <CalendarIcon
-        className="text-gray-500 dark:text-gray-400 w-5 h-5"
-        strokeWidth={1.5}
-      />
+      <CalendarIcon className="text-gray-500 dark:text-gray-400 w-5 h-5" strokeWidth={1.5} />
       <span className="text-gray-900 dark:text-gray-100">
         {date
           ? formatDateMmmDdYyyy(date)

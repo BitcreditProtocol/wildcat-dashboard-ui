@@ -25,12 +25,7 @@ const getStoredDecimalFormat = (): DecimalFormat => {
 
 const getStoredCurrency = (): CurrencyCode => {
   const stored = getItem<CurrencyCode>(CURRENCY_STORAGE_KEY);
-  if (
-    stored === "sat" ||
-    stored === "btc" ||
-    stored === "eur" ||
-    stored === "usd"
-  ) {
+  if (stored === "sat" || stored === "btc" || stored === "eur" || stored === "usd") {
     return stored;
   }
 
@@ -47,12 +42,8 @@ const PreferencesContext = createContext<PreferencesContextType>({
 });
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const [decimalFormat, setDecimalFormatState] = useState<DecimalFormat>(() =>
-    getStoredDecimalFormat(),
-  );
-  const [currency, setCurrencyState] = useState<CurrencyCode>(() =>
-    getStoredCurrency(),
-  );
+  const [decimalFormat, setDecimalFormatState] = useState<DecimalFormat>(() => getStoredDecimalFormat());
+  const [currency, setCurrencyState] = useState<CurrencyCode>(() => getStoredCurrency());
 
   const setDecimalFormat = (format: DecimalFormat) => {
     setDecimalFormatState(format);
@@ -71,14 +62,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       currency,
       setCurrency,
     }),
-    [currency, decimalFormat],
+    [currency, decimalFormat]
   );
 
-  return (
-    <PreferencesContext.Provider value={value}>
-      {children}
-    </PreferencesContext.Provider>
-  );
+  return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

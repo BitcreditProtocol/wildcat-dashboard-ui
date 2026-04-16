@@ -2,13 +2,7 @@ import { Moon, Sun, Monitor } from "lucide-react";
 import { useIntl } from "react-intl";
 import { useTheme } from "@/context/theme/useTheme";
 import { Theme } from "@/context/theme/ThemeContext";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ThemeSelectorProps {
   className?: string;
@@ -21,10 +15,7 @@ const themeIcons = {
   system: Monitor,
 } satisfies Record<Theme, typeof Sun>;
 
-export function ThemeSelector({
-  className,
-  showLabel = true,
-}: ThemeSelectorProps) {
+export function ThemeSelector({ className, showLabel = true }: ThemeSelectorProps) {
   const intl = useIntl();
   const { theme, setTheme } = useTheme();
 
@@ -40,10 +31,7 @@ export function ThemeSelector({
           })}
         </span>
       ) : null}
-      <Select
-        value={theme}
-        onValueChange={(value) => setTheme(value as Theme)}
-      >
+      <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
         <SelectTrigger className="h-9">
           <SelectValue
             placeholder={intl.formatMessage({
@@ -57,10 +45,7 @@ export function ThemeSelector({
             const Icon = themeIcons[option];
 
             return (
-              <SelectItem
-                key={option}
-                value={option}
-              >
+              <SelectItem key={option} value={option}>
                 <Icon className="size-4" />
                 {intl.formatMessage({
                   id: `theme.option.${option}`,

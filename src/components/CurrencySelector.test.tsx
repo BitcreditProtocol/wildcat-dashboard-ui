@@ -6,37 +6,15 @@ import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { CurrencySelector } from "./CurrencySelector";
 
 vi.mock("@/components/ui/select", () => ({
-  Select: ({
-    value,
-    onValueChange,
-    children,
-  }: {
-    value?: string;
-    onValueChange: (value: string) => void;
-    children: React.ReactNode;
-  }) => (
-    <select
-      data-testid="currency-select"
-      value={value}
-      onChange={(event) => onValueChange(event.target.value)}
-    >
+  Select: ({ value, onValueChange, children }: { value?: string; onValueChange: (value: string) => void; children: React.ReactNode }) => (
+    <select data-testid="currency-select" value={value} onChange={(event) => onValueChange(event.target.value)}>
       {children}
     </select>
   ),
-  SelectTrigger: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   SelectValue: () => null,
-  SelectContent: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectItem: ({
-    value,
-    children,
-  }: {
-    value: string;
-    children: React.ReactNode;
-  }) => <option value={value}>{children}</option>,
+  SelectContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  SelectItem: ({ value, children }: { value: string; children: React.ReactNode }) => <option value={value}>{children}</option>,
 }));
 
 let root: Root | null = null;
@@ -59,7 +37,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
   return renderIntoDom(
     <IntlProvider locale="en-US">
       <PreferencesProvider>{element}</PreferencesProvider>
-    </IntlProvider>,
+    </IntlProvider>
   );
 }
 
@@ -100,9 +78,7 @@ describe("CurrencySelector", () => {
 
   it("persists the selected currency preference", () => {
     const page = renderWithProviders(<CurrencySelector />);
-    const select = page.querySelector<HTMLSelectElement>(
-      '[data-testid="currency-select"]',
-    );
+    const select = page.querySelector<HTMLSelectElement>('[data-testid="currency-select"]');
 
     expect(select?.value).toBe("sat");
 
@@ -110,7 +86,7 @@ describe("CurrencySelector", () => {
       select?.dispatchEvent(
         new Event("change", {
           bubbles: true,
-        }),
+        })
       );
     });
 

@@ -7,12 +7,8 @@ import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { GrossToNetDiscountForm } from "./GrossToNetDiscountForm";
 
 vi.mock("./ui/drawer", () => ({
-  DrawerFooter: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DrawerClose: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  DrawerFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DrawerClose: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 let root: Root | null = null;
@@ -31,14 +27,11 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
   return mount;
 }
 
-function renderWithProviders(
-  element: ReactElement,
-  locale = "en-US",
-): HTMLDivElement {
+function renderWithProviders(element: ReactElement, locale = "en-US"): HTMLDivElement {
   return renderIntoDom(
     <IntlProvider locale={locale}>
       <PreferencesProvider>{element}</PreferencesProvider>
-    </IntlProvider>,
+    </IntlProvider>
   );
 }
 
@@ -91,7 +84,7 @@ describe("GrossToNetDiscountForm", () => {
         gross={{ value: new Big("1000.00"), currency: "USD" }}
         quoteId="quote-1"
         onSubmit={() => undefined}
-      />,
+      />
     );
 
     await flush();
@@ -116,14 +109,12 @@ describe("GrossToNetDiscountForm", () => {
         gross={{ value: new Big("1000"), currency: "sat" }}
         quoteId="quote-2"
         onSubmit={() => undefined}
-      />,
+      />
     );
 
     await flush();
 
-    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe(
-      "991",
-    );
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("991");
     expect(page.textContent).toContain("9");
     expect(page.textContent).toContain("+1 000");
     expect(page.textContent).toContain("sat");

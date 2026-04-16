@@ -43,8 +43,8 @@ export function CopyButton({
               id: "copyButton.copied",
               defaultMessage: "{label} copied to clipboard",
             },
-            { label: labelValue },
-          ),
+            { label: labelValue }
+          )
         );
       })
       .catch(() => {
@@ -54,24 +54,15 @@ export function CopyButton({
               id: "copyButton.failed",
               defaultMessage: "Failed to copy {label}",
             },
-            { label: labelValue },
-          ),
+            { label: labelValue }
+          )
         );
       });
   };
 
   return (
-    <Button
-      size={size}
-      variant={variant}
-      onClick={handleCopy}
-      className={className}
-    >
-      {copied && showCheckmark ? (
-        <Check className="h-3 w-3" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
+    <Button size={size} variant={variant} onClick={handleCopy} className={className}>
+      {copied && showCheckmark ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
     </Button>
   );
 }
