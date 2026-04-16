@@ -5,15 +5,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import SettingsPage from "./SettingsPage";
 
 vi.mock("@/components/Breadcrumbs", () => ({
-  Breadcrumbs: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  Breadcrumbs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/PageTitle", () => ({
-  PageTitle: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  PageTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/ThemeSelector", () => ({
@@ -60,7 +56,7 @@ describe("SettingsPage", () => {
     const page = renderIntoDom(
       <IntlProvider locale="en-US">
         <SettingsPage />
-      </IntlProvider>,
+      </IntlProvider>
     );
 
     expect(page.textContent).toContain("Settings");

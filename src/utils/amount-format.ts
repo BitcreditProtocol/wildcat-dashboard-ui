@@ -1,8 +1,5 @@
 import { useCallback } from "react";
-import {
-  type DecimalFormat,
-  usePreferences,
-} from "@/context/preferences/PreferencesContext";
+import { type DecimalFormat, usePreferences } from "@/context/preferences/PreferencesContext";
 
 function getSeparators(decimalFormat: DecimalFormat) {
   switch (decimalFormat) {
@@ -20,10 +17,7 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function formatAmountString(
-  value: string | number,
-  decimalFormat: DecimalFormat,
-): string {
+export function formatAmountString(value: string | number, decimalFormat: DecimalFormat): string {
   const raw = String(value).trim();
   if (!raw) {
     return raw;
@@ -45,10 +39,7 @@ export function formatAmountString(
   return `${sign}${groupedInteger}${decimal}${fractionPart}`;
 }
 
-export function parseAmountString(
-  value: string | undefined,
-  decimalFormat: DecimalFormat,
-): number | undefined {
+export function parseAmountString(value: string | undefined, decimalFormat: DecimalFormat): number | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -61,9 +52,7 @@ export function parseAmountString(
   const { group, decimal } = getSeparators(decimalFormat);
   const groupPattern = escapeRegExp(group);
   const decimalPattern = escapeRegExp(decimal);
-  const localizedPattern = new RegExp(
-    `^-?(?:\\d{1,3}(?:${groupPattern}\\d{3})*|\\d+)(?:${decimalPattern}\\d+)?$`,
-  );
+  const localizedPattern = new RegExp(`^-?(?:\\d{1,3}(?:${groupPattern}\\d{3})*|\\d+)(?:${decimalPattern}\\d+)?$`);
 
   if (!localizedPattern.test(raw)) {
     return undefined;
@@ -83,13 +72,7 @@ export function useAmountFormatter() {
   const { decimalFormat } = usePreferences();
 
   return {
-    formatAmount: useCallback(
-      (value: string | number) => formatAmountString(value, decimalFormat),
-      [decimalFormat],
-    ),
-    parseAmount: useCallback(
-      (value: string | undefined) => parseAmountString(value, decimalFormat),
-      [decimalFormat],
-    ),
+    formatAmount: useCallback((value: string | number) => formatAmountString(value, decimalFormat), [decimalFormat]),
+    parseAmount: useCallback((value: string | undefined) => parseAmountString(value, decimalFormat), [decimalFormat]),
   };
 }

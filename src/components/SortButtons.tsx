@@ -18,21 +18,13 @@ interface SortButtonsProps<T extends string> {
   options: SortOption<T>[];
 }
 
-export function SortButtons<T extends string>({
-  sortBy,
-  onSortChange,
-  options,
-}: SortButtonsProps<T>) {
+export function SortButtons<T extends string>({ sortBy, onSortChange, options }: SortButtonsProps<T>) {
   const intl = useIntl();
   const getSortIcon = (field: T) => {
     if (!sortBy.startsWith(field)) {
       return null;
     }
-    return sortBy.endsWith("asc") ? (
-      <ArrowUp className="h-4 w-4" />
-    ) : (
-      <ArrowDown className="h-4 w-4" />
-    );
+    return sortBy.endsWith("asc") ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
   };
 
   const getTitle = (field: T, label: string) => {
@@ -43,14 +35,14 @@ export function SortButtons<T extends string>({
               id: "sortButtons.ascending",
               defaultMessage: "{label} Ascending",
             },
-            { label },
+            { label }
           )
         : intl.formatMessage(
             {
               id: "sortButtons.descending",
               defaultMessage: "{label} Descending",
             },
-            { label },
+            { label }
           );
     }
     return intl.formatMessage(
@@ -58,7 +50,7 @@ export function SortButtons<T extends string>({
         id: "sortButtons.sortByWithLabel",
         defaultMessage: "Sort by {label}",
       },
-      { label },
+      { label }
     );
   };
 

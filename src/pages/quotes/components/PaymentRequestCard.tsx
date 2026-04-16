@@ -8,12 +8,7 @@ interface PaymentRequestCardProps {
   effectiveDeadlineTs: number | null;
 }
 
-export function PaymentRequestCard({
-  addressToPay,
-  linkToPay,
-  effectiveRequestTime,
-  effectiveDeadlineTs,
-}: PaymentRequestCardProps) {
+export function PaymentRequestCard({ addressToPay, linkToPay, effectiveRequestTime, effectiveDeadlineTs }: PaymentRequestCardProps) {
   const intl = useIntl();
   return (
     <div className="mt-4 p-4 bg-white rounded border">
@@ -32,11 +27,7 @@ export function PaymentRequestCard({
                 defaultMessage: "Address to pay",
               })}
             </span>
-            <TruncatedTextPopover
-              text={addressToPay}
-              maxLength={64}
-              className="font-mono text-sm"
-            />
+            <TruncatedTextPopover text={addressToPay} maxLength={64} className="font-mono text-sm" />
           </div>
         )}
         {linkToPay && (
@@ -47,17 +38,8 @@ export function PaymentRequestCard({
                 defaultMessage: "Link to mempool",
               })}
             </span>
-            <a
-              href={linkToPay}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline flex items-center"
-            >
-              <TruncatedTextPopover
-                text={linkToPay}
-                maxLength={48}
-                className="font-mono text-sm"
-              />
+            <a href={linkToPay} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center">
+              <TruncatedTextPopover text={linkToPay} maxLength={48} className="font-mono text-sm" />
             </a>
           </div>
         )}
@@ -69,12 +51,7 @@ export function PaymentRequestCard({
                 defaultMessage: "Requested at",
               })}
             </span>
-            <span className="text-sm">
-              {new Date(effectiveRequestTime * 1000).toLocaleString(
-                intl.locale,
-                { timeZone: "UTC" },
-              )}
-            </span>
+            <span className="text-sm">{new Date(effectiveRequestTime * 1000).toLocaleString(intl.locale, { timeZone: "UTC" })}</span>
           </div>
         )}
         {effectiveDeadlineTs && (
@@ -85,12 +62,7 @@ export function PaymentRequestCard({
                 defaultMessage: "Deadline",
               })}
             </span>
-            <span className="text-sm">
-              {new Date(effectiveDeadlineTs * 1000).toLocaleString(
-                intl.locale,
-                { timeZone: "UTC" },
-              )}
-            </span>
+            <span className="text-sm">{new Date(effectiveDeadlineTs * 1000).toLocaleString(intl.locale, { timeZone: "UTC" })}</span>
           </div>
         )}
       </div>

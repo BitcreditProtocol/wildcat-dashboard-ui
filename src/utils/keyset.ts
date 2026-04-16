@@ -6,10 +6,7 @@ import type { Id, IdBytes, KeySetVersion } from "@/generated/client/types.gen";
  * @param billMaturityDate - Bill maturity date string (YYYY-MM-DD)
  * @returns true if dates match (year, month, day)
  */
-export function doesBillMatchKeysetMaturity(
-  keysetFinalExpiry: number,
-  billMaturityDate: string,
-): boolean {
+export function doesBillMatchKeysetMaturity(keysetFinalExpiry: number, billMaturityDate: string): boolean {
   const keysetDate = new Date(keysetFinalExpiry * 1000);
   const billDate = new Date(billMaturityDate);
 

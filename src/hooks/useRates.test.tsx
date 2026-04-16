@@ -39,10 +39,7 @@ async function flush() {
   });
 }
 
-async function waitForSettled(
-  getStatus: () => string | null,
-  maxAttempts = 10,
-) {
+async function waitForSettled(getStatus: () => string | null, maxAttempts = 10) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     await flush();
     if (getStatus() !== "pending") {
@@ -79,18 +76,16 @@ describe("useRates", () => {
               },
             },
           }),
-      }),
+      })
     );
 
     const page = renderIntoDom(
       <QueryClientProvider client={new QueryClient()}>
         <HookProbe />
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
 
-    await waitForSettled(
-      () => page.firstElementChild?.getAttribute("data-status") ?? null,
-    );
+    await waitForSettled(() => page.firstElementChild?.getAttribute("data-status") ?? null);
 
     const probe = page.firstElementChild;
     expect(probe?.getAttribute("data-status")).toBe("success");
@@ -100,9 +95,7 @@ describe("useRates", () => {
   });
 
   it("falls back to undefined when the request fails", async () => {
-    const errorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -110,18 +103,16 @@ describe("useRates", () => {
         status: 500,
         statusText: "Server Error",
         text: () => Promise.resolve("Server Error"),
-      }),
+      })
     );
 
     const page = renderIntoDom(
       <QueryClientProvider client={new QueryClient()}>
         <HookProbe />
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
 
-    await waitForSettled(
-      () => page.firstElementChild?.getAttribute("data-status") ?? null,
-    );
+    await waitForSettled(() => page.firstElementChild?.getAttribute("data-status") ?? null);
 
     const probe = page.firstElementChild;
     expect(probe?.getAttribute("data-status")).toBe("success");

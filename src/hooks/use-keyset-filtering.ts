@@ -2,20 +2,9 @@ import { useState, useMemo } from "react";
 import type { KeySetInfo } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
 
-type SortBy =
-  | "maturity-asc"
-  | "maturity-desc"
-  | "status-asc"
-  | "status-desc"
-  | "currency-asc"
-  | "currency-desc";
+type SortBy = "maturity-asc" | "maturity-desc" | "status-asc" | "status-desc" | "currency-asc" | "currency-desc";
 
-export type KeysetFilter =
-  | "all"
-  | "active"
-  | "inactive"
-  | "expired"
-  | "no-expiry";
+export type KeysetFilter = "all" | "active" | "inactive" | "expired" | "no-expiry";
 
 export function useKeysetFiltering(keysets: KeySetInfo[]) {
   const intl = useIntl();
@@ -31,9 +20,7 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
   });
 
   const filteredKeysets = keysets.filter((keyset) => {
-    const expiryDate = keyset.final_expiry
-      ? new Date(keyset.final_expiry * 1000)
-      : null;
+    const expiryDate = keyset.final_expiry ? new Date(keyset.final_expiry * 1000) : null;
     const isExpired = Boolean(expiryDate && expiryDate < now);
 
     switch (keysetFilter) {
@@ -57,9 +44,7 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
 
     const query = searchQuery.toLowerCase();
     const keysetId = keyset.id.toLowerCase();
-    const currencyUnit = (
-      typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom
-    ).toLowerCase();
+    const currencyUnit = (typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom).toLowerCase();
     const finalExpiryDate = keyset.final_expiry
       ? new Date(keyset.final_expiry * 1000)
           .toLocaleDateString("en-US", {
@@ -85,12 +70,7 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
           })
           .toLowerCase();
 
-    return (
-      keysetId.includes(query) ||
-      currencyUnit.includes(query) ||
-      finalExpiryDate.includes(query) ||
-      status.includes(query)
-    );
+    return keysetId.includes(query) || currencyUnit.includes(query) || finalExpiryDate.includes(query) || status.includes(query);
   });
 
   const sortedKeysets = useMemo(
@@ -101,12 +81,8 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
         switch (sortBy) {
           case "maturity-asc":
           case "maturity-desc": {
-            const aExpiry = a.final_expiry
-              ? new Date(a.final_expiry * 1000)
-              : null;
-            const bExpiry = b.final_expiry
-              ? new Date(b.final_expiry * 1000)
-              : null;
+            const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null;
+            const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null;
 
             if (!aExpiry && !bExpiry) {
               comparison = 0;
@@ -139,10 +115,8 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
           }
           case "currency-asc":
           case "currency-desc": {
-            const aCurrency =
-              typeof a.unit === "string" ? a.unit : a.unit.Custom;
-            const bCurrency =
-              typeof b.unit === "string" ? b.unit : b.unit.Custom;
+            const aCurrency = typeof a.unit === "string" ? a.unit : a.unit.Custom;
+            const bCurrency = typeof b.unit === "string" ? b.unit : b.unit.Custom;
             comparison = aCurrency.localeCompare(bCurrency);
             if (sortBy === "currency-desc") comparison = -comparison;
             break;
@@ -152,16 +126,12 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
         return comparison;
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filteredKeysets, sortBy],
+    [filteredKeysets, sortBy]
   );
 
   const toggleSort = (field: "maturity" | "status" | "currency") => {
     if (sortBy.startsWith(field)) {
-      setSortBy(
-        sortBy.endsWith("asc")
-          ? (`${field}-desc` as SortBy)
-          : (`${field}-asc` as SortBy),
-      );
+      setSortBy(sortBy.endsWith("asc") ? (`${field}-desc` as SortBy) : (`${field}-asc` as SortBy));
     } else {
       setSortBy(`${field}-asc` as SortBy);
     }

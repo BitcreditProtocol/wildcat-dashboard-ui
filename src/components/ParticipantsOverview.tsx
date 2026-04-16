@@ -1,16 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getDeterministicColor, getInitials } from "@/utils/strings";
-import type {
-  BillIdentParticipant,
-  BillParticipant,
-  BillAnonParticipant,
-} from "@/generated/client/types.gen";
+import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from "@/generated/client/types.gen";
 import { cn } from "@/lib/utils";
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
 import { UserAnonymousIcon } from "@/components/icons/UserAnonymous";
@@ -21,22 +12,13 @@ type IdentityPublicData = BillIdentParticipant;
 type AnonPublicData = BillAnonParticipant;
 type IdentOrAnonParticipant = BillParticipant;
 
-function AnonPublicAvatar({
-  value,
-  tooltip,
-}: {
-  value?: AnonPublicData;
-  tooltip?: React.ReactNode;
-}) {
+function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?: React.ReactNode }) {
   const initials = "?";
   const backgroundColor = getDeterministicColor(value?.node_id);
 
   const avatar = (
     <Avatar className="h-8 w-8 rounded-full">
-      <AvatarFallback
-        className="text-white font-semibold text-sm bg-transparent"
-        style={{ backgroundColor }}
-      >
+      <AvatarFallback className="text-white font-semibold text-sm bg-transparent" style={{ backgroundColor }}>
         {initials}
       </AvatarFallback>
     </Avatar>
@@ -56,13 +38,7 @@ function AnonPublicAvatar({
   );
 }
 
-function IdentityPublicAvatar({
-  value,
-  tooltip,
-}: {
-  value?: IdentityPublicData;
-  tooltip?: React.ReactNode;
-}) {
+function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
   const initials = getInitials(value?.name);
   const backgroundColor = getDeterministicColor(value?.name ?? value?.node_id);
   const isCompany = (value?.type as unknown as number) === 1;
@@ -70,13 +46,7 @@ function IdentityPublicAvatar({
 
   const avatar = (
     <Avatar className={cn("h-8 w-8", shapeClass)}>
-      <AvatarFallback
-        className={cn(
-          "text-white font-semibold text-sm bg-transparent",
-          shapeClass,
-        )}
-        style={{ backgroundColor }}
-      >
+      <AvatarFallback className={cn("text-white font-semibold text-sm bg-transparent", shapeClass)} style={{ backgroundColor }}>
         {initials}
       </AvatarFallback>
     </Avatar>
@@ -96,33 +66,17 @@ function IdentityPublicAvatar({
   );
 }
 
-function IdentOrAnonAvatar({
-  value,
-  tooltip,
-}: {
-  value?: IdentOrAnonParticipant;
-  tooltip?: React.ReactNode;
-}) {
+function IdentOrAnonAvatar({ value, tooltip }: { value?: IdentOrAnonParticipant; tooltip?: React.ReactNode }) {
   if (!value) {
     return null;
   }
 
   if ("Ident" in value) {
     const identData = value.Ident;
-    return (
-      <IdentityPublicAvatar
-        value={identData}
-        tooltip={tooltip}
-      />
-    );
+    return <IdentityPublicAvatar value={identData} tooltip={tooltip} />;
   } else if ("Anon" in value) {
     const anonData = value.Anon;
-    return (
-      <AnonPublicAvatar
-        value={anonData}
-        tooltip={tooltip}
-      />
-    );
+    return <AnonPublicAvatar value={anonData} tooltip={tooltip} />;
   }
 
   return null;
@@ -154,7 +108,7 @@ export function ParticipantsOverviewCard({
         id: `participants.role.${role}`,
         defaultMessage: defaults[role],
       },
-      {},
+      {}
     );
   };
   const bearerLabel = intl.formatMessage({
@@ -162,10 +116,7 @@ export function ParticipantsOverviewCard({
     defaultMessage: "Bearer",
   });
 
-  const getIdentTooltip = (
-    data: IdentityPublicData | undefined,
-    role: string,
-  ) => {
+  const getIdentTooltip = (data: IdentityPublicData | undefined, role: string) => {
     if (!data) {
       return role;
     }
@@ -184,10 +135,7 @@ export function ParticipantsOverviewCard({
     );
   };
 
-  const getIdentOrAnonTooltip = (
-    data: IdentOrAnonParticipant | undefined,
-    role: string,
-  ) => {
+  const getIdentOrAnonTooltip = (data: IdentOrAnonParticipant | undefined, role: string) => {
     if (!data) {
       return role;
     }
@@ -198,9 +146,7 @@ export function ParticipantsOverviewCard({
         <div className="flex flex-col gap-1 max-w-xs">
           <div className="font-semibold break-words">{role}</div>
           <div className="break-words">{identData.name}</div>
-          {identData.email && (
-            <div className="text-xs break-words">{identData.email}</div>
-          )}
+          {identData.email && <div className="text-xs break-words">{identData.email}</div>}
           {identData.city && identData.country && (
             <div className="text-xs break-words">
               {identData.city}, {identData.country}
@@ -215,11 +161,7 @@ export function ParticipantsOverviewCard({
         <div className="flex flex-col gap-1 max-w-xs">
           <div className="font-semibold break-words">{role}</div>
           <div className="break-words">{bearerLabel}</div>
-          {anonData?.node_id && (
-            <div className="text-xs font-mono break-all">
-              {anonData.node_id}
-            </div>
-          )}
+          {anonData?.node_id && <div className="text-xs font-mono break-all">{anonData.node_id}</div>}
         </div>
       );
     }
@@ -231,36 +173,24 @@ export function ParticipantsOverviewCard({
     <span className={cn("flex gap-1 items-center", className)}>
       {drawee && (
         <div>
-          <IdentityPublicAvatar
-            value={drawee}
-            tooltip={getIdentTooltip(drawee, getRoleLabel("drawee"))}
-          />
+          <IdentityPublicAvatar value={drawee} tooltip={getIdentTooltip(drawee, getRoleLabel("drawee"))} />
         </div>
       )}
       {drawer && (
         <div>
-          <IdentityPublicAvatar
-            value={drawer}
-            tooltip={getIdentTooltip(drawer, getRoleLabel("drawer"))}
-          />
+          <IdentityPublicAvatar value={drawer} tooltip={getIdentTooltip(drawer, getRoleLabel("drawer"))} />
         </div>
       )}
       {payee && (
         <div>
-          <IdentOrAnonAvatar
-            value={payee}
-            tooltip={getIdentOrAnonTooltip(payee, getRoleLabel("payee"))}
-          />
+          <IdentOrAnonAvatar value={payee} tooltip={getIdentOrAnonTooltip(payee, getRoleLabel("payee"))} />
         </div>
       )}
       {holder && holder.length > 0 && (
         <div>
           <IdentOrAnonAvatar
             value={holder[holder.length - 1]}
-            tooltip={getIdentOrAnonTooltip(
-              holder[holder.length - 1],
-              getRoleLabel("holder"),
-            )}
+            tooltip={getIdentOrAnonTooltip(holder[holder.length - 1], getRoleLabel("holder"))}
           />
         </div>
       )}
@@ -268,11 +198,7 @@ export function ParticipantsOverviewCard({
   );
 }
 
-export function ParticipantDetail({
-  participant,
-}: {
-  participant: BillIdentParticipant | BillParticipant | undefined;
-}) {
+export function ParticipantDetail({ participant }: { participant: BillIdentParticipant | BillParticipant | undefined }) {
   const intl = useIntl();
   if (!participant) {
     return null;
@@ -295,13 +221,7 @@ export function ParticipantDetail({
           </div>
           {anonData?.node_id && (
             <div className="text-xs text-muted-foreground font-mono break-all">
-              <TruncatedTextPopover
-                text={anonData.node_id}
-                maxLength={50}
-                className="text-sm font-medium"
-                as="span"
-                showFullOnDesktop
-              />
+              <TruncatedTextPopover text={anonData.node_id} maxLength={50} className="text-sm font-medium" as="span" showFullOnDesktop />
             </div>
           )}
         </div>
@@ -323,43 +243,19 @@ export function ParticipantDetail({
     <div className="flex items-center justify-center gap-3">
       {avatar}
       <div className="flex flex-col gap-1">
-        <TruncatedTextPopover
-          text={data.name}
-          maxLength={50}
-          className="text-sm font-medium"
-          as="span"
-        />
+        <TruncatedTextPopover text={data.name} maxLength={50} className="text-sm font-medium" as="span" />
         {data.email && (
-          <a
-            href={`mailto:${data.email}`}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            <TruncatedTextPopover
-              text={data.email}
-              maxLength={40}
-              className="text-sm"
-              as="span"
-            />
+          <a href={`mailto:${data.email}`} className="text-sm text-blue-600 hover:underline">
+            <TruncatedTextPopover text={data.email} maxLength={40} className="text-sm" as="span" />
           </a>
         )}
         {"city" in data && data.city && data.country && (
           <div className="text-xs text-muted-foreground">
-            <TruncatedTextPopover
-              text={`${data.city}, ${data.country}`}
-              maxLength={50}
-              className="text-xs"
-              as="span"
-            />
+            <TruncatedTextPopover text={`${data.city}, ${data.country}`} maxLength={50} className="text-xs" as="span" />
           </div>
         )}
         <div className="text-xs text-muted-foreground font-mono break-all">
-          <TruncatedTextPopover
-            text={data.node_id}
-            maxLength={50}
-            className="text-sm font-medium"
-            as="span"
-            showFullOnDesktop
-          />
+          <TruncatedTextPopover text={data.node_id} maxLength={50} className="text-sm font-medium" as="span" showFullOnDesktop />
         </div>
       </div>
     </div>

@@ -28,7 +28,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
       <IntlProvider locale="en-US">
         <PreferencesProvider>{element}</PreferencesProvider>
       </IntlProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -85,15 +85,10 @@ describe("Currency", () => {
               },
             },
           }),
-      }),
+      })
     );
 
-    const page = renderWithProviders(
-      <Currency
-        value={100_000_000}
-        sourceCurrency="sat"
-      />,
-    );
+    const page = renderWithProviders(<Currency value={100_000_000} sourceCurrency="sat" />);
 
     await flush();
 
@@ -118,15 +113,10 @@ describe("Currency", () => {
               },
             },
           }),
-      }),
+      })
     );
 
-    const page = renderWithProviders(
-      <Currency
-        value={12345}
-        sourceCurrency="sat"
-      />,
-    );
+    const page = renderWithProviders(<Currency value={12345} sourceCurrency="sat" />);
 
     await flush();
 
@@ -138,9 +128,7 @@ describe("Currency", () => {
   });
 
   it("falls back to primary-only output when fiat conversion rates are unavailable", async () => {
-    const errorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     window.localStorage.setItem("display-currency", JSON.stringify("eur"));
     vi.stubGlobal(
       "fetch",
@@ -149,15 +137,10 @@ describe("Currency", () => {
         status: 500,
         statusText: "Server Error",
         text: () => Promise.resolve("Server Error"),
-      }),
+      })
     );
 
-    const page = renderWithProviders(
-      <Currency
-        value={12345}
-        sourceCurrency="sat"
-      />,
-    );
+    const page = renderWithProviders(<Currency value={12345} sourceCurrency="sat" />);
 
     await flush();
 

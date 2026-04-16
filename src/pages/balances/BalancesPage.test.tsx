@@ -27,9 +27,7 @@ vi.mock("@/hooks/useRates", () => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
     useQuery: () => mockUseQuery(),
@@ -43,30 +41,22 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 }));
 
 vi.mock("@/components/Breadcrumbs", () => ({
-  Breadcrumbs: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  Breadcrumbs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/PageTitle", () => ({
-  PageTitle: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  PageTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/ui/chart", () => ({
-  ChartContainer: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  ChartContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   ChartLegend: () => null,
   ChartLegendContent: () => null,
 }));
 
 vi.mock("recharts", () => ({
   Bar: () => null,
-  BarChart: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
@@ -96,7 +86,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
           <PreferencesProvider>{element}</PreferencesProvider>
         </IntlProvider>
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 

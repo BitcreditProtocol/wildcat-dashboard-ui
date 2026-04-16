@@ -11,12 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 
 export function NavUser({
   user,
@@ -45,10 +40,7 @@ export function NavUser({
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger
-            asChild
-            className="cursor-pointer"
-          >
+          <DropdownMenuTrigger asChild className="cursor-pointer">
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -76,10 +68,7 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage
-                    src={user.avatar}
-                    alt={user.name}
-                  />
+                  <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className="rounded-lg">
                     {intl.formatMessage({
                       id: "nav.user.avatarFallback",

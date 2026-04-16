@@ -60,13 +60,7 @@ export function KeysetRedemptionButton({
       className="w-full max-w-sm"
       size="sm"
       variant="default"
-      disabled={
-        isPending ||
-        !parsedKeysetId ||
-        !canEnableRedemption ||
-        anyMintCompleteLoading ||
-        hasNoMatchingBills
-      }
+      disabled={isPending || !parsedKeysetId || !canEnableRedemption || anyMintCompleteLoading || hasNoMatchingBills}
       onClick={onRedeem}
     >
       {label}

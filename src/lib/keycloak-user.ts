@@ -37,10 +37,7 @@ export function useKeycloak(): UseKeycloakReturn {
             (keycloak.profile as KeycloakProfile)?.username ??
             (keycloak.tokenParsed as KeycloakTokenParsed)?.preferred_username ??
             "Unknown User",
-          email:
-            (keycloak.profile as KeycloakProfile)?.email ??
-            (keycloak.tokenParsed as KeycloakTokenParsed)?.email ??
-            "",
+          email: (keycloak.profile as KeycloakProfile)?.email ?? (keycloak.tokenParsed as KeycloakTokenParsed)?.email ?? "",
           avatar: "",
         });
       } else {

@@ -15,12 +15,7 @@ import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
 
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
 const QUOTE_DETAIL_POLL_INTERVAL_MS = 10_000;
-const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
-  "Denied",
-  "Rejected",
-  "Canceled",
-  "MintingEnabled",
-]);
+const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 
 export function useQuoteDetail(id: string) {
   const intl = useIntl();
@@ -41,9 +36,7 @@ export function useQuoteDetail(id: string) {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
       }
 
-      return QUOTE_POLLING_TERMINAL_STATUSES.has(status)
-        ? false
-        : QUOTE_STATUS_POLL_INTERVAL_MS;
+      return QUOTE_POLLING_TERMINAL_STATUSES.has(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
   });
@@ -57,9 +50,7 @@ export function useQuoteDetail(id: string) {
     refetchInterval: (query) => {
       if (query.state.error) return false;
       const ebill = (query.state.data ?? []).find((item) => item.id === billId);
-      return ebill?.status?.payment?.paid
-        ? false
-        : QUOTE_DETAIL_POLL_INTERVAL_MS;
+      return ebill?.status?.payment?.paid ? false : QUOTE_DETAIL_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
   });
@@ -73,15 +64,9 @@ export function useQuoteDetail(id: string) {
   });
 
   const ebill = ebillsQuery.data?.find((item) => item.id === billId);
-  const effectiveQuoteStatus = getEffectiveQuoteStatus(
-    (quoteData?.status as InfoReplyDiscriminants | undefined) ?? "Pending",
-    ebill,
-  );
+  const effectiveQuoteStatus = getEffectiveQuoteStatus((quoteData?.status as InfoReplyDiscriminants | undefined) ?? "Pending", ebill);
   const isPaid = ebill?.status?.payment?.paid === true;
-  const shouldCheckMintComplete =
-    effectiveQuoteStatus === "Accepted" ||
-    effectiveQuoteStatus === "MintingEnabled" ||
-    isPaid;
+  const shouldCheckMintComplete = effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled" || isPaid;
 
   const feeTokenRequestRef = useRef<string | null>(null);
 
@@ -102,8 +87,8 @@ export function useQuoteDetail(id: string) {
             id: "quotes.feeToken.check.error",
             defaultMessage: "Failed to check fee token: {error}",
           },
-          { error: message },
-        ),
+          { error: message }
+        )
       );
       feeTokenRequestRef.current = null;
     },
@@ -123,8 +108,7 @@ export function useQuoteDetail(id: string) {
     },
   });
 
-  const feeTokenFromQuote =
-    quoteData && "fee" in quoteData ? quoteData.fee : null;
+  const feeTokenFromQuote = quoteData && "fee" in quoteData ? quoteData.fee : null;
   const quoteStatusForEffect = effectiveQuoteStatus;
 
   useEffect(() => {
@@ -144,40 +128,24 @@ export function useQuoteDetail(id: string) {
     requestFeeTokenStatus({
       body: { token: feeTokenFromQuote },
     });
-  }, [
-    feeTokenFromQuote,
-    isFeeTokenStatusPending,
-    isFeeTokenStatusSuccess,
-    quoteStatusForEffect,
-    requestFeeTokenStatus,
-  ]);
+  }, [feeTokenFromQuote, isFeeTokenStatusPending, isFeeTokenStatusSuccess, quoteStatusForEffect, requestFeeTokenStatus]);
 
   const isMintComplete = mintCompleteQuery.data?.complete ?? false;
   const isMintCompleteLoading = mintCompleteQuery.isLoading;
-  const feeToken =
-    quoteData && "fee" in quoteData && typeof quoteData.fee === "string"
-      ? quoteData.fee
-      : null;
+  const feeToken = quoteData && "fee" in quoteData && typeof quoteData.fee === "string" ? quoteData.fee : null;
 
   const billStatus = ebill?.status;
   const paymentStatus = billStatus?.payment;
   const cws = ebill?.current_waiting_state;
   const ebillPaid = Boolean(paymentStatus?.paid);
   const hasPaymentRequestInWaitingState = Boolean(cws && "Payment" in cws);
-  const requestedToPay = Boolean(
-    paymentStatus?.requested_to_pay ??
-    billStatus?.has_requested_funds ??
-    hasPaymentRequestInWaitingState,
-  );
+  const requestedToPay = Boolean(paymentStatus?.requested_to_pay ?? billStatus?.has_requested_funds ?? hasPaymentRequestInWaitingState);
   const rejectedToPay = Boolean(paymentStatus?.rejected_to_pay);
   const paymentDeadlineTs = paymentStatus?.payment_deadline_timestamp ?? null;
   const timeOfRequestToPay = paymentStatus?.time_of_request_to_pay ?? null;
 
-  const isInMempool =
-    cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true;
-  const showPayment =
-    effectiveQuoteStatus === "Accepted" ||
-    effectiveQuoteStatus === "MintingEnabled";
+  const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool === true;
+  const showPayment = effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled";
   const documentFiles = ebill?.data?.files ?? [];
 
   return {

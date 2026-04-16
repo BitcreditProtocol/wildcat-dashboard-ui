@@ -10,10 +10,7 @@ import {
 import { Link } from "react-router";
 import { useIntl } from "react-intl";
 
-export function Breadcrumbs({
-  parents,
-  children,
-}: PropsWithChildren<{ parents?: React.ReactNode[] }>) {
+export function Breadcrumbs({ parents, children }: PropsWithChildren<{ parents?: React.ReactNode[] }>) {
   const intl = useIntl();
 
   return (
@@ -33,10 +30,7 @@ export function Breadcrumbs({
         {parents && (
           <>
             {parents.map((it, index) => (
-              <div
-                className="flex items-center gap-2"
-                key={index}
-              >
+              <div className="flex items-center gap-2" key={index}>
                 <BreadcrumbItem>
                   <>{it}</>
                 </BreadcrumbItem>
