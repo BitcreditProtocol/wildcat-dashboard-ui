@@ -14,7 +14,7 @@ describe("buildMempoolTransactionUrl", () => {
       buildMempoolTransactionUrl({
         txId: "abc123",
         network: "mainnet",
-      }),
+      })
     ).toBe("https://esplora.example.com/tx/abc123");
   });
 
@@ -26,7 +26,7 @@ describe("buildMempoolTransactionUrl", () => {
       buildMempoolTransactionUrl({
         txId: "abc123",
         network: "testnet",
-      }),
+      })
     ).toBe("https://esplora.example.com/testnet/tx/abc123");
   });
 
@@ -37,7 +37,7 @@ describe("buildMempoolTransactionUrl", () => {
       buildMempoolTransactionUrl({
         txId: null,
         network: "testnet",
-      }),
+      })
     ).toBeUndefined();
   });
 
@@ -48,7 +48,7 @@ describe("buildMempoolTransactionUrl", () => {
       buildMempoolTransactionUrl({
         txId: "abc123",
         network: "customnet",
-      }),
+      })
     ).toBeUndefined();
   });
 });

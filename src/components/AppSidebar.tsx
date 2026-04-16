@@ -1,19 +1,10 @@
 import { Bitcoin, Home, Inbox, Key } from "lucide-react";
 import { useContext } from "react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarRail,
-  SidebarSeparator,
-} from "@/components/ui/sidebar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CurrencySelector } from "@/components/CurrencySelector";
+import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
+import { ThemeSelector } from "@/components/ThemeSelector";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
 // import { useKeycloak } from "../lib/keycloak-user"
@@ -99,10 +90,7 @@ function LanguageSelector() {
           defaultMessage: "Language",
         })}
       </span>
-      <Select
-        value={locale}
-        onValueChange={setLocale}
-      >
+      <Select value={locale} onValueChange={setLocale}>
         <SelectTrigger className="h-9">
           <SelectValue
             placeholder={intl.formatMessage({
@@ -113,10 +101,7 @@ function LanguageSelector() {
         </SelectTrigger>
         <SelectContent>
           {locales.map((loc) => (
-            <SelectItem
-              key={loc}
-              value={loc}
-            >
+            <SelectItem key={loc} value={loc}>
               {intl.formatMessage({
                 id: `locale.${loc}`,
                 defaultMessage: loc,
@@ -139,7 +124,12 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarSeparator className="my-2" />
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
-        <LanguageSelector />
+        <div className="flex flex-col gap-4">
+          <ThemeSelector className="flex flex-col gap-2" />
+          <CurrencySelector className="flex flex-col gap-2" />
+          <DecimalFormatSelector className="flex flex-col gap-2" />
+          <LanguageSelector />
+        </div>
       </SidebarFooter>
       {/* https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/131
         <SidebarFooter>{!isLoading && user && <NavUser user={user} />}</SidebarFooter>

@@ -3,10 +3,7 @@ export class ApiError extends Error {
   details?: unknown;
   raw?: unknown;
 
-  constructor(
-    message: string,
-    options?: { status?: number; details?: unknown; raw?: unknown },
-  ) {
+  constructor(message: string, options?: { status?: number; details?: unknown; raw?: unknown }) {
     super(message);
     this.name = "ApiError";
     this.status = options?.status;
@@ -44,13 +41,7 @@ function extractMessage(error: unknown): string | undefined {
   const nestedError = error.error;
   const nestedMessage = isRecord(nestedError) ? nestedError.message : undefined;
 
-  return firstString([
-    error.message,
-    error.error,
-    error.detail,
-    error.title,
-    nestedMessage,
-  ]);
+  return firstString([error.message, error.error, error.detail, error.title, nestedMessage]);
 }
 
 function extractStatus(error: unknown): number | undefined {
@@ -65,10 +56,7 @@ function extractStatus(error: unknown): number | undefined {
   return undefined;
 }
 
-export function normalizeApiError(
-  error: unknown,
-  context?: { status?: number; fallbackMessage?: string },
-): ApiError {
+export function normalizeApiError(error: unknown, context?: { status?: number; fallbackMessage?: string }): ApiError {
   if (error instanceof ApiError) {
     if (error.status === undefined && context?.status !== undefined) {
       error.status = context.status;
@@ -76,8 +64,7 @@ export function normalizeApiError(
     return error;
   }
 
-  const message =
-    extractMessage(error) ?? context?.fallbackMessage ?? "Request failed";
+  const message = extractMessage(error) ?? context?.fallbackMessage ?? "Request failed";
   const status = context?.status ?? extractStatus(error);
 
   return new ApiError(message, {
@@ -87,9 +74,6 @@ export function normalizeApiError(
   });
 }
 
-export function getApiErrorMessage(
-  error: unknown,
-  fallbackMessage = "Unexpected error",
-): string {
+export function getApiErrorMessage(error: unknown, fallbackMessage = "Unexpected error"): string {
   return normalizeApiError(error, { fallbackMessage }).message;
 }

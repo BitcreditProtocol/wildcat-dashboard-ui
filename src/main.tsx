@@ -18,6 +18,8 @@ import "./lib/api-client";
 import KeysetsPage from "@/pages/keysets/KeysetsPage";
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
+import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
+import { ThemeProvider } from "@/context/theme/ThemeProvider";
 
 const queryClient = new QueryClient();
 
@@ -31,74 +33,23 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route
-              index
-              element={<HomePage />}
-            />
-            <Route
-              path="balances"
-              element={<BalancesPage />}
-            />
-            <Route
-              path="earnings"
-              element={<EarningsPage />}
-            />
-            <Route
-              path="earnings/cashflow"
-              element={<CashFlowPage />}
-            />
-            <Route
-              path="quotes"
-              element={<StatusQuotePage />}
-            />
-            <Route
-              path="quotes/pending"
-              element={<StatusQuotePage status="Pending" />}
-            />
-            <Route
-              path="quotes/accepted"
-              element={<StatusQuotePage status="Accepted" />}
-            />
-            <Route
-              path="quotes/canceled"
-              element={<StatusQuotePage status="Canceled" />}
-            />
-            <Route
-              path="quotes/offered"
-              element={<StatusQuotePage status="Offered" />}
-            />
-            <Route
-              path="quotes/offerexpired"
-              element={<StatusQuotePage status="OfferExpired" />}
-            />
-            <Route
-              path="quotes/denied"
-              element={<StatusQuotePage status="Denied" />}
-            />
-            <Route
-              path="quotes/rejected"
-              element={<StatusQuotePage status="Rejected" />}
-            />
-            <Route
-              path="quotes/:id"
-              element={<QuotePage />}
-            />
-            <Route
-              path="keysets"
-              element={<KeysetsPage />}
-            />
-            <Route
-              path="keysets/:keysetId"
-              element={<KeysetDetailPage />}
-            />
-            <Route
-              path="settings"
-              element={<SettingsPage />}
-            />
-            <Route
-              path="info"
-              element={<InfoPage />}
-            />
+            <Route index element={<HomePage />} />
+            <Route path="balances" element={<BalancesPage />} />
+            <Route path="earnings" element={<EarningsPage />} />
+            <Route path="earnings/cashflow" element={<CashFlowPage />} />
+            <Route path="quotes" element={<StatusQuotePage />} />
+            <Route path="quotes/pending" element={<StatusQuotePage status="Pending" />} />
+            <Route path="quotes/accepted" element={<StatusQuotePage status="Accepted" />} />
+            <Route path="quotes/canceled" element={<StatusQuotePage status="Canceled" />} />
+            <Route path="quotes/offered" element={<StatusQuotePage status="Offered" />} />
+            <Route path="quotes/offerexpired" element={<StatusQuotePage status="OfferExpired" />} />
+            <Route path="quotes/denied" element={<StatusQuotePage status="Denied" />} />
+            <Route path="quotes/rejected" element={<StatusQuotePage status="Rejected" />} />
+            <Route path="quotes/:id" element={<QuotePage />} />
+            <Route path="keysets" element={<KeysetsPage />} />
+            <Route path="keysets/:keysetId" element={<KeysetDetailPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="info" element={<InfoPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
@@ -109,11 +60,15 @@ function App() {
 void prepare().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <LanguageProvider>
-        <App />
-        <Toaster />
-      </LanguageProvider>
-    </StrictMode>,
+      <ThemeProvider>
+        <LanguageProvider>
+          <PreferencesProvider>
+            <App />
+            <Toaster />
+          </PreferencesProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </StrictMode>
   );
 });
 

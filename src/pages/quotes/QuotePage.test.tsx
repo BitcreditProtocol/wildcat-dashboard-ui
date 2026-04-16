@@ -63,9 +63,7 @@ vi.mock("@/components/ParticipantsOverview", () => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
     useQuery: (options: QueryOptions) => mockUseQuery(options),
@@ -99,20 +97,15 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
   return mount;
 }
 
-function renderPage(
-  entry: string | { pathname: string; state?: Record<string, unknown> },
-): HTMLDivElement {
+function renderPage(entry: string | { pathname: string; state?: Record<string, unknown> }): HTMLDivElement {
   return renderIntoDom(
     <IntlProvider locale="en">
       <MemoryRouter initialEntries={[entry]}>
         <Routes>
-          <Route
-            path="/quotes/:id"
-            element={<QuotePage />}
-          />
+          <Route path="/quotes/:id" element={<QuotePage />} />
         </Routes>
       </MemoryRouter>
-    </IntlProvider>,
+    </IntlProvider>
   );
 }
 

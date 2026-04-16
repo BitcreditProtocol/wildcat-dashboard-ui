@@ -1,13 +1,7 @@
 import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useParams, Link, useLocation } from "react-router";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,10 +48,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground">
-              <FormattedMessage
-                id="keyset.detail.notFound"
-                defaultMessage="Keyset not found"
-              />
+              <FormattedMessage id="keyset.detail.notFound" defaultMessage="Keyset not found" />
             </p>
           </CardContent>
         </Card>
@@ -81,8 +72,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
         .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
     : noExpiryText;
 
-  const currencyUnit =
-    typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom;
+  const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom;
 
   return (
     <div className="space-y-4">
@@ -105,15 +95,9 @@ function PageBody({ keysetId }: { keysetId: string }) {
             <div className="flex gap-2 items-center">
               <Badge variant={keyset.active ? "default" : "secondary"}>
                 {keyset.active ? (
-                  <FormattedMessage
-                    id="keysets.status.active"
-                    defaultMessage="Active"
-                  />
+                  <FormattedMessage id="keysets.status.active" defaultMessage="Active" />
                 ) : (
-                  <FormattedMessage
-                    id="keysets.status.inactive"
-                    defaultMessage="Inactive"
-                  />
+                  <FormattedMessage id="keysets.status.inactive" defaultMessage="Inactive" />
                 )}
               </Badge>
             </div>
@@ -121,9 +105,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
           {keyset.active && (
             <div className="w-full my-4">
               <KeysetRedemptionButton
-                onRedeem={() =>
-                  redemptionMutation.mutate({ body: { kid: parsedKeysetId! } })
-                }
+                onRedeem={() => redemptionMutation.mutate({ body: { kid: parsedKeysetId! } })}
                 isPending={redemptionMutation.isPending}
                 parsedKeysetId={parsedKeysetId}
                 canEnableRedemption={canEnableRedemption}
@@ -153,62 +135,34 @@ function PageBody({ keysetId }: { keysetId: string }) {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.quoteId"
-                          defaultMessage="Quote ID"
-                        />
+                        <FormattedMessage id="keyset.detail.table.quoteId" defaultMessage="Quote ID" />
                       </th>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.quoteStatus"
-                          defaultMessage="Quote status"
-                        />
+                        <FormattedMessage id="keyset.detail.table.quoteStatus" defaultMessage="Quote status" />
                       </th>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.paymentStatus"
-                          defaultMessage="Payment status"
-                        />
+                        <FormattedMessage id="keyset.detail.table.paymentStatus" defaultMessage="Payment status" />
                       </th>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.mintStatus"
-                          defaultMessage="Redemption status"
-                        />
+                        <FormattedMessage id="keyset.detail.table.mintStatus" defaultMessage="Redemption status" />
                       </th>
                       <th className="text-left p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.paymentAddress"
-                          defaultMessage="Payment address"
-                        />
+                        <FormattedMessage id="keyset.detail.table.paymentAddress" defaultMessage="Payment address" />
                       </th>
                       <th className="text-right p-2 font-semibold">
-                        <FormattedMessage
-                          id="keyset.detail.table.sum"
-                          defaultMessage="Sum"
-                        />
+                        <FormattedMessage id="keyset.detail.table.sum" defaultMessage="Sum" />
                       </th>
                       <th className="text-right p-2 font-semibold"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {matchingQuotes.map((quote) => {
-                      const quoteIndex = allQuotes.findIndex(
-                        (q) => q.id === quote.id,
-                      );
-                      const quoteDetails =
-                        quoteDetailsQueries[quoteIndex]?.data;
+                      const quoteIndex = allQuotes.findIndex((q) => q.id === quote.id);
+                      const quoteDetails = quoteDetailsQueries[quoteIndex]?.data;
                       const billId = quoteDetails?.bill?.id;
-                      const ebill = billId
-                        ? billIdToEbillMap.get(billId)
-                        : null;
-                      const billIdIndex = billId
-                        ? matchingBillIds.indexOf(billId)
-                        : -1;
-                      const mintCompleteQuery =
-                        billId && billIdIndex >= 0
-                          ? mintCompleteQueries[billIdIndex]
-                          : null;
+                      const ebill = billId ? billIdToEbillMap.get(billId) : null;
+                      const billIdIndex = billId ? matchingBillIds.indexOf(billId) : -1;
+                      const mintCompleteQuery = billId && billIdIndex >= 0 ? mintCompleteQueries[billIdIndex] : null;
 
                       return (
                         <KeysetQuoteTableRow
@@ -227,10 +181,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              <FormattedMessage
-                id="keyset.detail.noQuotes"
-                defaultMessage="No quotes available"
-              />
+              <FormattedMessage id="keyset.detail.noQuotes" defaultMessage="No quotes available" />
             </p>
           )}
         </CardContent>
@@ -253,10 +204,7 @@ export default function KeysetDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground">
-              <FormattedMessage
-                id="keyset.detail.invalidId"
-                defaultMessage="Invalid keyset ID"
-              />
+              <FormattedMessage id="keyset.detail.invalidId" defaultMessage="Invalid keyset ID" />
             </p>
           </CardContent>
         </Card>
@@ -268,15 +216,9 @@ export default function KeysetDetailPage() {
     <>
       <Breadcrumbs
         parents={[
-          <BreadcrumbLink
-            key="keysets"
-            asChild
-          >
+          <BreadcrumbLink key="keysets" asChild>
             <Link to="/keysets">
-              <FormattedMessage
-                id="keysets.page.title"
-                defaultMessage="Keysets"
-              />
+              <FormattedMessage id="keysets.page.title" defaultMessage="Keysets" />
             </Link>
           </BreadcrumbLink>,
         ]}
@@ -289,33 +231,18 @@ export default function KeysetDetailPage() {
             id="keyset.detail.title"
             defaultMessage="Keyset {id}"
             values={{
-              id: (
-                <span className="font-mono">
-                  {truncateString(keysetId, 16)}
-                </span>
-              ),
+              id: <span className="font-mono">{truncateString(keysetId, 16)}</span>,
             }}
           />
         </PageTitle>
         {fromQuote && quoteId && (
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-          >
-            <Link
-              to={`/quotes/${quoteId}`}
-              state={{ from: `/keysets/${keysetId}` }}
-            >
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }}>
               <FormattedMessage
                 id="keyset.detail.backToQuote"
                 defaultMessage="Back to quote {id}"
                 values={{
-                  id: (
-                    <span className="font-mono">
-                      {truncateString(quoteId, 16)}
-                    </span>
-                  ),
+                  id: <span className="font-mono">{truncateString(quoteId, 16)}</span>,
                 }}
               />
             </Link>

@@ -5,14 +5,10 @@ import { PageTitle } from "@/components/PageTitle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-} from "@/components/ui/chart";
+import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
+import { Currency } from "@/components/Currency";
 
 function Loader() {
   return (
@@ -76,33 +72,12 @@ export function BitcoinBalanceChart() {
   ];
 
   return (
-    <ChartContainer
-      config={config}
-      className="min-h-[200px] w-full"
-    >
-      <BarChart
-        accessibilityLayer
-        data={data}
-      >
+    <ChartContainer config={config} className="min-h-[200px] w-full">
+      <BarChart accessibilityLayer data={data}>
         <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-          tickFormatter={(value: string) => value}
-        />
-        <YAxis
-          dataKey="bitcoin"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-        />
-        <Bar
-          dataKey="bitcoin"
-          fill="var(--color-bitcoin)"
-          radius={4}
-        />
+        <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value: string) => value} />
+        <YAxis dataKey="bitcoin" tickLine={false} tickMargin={10} axisLine={false} />
+        <Bar dataKey="bitcoin" fill="var(--color-bitcoin)" radius={4} />
         <ChartLegend content={<ChartLegendContent />} />
       </BarChart>
     </ChartContainer>
@@ -153,44 +128,14 @@ export function OtherBalanceChart() {
   ];
 
   return (
-    <ChartContainer
-      config={config}
-      className="min-h-[200px] w-full"
-    >
-      <BarChart
-        accessibilityLayer
-        data={data}
-      >
+    <ChartContainer config={config} className="min-h-[200px] w-full">
+      <BarChart accessibilityLayer data={data}>
         <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-          tickFormatter={(value: string) => value}
-        />
-        <YAxis
-          dataKey="credit"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-        />
-        <YAxis
-          dataKey="debit"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-        />
-        <Bar
-          dataKey="credit"
-          fill="var(--color-credit)"
-          radius={4}
-        />
-        <Bar
-          dataKey="debit"
-          fill="var(--color-debit)"
-          radius={4}
-        />
+        <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value: string) => value} />
+        <YAxis dataKey="credit" tickLine={false} tickMargin={10} axisLine={false} />
+        <YAxis dataKey="debit" tickLine={false} tickMargin={10} axisLine={false} />
+        <Bar dataKey="credit" fill="var(--color-credit)" radius={4} />
+        <Bar dataKey="debit" fill="var(--color-debit)" radius={4} />
         <ChartLegend content={<ChartLegendContent />} />
       </BarChart>
     </ChartContainer>
@@ -202,15 +147,20 @@ interface BalanceDisplay {
   unit: string;
 }
 
-export function BalanceText({
-  amount,
-  unit,
-  children,
-}: PropsWithChildren<BalanceDisplay>) {
+export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
       <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
-        {amount} {unit}
+        {unit === "sat" ? (
+          <Currency
+            value={Number(amount)}
+            sourceCurrency="sat"
+            amountClassName="text-current"
+            currencyClassName="text-sm font-medium text-muted-foreground"
+          />
+        ) : (
+          `${amount} ${unit}`
+        )}
       </h3>
       {children}
     </>
@@ -263,11 +213,7 @@ function PageBodyWithDevSection() {
           <Card className="bg-red-50 border-red-200">
             <CardContent className="p-4">
               <p className="text-red-800">
-                <FormattedMessage
-                  id="balances.error"
-                  defaultMessage="Error loading balances: {error}"
-                  values={{ error }}
-                />
+                <FormattedMessage id="balances.error" defaultMessage="Error loading balances: {error}" values={{ error }} />
               </p>
             </CardContent>
           </Card>
@@ -283,65 +229,41 @@ function PageBodyWithDevSection() {
           <Card className="bg-indigo-100">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage
-                  id="balances.bitcoin"
-                  defaultMessage="Bitcoin balance"
-                />
+                <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceText
-                amount={balances.bitcoin.amount}
-                unit={balances.bitcoin.unit}
-              />
+              <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
             </CardContent>
           </Card>
           <Card className="bg-orange-100">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage
-                  id="balances.eiou"
-                  defaultMessage="e-IOU balance"
-                />
+                <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceText
-                amount={balances.eiou.amount}
-                unit={balances.eiou.unit}
-              />
+              <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
             </CardContent>
           </Card>
           <Card className="bg-purple-200">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage
-                  id="balances.creditToken"
-                  defaultMessage="Credit token balance"
-                />
+                <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceText
-                amount={balances.credit.amount}
-                unit={balances.credit.unit}
-              />
+              <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
             </CardContent>
           </Card>
           <Card className="bg-purple-400">
             <CardHeader>
               <CardTitle>
-                <FormattedMessage
-                  id="balances.debitToken"
-                  defaultMessage="Debit token balance"
-                />
+                <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceText
-                amount={balances.debit.amount}
-                unit={balances.debit.unit}
-              />
+              <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
             </CardContent>
           </Card>
         </div>
@@ -368,16 +290,10 @@ export default function BalancesPage() {
   return (
     <>
       <Breadcrumbs>
-        <FormattedMessage
-          id="balances.page.title"
-          defaultMessage="Balances"
-        />
+        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage
-          id="balances.page.title"
-          defaultMessage="Balances"
-        />
+        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
       </PageTitle>
 
       <Suspense fallback={<Loader />}>

@@ -34,25 +34,14 @@ interface OfferFormDrawerProps {
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function OfferFormDrawer({
-  title,
-  description,
-  value,
-  open,
-  onOpenChange,
-  onSubmit,
-  children,
-}: OfferFormDrawerProps) {
+export function OfferFormDrawer({ title, description, value, open, onOpenChange, onSubmit, children }: OfferFormDrawerProps) {
   const handleFormSubmit = (values: {
     days: number;
     discountRate: Big;
     net: { value: Big; currency: string };
     gross: { value: Big; currency: string };
   }) => {
-    const ttl =
-      value.status === "Pending"
-        ? new Date(value.suggested_expiration)
-        : new Date(Date.now() + THIRTY_DAYS_MS);
+    const ttl = value.status === "Pending" ? new Date(value.suggested_expiration) : new Date(Date.now() + THIRTY_DAYS_MS);
 
     const result: OfferFormResult = {
       discount: values,
@@ -63,18 +52,10 @@ export function OfferFormDrawer({
   };
 
   const startDate = new Date();
-  const endDate = value.bill.maturity_date
-    ? new Date(value.bill.maturity_date)
-    : new Date();
+  const endDate = value.bill.maturity_date ? new Date(value.bill.maturity_date) : new Date();
 
   return (
-    <BaseDrawer
-      title={title}
-      description={description}
-      open={open}
-      onOpenChange={onOpenChange}
-      trigger={children}
-    >
+    <BaseDrawer title={title} description={description} open={open} onOpenChange={onOpenChange} trigger={children}>
       <GrossToNetDiscountForm
         startDate={startDate}
         endDate={endDate}

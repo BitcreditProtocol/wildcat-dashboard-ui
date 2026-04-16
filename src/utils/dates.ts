@@ -1,38 +1,16 @@
-import {
-  differenceInCalendarYears,
-  differenceInMinutes,
-  subDays,
-  addDays,
-} from "date-fns";
-import {
-  differenceInCalendarDays,
-  differenceInCalendarMonths,
-  differenceInHours,
-  differenceInSeconds,
-} from "date-fns";
+import { differenceInCalendarYears, differenceInMinutes, subDays, addDays } from "date-fns";
+import { differenceInCalendarDays, differenceInCalendarMonths, differenceInHours, differenceInSeconds } from "date-fns";
 
 const UTC_TIME_ZONE = "UTC";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export const daysBetween = (startDate: Date, endDate: Date): number => {
-  const startUtc = Date.UTC(
-    startDate.getUTCFullYear(),
-    startDate.getUTCMonth(),
-    startDate.getUTCDate(),
-  );
-  const endUtc = Date.UTC(
-    endDate.getUTCFullYear(),
-    endDate.getUTCMonth(),
-    endDate.getUTCDate(),
-  );
+  const startUtc = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+  const endUtc = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate());
   return Math.floor((endUtc - startUtc) / MS_PER_DAY);
 };
 
-export function humanReadableDuration(
-  locale: string,
-  from: Date,
-  until = new Date(Date.now()),
-) {
+export function humanReadableDuration(locale: string, from: Date, until = new Date(Date.now())) {
   const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, {
     numeric: "auto",
   });
@@ -61,11 +39,7 @@ export function humanReadableDuration(
   return relativeTimeFormatter.format(diffSeconds, "seconds");
 }
 
-export function humanReadableDurationDays(
-  locale: string,
-  from: Date,
-  until = new Date(Date.now()),
-) {
+export function humanReadableDurationDays(locale: string, from: Date, until = new Date(Date.now())) {
   const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, {
     numeric: "auto",
   });
@@ -131,17 +105,7 @@ export const formatYearNumeric = (date: Date, locale: string): string => {
 };
 
 export const toUtcEndOfDay = (date: Date): Date => {
-  return new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      23,
-      59,
-      59,
-      999,
-    ),
-  );
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
 };
 
 /**

@@ -12,10 +12,7 @@ import {
   DollarSign,
   ArrowUpDown,
 } from "lucide-react";
-import type {
-  Endorsement,
-  LightBillParticipant,
-} from "@/generated/client/types.gen";
+import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -31,11 +28,7 @@ interface EndorsementChainProps {
   quoteOffered?: boolean;
 }
 
-function LightParticipantInfo({
-  participant,
-}: {
-  participant: LightBillParticipant;
-}) {
+function LightParticipantInfo({ participant }: { participant: LightBillParticipant }) {
   const intl = useIntl();
   if ("Anon" in participant) {
     return (
@@ -46,21 +39,13 @@ function LightParticipantInfo({
             defaultMessage: "Bearer",
           })}
         </span>
-        <TruncatedTextPopover
-          text={participant.Anon.node_id}
-          maxLength={64}
-          className="font-mono text-xs text-muted-foreground"
-        />
+        <TruncatedTextPopover text={participant.Anon.node_id} maxLength={64} className="font-mono text-xs text-muted-foreground" />
       </div>
     );
   } else if ("Ident" in participant) {
     return (
       <div className="flex flex-col gap-0.5">
-        <TruncatedTextPopover
-          text={participant.Ident.name}
-          maxLength={50}
-          className="font-medium text-sm"
-        />
+        <TruncatedTextPopover text={participant.Ident.name} maxLength={50} className="font-medium text-sm" />
         {participant.Ident.city && participant.Ident.country && (
           <TruncatedTextPopover
             text={`${participant.Ident.city}, ${participant.Ident.country}`}
@@ -75,16 +60,7 @@ function LightParticipantInfo({
 }
 
 interface HistoryEvent {
-  type:
-    | "issue"
-    | "offered"
-    | "endorsement"
-    | "requestToPay"
-    | "payment"
-    | "acceptance"
-    | "rejection"
-    | "minting"
-    | "rejectedToPay";
+  type: "issue" | "offered" | "endorsement" | "requestToPay" | "payment" | "acceptance" | "rejection" | "minting" | "rejectedToPay";
   timestamp?: number;
   data: Endorsement | null;
 }
@@ -309,10 +285,9 @@ export function EndorsementChain({
               {intl.formatMessage(
                 {
                   id: "endorsement.history.eventCount",
-                  defaultMessage:
-                    "({count, plural, one {# event} other {# events}})",
+                  defaultMessage: "({count, plural, one {# event} other {# events}})",
                 },
-                { count: eventCount },
+                { count: eventCount }
               )}
             </span>
           </span>
@@ -328,11 +303,7 @@ export function EndorsementChain({
                     defaultMessage: "Show history",
                   })}
             </span>
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </span>
         </button>
       </CardHeader>
@@ -387,21 +358,14 @@ export function EndorsementChain({
                       {/* Event Header */}
                       <div className="flex items-center gap-2">
                         <Icon className={`h-4 w-4 ${config.color}`} />
-                        <span className="text-sm font-semibold">
-                          {displayLabel}
-                        </span>
+                        <span className="text-sm font-semibold">{displayLabel}</span>
                       </div>
 
                       {/* Timestamp */}
                       {event.timestamp !== undefined && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          <span>
-                            {new Date(event.timestamp * 1000).toLocaleString(
-                              undefined,
-                              { timeZone: "UTC" },
-                            )}
-                          </span>
+                          <span>{new Date(event.timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
                         </div>
                       )}
 
@@ -428,9 +392,7 @@ export function EndorsementChain({
                                   defaultMessage: "Signed by",
                                 })}
                               </div>
-                              <LightParticipantInfo
-                                participant={event.data.signed.data}
-                              />
+                              <LightParticipantInfo participant={event.data.signed.data} />
                               {event.data.signed.signatory && (
                                 <div className="text-xs text-muted-foreground mt-1">
                                   <div>
@@ -439,11 +401,7 @@ export function EndorsementChain({
                                       defaultMessage: "Signatory:",
                                     })}
                                   </div>
-                                  <TruncatedTextPopover
-                                    text={event.data.signed.signatory.name}
-                                    maxLength={40}
-                                    className="inline"
-                                  />
+                                  <TruncatedTextPopover text={event.data.signed.signatory.name} maxLength={40} className="inline" />
                                 </div>
                               )}
                             </div>
@@ -455,9 +413,7 @@ export function EndorsementChain({
                                   defaultMessage: "Endorsed to",
                                 })}
                               </div>
-                              <LightParticipantInfo
-                                participant={event.data.pay_to_the_order_of}
-                              />
+                              <LightParticipantInfo participant={event.data.pay_to_the_order_of} />
                             </div>
                           </div>
 
@@ -486,9 +442,7 @@ export function EndorsementChain({
                       )}
                     </div>
 
-                    {index < events.length - 1 && (
-                      <Separator className="my-2" />
-                    )}
+                    {index < events.length - 1 && <Separator className="my-2" />}
                   </div>
                 );
               })}

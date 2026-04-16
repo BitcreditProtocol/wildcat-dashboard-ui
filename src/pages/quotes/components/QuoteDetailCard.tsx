@@ -1,18 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  ParticipantsOverviewCard,
-  ParticipantDetail,
-} from "@/components/ParticipantsOverview";
+import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview";
+import { Currency } from "@/components/Currency";
 import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
 import { humanReadableDurationDays } from "@/utils/dates";
-import type {
-  InfoReply,
-  TokenStateResponse,
-} from "@/generated/client/types.gen";
+import type { InfoReply, TokenStateResponse } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
 
 interface QuoteDetailCardProps {
@@ -103,22 +98,14 @@ export function QuoteDetailCard({
                   })}
                 </span>
                 {isMintCompleteLoading ? (
-                  <Badge
-                    variant="default"
-                    className="bg-yellow-500"
-                  >
+                  <Badge variant="default" className="bg-yellow-500">
                     {intl.formatMessage({
                       id: "quotes.redemption.pending",
                       defaultMessage: "Pending",
                     })}
                   </Badge>
                 ) : (
-                  <Badge
-                    variant="default"
-                    className={
-                      isMintComplete ? "bg-green-600" : "bg-yellow-500"
-                    }
-                  >
+                  <Badge variant="default" className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}>
                     {isMintComplete
                       ? intl.formatMessage({
                           id: "quotes.redemption.complete",
@@ -153,50 +140,35 @@ export function QuoteDetailCard({
                   })}
                 </span>
                 {ebillPaid ? (
-                  <Badge
-                    variant="default"
-                    className="bg-green-600"
-                  >
+                  <Badge variant="default" className="bg-green-600">
                     {intl.formatMessage({
                       id: "quotes.payment.paid",
                       defaultMessage: "Paid",
                     })}
                   </Badge>
                 ) : rejectedToPay ? (
-                  <Badge
-                    variant="destructive"
-                    className="bg-red-600"
-                  >
+                  <Badge variant="destructive" className="bg-red-600">
                     {intl.formatMessage({
                       id: "quotes.payment.rejected",
                       defaultMessage: "Rejected to pay",
                     })}
                   </Badge>
                 ) : isInMempool ? (
-                  <Badge
-                    variant="default"
-                    className="bg-orange-500"
-                  >
+                  <Badge variant="default" className="bg-orange-500">
                     {intl.formatMessage({
                       id: "quotes.payment.inMempool",
                       defaultMessage: "In mempool",
                     })}
                   </Badge>
                 ) : !requestedToPay ? (
-                  <Badge
-                    variant="secondary"
-                    className="border border-border"
-                  >
+                  <Badge variant="secondary" className="border border-border">
                     {intl.formatMessage({
                       id: "quotes.payment.notRequested",
                       defaultMessage: "Not requested",
                     })}
                   </Badge>
                 ) : (
-                  <Badge
-                    variant="default"
-                    className="bg-blue-500"
-                  >
+                  <Badge variant="default" className="bg-blue-500">
                     {intl.formatMessage({
                       id: "quotes.payment.requested",
                       defaultMessage: "Requested",
@@ -213,7 +185,7 @@ export function QuoteDetailCard({
                 defaultMessage: "Sum:",
               })}
             </span>
-            <span className="text-lg font-bold">{bill.sum} sat</span>
+            <Currency value={bill.sum} sourceCurrency="sat" className="text-lg font-bold" amountClassName="text-current" />
           </div>
           {"discounted" in quote && quote.discounted && (
             <>
@@ -224,9 +196,7 @@ export function QuoteDetailCard({
                     defaultMessage: "Fee:",
                   })}
                 </span>
-                <span className="text-lg font-bold">
-                  {quote.discounted} sat
-                </span>
+                <Currency value={quote.discounted} sourceCurrency="sat" className="text-lg font-bold" amountClassName="text-current" />
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold w-32">
@@ -235,9 +205,12 @@ export function QuoteDetailCard({
                     defaultMessage: "Effective fee (absolute):",
                   })}
                 </span>
-                <span className="text-sm font-mono">
-                  {bill.sum - quote.discounted} sat
-                </span>
+                <Currency
+                  value={bill.sum - quote.discounted}
+                  sourceCurrency="sat"
+                  className="text-sm font-mono"
+                  amountClassName="text-current"
+                />
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold w-32">
@@ -246,12 +219,7 @@ export function QuoteDetailCard({
                     defaultMessage: "Effective fee (relative):",
                   })}
                 </span>
-                <span className="text-sm font-mono">
-                  {(((bill.sum - quote.discounted) / bill.sum) * 100).toFixed(
-                    4,
-                  )}
-                  %
-                </span>
+                <span className="text-sm font-mono">{(((bill.sum - quote.discounted) / bill.sum) * 100).toFixed(4)}%</span>
               </div>
             </>
           )}
@@ -263,58 +231,38 @@ export function QuoteDetailCard({
                   defaultMessage: "Fee token:",
                 })}
               </span>
-              <TruncatedTextPopover
-                text={feeToken}
-                maxLength={64}
-                className="font-mono text-sm"
-                showCopyButton={true}
-              />
+              <TruncatedTextPopover text={feeToken} maxLength={64} className="font-mono text-sm" showCopyButton={true} />
               <FeeTokenQRCodeModal feeToken={feeToken} />
               {isFeeTokenStatusPending ? (
-                <Badge
-                  variant="default"
-                  className="bg-gray-500"
-                >
+                <Badge variant="default" className="bg-gray-500">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.checking",
                     defaultMessage: "Checking...",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state === "Spent" ? (
-                <Badge
-                  variant="destructive"
-                  className="bg-red-600"
-                >
+                <Badge variant="destructive" className="bg-red-600">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.spent",
                     defaultMessage: "Spent",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state === "Unspent" ? (
-                <Badge
-                  variant="default"
-                  className="bg-green-600"
-                >
+                <Badge variant="default" className="bg-green-600">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.active",
                     defaultMessage: "Active",
                   })}
                 </Badge>
               ) : isFeeTokenStatusError ? (
-                <Badge
-                  variant="destructive"
-                  className="bg-red-600"
-                >
+                <Badge variant="destructive" className="bg-red-600">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.error",
                     defaultMessage: "Error",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state ? (
-                <Badge
-                  variant="secondary"
-                  className="border border-border"
-                >
+                <Badge variant="secondary" className="border border-border">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.unknown",
                     defaultMessage: "Unknown",
@@ -341,12 +289,7 @@ export function QuoteDetailCard({
                 defaultMessage: "Participants:",
               })}
             </span>
-            <ParticipantsOverviewCard
-              drawee={bill.drawee}
-              drawer={bill.drawer}
-              payee={bill.payee}
-              holder={bill.endorsees}
-            />
+            <ParticipantsOverviewCard drawee={bill.drawee} drawer={bill.drawer} payee={bill.payee} holder={bill.endorsees} />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold w-32">
@@ -388,9 +331,7 @@ export function QuoteDetailCard({
                 })}
                 :
               </span>
-              <ParticipantDetail
-                participant={bill.endorsees[bill.endorsees.length - 1]}
-              />
+              <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
             </span>
           )}
         </div>

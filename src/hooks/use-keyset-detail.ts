@@ -1,10 +1,5 @@
 import { useMemo } from "react";
-import {
-  useQuery,
-  useQueries,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   listKeysetInfosOptions,
   listKeysetInfosQueryKey,
@@ -17,22 +12,14 @@ import type { BitcreditBill } from "@/generated/client/types.gen";
 import { toast } from "sonner";
 import { useIntl } from "react-intl";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
-import {
-  deserializeKeysetId,
-  doesBillMatchKeysetMaturity,
-} from "@/utils/keyset";
+import { deserializeKeysetId, doesBillMatchKeysetMaturity } from "@/utils/keyset";
 
 const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
 const MINT_COMPLETE_POLL_INTERVAL_MS = 60_000;
 const MINT_COMPLETE_RETRY_COUNT = 3;
 const MINT_COMPLETE_RETRY_DELAY_MS = 30_000;
 
-const QUOTE_POLLING_TERMINAL_STATUSES = new Set([
-  "Denied",
-  "Rejected",
-  "Canceled",
-  "MintingEnabled",
-]);
+const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 
 export function useKeysetDetail(keysetId: string) {
   const intl = useIntl();
@@ -50,10 +37,7 @@ export function useKeysetDetail(keysetId: string) {
     refetchIntervalInBackground: true,
   });
 
-  const allQuotes = useMemo(
-    () => allQuotesData?.data ?? [],
-    [allQuotesData?.data],
-  );
+  const allQuotes = useMemo(() => allQuotesData?.data ?? [], [allQuotesData?.data]);
 
   const { data: ebills } = useQuery({
     ...listEbillsOptions(),
@@ -71,7 +55,7 @@ export function useKeysetDetail(keysetId: string) {
         intl.formatMessage({
           id: "keyset.detail.redeem.success",
           defaultMessage: "Redemption enabled successfully",
-        }),
+        })
       );
       void queryClient.invalidateQueries({
         queryKey: listKeysetInfosQueryKey(),
@@ -86,8 +70,8 @@ export function useKeysetDetail(keysetId: string) {
             id: "keyset.detail.redeem.error",
             defaultMessage: "Failed to enable redemption: {error}",
           },
-          { error: message },
-        ),
+          { error: message }
+        )
       );
     },
   });
@@ -99,9 +83,7 @@ export function useKeysetDetail(keysetId: string) {
       }),
       refetchInterval: (query: { state: { data?: { status?: string } } }) => {
         const currentStatus = query.state.data?.status ?? quote.status;
-        return QUOTE_POLLING_TERMINAL_STATUSES.has(currentStatus)
-          ? false
-          : KEYSET_DETAIL_POLL_INTERVAL_MS;
+        return QUOTE_POLLING_TERMINAL_STATUSES.has(currentStatus) ? false : KEYSET_DETAIL_POLL_INTERVAL_MS;
       },
       refetchIntervalInBackground: true,
     })),
@@ -144,23 +126,14 @@ export function useKeysetDetail(keysetId: string) {
 
     return billIds;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    keyset?.final_expiry,
-    allQuotes,
-    quoteDetailsDepsKey,
-    quoteDetailsLoading,
-  ]);
+  }, [keyset?.final_expiry, allQuotes, quoteDetailsDepsKey, quoteDetailsLoading]);
 
   const mintCompleteQueries = useQueries({
     queries: matchingBillIds.map((billId) => ({
       ...getEbillMintCompleteQueryOptions({ billId }),
-      refetchInterval: (query: {
-        state: { data?: { complete?: boolean }; error?: unknown };
-      }) => {
+      refetchInterval: (query: { state: { data?: { complete?: boolean }; error?: unknown } }) => {
         if (query.state.error) return false;
-        return query.state.data?.complete === false
-          ? MINT_COMPLETE_POLL_INTERVAL_MS
-          : false;
+        return query.state.data?.complete === false ? MINT_COMPLETE_POLL_INTERVAL_MS : false;
       },
       retry: MINT_COMPLETE_RETRY_COUNT,
       retryDelay: MINT_COMPLETE_RETRY_DELAY_MS,
@@ -175,9 +148,7 @@ export function useKeysetDetail(keysetId: string) {
       return ebill?.status?.payment?.paid === true;
     });
 
-  const allMintComplete =
-    matchingBillIds.length > 0 &&
-    mintCompleteQueries.every((query) => query.data?.complete === true);
+  const allMintComplete = matchingBillIds.length > 0 && mintCompleteQueries.every((query) => query.data?.complete === true);
 
   const canEnableRedemption = allBillsPaid && allMintComplete;
   const anyMintCompleteLoading = mintCompleteQueries.some((q) => q.isLoading);

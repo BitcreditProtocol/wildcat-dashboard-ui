@@ -29,17 +29,7 @@ const getMinSelectableDate = (maturityDate?: string | null): Date => {
 };
 
 const toUtcEndOfDay = (date: Date): Date => {
-  return new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      23,
-      59,
-      59,
-      999,
-    ),
-  );
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
 };
 
 export function RequestToPayConfirmation({
@@ -52,17 +42,10 @@ export function RequestToPayConfirmation({
   billId,
 }: RequestToPayConfirmationProps) {
   const intl = useIntl();
-  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(
-    undefined,
-  );
+  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined);
   const [showPaymentCalendar, setShowPaymentCalendar] = useState(false);
-  const [draftValidUntilDate, setDraftValidUntilDate] = useState<
-    Date | undefined
-  >(undefined);
-  const minSelectableDate = useMemo(
-    () => getMinSelectableDate(maturityDate),
-    [maturityDate],
-  );
+  const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined);
+  const minSelectableDate = useMemo(() => getMinSelectableDate(maturityDate), [maturityDate]);
 
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
@@ -74,8 +57,7 @@ export function RequestToPayConfirmation({
     refetchIntervalInBackground: true,
   });
 
-  const ebillAvailable =
-    !ebillQuery.isLoading && !ebillQuery.error && !!ebillQuery.data;
+  const ebillAvailable = !ebillQuery.isLoading && !ebillQuery.error && !!ebillQuery.data;
 
   useEffect(() => {
     if (!open || validUntilDate) {
@@ -95,10 +77,7 @@ export function RequestToPayConfirmation({
 
     setValidUntilDate(fallbackDeadline);
     setDraftValidUntilDate(fallbackDeadline);
-    setItem(
-      REQUEST_TO_PAY_DEADLINE_STORAGE_KEY,
-      fallbackDeadline.toISOString(),
-    );
+    setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, fallbackDeadline.toISOString());
   }, [open, validUntilDate, minSelectableDate]);
 
   return (
@@ -110,8 +89,7 @@ export function RequestToPayConfirmation({
         })}
         description={intl.formatMessage({
           id: "quotes.requestToPay.confirmDescription",
-          defaultMessage:
-            "Are you sure you want to request to pay this e-bill?",
+          defaultMessage: "Are you sure you want to request to pay this e-bill?",
         })}
         open={open}
         onOpenChange={(isOpen) => {
@@ -161,9 +139,7 @@ export function RequestToPayConfirmation({
                     id: "quotes.requestToPay.button",
                     defaultMessage: "Request to pay",
                   })}{" "}
-                  {isPending && (
-                    <LoaderIcon className="stroke-1 animate-spin" />
-                  )}
+                  {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
                 </span>
               )}
             </Button>
@@ -222,10 +198,7 @@ export function RequestToPayConfirmation({
           if (draftValidUntilDate) {
             const utcDeadline = toUtcEndOfDay(draftValidUntilDate);
             setValidUntilDate(utcDeadline);
-            setItem(
-              REQUEST_TO_PAY_DEADLINE_STORAGE_KEY,
-              utcDeadline.toISOString(),
-            );
+            setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, utcDeadline.toISOString());
           }
           setShowPaymentCalendar(false);
           onOpenChange(true);

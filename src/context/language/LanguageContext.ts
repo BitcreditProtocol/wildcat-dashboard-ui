@@ -8,12 +8,8 @@ import meta from "@/constants/meta";
 const CROWDIN_PSEUDO_LOCALE = "ach-UG";
 
 const DEFAULT_LOCALE_PROD = "en-US";
-const DEFAULT_LOCALE_DEV = meta.crowdinInContextToolingEnabled
-  ? CROWDIN_PSEUDO_LOCALE
-  : DEFAULT_LOCALE_PROD;
-export const DEFAULT_LOCALE = meta.devModeEnabled
-  ? DEFAULT_LOCALE_DEV
-  : DEFAULT_LOCALE_PROD;
+const DEFAULT_LOCALE_DEV = meta.crowdinInContextToolingEnabled ? CROWDIN_PSEUDO_LOCALE : DEFAULT_LOCALE_PROD;
+export const DEFAULT_LOCALE = meta.devModeEnabled ? DEFAULT_LOCALE_DEV : DEFAULT_LOCALE_PROD;
 
 export interface LanguageContextType {
   locale: string;
