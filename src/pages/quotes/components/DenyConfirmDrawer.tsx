@@ -10,21 +10,14 @@ interface DenyConfirmDrawerProps {
   children: ReactNode;
 }
 
-export function DenyConfirmDrawer({
-  title,
-  open,
-  onOpenChange,
-  onSubmit,
-  children,
-}: DenyConfirmDrawerProps) {
+export function DenyConfirmDrawer({ title, open, onOpenChange, onSubmit, children }: DenyConfirmDrawerProps) {
   const intl = useIntl();
   return (
     <ConfirmDrawer
       title={title}
       description={intl.formatMessage({
         id: "quotes.deny.description",
-        defaultMessage:
-          "Are you sure you want to deny this quote? This action cannot be undone.",
+        defaultMessage: "Are you sure you want to deny this quote? This action cannot be undone.",
       })}
       open={open}
       onOpenChange={onOpenChange}

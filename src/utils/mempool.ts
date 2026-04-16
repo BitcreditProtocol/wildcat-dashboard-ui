@@ -13,10 +13,7 @@ interface BuildMempoolTransactionUrlParams {
   network?: string | null;
 }
 
-export function buildMempoolTransactionUrl({
-  txId,
-  network,
-}: BuildMempoolTransactionUrlParams): string | undefined {
+export function buildMempoolTransactionUrl({ txId, network }: BuildMempoolTransactionUrlParams): string | undefined {
   if (!txId) {
     return undefined;
   }

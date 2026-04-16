@@ -28,32 +28,28 @@ interface UseQueriesResultItem {
 }
 
 interface MutationResult {
-  mutate: (value: {
-    body: { kid: { version: string; id: { V1: number[] } | { V2: number[] } } };
-  }) => void;
+  mutate: (value: { body: { kid: { version: string; id: { V1: number[] } | { V2: number[] } } } }) => void;
   isPending: boolean;
 }
 
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
-const mockUseQueries =
-  vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
+const mockUseQueries = vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
 const mockUseMutation = vi.fn<() => MutationResult>();
-const mutateSpy = vi.fn<
-  (value: {
-    body: {
-      kid: { version: string; id: { V1: number[] } | { V2: number[] } };
-    };
-  }) => void
->();
+const mutateSpy =
+  vi.fn<
+    (value: {
+      body: {
+        kid: { version: string; id: { V1: number[] } | { V2: number[] } };
+      };
+    }) => void
+  >();
 
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
     useQuery: (options: QueryOptions) => mockUseQuery(options),
@@ -100,17 +96,11 @@ function renderPage(route: string): HTMLDivElement {
     <IntlProvider locale="en">
       <MemoryRouter initialEntries={[route]}>
         <Routes>
-          <Route
-            path="/keysets/:keysetId"
-            element={<KeysetDetailPage />}
-          />
-          <Route
-            path="/keysets"
-            element={<KeysetDetailPage />}
-          />
+          <Route path="/keysets/:keysetId" element={<KeysetDetailPage />} />
+          <Route path="/keysets" element={<KeysetDetailPage />} />
         </Routes>
       </MemoryRouter>
-    </IntlProvider>,
+    </IntlProvider>
   );
 }
 
@@ -210,9 +200,7 @@ describe("KeysetDetailPage", () => {
     });
 
     const page = renderPage(`/keysets/${serializedKeysetId}`);
-    const redeemButton = Array.from(page.querySelectorAll("button")).find(
-      (button) => button.textContent === "Redeem",
-    );
+    const redeemButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "Redeem");
     expect(redeemButton?.disabled).toBe(false);
     act(() => {
       redeemButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));

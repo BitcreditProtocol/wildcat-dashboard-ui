@@ -1,19 +1,7 @@
 import { Bitcoin, Home, Inbox, Key } from "lucide-react";
 import { useContext } from "react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarRail,
-  SidebarSeparator,
-} from "@/components/ui/sidebar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CurrencySelector } from "@/components/CurrencySelector";
 import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
 import { ThemeSelector } from "@/components/ThemeSelector";
@@ -102,10 +90,7 @@ function LanguageSelector() {
           defaultMessage: "Language",
         })}
       </span>
-      <Select
-        value={locale}
-        onValueChange={setLocale}
-      >
+      <Select value={locale} onValueChange={setLocale}>
         <SelectTrigger className="h-9">
           <SelectValue
             placeholder={intl.formatMessage({
@@ -116,10 +101,7 @@ function LanguageSelector() {
         </SelectTrigger>
         <SelectContent>
           {locales.map((loc) => (
-            <SelectItem
-              key={loc}
-              value={loc}
-            >
+            <SelectItem key={loc} value={loc}>
               {intl.formatMessage({
                 id: `locale.${loc}`,
                 defaultMessage: loc,

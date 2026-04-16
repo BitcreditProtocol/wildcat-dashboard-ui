@@ -45,14 +45,10 @@ interface SegmenterInstance {
   segment: (input: string) => Iterable<SegmentPart>;
 }
 
-type SegmenterCtor = new (
-  locales?: string | string[],
-  options?: { granularity: "grapheme" },
-) => SegmenterInstance;
+type SegmenterCtor = new (locales?: string | string[], options?: { granularity: "grapheme" }) => SegmenterInstance;
 
 function splitIntoGraphemes(value: string): string[] {
-  const maybeSegmenter = (Intl as unknown as { Segmenter?: SegmenterCtor })
-    .Segmenter;
+  const maybeSegmenter = (Intl as unknown as { Segmenter?: SegmenterCtor }).Segmenter;
 
   if (typeof maybeSegmenter === "function") {
     const segmenter = new maybeSegmenter(undefined, {
@@ -94,31 +90,21 @@ function truncateMiddle(value: string, maxLength: number): string {
   const headCount = Math.ceil(keepCount / 2);
   const tailCount = Math.floor(keepCount / 2);
 
-  return `${graphemes.slice(0, headCount).join("")}…${graphemes
-    .slice(graphemes.length - tailCount)
-    .join("")}`;
+  return `${graphemes.slice(0, headCount).join("")}…${graphemes.slice(graphemes.length - tailCount).join("")}`;
 }
 
-function truncateWithSafeguard(
-  line: string,
-  maxLength: number,
-  truncationMode: "end" | "middle",
-): string {
+function truncateWithSafeguard(line: string, maxLength: number, truncationMode: "end" | "middle"): string {
   if (line.length <= maxLength && visualWidth(line) <= maxLength) {
     return line;
   }
 
   const useEndTruncation = truncationMode === "end" || containsRtl(line);
   let effectiveLength = maxLength;
-  let candidate = useEndTruncation
-    ? truncateEnd(line, effectiveLength)
-    : truncateMiddle(line, effectiveLength);
+  let candidate = useEndTruncation ? truncateEnd(line, effectiveLength) : truncateMiddle(line, effectiveLength);
 
   while (visualWidth(candidate) > maxLength && effectiveLength > 1) {
     effectiveLength -= 1;
-    candidate = useEndTruncation
-      ? truncateEnd(line, effectiveLength)
-      : truncateMiddle(line, effectiveLength);
+    candidate = useEndTruncation ? truncateEnd(line, effectiveLength) : truncateMiddle(line, effectiveLength);
   }
 
   return candidate;
@@ -154,15 +140,10 @@ export interface TruncatedTextState {
   visibleLines: string[];
 }
 
-export function getTruncatedTextState(
-  text: React.ReactNode,
-  maxLength?: number,
-): TruncatedTextState {
+export function getTruncatedTextState(text: React.ReactNode, maxLength?: number): TruncatedTextState {
   if (maxLength !== undefined && !Number.isFinite(maxLength)) {
     const textStr = extractTextFromNode(text);
-    const lines = textStr
-      .split(/\r?\n/)
-      .map((line) => line.replace(/\s+$/g, ""));
+    const lines = textStr.split(/\r?\n/).map((line) => line.replace(/\s+$/g, ""));
 
     return {
       flatLabel: lines.join(", "),
@@ -188,35 +169,27 @@ export function getTruncatedTextState(
       hasExplicitMaxLength &&
       !containsRtl(line) &&
       visualWidth(line) === line.length &&
-      (line.length > effectiveMaxLength ||
-        visualWidth(line) > effectiveMaxLength)
+      (line.length > effectiveMaxLength || visualWidth(line) > effectiveMaxLength)
     ) {
       return truncateWithSafeguard(line, effectiveMaxLength, "end");
     }
 
     return line;
   });
-  const hasComputedTruncation = computedVisibleLines.some(
-    (line, index) => line !== lines[index],
-  );
+  const hasComputedTruncation = computedVisibleLines.some((line, index) => line !== lines[index]);
   const hasLengthFallbackOverflow = lines.some((line) => {
     if (isLikelyNodeId(line)) {
       return false;
     }
 
     if (hasExplicitMaxLength) {
-      const hasExceededLimit =
-        line.length > effectiveMaxLength ||
-        visualWidth(line) > effectiveMaxLength;
-      const canUseExplicitEndTruncation =
-        !containsRtl(line) && visualWidth(line) === line.length;
+      const hasExceededLimit = line.length > effectiveMaxLength || visualWidth(line) > effectiveMaxLength;
+      const canUseExplicitEndTruncation = !containsRtl(line) && visualWidth(line) === line.length;
 
       return hasExceededLimit && !canUseExplicitEndTruncation;
     }
 
-    return (
-      line.length > effectiveMaxLength || visualWidth(line) > effectiveMaxLength
-    );
+    return line.length > effectiveMaxLength || visualWidth(line) > effectiveMaxLength;
   });
 
   return {

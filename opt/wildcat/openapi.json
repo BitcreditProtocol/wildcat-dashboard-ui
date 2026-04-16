@@ -861,12 +861,7 @@
       },
       "BillAcceptanceStatus": {
         "type": "object",
-        "required": [
-          "requested_to_accept",
-          "accepted",
-          "request_to_accept_timed_out",
-          "rejected_to_accept"
-        ],
+        "required": ["requested_to_accept", "accepted", "request_to_accept_timed_out", "rejected_to_accept"],
         "properties": {
           "time_of_request_to_accept": {
             "type": ["integer", "null"],
@@ -1041,16 +1036,7 @@
       },
       "BillInfo": {
         "type": "object",
-        "required": [
-          "id",
-          "drawee",
-          "drawer",
-          "payee",
-          "endorsees",
-          "sum",
-          "maturity_date",
-          "file_urls"
-        ],
+        "required": ["id", "drawee", "drawer", "payee", "endorsees", "sum", "maturity_date", "file_urls"],
         "properties": {
           "id": {
             "type": "string"
@@ -1120,14 +1106,7 @@
       },
       "BillParticipants": {
         "type": "object",
-        "required": [
-          "drawee",
-          "drawer",
-          "payee",
-          "endorsements",
-          "endorsements_count",
-          "all_participant_node_ids"
-        ],
+        "required": ["drawee", "drawer", "payee", "endorsements", "endorsements_count", "all_participant_node_ids"],
         "properties": {
           "drawee": {
             "$ref": "#/components/schemas/BillIdentParticipant"
@@ -1169,12 +1148,7 @@
       },
       "BillPaymentStatus": {
         "type": "object",
-        "required": [
-          "requested_to_pay",
-          "paid",
-          "request_to_pay_timed_out",
-          "rejected_to_pay"
-        ],
+        "required": ["requested_to_pay", "paid", "request_to_pay_timed_out", "rejected_to_pay"],
         "properties": {
           "time_of_request_to_pay": {
             "type": ["integer", "null"],
@@ -1202,12 +1176,7 @@
       },
       "BillRecourseStatus": {
         "type": "object",
-        "required": [
-          "recoursed",
-          "requested_to_recourse",
-          "request_to_recourse_timed_out",
-          "rejected_request_to_recourse"
-        ],
+        "required": ["recoursed", "requested_to_recourse", "request_to_recourse_timed_out", "rejected_request_to_recourse"],
         "properties": {
           "time_of_last_request_to_recourse": {
             "type": ["integer", "null"],
@@ -1235,12 +1204,7 @@
       },
       "BillSellStatus": {
         "type": "object",
-        "required": [
-          "sold",
-          "offered_to_sell",
-          "offer_to_sell_timed_out",
-          "rejected_offer_to_sell"
-        ],
+        "required": ["sold", "offered_to_sell", "offer_to_sell_timed_out", "rejected_offer_to_sell"],
         "properties": {
           "time_of_last_offer_to_sell": {
             "type": ["integer", "null"],
@@ -1354,14 +1318,7 @@
       },
       "BillWaitingStatePaymentData": {
         "type": "object",
-        "required": [
-          "time_of_request",
-          "currency",
-          "sum",
-          "address_to_pay",
-          "in_mempool",
-          "confirmations"
-        ],
+        "required": ["time_of_request", "currency", "sum", "address_to_pay", "in_mempool", "confirmations"],
         "properties": {
           "time_of_request": {
             "type": "integer",
@@ -1426,13 +1383,7 @@
       "ClowderNodeInfo": {
         "type": "object",
         "description": "--------------------------- Clowder Node Information",
-        "required": [
-          "change_address",
-          "node_id",
-          "uptime_timestamp",
-          "version",
-          "network"
-        ],
+        "required": ["change_address", "node_id", "uptime_timestamp", "version", "network"],
         "properties": {
           "change_address": {
             "type": "string"
@@ -1489,13 +1440,7 @@
       "Coverage": {
         "type": "object",
         "description": "Collateral backing eCash and circulating supply information regarding eCash",
-        "required": [
-          "debit_circulating_supply",
-          "credit_circulating_supply",
-          "onchain_collateral",
-          "ebill_collateral",
-          "eiou_collateral"
-        ],
+        "required": ["debit_circulating_supply", "credit_circulating_supply", "onchain_collateral", "ebill_collateral", "eiou_collateral"],
         "properties": {
           "debit_circulating_supply": {
             "$ref": "#/components/schemas/Amount"
@@ -1697,14 +1642,7 @@
       },
       "Identity": {
         "type": "object",
-        "required": [
-          "node_id",
-          "name",
-          "bitcoin_public_key",
-          "npub",
-          "postal_address",
-          "nostr_relays"
-        ],
+        "required": ["node_id", "name", "bitcoin_public_key", "npub", "postal_address", "nostr_relays"],
         "properties": {
           "node_id": {
             "type": "string"
@@ -1770,13 +1708,7 @@
         "oneOf": [
           {
             "type": "object",
-            "required": [
-              "id",
-              "bill",
-              "submitted",
-              "suggested_expiration",
-              "status"
-            ],
+            "required": ["id", "bill", "submitted", "suggested_expiration", "status"],
             "properties": {
               "id": {
                 "type": "string",
@@ -1822,14 +1754,7 @@
           },
           {
             "type": "object",
-            "required": [
-              "id",
-              "bill",
-              "ttl",
-              "keyset_id",
-              "discounted",
-              "status"
-            ],
+            "required": ["id", "bill", "ttl", "keyset_id", "discounted", "status"],
             "properties": {
               "id": {
                 "type": "string",
@@ -1956,14 +1881,7 @@
           },
           {
             "type": "object",
-            "required": [
-              "id",
-              "bill",
-              "keyset_id",
-              "discounted",
-              "fee",
-              "status"
-            ],
+            "required": ["id", "bill", "keyset_id", "discounted", "fee", "status"],
             "properties": {
               "id": {
                 "type": "string",
@@ -1994,16 +1912,7 @@
       },
       "InfoReplyDiscriminants": {
         "type": "string",
-        "enum": [
-          "Pending",
-          "Canceled",
-          "Offered",
-          "OfferExpired",
-          "Denied",
-          "Accepted",
-          "Rejected",
-          "MintingEnabled"
-        ]
+        "enum": ["Pending", "Canceled", "Offered", "OfferExpired", "Denied", "Accepted", "Rejected", "MintingEnabled"]
       },
       "KeySetInfo": {
         "type": "object",
@@ -2174,13 +2083,7 @@
       },
       "Notification": {
         "type": "object",
-        "required": [
-          "id",
-          "notification_type",
-          "description",
-          "datetime",
-          "active"
-        ],
+        "required": ["id", "notification_type", "description", "datetime", "active"],
         "properties": {
           "id": {
             "type": "string"
@@ -2582,14 +2485,7 @@
       "WildcatInfo": {
         "type": "object",
         "description": "Mint information including network, build time, versions, and uptime",
-        "required": [
-          "network",
-          "build_time",
-          "uptime_timestamp",
-          "versions",
-          "clowder_node_id",
-          "clowder_change_address"
-        ],
+        "required": ["network", "build_time", "uptime_timestamp", "versions", "clowder_node_id", "clowder_change_address"],
         "properties": {
           "network": {
             "type": "string",

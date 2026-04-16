@@ -58,9 +58,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast.dismiss(`quote-${quoteId}-request-to-pay`);
     },
     onError: (error) => {
-      toast.error(
-        `Error while requesting to pay: ${getApiErrorMessage(error)}`,
-      );
+      toast.error(`Error while requesting to pay: ${getApiErrorMessage(error)}`);
       console.warn(error);
     },
     onSuccess: () => {
@@ -81,9 +79,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
 
   const handleOfferQuote = (result: OfferFormResult) => {
     toast.loading("Offering quote…", { id: `quote-${quoteId}-offer` });
-    const net_amount = result.discount.net.value
-      .round(0, Big.roundDown)
-      .toNumber();
+    const net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber();
 
     offerQuote.mutate({
       path: { qid: quoteId },

@@ -19,22 +19,12 @@ interface OfferConfirmationProps {
 
 const OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX = "offer-valid-until-";
 
-export function OfferConfirmation({
-  offerFormData,
-  open,
-  onOpenChange,
-  onSubmit,
-  quoteId,
-}: OfferConfirmationProps) {
+export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit, quoteId }: OfferConfirmationProps) {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
-  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(
-    undefined,
-  );
+  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined);
   const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false);
-  const [draftValidUntilDate, setDraftValidUntilDate] = useState<
-    Date | undefined
-  >(undefined);
+  const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined);
   const minDate = useMemo(() => {
     const date = addDays(new Date(), 1);
     date.setHours(0, 0, 0, 0);
@@ -45,9 +35,7 @@ export function OfferConfirmation({
     date.setHours(23, 59, 59, 999);
     return date;
   }, []);
-  const storageKey = quoteId
-    ? `${OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX}${quoteId}`
-    : null;
+  const storageKey = quoteId ? `${OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX}${quoteId}` : null;
 
   useEffect(() => {
     if (!open || validUntilDate || !storageKey) {
@@ -58,11 +46,7 @@ export function OfferConfirmation({
       return;
     }
     const parsed = new Date(stored);
-    if (
-      !Number.isNaN(parsed.getTime()) &&
-      parsed >= minDate &&
-      parsed <= maxDate
-    ) {
+    if (!Number.isNaN(parsed.getTime()) && parsed >= minDate && parsed <= maxDate) {
       setValidUntilDate(parsed);
     } else {
       removeItem(storageKey);
@@ -71,11 +55,7 @@ export function OfferConfirmation({
 
   const effectiveDiscount =
     offerFormData && !offerFormData.discount.gross.value.eq(0)
-      ? new Big(1).minus(
-          offerFormData.discount.net.value.div(
-            offerFormData.discount.gross.value,
-          ),
-        )
+      ? new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
       : undefined;
 
   return (
@@ -115,9 +95,7 @@ export function OfferConfirmation({
                 defaultMessage: "Effective fee (relative):",
               })}
             </span>
-            <span className="text-sm text-right">
-              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
-            </span>
+            <span className="text-sm text-right">{effectiveDiscount?.mul(new Big("100")).toFixed(2)}%</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm font-semibold w-48">
@@ -128,11 +106,7 @@ export function OfferConfirmation({
             </span>
             <span className="text-sm text-right">
               {offerFormData
-                ? formatAmount(
-                    offerFormData.discount.gross.value
-                      .minus(offerFormData.discount.net.value)
-                      .toFixed(0),
-                  )
+                ? formatAmount(offerFormData.discount.gross.value.minus(offerFormData.discount.net.value).toFixed(0))
                 : undefined}{" "}
               {offerFormData?.discount.net.currency}
             </span>
@@ -145,11 +119,7 @@ export function OfferConfirmation({
               })}
             </span>
             <span className="text-sm text-right">
-              {offerFormData
-                ? formatAmount(
-                    offerFormData.discount.net.value.round(0).toFixed(0),
-                  )
-                : undefined}{" "}
+              {offerFormData ? formatAmount(offerFormData.discount.net.value.round(0).toFixed(0)) : undefined}{" "}
               {offerFormData?.discount.net.currency}
             </span>
           </div>

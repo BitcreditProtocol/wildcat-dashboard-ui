@@ -26,16 +26,11 @@ function Earnings() {
     <div>
       <div className="flex flex-col justify-center gap-2 my-4 mt-8">
         <div className="flex justify-center gap-2 my-1">
-          <div className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
-            0.00 000 000 BTC
-          </div>
+          <div className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">0.00 000 000 BTC</div>
         </div>
         <div className="flex justify-center gap-2">
           <div className="scroll-m-20 tracking-tight text-sm">
-            <FormattedMessage
-              id="earnings.summary"
-              defaultMessage="Earned during the selected timeframe"
-            />
+            <FormattedMessage id="earnings.summary" defaultMessage="Earned during the selected timeframe" />
           </div>
         </div>
       </div>
@@ -48,69 +43,30 @@ function Earnings() {
           value={timeframe}
           onValueChange={(val) => setTimeframe((curr) => val || curr)}
         >
-          <ToggleGroupItem
-            value="1d"
-            className="px-6 whitespace-nowrap"
-          >
-            <FormattedMessage
-              id="earnings.timeframe.today"
-              defaultMessage="Today"
-            />
+          <ToggleGroupItem value="1d" className="px-6 whitespace-nowrap">
+            <FormattedMessage id="earnings.timeframe.today" defaultMessage="Today" />
           </ToggleGroupItem>
-          <ToggleGroupItem
-            value="1w"
-            className="px-6 whitespace-nowrap"
-          >
-            <FormattedMessage
-              id="earnings.timeframe.lastWeek"
-              defaultMessage="Last week"
-            />
+          <ToggleGroupItem value="1w" className="px-6 whitespace-nowrap">
+            <FormattedMessage id="earnings.timeframe.lastWeek" defaultMessage="Last week" />
           </ToggleGroupItem>
-          <ToggleGroupItem
-            value="1m"
-            className="px-6 whitespace-nowrap"
-          >
-            <FormattedMessage
-              id="earnings.timeframe.lastMonth"
-              defaultMessage="Last month"
-            />
+          <ToggleGroupItem value="1m" className="px-6 whitespace-nowrap">
+            <FormattedMessage id="earnings.timeframe.lastMonth" defaultMessage="Last month" />
           </ToggleGroupItem>
-          <ToggleGroupItem
-            value="3m"
-            className="px-6 whitespace-nowrap"
-          >
-            <FormattedMessage
-              id="earnings.timeframe.last3Months"
-              defaultMessage="Last 3 months"
-            />
+          <ToggleGroupItem value="3m" className="px-6 whitespace-nowrap">
+            <FormattedMessage id="earnings.timeframe.last3Months" defaultMessage="Last 3 months" />
           </ToggleGroupItem>
-          <ToggleGroupItem
-            value="6m"
-            className="px-6 whitespace-nowrap"
-          >
-            <FormattedMessage
-              id="earnings.timeframe.last6Months"
-              defaultMessage="Last 6 months"
-            />
+          <ToggleGroupItem value="6m" className="px-6 whitespace-nowrap">
+            <FormattedMessage id="earnings.timeframe.last6Months" defaultMessage="Last 6 months" />
           </ToggleGroupItem>
-          <ToggleGroupItem
-            value="1y"
-            className="px-6 whitespace-nowrap"
-          >
-            <FormattedMessage
-              id="earnings.timeframe.lastYear"
-              defaultMessage="Last year"
-            />
+          <ToggleGroupItem value="1y" className="px-6 whitespace-nowrap">
+            <FormattedMessage id="earnings.timeframe.lastYear" defaultMessage="Last year" />
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
       <div className="flex flex-col justify-center gap-2 my-4 mt-8">
         <div className="flex justify-center gap-2">
           <div className="scroll-m-20 tracking-tight text-sm">
-            <FormattedMessage
-              id="earnings.empty"
-              defaultMessage="No accepted quotes for the selected timeframe."
-            />
+            <FormattedMessage id="earnings.empty" defaultMessage="No accepted quotes for the selected timeframe." />
           </div>
         </div>
       </div>
@@ -124,10 +80,7 @@ function PageBody() {
       <Link to="/earnings/cashflow">
         <Button className="max-w-sm">
           <ChartColumnIncreasingIcon />
-          <FormattedMessage
-            id="earnings.cashflow"
-            defaultMessage="CashFlow"
-          />
+          <FormattedMessage id="earnings.cashflow" defaultMessage="CashFlow" />
         </Button>
       </Link>
       <Earnings />
@@ -139,16 +92,10 @@ export default function EarningsPage() {
   return (
     <>
       <Breadcrumbs>
-        <FormattedMessage
-          id="earnings.page.title"
-          defaultMessage="Earnings"
-        />
+        <FormattedMessage id="earnings.page.title" defaultMessage="Earnings" />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage
-          id="earnings.page.title"
-          defaultMessage="Earnings"
-        />
+        <FormattedMessage id="earnings.page.title" defaultMessage="Earnings" />
       </PageTitle>
 
       <Suspense fallback={<Loader />}>

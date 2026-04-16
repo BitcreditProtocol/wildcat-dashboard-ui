@@ -18,9 +18,7 @@ const seenQueryOptions: MockQueryOptions[] = [];
 const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
     useQuery: (options: MockQueryOptions) => {
@@ -95,14 +93,8 @@ function renderComponent() {
   act(() => {
     mountRoot.render(
       <IntlProvider locale="en">
-        <QuoteActions
-          value={quoteValue}
-          isFetching={false}
-          ebillPaid={false}
-          isMintComplete={false}
-          requestedToPay={false}
-        />
-      </IntlProvider>,
+        <QuoteActions value={quoteValue} isFetching={false} ebillPaid={false} isMintComplete={false} requestedToPay={false} />
+      </IntlProvider>
     );
   });
   root = mountRoot;
@@ -135,39 +127,36 @@ beforeEach(() => {
 
 describe("QuoteActions", () => {
   it("does not request mint info when backend mempool link is present", () => {
-    mockUseQuery.mockImplementation(
-      (options: { queryKey: [{ _id: string }] }) => {
-        if (options.queryKey[0]._id === "getEbill") {
-          return {
-            data: {
-              status: {
-                payment: { requested_to_pay: true, paid: false },
-              },
-              current_waiting_state: {
-                Payment: {
-                  payment_data: {
-                    time_of_request: 1,
-                    currency: "sat",
-                    sum: "100",
-                    link_to_pay: "",
-                    address_to_pay: "tb1address",
-                    mempool_link_for_address_to_pay:
-                      "https://backend.example/tx/abc",
-                    tx_id: "abc",
-                    in_mempool: false,
-                    confirmations: 0,
-                    payment_deadline: 2,
-                  },
+    mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) => {
+      if (options.queryKey[0]._id === "getEbill") {
+        return {
+          data: {
+            status: {
+              payment: { requested_to_pay: true, paid: false },
+            },
+            current_waiting_state: {
+              Payment: {
+                payment_data: {
+                  time_of_request: 1,
+                  currency: "sat",
+                  sum: "100",
+                  link_to_pay: "",
+                  address_to_pay: "tb1address",
+                  mempool_link_for_address_to_pay: "https://backend.example/tx/abc",
+                  tx_id: "abc",
+                  in_mempool: false,
+                  confirmations: 0,
+                  payment_deadline: 2,
                 },
               },
             },
-            error: null,
-          };
-        }
+          },
+          error: null,
+        };
+      }
 
-        return { data: undefined, error: null };
-      },
-    );
+      return { data: undefined, error: null };
+    });
 
     const page = renderComponent();
 
@@ -177,47 +166,43 @@ describe("QuoteActions", () => {
   });
 
   it("builds a fallback mempool link when backend value is blank", () => {
-    mockUseQuery.mockImplementation(
-      (options: { queryKey: [{ _id: string }] }) => {
-        if (options.queryKey[0]._id === "getEbill") {
-          return {
-            data: {
-              status: {
-                payment: { requested_to_pay: true, paid: false },
-              },
-              current_waiting_state: {
-                Payment: {
-                  payment_data: {
-                    time_of_request: 1,
-                    currency: "sat",
-                    sum: "100",
-                    link_to_pay: "",
-                    address_to_pay: "tb1address",
-                    mempool_link_for_address_to_pay: "",
-                    tx_id: "abc",
-                    in_mempool: false,
-                    confirmations: 0,
-                    payment_deadline: 2,
-                  },
+    mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) => {
+      if (options.queryKey[0]._id === "getEbill") {
+        return {
+          data: {
+            status: {
+              payment: { requested_to_pay: true, paid: false },
+            },
+            current_waiting_state: {
+              Payment: {
+                payment_data: {
+                  time_of_request: 1,
+                  currency: "sat",
+                  sum: "100",
+                  link_to_pay: "",
+                  address_to_pay: "tb1address",
+                  mempool_link_for_address_to_pay: "",
+                  tx_id: "abc",
+                  in_mempool: false,
+                  confirmations: 0,
+                  payment_deadline: 2,
                 },
               },
             },
-            error: null,
-          };
-        }
+          },
+          error: null,
+        };
+      }
 
-        if (options.queryKey[0]._id === "getMintInfo") {
-          return { data: { network: "testnet" }, error: null };
-        }
+      if (options.queryKey[0]._id === "getMintInfo") {
+        return { data: { network: "testnet" }, error: null };
+      }
 
-        return { data: undefined, error: null };
-      },
-    );
+      return { data: undefined, error: null };
+    });
 
     const page = renderComponent();
-    const link = page.querySelector(
-      'a[href="https://esplora.minibill.tech/testnet/tx/abc"]',
-    );
+    const link = page.querySelector('a[href="https://esplora.minibill.tech/testnet/tx/abc"]');
 
     expect(link).not.toBeNull();
     expect(seenQueryOptions[1]?.enabled).toBe(true);

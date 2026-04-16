@@ -22,9 +22,7 @@ function PageBody() {
 
   return (
     <>
-      <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+      <pre className="text-sm bg-accent text-accent-foreground rounded-lg p-2 my-2">{JSON.stringify(data, null, 2)}</pre>
     </>
   );
 }
@@ -33,16 +31,10 @@ export default function InfoPage() {
   return (
     <>
       <Breadcrumbs>
-        <FormattedMessage
-          id="info.page.title"
-          defaultMessage="Info"
-        />
+        <FormattedMessage id="info.page.title" defaultMessage="Info" />
       </Breadcrumbs>
       <PageTitle>
-        <FormattedMessage
-          id="info.page.title"
-          defaultMessage="Info"
-        />
+        <FormattedMessage id="info.page.title" defaultMessage="Info" />
       </PageTitle>
       <Suspense fallback={<Loader />}>
         <PageBody />

@@ -46,29 +46,18 @@ interface UseQueriesResultItem {
   isLoading: boolean;
 }
 
-const mockUseQuery =
-  vi.fn<
-    (
-      options: GetQuoteQueryOptions | ListEbillsQueryOptions,
-    ) => GetQuoteQueryResult
-  >();
+const mockUseQuery = vi.fn<(options: GetQuoteQueryOptions | ListEbillsQueryOptions) => GetQuoteQueryResult>();
 const mockUseInfiniteQuery = vi.fn<() => InfiniteQueryResult>();
-const mockUseQueries =
-  vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
+const mockUseQueries = vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
 const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
-const postTokenStatusMock =
-  vi.fn<
-    (args: { body: { token: string } }) => Promise<{ data: { state: string } }>
-  >();
+const postTokenStatusMock = vi.fn<(args: { body: { token: string } }) => Promise<{ data: { state: string } }>>();
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn() },
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
     useQuery: (options: GetQuoteQueryOptions) => mockUseQuery(options),
@@ -86,8 +75,7 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 }));
 
 vi.mock("@/generated/client/sdk.gen", () => ({
-  postTokenStatus: (args: { body: { token: string } }) =>
-    postTokenStatusMock(args),
+  postTokenStatus: (args: { body: { token: string } }) => postTokenStatusMock(args),
 }));
 
 vi.mock("@/components/ui/select", async () => {
@@ -108,29 +96,13 @@ vi.mock("@/components/ui/select", async () => {
         <div data-select-value={value}>{children}</div>
       </SelectContext.Provider>
     ),
-    SelectTrigger: ({ children }: { children: ReactElement | string }) => (
-      <div>{children}</div>
-    ),
+    SelectTrigger: ({ children }: { children: ReactElement | string }) => <div>{children}</div>,
     SelectValue: () => <span>SelectValue</span>,
-    SelectContent: ({
-      children,
-    }: {
-      children: ReactElement | ReactElement[];
-    }) => <div>{children}</div>,
-    SelectItem: ({
-      value,
-      children,
-    }: {
-      value: string;
-      children: ReactElement | string | number;
-    }) => {
+    SelectContent: ({ children }: { children: ReactElement | ReactElement[] }) => <div>{children}</div>,
+    SelectItem: ({ value, children }: { value: string; children: ReactElement | string | number }) => {
       const onValueChange = React.useContext(SelectContext);
       return (
-        <button
-          type="button"
-          data-select-item={value}
-          onClick={() => onValueChange(value)}
-        >
+        <button type="button" data-select-item={value} onClick={() => onValueChange(value)}>
           {children}
         </button>
       );
@@ -159,7 +131,7 @@ function renderPage(status?: "Accepted" | "Pending"): HTMLDivElement {
       <MemoryRouter>
         <StatusQuotePage status={status} />
       </MemoryRouter>
-    </IntlProvider>,
+    </IntlProvider>
   );
 }
 
@@ -225,12 +197,7 @@ beforeEach(() => {
       return {
         data: {
           id: quoteId,
-          status:
-            quoteId === "quote-accepted"
-              ? "Accepted"
-              : quoteId === "quote-pending"
-                ? "Pending"
-                : "MintingEnabled",
+          status: quoteId === "quote-accepted" ? "Accepted" : quoteId === "quote-pending" ? "Pending" : "MintingEnabled",
           bill: {
             id: `bill-${quoteId}`,
             maturity_date: "2026-02-20",
@@ -286,12 +253,7 @@ beforeEach(() => {
       return {
         data: {
           id: qid,
-          status:
-            qid === "quote-accepted"
-              ? "Accepted"
-              : qid === "quote-pending"
-                ? "Pending"
-                : "MintingEnabled",
+          status: qid === "quote-accepted" ? "Accepted" : qid === "quote-pending" ? "Pending" : "MintingEnabled",
           bill: {
             id: `bill-${qid}`,
             maturity_date: "2026-02-20",
@@ -303,7 +265,7 @@ beforeEach(() => {
         },
         isLoading: false,
       };
-    }),
+    })
   );
 });
 
@@ -503,9 +465,7 @@ describe("StatusQuotePage", () => {
 
     const page = renderPage();
     expect(page.textContent).toContain("Showing 1 of 2 quotes");
-    const loadMoreButton = Array.from(page.querySelectorAll("button")).find(
-      (button) => button.textContent === "Load more",
-    );
+    const loadMoreButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "Load more");
     expect(loadMoreButton).not.toBeUndefined();
     act(() => {
       loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -675,7 +635,7 @@ describe("StatusQuotePage", () => {
           },
           isLoading: false,
         };
-      }),
+      })
     );
 
     const page = renderPage();
@@ -736,15 +696,14 @@ describe("StatusQuotePage", () => {
           },
           isLoading: false,
         };
-      }),
+      })
     );
-    postTokenStatusMock.mockImplementation(
-      ({ body }: { body: { token: string } }) =>
-        Promise.resolve({
-          data: {
-            state: body.token === "token-a" ? "Unspent" : "Spent",
-          },
-        }),
+    postTokenStatusMock.mockImplementation(({ body }: { body: { token: string } }) =>
+      Promise.resolve({
+        data: {
+          state: body.token === "token-a" ? "Unspent" : "Spent",
+        },
+      })
     );
 
     const page = renderPage();
@@ -810,7 +769,7 @@ describe("StatusQuotePage", () => {
           },
           isLoading: false,
         };
-      }),
+      })
     );
 
     const page = renderPage();

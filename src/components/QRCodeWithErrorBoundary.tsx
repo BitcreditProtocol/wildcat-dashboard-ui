@@ -1,19 +1,9 @@
 import { Component, ReactNode, ErrorInfo, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertTriangle, QrCode } from "lucide-react";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import {
-  canGenerateQRCode,
-  canGenerateQRCodeAsync,
-  QR_CODE_MAX_LENGTH,
-} from "@/utils/qrCodeUtils";
+import { canGenerateQRCode, canGenerateQRCodeAsync, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils";
 import { useIntl } from "react-intl";
 
 /**
@@ -44,10 +34,7 @@ interface QRCodeErrorBoundaryState {
   hasError: boolean;
 }
 
-class QRCodeErrorBoundary extends Component<
-  QRCodeErrorBoundaryProps,
-  QRCodeErrorBoundaryState
-> {
+class QRCodeErrorBoundary extends Component<QRCodeErrorBoundaryProps, QRCodeErrorBoundaryState> {
   constructor(props: QRCodeErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -102,10 +89,9 @@ export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
           {intl.formatMessage(
             {
               id: "qrCode.error.tooLarge",
-              defaultMessage:
-                "Data too large for QR code ({length} characters, max {max})",
+              defaultMessage: "Data too large for QR code ({length} characters, max {max})",
             },
-            { length: value.length, max: QR_CODE_MAX_LENGTH },
+            { length: value.length, max: QR_CODE_MAX_LENGTH }
           )}
         </span>
       </div>
@@ -114,37 +100,19 @@ export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
 
   return (
     <QRCodeErrorBoundary fallbackMessage={errorFallback}>
-      <div
-        className={`flex flex-col gap-2 p-4 bg-white border rounded-lg ${className ?? ""}`}
-      >
-        <QRCodeSVG
-          value={value}
-          size={size}
-          level="M"
-        />
-        {label && (
-          <span className="text-xs text-muted-foreground text-center">
-            {label}
-          </span>
-        )}
+      <div className={`flex flex-col gap-2 p-4 bg-white border rounded-lg ${className ?? ""}`}>
+        <QRCodeSVG value={value} size={size} level="M" />
+        {label && <span className="text-xs text-muted-foreground text-center">{label}</span>}
       </div>
     </QRCodeErrorBoundary>
   );
 }
 
-export function QRCodeModal({
-  value,
-  size = 768,
-  label,
-  title,
-  triggerLabel,
-}: QRCodeModalProps) {
+export function QRCodeModal({ value, size = 768, label, title, triggerLabel }: QRCodeModalProps) {
   const intl = useIntl();
   const [open, setOpen] = useState(false);
   const [canRender, setCanRender] = useState(false);
-  const resolvedTitle =
-    title ??
-    intl.formatMessage({ id: "qrCode.modal.title", defaultMessage: "QR Code" });
+  const resolvedTitle = title ?? intl.formatMessage({ id: "qrCode.modal.title", defaultMessage: "QR Code" });
   const resolvedTriggerLabel =
     triggerLabel ??
     intl.formatMessage({
@@ -176,17 +144,9 @@ export function QRCodeModal({
   }
 
   return (
-    <Drawer
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          aria-label={resolvedTriggerLabel}
-        >
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={resolvedTriggerLabel}>
           <QrCode className="h-4 w-4" />
         </Button>
       </DrawerTrigger>
@@ -197,17 +157,8 @@ export function QRCodeModal({
         <div className="flex flex-col items-center gap-4 p-0 sm:p-6">
           <QRCodeErrorBoundary fallbackMessage={errorFallback}>
             <div className="flex flex-col gap-2 p-4 bg-white border rounded-lg w-full max-w-[90vw] sm:max-w-md">
-              <QRCodeSVG
-                value={value}
-                size={size}
-                level="M"
-                className="w-full h-auto"
-              />
-              {label && (
-                <span className="text-xs text-muted-foreground text-center">
-                  {label}
-                </span>
-              )}
+              <QRCodeSVG value={value} size={size} level="M" className="w-full h-auto" />
+              {label && <span className="text-xs text-muted-foreground text-center">{label}</span>}
             </div>
           </QRCodeErrorBoundary>
         </div>
@@ -216,13 +167,7 @@ export function QRCodeModal({
   );
 }
 
-export function FeeTokenQRCodeModal({
-  feeToken,
-  size = 512,
-}: {
-  feeToken: string;
-  size?: number;
-}) {
+export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string; size?: number }) {
   const intl = useIntl();
 
   return (

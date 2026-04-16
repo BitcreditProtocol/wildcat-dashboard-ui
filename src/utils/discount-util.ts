@@ -9,11 +9,7 @@ const factor = (discountRate: Big, days: number) => {
 };
 
 export const Act360 = {
-  netToGross: (
-    netAmount: Big,
-    discountRate: Big,
-    days: number,
-  ): Big | undefined => {
+  netToGross: (netAmount: Big, discountRate: Big, days: number): Big | undefined => {
     const divisor = factor(discountRate, days);
     return divisor.toNumber() !== 0 ? netAmount.div(divisor) : undefined;
   },

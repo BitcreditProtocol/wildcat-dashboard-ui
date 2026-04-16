@@ -115,14 +115,11 @@ function Search({
   }, [currentValue, enableDebounce, debounceMs]);
 
   return (
-    <div
-      onClick={focusSearchField}
-      className={cn(searchVariants({ size }), className)}
-    >
+    <div onClick={focusSearchField} className={cn(searchVariants({ size }), className)}>
       <SearchIcon
         className={cn("text-text-300", {
           "h-4 w-4": size === "xs",
-          "h-5 w-5": size !== "xs"
+          "h-5 w-5": size !== "xs",
         })}
         strokeWidth={1}
       />
@@ -130,7 +127,9 @@ function Search({
       <input
         ref={searchFieldRef}
         value={currentValue}
-        onChange={(e) => { updateValue(e.target.value); }}
+        onChange={(e) => {
+          updateValue(e.target.value);
+        }}
         onFocus={onFocus}
         onBlur={onBlur}
         type="text"
@@ -148,10 +147,7 @@ function Search({
           flushDebounce();
           latestOnSearch.current("");
         }}
-        className={cn(
-          "transition-opacity duration-200 ease-out",
-          hasValue ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
+        className={cn("transition-opacity duration-200 ease-out", hasValue ? "opacity-100" : "opacity-0 pointer-events-none")}
         aria-label={clearLabel}
         tabIndex={hasValue ? 0 : -1}
       >
@@ -169,11 +165,11 @@ function Search({
 
 export function HighlightText({ text, highlight }: { text: string; highlight: string }) {
   if (!highlight.trim()) {
-    return <>{text}</>
+    return <>{text}</>;
   }
 
-  const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi")
-  const parts = text.split(regex)
+  const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
 
   return (
     <>
@@ -187,7 +183,7 @@ export function HighlightText({ text, highlight }: { text: string; highlight: st
         )
       )}
     </>
-  )
+  );
 }
 
 export default Search;

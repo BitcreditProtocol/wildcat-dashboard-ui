@@ -48,19 +48,9 @@ const NET_INPUT_DECIMALS = 2;
 
 type GrossToNetFormValues = FormValues;
 
-const GrossToNetDiscountForm = ({
-  startDate,
-  endDate,
-  gross,
-  onSubmit,
-  submitButtonText,
-  quoteId,
-}: GrossToNetProps) => {
+const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitButtonText, quoteId }: GrossToNetProps) => {
   const intl = useIntl();
-  const {
-    formatAmount: formatAmountByPreference,
-    parseAmount: parseAmountByPreference,
-  } = useAmountFormatter();
+  const { formatAmount: formatAmountByPreference, parseAmount: parseAmountByPreference } = useAmountFormatter();
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false);
   const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null);
   const isSat = gross.currency === "sat";
@@ -114,7 +104,7 @@ const GrossToNetDiscountForm = ({
           id: "discountForm.validation.net.min",
           defaultMessage: "Net amount must be at least {min}",
         },
-        { min: 1 },
+        { min: 1 }
       );
     }
     if (new Big(parsed).gt(gross.value)) {
@@ -127,62 +117,59 @@ const GrossToNetDiscountForm = ({
     return true;
   };
 
-  const validateMinInteger =
-    (min: number, label: string) => (value?: string) => {
-      if (value == null || value === "") {
-        return intl.formatMessage(
-          {
-            id: "discountForm.validation.required",
-            defaultMessage: "{label} is required",
-          },
-          { label },
-        );
-      }
-      if (!/^\d+$/.test(value)) {
-        return intl.formatMessage(
-          {
-            id: "discountForm.validation.wholeNumber",
-            defaultMessage: "{label} must be a whole number",
-          },
-          { label },
-        );
-      }
+  const validateMinInteger = (min: number, label: string) => (value?: string) => {
+    if (value == null || value === "") {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.required",
+          defaultMessage: "{label} is required",
+        },
+        { label }
+      );
+    }
+    if (!/^\d+$/.test(value)) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.wholeNumber",
+          defaultMessage: "{label} must be a whole number",
+        },
+        { label }
+      );
+    }
 
-      const n = parseInt(value, 10);
-      if (Number.isNaN(n)) {
-        return intl.formatMessage(
-          {
-            id: "discountForm.validation.invalid",
-            defaultMessage: "{label} is invalid",
-          },
-          { label },
-        );
-      }
-      if (n < min) {
-        return intl.formatMessage(
-          {
-            id: "discountForm.validation.min",
-            defaultMessage: "{label} must be at least {min}",
-          },
-          { label, min },
-        );
-      }
-      if (n > INPUT_DAYS_MAX_VALUE) {
-        return intl.formatMessage(
-          {
-            id: "discountForm.validation.max",
-            defaultMessage: "{label} must be at most {max}",
-          },
-          { label, max: INPUT_DAYS_MAX_VALUE },
-        );
-      }
+    const n = parseInt(value, 10);
+    if (Number.isNaN(n)) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.invalid",
+          defaultMessage: "{label} is invalid",
+        },
+        { label }
+      );
+    }
+    if (n < min) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.min",
+          defaultMessage: "{label} must be at least {min}",
+        },
+        { label, min }
+      );
+    }
+    if (n > INPUT_DAYS_MAX_VALUE) {
+      return intl.formatMessage(
+        {
+          id: "discountForm.validation.max",
+          defaultMessage: "{label} must be at most {max}",
+        },
+        { label, max: INPUT_DAYS_MAX_VALUE }
+      );
+    }
 
-      return true;
-    };
+    return true;
+  };
 
-  const localStorageKey = quoteId
-    ? `${LOCAL_STORAGE_KEY_PREFIX}${quoteId}`
-    : null;
+  const localStorageKey = quoteId ? `${LOCAL_STORAGE_KEY_PREFIX}${quoteId}` : null;
   const {
     watch,
     register,
@@ -210,17 +197,7 @@ const GrossToNetDiscountForm = ({
     }
   };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const allowed = new Set([
-      "Backspace",
-      "Delete",
-      "ArrowLeft",
-      "ArrowRight",
-      "ArrowUp",
-      "ArrowDown",
-      "Tab",
-      "Home",
-      "End",
-    ]);
+    const allowed = new Set(["Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab", "Home", "End"]);
     if (e.key === "Enter") {
       e.preventDefault();
       e.currentTarget.blur();
@@ -238,41 +215,34 @@ const GrossToNetDiscountForm = ({
     const native = e.nativeEvent as InputEvent;
     const data = native.data;
     if (native.type === "beforeinput") {
-      if (
-        (native.inputType === "insertText" ||
-          native.inputType === "insertCompositionText") &&
-        data &&
-        /\D/.test(data)
-      ) {
+      if ((native.inputType === "insertText" || native.inputType === "insertCompositionText") && data && /\D/.test(data)) {
         e.preventDefault();
       }
     }
   };
 
-  const handlePasteDigitsFor =
-    (field: "daysInput" | "netInput") =>
-    (e: React.ClipboardEvent<HTMLInputElement>) => {
-      e.preventDefault();
-      const text = e.clipboardData.getData("text") || "";
-      const digits = text.replace(/\D/g, "");
-      const input = e.currentTarget;
-      const start = input.selectionStart ?? input.value.length;
-      const end = input.selectionEnd ?? input.value.length;
-      const before = input.value.slice(0, start);
-      const after = input.value.slice(end);
-      const next = (before + digits + after).replace(/\D/g, "");
-      input.value = next;
-      setValue(field, next, { shouldValidate: true, shouldDirty: true });
-      if (field === "netInput") {
-        setLastEdited("net");
-      }
-      const caret = (before + digits).length;
-      try {
-        input.setSelectionRange(caret, caret);
-      } catch {
-        // ignore
-      }
-    };
+  const handlePasteDigitsFor = (field: "daysInput" | "netInput") => (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text") || "";
+    const digits = text.replace(/\D/g, "");
+    const input = e.currentTarget;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const before = input.value.slice(0, start);
+    const after = input.value.slice(end);
+    const next = (before + digits + after).replace(/\D/g, "");
+    input.value = next;
+    setValue(field, next, { shouldValidate: true, shouldDirty: true });
+    if (field === "netInput") {
+      setLastEdited("net");
+    }
+    const caret = (before + digits).length;
+    try {
+      input.setSelectionRange(caret, caret);
+    } catch {
+      // ignore
+    }
+  };
 
   const handleDrop = (e: React.DragEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -286,9 +256,7 @@ const GrossToNetDiscountForm = ({
 
   const discountRate = useMemo<Big | undefined>(() => {
     const parsed = parseFloatSafe(discountRateInput);
-    return parsed === undefined
-      ? undefined
-      : new Big(parsed).div(new Big("100"));
+    return parsed === undefined ? undefined : new Big(parsed).div(new Big("100"));
   }, [discountRateInput]);
 
   const [net, setNet] = useState<CurrencyAmount>();
@@ -320,13 +288,11 @@ const GrossToNetDiscountForm = ({
   const formatAmount = React.useCallback(
     (value: Big, currency: string) => {
       if (currency === "sat") {
-        return formatAmountByPreference(
-          value.round(0, Big.roundDown).toFixed(0),
-        );
+        return formatAmountByPreference(value.round(0, Big.roundDown).toFixed(0));
       }
       return formatAmountByPreference(value.toFixed(NET_INPUT_DECIMALS));
     },
-    [formatAmountByPreference],
+    [formatAmountByPreference]
   );
 
   useEffect(() => {
@@ -359,20 +325,11 @@ const GrossToNetDiscountForm = ({
     }
 
     if (startDate !== undefined) {
-      setValue(
-        "daysInput",
-        String(
-          Math.min(
-            Math.max(1, daysBetween(startDate, endDate)),
-            INPUT_DAYS_MAX_VALUE,
-          ),
-        ),
-        {
-          shouldValidate: true,
-          shouldDirty: true,
-          shouldTouch: true,
-        },
-      );
+      setValue("daysInput", String(Math.min(Math.max(1, daysBetween(startDate, endDate)), INPUT_DAYS_MAX_VALUE)), {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
     }
 
     setHasSetInitialDays(true);
@@ -390,13 +347,7 @@ const GrossToNetDiscountForm = ({
         netInput: netInput ?? "",
       });
     }
-  }, [
-    localStorageKey,
-    daysInput,
-    discountRateInput,
-    netInput,
-    hasSetInitialDays,
-  ]);
+  }, [localStorageKey, daysInput, discountRateInput, netInput, hasSetInitialDays]);
 
   useEffect(() => {
     if (netInput === prevNetInputRef.current) {
@@ -432,16 +383,7 @@ const GrossToNetDiscountForm = ({
       skipNetToRateRef.current = true;
       setValue("netInput", formattedNet, { shouldValidate: true });
     }
-  }, [
-    gross,
-    days,
-    discountRate,
-    lastEdited,
-    setValue,
-    isSat,
-    netInput,
-    formatAmount,
-  ]);
+  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatAmount]);
 
   useEffect(() => {
     if (skipNetToRateRef.current) {
@@ -495,33 +437,29 @@ const GrossToNetDiscountForm = ({
     });
   };
 
-  const handleIntegerInputFor =
-    (field: "daysInput" | "netInput") =>
-    (e: React.SyntheticEvent<HTMLInputElement>) => {
-      const input = e.currentTarget;
-      const cleaned = input.value.replace(/[^\d]/g, "");
-      if (input.value !== cleaned) {
-        const caret = input.selectionStart ?? cleaned.length;
-        input.value = cleaned;
-        setValue(field, cleaned, { shouldValidate: true, shouldDirty: true });
-        const pos = Math.min(caret, cleaned.length);
-        try {
-          input.setSelectionRange(pos, pos);
-        } catch {
-          // ignore unsupported setSelectionRange
-        }
+  const handleIntegerInputFor = (field: "daysInput" | "netInput") => (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const cleaned = input.value.replace(/[^\d]/g, "");
+    if (input.value !== cleaned) {
+      const caret = input.selectionStart ?? cleaned.length;
+      input.value = cleaned;
+      setValue(field, cleaned, { shouldValidate: true, shouldDirty: true });
+      const pos = Math.min(caret, cleaned.length);
+      try {
+        input.setSelectionRange(pos, pos);
+      } catch {
+        // ignore unsupported setSelectionRange
       }
-      if (field === "netInput") {
-        setLastEdited("net");
-      }
-      if (input.value === cleaned) {
-        setValue(field, cleaned, { shouldValidate: true, shouldDirty: true });
-      }
-    };
+    }
+    if (field === "netInput") {
+      setLastEdited("net");
+    }
+    if (input.value === cleaned) {
+      setValue(field, cleaned, { shouldValidate: true, shouldDirty: true });
+    }
+  };
 
-  const handleConfirmClick: React.MouseEventHandler<HTMLButtonElement> = (
-    e,
-  ) => {
+  const handleConfirmClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     e.preventDefault();
     e.stopPropagation();
     void handleSubmit(handleFormSubmit)().catch((err) => {
@@ -542,10 +480,7 @@ const GrossToNetDiscountForm = ({
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <label
-                htmlFor="daysInput"
-                className="text-sm font-medium text-gray-900 dark:text-gray-100"
-              >
+              <label htmlFor="daysInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {daysLabel}
               </label>
               <input
@@ -577,10 +512,9 @@ const GrossToNetDiscountForm = ({
                 {intl.formatMessage(
                   {
                     id: "discountForm.validation.range",
-                    defaultMessage:
-                      "Please enter a valid value between {min} and {max}.",
+                    defaultMessage: "Please enter a valid value between {min} and {max}.",
                   },
-                  { min: INPUT_DAYS_MIN_VALUE, max: INPUT_DAYS_MAX_VALUE },
+                  { min: INPUT_DAYS_MIN_VALUE, max: INPUT_DAYS_MAX_VALUE }
                 )}
               </div>
             )}
@@ -588,10 +522,7 @@ const GrossToNetDiscountForm = ({
 
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <label
-                htmlFor="discountRateInput"
-                className="text-sm font-medium text-gray-900 dark:text-gray-100"
-              >
+              <label htmlFor="discountRateInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {discountRateLabel}
               </label>
               <div className="flex gap-1 items-center">
@@ -613,9 +544,7 @@ const GrossToNetDiscountForm = ({
                     setLastEdited("rate");
                   }}
                 />
-                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  %
-                </span>
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">%</span>
               </div>
             </div>
             {errors.discountRateInput && (
@@ -623,10 +552,9 @@ const GrossToNetDiscountForm = ({
                 {intl.formatMessage(
                   {
                     id: "discountForm.validation.rateRange",
-                    defaultMessage:
-                      "Please enter a valid value between {min}% and {max}%.",
+                    defaultMessage: "Please enter a valid value between {min}% and {max}%.",
                   },
-                  { min: 0, max: 99.9999 },
+                  { min: 0, max: 99.9999 }
                 )}
               </div>
             )}
@@ -634,10 +562,7 @@ const GrossToNetDiscountForm = ({
 
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <label
-                htmlFor="netInput"
-                className="text-sm font-medium text-gray-900 dark:text-gray-100"
-              >
+              <label htmlFor="netInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {netAmountLabel}
               </label>
               <div className="flex gap-1 items-center">
@@ -657,9 +582,7 @@ const GrossToNetDiscountForm = ({
                       e.currentTarget.blur();
                     }
                   }}
-                  onInput={
-                    isSat ? handleIntegerInputFor("netInput") : undefined
-                  }
+                  onInput={isSat ? handleIntegerInputFor("netInput") : undefined}
                   onBeforeInput={isSat ? blockNonDigitInput : undefined}
                   onPaste={isSat ? handlePasteDigitsFor("netInput") : undefined}
                   onDrop={handleDrop}
@@ -668,60 +591,35 @@ const GrossToNetDiscountForm = ({
                     setLastEdited("net");
                   }}
                 />
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {gross.currency}
-                </span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{gross.currency}</span>
               </div>
             </div>
-            {errors.netInput && (
-              <div className="text-xs text-red-500">
-                {errors.netInput.message}
-              </div>
-            )}
+            {errors.netInput && <div className="text-xs text-red-500">{errors.netInput.message}</div>}
           </div>
         </div>
 
         <div className="flex flex-col gap-3 px-2">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">
-              {annualDiscountLabel}
-            </span>
+            <span className="text-gray-600 dark:text-gray-400">{annualDiscountLabel}</span>
             <div className="flex gap-1 items-center">
               <span className="text-gray-600 dark:text-gray-400">
-                {discount === undefined
-                  ? isSat
-                    ? "0"
-                    : "0.00"
-                  : formatAmount(discount.value.abs(), gross.currency)}
+                {discount === undefined ? (isSat ? "0" : "0.00") : formatAmount(discount.value.abs(), gross.currency)}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-500">
-                {discount?.currency ?? gross.currency}
-              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-500">{discount?.currency ?? gross.currency}</span>
             </div>
           </div>
 
           <div className="flex justify-between items-center text-base font-semibold">
-            <span className="text-gray-900 dark:text-gray-100">
-              {grossAmountLabel}
-            </span>
+            <span className="text-gray-900 dark:text-gray-100">{grossAmountLabel}</span>
             <div className="flex gap-1 items-center">
-              <span className="text-green-600 dark:text-green-400">
-                +{formatAmount(gross.value, gross.currency)}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-500">
-                {gross.currency}
-              </span>
+              <span className="text-green-600 dark:text-green-400">+{formatAmount(gross.value, gross.currency)}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-500">{gross.currency}</span>
             </div>
           </div>
         </div>
 
         {submitButtonText && (
-          <Button
-            type="submit"
-            size="sm"
-            className="my-4"
-            disabled={!isValid}
-          >
+          <Button type="submit" size="sm" className="my-4" disabled={!isValid}>
             {submitButtonText}
           </Button>
         )}
@@ -733,12 +631,7 @@ const GrossToNetDiscountForm = ({
           size="sm"
           type="button"
           onClick={handleConfirmClick}
-          disabled={
-            !isValid ||
-            net === undefined ||
-            discountRate === undefined ||
-            days === undefined
-          }
+          disabled={!isValid || net === undefined || discountRate === undefined || days === undefined}
         >
           {intl.formatMessage({
             id: "Confirm",
@@ -746,11 +639,7 @@ const GrossToNetDiscountForm = ({
           })}
         </Button>
         <DrawerClose asChild>
-          <Button
-            className="w-full"
-            variant="outline"
-            size="sm"
-          >
+          <Button className="w-full" variant="outline" size="sm">
             {intl.formatMessage({
               id: "Cancel",
               defaultMessage: "Cancel",

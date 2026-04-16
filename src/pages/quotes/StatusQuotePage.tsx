@@ -9,19 +9,9 @@ import { cn } from "@/lib/utils";
 import { useIntl } from "react-intl";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { SortButtons } from "@/components/SortButtons";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SearchComponent from "@/components/ui/search";
-import {
-  useQuoteList,
-  PAGE_SIZE_OPTIONS,
-  ALL_PAGE_SIZE_VALUE,
-} from "@/hooks/use-quote-list";
+import { useQuoteList, PAGE_SIZE_OPTIONS, ALL_PAGE_SIZE_VALUE } from "@/hooks/use-quote-list";
 import type { QuoteStatus, QuickFilter } from "@/hooks/use-quote-list";
 import { QuoteItemCard } from "./components/QuoteItemCard";
 
@@ -72,8 +62,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   } = useQuoteList(status);
 
   if (error) {
-    const errorMessage =
-      (error as { message?: string }).message ?? String(error);
+    const errorMessage = (error as { message?: string }).message ?? String(error);
     return (
       <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
         <div className="text-red-800 font-semibold">
@@ -112,17 +101,13 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             className="flex-1 max-w-md"
             placeholder={intl.formatMessage({
               id: "quotes.search.placeholder",
-              defaultMessage:
-                "Search by quote ID, participant, status, amount, or maturity...",
+              defaultMessage: "Search by quote ID, participant, status, amount, or maturity...",
             })}
             onSearch={setSearchQuery}
             onChange={setSearchQuery}
             size="sm"
           />
-          <Select
-            value={quickFilter}
-            onValueChange={(value) => setQuickFilter(value as QuickFilter)}
-          >
+          <Select value={quickFilter} onValueChange={(value) => setQuickFilter(value as QuickFilter)}>
             <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64">
               <SelectValue
                 placeholder={intl.formatMessage({
@@ -133,21 +118,14 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             </SelectTrigger>
             <SelectContent>
               {quickFilterOptions.map((option) => (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                >
+                <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <SortButtons
-          sortBy={sortBy}
-          onSortChange={toggleSort}
-          options={sortOptions}
-        />
+        <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
       </div>
 
       <div className="flex items-center justify-center">
@@ -170,23 +148,14 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             </span>
             <Select
               value={String(itemsPerPage)}
-              onValueChange={(value) =>
-                setItemsPerPage(
-                  value === ALL_PAGE_SIZE_VALUE
-                    ? ALL_PAGE_SIZE_VALUE
-                    : Number(value),
-                )
-              }
+              onValueChange={(value) => setItemsPerPage(value === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_VALUE : Number(value))}
             >
               <SelectTrigger className="h-8 w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {PAGE_SIZE_OPTIONS.map((size) => (
-                  <SelectItem
-                    key={size}
-                    value={String(size)}
-                  >
+                  <SelectItem key={size} value={String(size)}>
                     {size}
                   </SelectItem>
                 ))}
@@ -207,7 +176,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
                 id: "quotes.pagination.count",
                 defaultMessage: "Showing {loaded} of {total} quotes",
               },
-              { loaded: quotes.length, total: totalQuotes },
+              { loaded: quotes.length, total: totalQuotes }
             )}
           </div>
         )}
@@ -222,18 +191,14 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             })}
           </div>
         )}
-        {sortedQuotes.length === 0 && !hasActiveFilters && (
-          <div className="py-2 font-bold">{noQuotesMessage}</div>
-        )}
+        {sortedQuotes.length === 0 && !hasActiveFilters && <div className="py-2 font-bold">{noQuotesMessage}</div>}
         {sortedQuotes
           .filter((q) => q.id)
           .map((quote) => (
             <div key={quote.id}>
               <QuoteItemCard
                 quote={quote}
-                effectiveStatus={
-                  effectiveStatusByQuoteId.get(quote.id) ?? quote.status
-                }
+                effectiveStatus={effectiveStatusByQuoteId.get(quote.id) ?? quote.status}
                 searchQuery={searchQuery}
               />
             </div>
@@ -242,12 +207,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
       {hasNextPage && (
         <div className="flex justify-center pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
+          <Button type="button" variant="outline" onClick={() => void fetchNextPage()} disabled={isFetchingNextPage}>
             {isFetchingNextPage
               ? intl.formatMessage({
                   id: "quotes.pagination.loadingMore",
@@ -288,7 +248,7 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
           id: "quotes.statusPage.title",
           defaultMessage: "{status} quotes",
         },
-        { status: statusLabel },
+        { status: statusLabel }
       )
     : intl.formatMessage({
         id: "quotes.statusPage.titleAll",
@@ -301,10 +261,7 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
         parents={
           status
             ? [
-                <BreadcrumbLink
-                  key="quotes"
-                  asChild
-                >
+                <BreadcrumbLink key="quotes" asChild>
                   <Link to="/quotes">
                     {intl.formatMessage({
                       id: "quotes.breadcrumb",

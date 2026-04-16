@@ -39,7 +39,7 @@ describe("getEffectiveQuoteStatus", () => {
             accepted: true,
           },
         },
-      } as never),
+      } as never)
     ).toBe("Accepted");
   });
 
@@ -51,7 +51,7 @@ describe("getEffectiveQuoteStatus", () => {
             accepted: false,
           },
         },
-      } as never),
+      } as never)
     ).toBe("Pending");
   });
 });

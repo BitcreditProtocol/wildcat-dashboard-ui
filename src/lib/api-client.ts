@@ -12,7 +12,7 @@ heyApiClient.setConfig({
 heyApiClient.interceptors.error.use((error, response) =>
   normalizeApiError(error, {
     status: (response as Response | undefined)?.status,
-  }),
+  })
 );
 
 // Add the auth token interceptor
