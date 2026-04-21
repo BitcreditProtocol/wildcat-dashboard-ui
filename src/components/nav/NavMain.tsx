@@ -15,17 +15,19 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
+type NavMessageDescriptor = MessageDescriptor & { id: string };
+
 export function NavMain({
   items,
 }: {
   items: {
-    title: MessageDescriptor;
+    title: NavMessageDescriptor;
     url: string;
     icon?: LucideIcon;
     isActive?: boolean;
     disabled?: boolean;
     items?: {
-      title: MessageDescriptor;
+      title: NavMessageDescriptor;
       url: string;
       disabled?: boolean;
     }[];
