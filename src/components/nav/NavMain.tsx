@@ -1,7 +1,7 @@
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { NavLink } from "react-router";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useIntl } from "react-intl";
+import { useIntl, type MessageDescriptor } from "react-intl";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -19,15 +19,13 @@ export function NavMain({
   items,
 }: {
   items: {
-    titleId: string;
-    titleDefaultMessage: string;
+    title: MessageDescriptor;
     url: string;
     icon?: LucideIcon;
     isActive?: boolean;
     disabled?: boolean;
     items?: {
-      titleId: string;
-      titleDefaultMessage: string;
+      title: MessageDescriptor;
       url: string;
       disabled?: boolean;
     }[];
@@ -46,13 +44,10 @@ export function NavMain({
       </SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
-          const title = intl.formatMessage({
-            id: item.titleId,
-            defaultMessage: item.titleDefaultMessage,
-          });
+          const title = intl.formatMessage(item.title);
 
           return (item.items ?? []).length === 0 || state === "collapsed" ? (
-            <SidebarMenuItem key={item.titleId}>
+            <SidebarMenuItem key={item.title.id}>
               <SidebarMenuButton asChild tooltip={title} disabled={item.disabled}>
                 {item.disabled === true ? (
                   <>
@@ -68,7 +63,7 @@ export function NavMain({
               </SidebarMenuButton>
             </SidebarMenuItem>
           ) : (
-            <Collapsible key={item.titleId} asChild defaultOpen={item.isActive} className="group/collapsible">
+            <Collapsible key={item.title.id} asChild defaultOpen={item.isActive} className="group/collapsible">
               <SidebarMenuItem>
                 <div className="relative flex items-center">
                   <SidebarMenuButton asChild tooltip={title} className="flex-1 pr-8">
@@ -95,13 +90,10 @@ export function NavMain({
                 <CollapsibleContent>
                   <SidebarMenuSub>
                     {item.items?.map((subItem) => {
-                      const subTitle = intl.formatMessage({
-                        id: subItem.titleId,
-                        defaultMessage: subItem.titleDefaultMessage,
-                      });
+                      const subTitle = intl.formatMessage(subItem.title);
 
                       return (
-                        <SidebarMenuSubItem key={subItem.titleId}>
+                        <SidebarMenuSubItem key={subItem.title.id}>
                           <SidebarMenuSubButton asChild>
                             <NavLink
                               to={subItem.url}

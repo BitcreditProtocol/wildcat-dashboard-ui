@@ -1,31 +1,33 @@
-import { useIntl } from "react-intl";
+import { defineMessages, useIntl } from "react-intl";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type CurrencyCode, usePreferences } from "@/context/preferences/PreferencesContext";
 
+const currencyMessages = defineMessages({
+  sat: { id: "settings.currency.sat", defaultMessage: "Bitcoin (sat)" },
+  btc: { id: "settings.currency.btc", defaultMessage: "Bitcoin (BTC)" },
+  eur: { id: "settings.currency.eur", defaultMessage: "Euro (EUR)" },
+  usd: { id: "settings.currency.usd", defaultMessage: "US Dollar (USD)" },
+});
+
 const CURRENCIES: {
   value: CurrencyCode;
-  labelId: string;
-  defaultLabel: string;
+  label: (typeof currencyMessages)[keyof typeof currencyMessages];
 }[] = [
   {
     value: "sat",
-    labelId: "settings.currency.sat",
-    defaultLabel: "Bitcoin (sat)",
+    label: currencyMessages.sat,
   },
   {
     value: "btc",
-    labelId: "settings.currency.btc",
-    defaultLabel: "Bitcoin (BTC)",
+    label: currencyMessages.btc,
   },
   {
     value: "eur",
-    labelId: "settings.currency.eur",
-    defaultLabel: "Euro (EUR)",
+    label: currencyMessages.eur,
   },
   {
     value: "usd",
-    labelId: "settings.currency.usd",
-    defaultLabel: "US Dollar (USD)",
+    label: currencyMessages.usd,
   },
 ];
 
@@ -53,10 +55,7 @@ export function CurrencySelector({ className }: { className?: string }) {
         <SelectContent>
           {CURRENCIES.map((item) => (
             <SelectItem key={item.value} value={item.value}>
-              {intl.formatMessage({
-                id: item.labelId,
-                defaultMessage: item.defaultLabel,
-              })}
+              {intl.formatMessage(item.label)}
             </SelectItem>
           ))}
         </SelectContent>

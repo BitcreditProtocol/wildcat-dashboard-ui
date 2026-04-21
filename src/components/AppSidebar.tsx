@@ -9,68 +9,83 @@ import { ThemeSelector } from "@/components/ThemeSelector";
 import { NavMain } from "./nav/NavMain";
 // import { useKeycloak } from "../lib/keycloak-user"
 import { LanguageContext } from "@/context/language/LanguageContext";
-import { useIntl } from "react-intl";
+import { defineMessages, useIntl } from "react-intl";
+
+const navMessages = defineMessages({
+  home: { id: "nav.home", defaultMessage: "Home" },
+  balances: { id: "nav.balances", defaultMessage: "Balances" },
+  quotes: { id: "nav.quotes", defaultMessage: "Quotes" },
+  quotesPending: { id: "nav.quotes.pending", defaultMessage: "Pending" },
+  quotesOffered: { id: "nav.quotes.offered", defaultMessage: "Offered" },
+  quotesOfferExpired: { id: "nav.quotes.offerExpired", defaultMessage: "Offer expired" },
+  quotesAccepted: { id: "nav.quotes.accepted", defaultMessage: "Accepted" },
+  quotesDenied: { id: "nav.quotes.denied", defaultMessage: "Denied" },
+  quotesRejected: { id: "nav.quotes.rejected", defaultMessage: "Rejected" },
+  quotesCanceled: { id: "nav.quotes.canceled", defaultMessage: "Canceled" },
+  keysets: { id: "nav.keysets", defaultMessage: "Keysets" },
+});
+
+const localeMessages = defineMessages({
+  "en-US": { id: "locale.en-US", defaultMessage: "English (US)" },
+  "en-GB": { id: "locale.en-GB", defaultMessage: "English (UK)" },
+  "de-AT": { id: "locale.de-AT", defaultMessage: "Deutsch (AT)" },
+  "de-DE": { id: "locale.de-DE", defaultMessage: "Deutsch (DE)" },
+  "es-AR": { id: "locale.es-AR", defaultMessage: "Español (AR)" },
+  "es-ES": { id: "locale.es-ES", defaultMessage: "Español (ES)" },
+  "it-IT": { id: "locale.it-IT", defaultMessage: "Italiano (IT)" },
+  "tr-TR": { id: "locale.tr-TR", defaultMessage: "Türkçe (TR)" },
+  "ach-UG": { id: "locale.ach-UG", defaultMessage: "Acholi (UG)" },
+});
 
 const data = {
   navMain: [
     {
-      titleId: "nav.home",
-      titleDefaultMessage: "Home",
+      title: navMessages.home,
       url: "/",
       icon: Home,
     },
     {
-      titleId: "nav.balances",
-      titleDefaultMessage: "Balances",
+      title: navMessages.balances,
       url: "/balances",
       icon: Bitcoin,
     },
     {
-      titleId: "nav.quotes",
-      titleDefaultMessage: "Quotes",
+      title: navMessages.quotes,
       url: "/quotes",
       icon: Inbox,
       items: [
         {
-          titleId: "nav.quotes.pending",
-          titleDefaultMessage: "Pending",
+          title: navMessages.quotesPending,
           url: "/quotes/pending",
         },
         {
-          titleId: "nav.quotes.offered",
-          titleDefaultMessage: "Offered",
+          title: navMessages.quotesOffered,
           url: "/quotes/offered",
         },
         {
-          titleId: "nav.quotes.offerExpired",
-          titleDefaultMessage: "Offer expired",
+          title: navMessages.quotesOfferExpired,
           url: "/quotes/offerexpired",
         },
         {
-          titleId: "nav.quotes.accepted",
-          titleDefaultMessage: "Accepted",
+          title: navMessages.quotesAccepted,
           url: "/quotes/accepted",
         },
         {
-          titleId: "nav.quotes.denied",
-          titleDefaultMessage: "Denied",
+          title: navMessages.quotesDenied,
           url: "/quotes/denied",
         },
         {
-          titleId: "nav.quotes.rejected",
-          titleDefaultMessage: "Rejected",
+          title: navMessages.quotesRejected,
           url: "/quotes/rejected",
         },
         {
-          titleId: "nav.quotes.canceled",
-          titleDefaultMessage: "Canceled",
+          title: navMessages.quotesCanceled,
           url: "/quotes/canceled",
         },
       ],
     },
     {
-      titleId: "nav.keysets",
-      titleDefaultMessage: "Keysets",
+      title: navMessages.keysets,
       url: "/keysets",
       icon: Key,
     },
@@ -102,10 +117,7 @@ function LanguageSelector() {
         <SelectContent>
           {locales.map((loc) => (
             <SelectItem key={loc} value={loc}>
-              {intl.formatMessage({
-                id: `locale.${loc}`,
-                defaultMessage: loc,
-              })}
+              {intl.formatMessage(localeMessages[loc as keyof typeof localeMessages] ?? { id: `locale.${loc}`, defaultMessage: loc })}
             </SelectItem>
           ))}
         </SelectContent>

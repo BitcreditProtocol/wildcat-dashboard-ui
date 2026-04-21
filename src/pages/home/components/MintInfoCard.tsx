@@ -1,7 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
-import { FormattedMessage, useIntl } from "react-intl";
+import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import { InfoField } from "@/components/InfoField";
+
+const versionMessages = defineMessages({
+  wildcat: { id: "home.mint.version.wildcat", defaultMessage: "Wildcat" },
+  ebillCore: { id: "home.mint.version.ebillCore", defaultMessage: "BCR eBill Core" },
+  cdkMintd: { id: "home.mint.version.cdkMintd", defaultMessage: "CDK Mintd" },
+  clowder: { id: "home.mint.version.clowder", defaultMessage: "Clowder" },
+});
 
 export function MintInfoCard() {
   const intl = useIntl();
@@ -56,15 +63,15 @@ export function MintInfoCard() {
             <div className="flex flex-col gap-3">
               {(
                 [
-                  ["home.mint.version.wildcat", "Wildcat", mintData.versions.wildcat],
-                  ["home.mint.version.ebillCore", "BCR eBill Core", mintData.versions.bcr_ebill_core],
-                  ["home.mint.version.cdkMintd", "CDK Mintd", mintData.versions.cdk_mintd],
-                  ["home.mint.version.clowder", "Clowder", mintData.versions.clowder],
+                  [versionMessages.wildcat, mintData.versions.wildcat],
+                  [versionMessages.ebillCore, mintData.versions.bcr_ebill_core],
+                  [versionMessages.cdkMintd, mintData.versions.cdk_mintd],
+                  [versionMessages.clowder, mintData.versions.clowder],
                 ] as const
-              ).map(([id, defaultMessage, version]) => (
-                <div key={id} className="flex justify-between items-center">
+              ).map(([message, version]) => (
+                <div key={message.id} className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    {intl.formatMessage({ id, defaultMessage })}
+                    {intl.formatMessage(message)}
                   </span>
                   <span className="text-sm font-mono">{version}</span>
                 </div>
