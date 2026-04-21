@@ -77,6 +77,9 @@ export function TruncatedTextPopover({
   const intl = useIntl();
   const effectiveMaxLength = useResponsiveMaxLength(maxLength ?? 24, showFullOnDesktop);
   const triggerRef = React.useRef<HTMLElement | null>(null);
+  const setTriggerRef = React.useCallback((node: HTMLElement | null) => {
+    triggerRef.current = node;
+  }, []);
   const [hasWidthOverflow, setHasWidthOverflow] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const textStr = extractTextFromNode(text);
@@ -155,7 +158,7 @@ export function TruncatedTextPopover({
   if (!shouldShowPopover && !showCopyButton) {
     return (
       <span
-        ref={triggerRef as React.Ref<HTMLSpanElement>}
+        ref={setTriggerRef}
         className={cn("block w-full min-w-0 max-w-full overflow-hidden align-top", className)}
         title={title ?? flatLabel}
       >
@@ -169,7 +172,7 @@ export function TruncatedTextPopover({
       <PopoverTrigger asChild>
         {as === "button" ? (
           <button
-            ref={triggerRef as React.Ref<HTMLButtonElement>}
+            ref={setTriggerRef}
             type="button"
             className={cn(
               "block w-full min-w-0 max-w-full overflow-hidden align-top text-left hover:underline focus:outline-none",
@@ -182,7 +185,7 @@ export function TruncatedTextPopover({
           </button>
         ) : (
           <span
-            ref={triggerRef as React.Ref<HTMLSpanElement>}
+            ref={setTriggerRef}
             role="button"
             tabIndex={0}
             className={cn("block w-full min-w-0 max-w-full overflow-hidden align-top hover:underline focus:outline-none", className)}

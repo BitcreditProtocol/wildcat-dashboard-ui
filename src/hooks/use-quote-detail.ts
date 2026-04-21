@@ -5,7 +5,6 @@ import {
   postTokenStatusMutation,
 } from "@/generated/client/@tanstack/react-query.gen";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { InfoReplyDiscriminants } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { useIntl } from "react-intl";
 import { useEffect, useRef } from "react";
@@ -64,7 +63,7 @@ export function useQuoteDetail(id: string) {
   });
 
   const ebill = ebillsQuery.data?.find((item) => item.id === billId);
-  const effectiveQuoteStatus = getEffectiveQuoteStatus((quoteData?.status as InfoReplyDiscriminants | undefined) ?? "Pending", ebill);
+  const effectiveQuoteStatus = getEffectiveQuoteStatus(quoteData?.status ?? "Pending", ebill);
   const isPaid = ebill?.status?.payment?.paid === true;
   const shouldCheckMintComplete = effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled" || isPaid;
 

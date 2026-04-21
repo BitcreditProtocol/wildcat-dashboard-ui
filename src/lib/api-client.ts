@@ -11,7 +11,7 @@ heyApiClient.setConfig({
 
 heyApiClient.interceptors.error.use((error, response) =>
   normalizeApiError(error, {
-    status: (response as Response | undefined)?.status,
+    status: response?.status,
   })
 );
 
@@ -30,7 +30,7 @@ heyApiClient.interceptors.request.use(async (request) => {
 
   let headers = request.headers;
   if (!(headers instanceof Headers)) {
-    headers = new Headers(headers as HeadersInit);
+    headers = new Headers(headers);
   }
   headers.set("Authorization", `Bearer ${token}`);
 
