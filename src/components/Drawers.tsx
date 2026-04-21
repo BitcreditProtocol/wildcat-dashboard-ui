@@ -1,4 +1,4 @@
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Drawer,
   DrawerClose,
@@ -8,16 +8,17 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer"
-import { VariantProps } from "class-variance-authority"
+} from "@/components/ui/drawer";
+import { VariantProps } from "class-variance-authority";
+import { useIntl } from "react-intl";
 
-type DrawerProps = Parameters<typeof Drawer>[0]
+type DrawerProps = Parameters<typeof Drawer>[0];
 type BaseDrawerProps = DrawerProps & {
-  title: string
-  description?: string
-  trigger?: React.ReactNode
-  children?: React.ReactNode
-}
+  title: string;
+  description?: string;
+  trigger?: React.ReactNode;
+  children?: React.ReactNode;
+};
 export function BaseDrawer({ title, description = "", trigger, children, ...drawerProps }: BaseDrawerProps) {
   return (
     <Drawer {...drawerProps}>
@@ -32,39 +33,60 @@ export function BaseDrawer({ title, description = "", trigger, children, ...draw
         </div>
       </DrawerContent>
     </Drawer>
-  )
+  );
 }
 
 type ConfirmDrawerProps = BaseDrawerProps & {
-  cancelButtonText?: string
-  submitButtonText?: string
-  submitButtonVariant?: VariantProps<typeof buttonVariants>["variant"]
-  onSubmit: () => void
-}
+  cancelButtonText?: string;
+  submitButtonText?: string;
+  submitButtonVariant?: VariantProps<typeof buttonVariants>["variant"];
+  submitButtonDisabled?: boolean;
+  onSubmit: () => void;
+};
 
 export function ConfirmDrawer({
-  cancelButtonText = "Cancel",
-  submitButtonText = "Confirm",
+  cancelButtonText,
+  submitButtonText,
   submitButtonVariant,
+  submitButtonDisabled = false,
   onSubmit,
   children,
   ...drawerProps
 }: ConfirmDrawerProps) {
+  const intl = useIntl();
+  const resolvedCancelText =
+    cancelButtonText ??
+    intl.formatMessage({
+      id: "Cancel",
+      defaultMessage: "Cancel",
+    });
+  const resolvedSubmitText =
+    submitButtonText ??
+    intl.formatMessage({
+      id: "Confirm",
+      defaultMessage: "Confirm",
+    });
   return (
     <BaseDrawer {...drawerProps}>
       {children}
       <DrawerFooter>
-        <div className="flex gap-2">
+        <div className="gap-2">
+          <Button
+            className="w-full mb-2 max-w-sm"
+            variant={submitButtonVariant}
+            size="lg"
+            onClick={onSubmit}
+            disabled={submitButtonDisabled}
+          >
+            {resolvedSubmitText}
+          </Button>
           <DrawerClose asChild>
-            <Button className="flex-1" variant="outline" size="lg">
-              {cancelButtonText}
+            <Button className="w-full max-w-sm" variant="outline" size="lg">
+              {resolvedCancelText}
             </Button>
           </DrawerClose>
-          <Button className="flex-1" variant={submitButtonVariant} size="lg" onClick={onSubmit}>
-            {submitButtonText}
-          </Button>
         </div>
       </DrawerFooter>
     </BaseDrawer>
-  )
+  );
 }

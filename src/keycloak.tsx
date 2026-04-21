@@ -1,30 +1,30 @@
-import Keycloak from "keycloak-js"
-import { env } from "@/lib/env"
+import Keycloak from "keycloak-js";
+import { env } from "@/lib/env";
 
 const keycloak = new Keycloak({
   url: env.keycloakUrl,
   realm: env.keycloakRealm,
   clientId: env.keycloakClientId,
-})
+});
 
 export const initKeycloak = async (): Promise<boolean> => {
   try {
-    console.log("loading keycloak")
+    console.log("loading keycloak");
     const authenticated = await keycloak.init({
       onLoad: "login-required",
-    })
+    });
 
     if (authenticated) {
-      console.log("User is authenticated")
+      console.log("User is authenticated");
     } else {
-      console.log("User is not authenticated")
+      console.log("User is not authenticated");
     }
 
-    return authenticated
+    return authenticated;
   } catch (error: unknown) {
-    console.error("Failed to initialize adapter:", error instanceof Error ? error.message : String(error))
-    return false
+    console.error("Failed to initialize adapter:", error instanceof Error ? error : String(error));
+    return false;
   }
-}
+};
 
-export default keycloak
+export default keycloak;

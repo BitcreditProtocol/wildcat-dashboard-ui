@@ -29,3 +29,7 @@ tsconfig.app.tsbuildinfo
 tsconfig.node.tsbuildinfo
 *storybook.log
 .env
+
+# Backup directories
+/opt/wildcat/backup
+/opt/wildcat/backup/

@@ -1,40 +1,41 @@
-import { client as heyApiClient } from "@/generated/client/client.gen"
-import * as sdk from "@/generated/client/sdk.gen"
-import { env } from "@/lib/env"
-import keycloak from "../keycloak"
+import { client as heyApiClient } from "@/generated/client/client.gen";
+import * as sdk from "@/generated/client/sdk.gen";
+import { normalizeApiError } from "@/lib/api-error";
+import { env } from "@/lib/env";
+import keycloak from "../keycloak";
 
 heyApiClient.setConfig({
   baseUrl: env.apiBaseUrl,
-})
+  throwOnError: true,
+});
+
+heyApiClient.interceptors.error.use((error, response) =>
+  normalizeApiError(error, {
+    status: response?.status,
+  })
+);
 
 // Add the auth token interceptor
-heyApiClient.interceptors.request.use((request) => {
-  if (keycloak.token!) {
-    let headers = request.headers
-    if (!(headers instanceof Headers)) {
-      headers = new Headers(headers as HeadersInit)
-    }
-    headers.set("Authorization", `Bearer ${keycloak.token}`)
-
-    if (!(request.headers instanceof Headers)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      ;(request as any).headers = headers
-    }
-  }
-  return request
-})
-
-const originalFetch = window.fetch
-window.fetch = async function (...args) {
+heyApiClient.interceptors.request.use(async (request) => {
   try {
-    console.log("Refreshing token...")
-    await keycloak.updateToken(30)
+    await keycloak.updateToken(30);
   } catch (error) {
-    console.error("Failed to refresh token:", error)
+    console.error("Failed to refresh token:", error);
   }
 
-  return originalFetch.apply(this, args)
-}
+  const token = keycloak.token;
+  if (!token) {
+    return request;
+  }
 
-export const client = heyApiClient
-export { sdk }
+  let headers = request.headers;
+  if (!(headers instanceof Headers)) {
+    headers = new Headers(headers);
+  }
+  headers.set("Authorization", `Bearer ${token}`);
+
+  return new Request(request, { headers });
+});
+
+export const client = heyApiClient;
+export { sdk };

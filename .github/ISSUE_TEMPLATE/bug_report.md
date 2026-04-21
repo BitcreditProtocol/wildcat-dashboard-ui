@@ -1,17 +1,16 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: ''
+title: ""
 labels: awaiting triage, bug
 assignees: mtbitcr
-
 ---
 
 **Internal Bug Number:** [Internal tracking code according to the bug tracking table]
 
-**Priority:** [Low | Medium | High]  *(Please select one)*
+**Priority:** [Low | Medium | High] _(Please select one)_
 
-**Bug Type:** [Functional | Design | Both] *(Please select one)*
+**Bug Type:** [Functional | Design | Both] _(Please select one)_
 
 **Affected Component:** [Specific UI component name, e.g., "Accept Quote button"]
 
@@ -21,20 +20,21 @@ assignees: mtbitcr
 
 **Expected Behavior:** [Describe what should be happening. E.g., "Clicking the Quote button should redirect the user to the "View Quotes" screen"]
 
-**Screenshots/Videos:** [Attach screenshots or videos clearly demonstrating the bug. Annotate the screenshots to highlight the affected area.  If possible, include screen recordings to show the steps to reproduce the bug.]
+**Screenshots/Videos:** [Attach screenshots or videos clearly demonstrating the bug. Annotate the screenshots to highlight the affected area. If possible, include screen recordings to show the steps to reproduce the bug.]
 
 **Environment:**
 
-* **Device:** [Desktop | Mobile | Tablet] *(Please select one)*
-* **OS:** [e.g., macOS Ventura, Windows 11, iOS 16, Android 13]
-* **Browser:** [e.g., Chrome 114, Safari 16, Firefox 110, Edge 114]
-* **Browser Version (if applicable):** [e.g., 114.0.5735.199]
-* **Resolution (if applicable):** [e.g., 1920x1080]
-* **App Version (if applicable):** [e.g., v1.2.3]
+- **Device:** [Desktop | Mobile | Tablet] _(Please select one)_
+- **OS:** [e.g., macOS Ventura, Windows 11, iOS 16, Android 13]
+- **Browser:** [e.g., Chrome 114, Safari 16, Firefox 110, Edge 114]
+- **Browser Version (if applicable):** [e.g., 114.0.5735.199]
+- **Resolution (if applicable):** [e.g., 1920x1080]
+- **App Version (if applicable):** [e.g., v1.2.3]
 
 **Additional Context:** [Add any other relevant information, such as:
-*   Impact of the bug
-*   Workarounds (if any)
-*   Frequency of occurrence (e.g., always, sometimes, rarely)
-*   Related issues (if any)
-*   User feedback (if any)]
+
+- Impact of the bug
+- Workarounds (if any)
+- Frequency of occurrence (e.g., always, sometimes, rarely)
+- Related issues (if any)
+- User feedback (if any)]

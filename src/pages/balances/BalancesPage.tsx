@@ -1,21 +1,14 @@
-import { PropsWithChildren, Suspense } from "react"
-import { useQueries } from "@tanstack/react-query"
-import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { PageTitle } from "@/components/PageTitle"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { Skeleton } from "@/components/ui/skeleton"
-import { debitBalance, creditBalance, onchainBalance } from "@/generated/client/sdk.gen"
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs),
-    ),
-  ])
-}
+import { PropsWithChildren, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { FormattedMessage, useIntl } from "react-intl";
+import { Currency } from "@/components/Currency";
 
 function Loader() {
   return (
@@ -31,93 +24,114 @@ function Loader() {
         <Skeleton className="h-96 rounded-lg" />
       </div>
     </div>
-  )
+  );
 }
 
+const getMonthLabels = (intl: ReturnType<typeof useIntl>) => [
+  intl.formatMessage({ id: "month.jan.short", defaultMessage: "Jan" }),
+  intl.formatMessage({ id: "month.feb.short", defaultMessage: "Feb" }),
+  intl.formatMessage({ id: "month.mar.short", defaultMessage: "Mar" }),
+  intl.formatMessage({ id: "month.apr.short", defaultMessage: "Apr" }),
+  intl.formatMessage({ id: "month.may.short", defaultMessage: "May" }),
+  intl.formatMessage({ id: "month.jun.short", defaultMessage: "Jun" }),
+  intl.formatMessage({ id: "month.jul.short", defaultMessage: "Jul" }),
+  intl.formatMessage({ id: "month.aug.short", defaultMessage: "Aug" }),
+  intl.formatMessage({ id: "month.sep.short", defaultMessage: "Sep" }),
+  intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
+  intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
+  intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
+];
+
 export function BitcoinBalanceChart() {
+  const intl = useIntl();
   const config = {
     bitcoin: {
-      label: "Bitcoin",
+      label: intl.formatMessage({
+        id: "balances.chart.bitcoin",
+        defaultMessage: "Bitcoin",
+      }),
       color: "#2563eb",
     },
-  } satisfies ChartConfig
+  } satisfies ChartConfig;
+
+  const months = getMonthLabels(intl);
 
   const data = [
-    { month: "January", bitcoin: 186 },
-    { month: "February", bitcoin: 305 },
-    { month: "March", bitcoin: 237 },
-    { month: "April", bitcoin: 73 },
-    { month: "May", bitcoin: 209 },
-    { month: "June", bitcoin: 214 },
-    { month: "July", bitcoin: 21 },
-    { month: "August", bitcoin: 32 },
-    { month: "September", bitcoin: 0 },
-    { month: "October", bitcoin: 0 },
-    { month: "November", bitcoin: 0 },
-    { month: "December", bitcoin: 0 },
-  ]
+    { month: months[0], bitcoin: 186 },
+    { month: months[1], bitcoin: 305 },
+    { month: months[2], bitcoin: 237 },
+    { month: months[3], bitcoin: 73 },
+    { month: months[4], bitcoin: 209 },
+    { month: months[5], bitcoin: 214 },
+    { month: months[6], bitcoin: 21 },
+    { month: months[7], bitcoin: 32 },
+    { month: months[8], bitcoin: 0 },
+    { month: months[9], bitcoin: 0 },
+    { month: months[10], bitcoin: 0 },
+    { month: months[11], bitcoin: 0 },
+  ];
 
   return (
     <ChartContainer config={config} className="min-h-[200px] w-full">
       <BarChart accessibilityLayer data={data}>
         <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-          tickFormatter={(value: string) => value.slice(0, 3)}
-        />
+        <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value: string) => value} />
         <YAxis dataKey="bitcoin" tickLine={false} tickMargin={10} axisLine={false} />
         <Bar dataKey="bitcoin" fill="var(--color-bitcoin)" radius={4} />
         <ChartLegend content={<ChartLegendContent />} />
       </BarChart>
     </ChartContainer>
-  )
+  );
 }
 
 export function OtherBalanceChart() {
+  const intl = useIntl();
   const config = {
     eIOU: {
-      label: "e-IOU",
+      label: intl.formatMessage({
+        id: "balances.chart.eiou",
+        defaultMessage: "e-IOU",
+      }),
       color: "#911198",
     },
     credit: {
-      label: "Credit token",
+      label: intl.formatMessage({
+        id: "balances.chart.creditToken",
+        defaultMessage: "Credit token",
+      }),
       color: "#e9d4ff",
     },
     debit: {
-      label: "Debit token",
+      label: intl.formatMessage({
+        id: "balances.chart.debitToken",
+        defaultMessage: "Debit token",
+      }),
       color: "#c27aff",
     },
-  } satisfies ChartConfig
+  } satisfies ChartConfig;
+
+  const months = getMonthLabels(intl);
 
   const data = [
-    { month: "January", credit: 121, debit: 0 },
-    { month: "February", credit: 231, debit: 0 },
-    { month: "March", credit: 321, debit: 51 },
-    { month: "April", credit: 603, debit: 186 },
-    { month: "May", credit: 583, debit: 486 },
-    { month: "June", credit: 893, debit: 359 },
-    { month: "July", credit: 1023, debit: 192 },
-    { month: "August", credit: 2023, debit: 521 },
-    { month: "September", credit: 1821, debit: 789 },
-    { month: "October", credit: 1782, debit: 1232 },
-    { month: "November", credit: 0, debit: 0 },
-    { month: "December", credit: 0, debit: 0 },
-  ]
+    { month: months[0], credit: 121, debit: 0 },
+    { month: months[1], credit: 231, debit: 0 },
+    { month: months[2], credit: 321, debit: 51 },
+    { month: months[3], credit: 603, debit: 186 },
+    { month: months[4], credit: 583, debit: 486 },
+    { month: months[5], credit: 893, debit: 359 },
+    { month: months[6], credit: 1023, debit: 192 },
+    { month: months[7], credit: 2023, debit: 521 },
+    { month: months[8], credit: 1821, debit: 789 },
+    { month: months[9], credit: 1782, debit: 1232 },
+    { month: months[10], credit: 0, debit: 0 },
+    { month: months[11], credit: 0, debit: 0 },
+  ];
 
   return (
     <ChartContainer config={config} className="min-h-[200px] w-full">
       <BarChart accessibilityLayer data={data}>
         <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-          tickFormatter={(value: string) => value.slice(0, 3)}
-        />
+        <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value: string) => value} />
         <YAxis dataKey="credit" tickLine={false} tickMargin={10} axisLine={false} />
         <YAxis dataKey="debit" tickLine={false} tickMargin={10} axisLine={false} />
         <Bar dataKey="credit" fill="var(--color-credit)" radius={4} />
@@ -125,106 +139,72 @@ export function OtherBalanceChart() {
         <ChartLegend content={<ChartLegendContent />} />
       </BarChart>
     </ChartContainer>
-  )
+  );
 }
 
 interface BalanceDisplay {
-  amount: string
-  unit: string
+  amount: string;
+  unit: string;
 }
 
 export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
       <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
-        {amount} {unit}
+        {unit === "sat" ? (
+          <Currency
+            value={Number(amount)}
+            sourceCurrency="sat"
+            amountClassName="text-current"
+            currencyClassName="text-sm font-medium text-muted-foreground"
+          />
+        ) : (
+          `${amount} ${unit}`
+        )}
       </h3>
       {children}
     </>
-  )
+  );
 }
 
 function useBalances() {
-  const queries = useQueries({
-    queries: [
-      {
-        queryKey: ["balance", "credit"],
-        queryFn: async () => {
-          const response = await withTimeout(creditBalance({}), 10_000)
-          if (response.error) {
-            throw new Error("Failed to fetch credit balance")
-          }
-          return response.data
-        },
-        refetchInterval: 30_000,
-        staleTime: 25_000,
-        retry: 2,
-        gcTime: 10_000,
-      },
-      {
-        queryKey: ["balance", "debit"],
-        queryFn: async () => {
-          const response = await withTimeout(debitBalance({}), 10_000)
-          if (response.error) {
-            throw new Error("Failed to fetch debit balance")
-          }
-          return response.data
-        },
-        refetchInterval: 30_000,
-        staleTime: 25_000,
-        retry: 2,
-        gcTime: 10_000,
-      },
-      {
-        queryKey: ["balance", "onchain"],
-        queryFn: async () => {
-          const response = await withTimeout(onchainBalance({}), 10_000)
-          if (response.error) {
-            throw new Error("Failed to fetch onchain balance")
-          }
-          return response.data
-        },
-        refetchInterval: 30_000,
-        staleTime: 25_000,
-        retry: 2,
-        gcTime: 10_000,
-      },
-    ],
-  })
+  const {
+    data: coverage,
+    isError,
+    refetch,
+  } = useQuery({
+    ...getClowderLocalCoverageOptions(),
+    refetchInterval: 30_000,
+    staleTime: 25_000,
+    retry: 2,
+  });
 
-  const [creditQuery, debitQuery, onchainQuery] = queries
-
-  const hasError = queries.some((query) => query.isError)
-  const error = hasError ? "Failed to load one or more balances" : null
+  const error = isError ? "Failed to load coverage data" : null;
 
   const balances: Record<string, BalanceDisplay> = {
     bitcoin: {
-      amount:
-        onchainQuery.data && typeof onchainQuery.data === "object" && "confirmed" in onchainQuery.data
-          ? String(onchainQuery.data.confirmed)
-          : "0",
-      unit: "BTC",
+      amount: coverage?.onchain_collateral?.toString() ?? "0",
+      unit: "sat",
     },
-    eiou: { amount: "0", unit: "e-IOU" },
+    eiou: {
+      amount: coverage?.eiou_collateral?.toString() ?? "0",
+      unit: "e-IOU",
+    },
     credit: {
-      amount: creditQuery.data && "amount" in creditQuery.data ? String(creditQuery.data.amount) : "0",
-      unit: creditQuery.data && "unit" in creditQuery.data ? String(creditQuery.data.unit) : "credit",
+      amount: coverage?.credit_circulating_supply?.toString() ?? "0",
+      unit: "crsat",
     },
     debit: {
-      amount: debitQuery.data && "amount" in debitQuery.data ? String(debitQuery.data.amount) : "0",
-      unit: debitQuery.data && "unit" in debitQuery.data ? String(debitQuery.data.unit) : "debit",
+      amount: coverage?.debit_circulating_supply?.toString() ?? "0",
+      unit: "sat",
     },
-  }
+  };
 
-  const refetch = () => {
-    void Promise.all(queries.map((query) => query.refetch()))
-  }
-
-  return { balances, error, refetch }
+  return { balances, error, refetch };
 }
 
 function PageBodyWithDevSection() {
-  const { balances, error } = useBalances()
+  const { balances, error } = useBalances();
 
   if (error) {
     return (
@@ -232,12 +212,14 @@ function PageBodyWithDevSection() {
         <div className="flex flex-col gap-4 my-2">
           <Card className="bg-red-50 border-red-200">
             <CardContent className="p-4">
-              <p className="text-red-800">Error loading balances: {error}</p>
+              <p className="text-red-800">
+                <FormattedMessage id="balances.error" defaultMessage="Error loading balances: {error}" values={{ error }} />
+              </p>
             </CardContent>
           </Card>
         </div>
       </>
-    )
+    );
   }
 
   return (
@@ -246,7 +228,9 @@ function PageBodyWithDevSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <Card className="bg-indigo-100">
             <CardHeader>
-              <CardTitle>Bitcoin balance</CardTitle>
+              <CardTitle>
+                <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
@@ -254,7 +238,9 @@ function PageBodyWithDevSection() {
           </Card>
           <Card className="bg-orange-100">
             <CardHeader>
-              <CardTitle>e-IOU balance</CardTitle>
+              <CardTitle>
+                <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
@@ -262,7 +248,9 @@ function PageBodyWithDevSection() {
           </Card>
           <Card className="bg-purple-200">
             <CardHeader>
-              <CardTitle>Credit token balance</CardTitle>
+              <CardTitle>
+                <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
@@ -270,7 +258,9 @@ function PageBodyWithDevSection() {
           </Card>
           <Card className="bg-purple-400">
             <CardHeader>
-              <CardTitle>Debit token balance</CardTitle>
+              <CardTitle>
+                <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
@@ -278,6 +268,10 @@ function PageBodyWithDevSection() {
           </Card>
         </div>
 
+        {/*
+          TODO Charts display mock data - will be updated when historical data endpoint is available
+          TODO Mint fees display pending - endpoint TBD
+          https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/129
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="py-4">
             <BitcoinBalanceChart />
@@ -286,20 +280,25 @@ function PageBodyWithDevSection() {
             <OtherBalanceChart />
           </Card>
         </div>
+        */}
       </div>
     </>
-  )
+  );
 }
 
 export default function BalancesPage() {
   return (
     <>
-      <Breadcrumbs>Balances</Breadcrumbs>
-      <PageTitle>Balances</PageTitle>
+      <Breadcrumbs>
+        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
+      </Breadcrumbs>
+      <PageTitle>
+        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
+      </PageTitle>
 
       <Suspense fallback={<Loader />}>
         <PageBodyWithDevSection />
       </Suspense>
     </>
-  )
+  );
 }

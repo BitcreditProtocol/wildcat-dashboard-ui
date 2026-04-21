@@ -1,8 +1,8 @@
-import path from "path"
-import { defineConfig as defineViteConfig, mergeConfig } from "vite"
-import { defineConfig as defineVitestConfig, configDefaults } from "vitest/config"
-import react from "@vitejs/plugin-react"
-import tailwindcss from "@tailwindcss/vite"
+import path from "path";
+import { defineConfig as defineViteConfig, mergeConfig } from "vite";
+import { defineConfig as defineVitestConfig, configDefaults } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 const viteConfig = defineViteConfig({
@@ -12,13 +12,13 @@ const viteConfig = defineViteConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});
 
 const vitestConfig = defineVitestConfig({
   test: {
     environment: "jsdom",
     include: ["**/*.test.{ts,tsx}"],
-    setupFiles: ['./vitest-setup.ts'],
+    setupFiles: ["./vitest-setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "lcov"],
@@ -26,6 +26,6 @@ const vitestConfig = defineVitestConfig({
     },
     exclude: [...configDefaults.exclude],
   },
-})
+});
 
-export default mergeConfig(viteConfig, vitestConfig)
+export default mergeConfig(viteConfig, vitestConfig);

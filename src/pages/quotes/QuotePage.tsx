@@ -1,890 +1,320 @@
-import { Breadcrumbs } from "@/components/Breadcrumbs"
-import { PageTitle } from "@/components/PageTitle"
-import { Avatar } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {
-  IdentityPublicData,
-  PayeePublicData,
-  InfoReply,
-  AnonPublicData,
-  RequestToMintResponseInfo,
-} from "@/generated/client"
-import {
-  adminLookupQuoteOptions,
-  adminLookupQuoteQueryKey,
-  adminUpdateQuoteMutation,
-} from "@/generated/client/@tanstack/react-query.gen"
-import { enableMinting, keysetInfo, paymentStatus, requestToMint } from "@/generated/client/sdk.gen"
-import { cn, getInitials } from "@/lib/utils"
-import { formatDate, humanReadableDuration } from "@/utils/dates"
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageTitle } from "@/components/PageTitle";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { useQuery } from "@tanstack/react-query";
+import { useParams, Link, useLocation } from "react-router";
+import { BreadcrumbLink } from "@/components/ui/breadcrumb";
+import { QuoteActions } from "./QuoteActions";
+import { truncateString } from "@/utils/strings";
+import { EndorsementChain } from "@/components/EndorsementChain";
+import { serializeKeysetId } from "@/utils/keyset";
+import { useIntl } from "react-intl";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { client } from "@/lib/api-client";
+import { QuoteDocuments } from "./QuoteDocuments";
+import { useQuoteDetail } from "@/hooks/use-quote-detail";
+import { QuoteDetailCard } from "./components/QuoteDetailCard";
 
-import { formatNumber, truncateString } from "@/utils/strings"
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
-import { getDeterministicColor } from "@/utils/dev"
-
-import { LoaderIcon } from "lucide-react"
-import { Suspense, useMemo, useState } from "react"
-import { Link, useParams } from "react-router"
-import { BaseDrawer, ConfirmDrawer } from "@/components/Drawers"
-import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm"
-import Big from "big.js"
-import { toast } from "sonner"
-import { useForm } from "react-hook-form"
-import { Calendar } from "@/components/ui/calendar"
-import { InputContainer } from "@/components/InputContainer"
-import { addDays } from "date-fns"
+interface LocationState {
+  from?: string;
+}
 
 function Loader() {
   return (
     <div className="flex flex-col gap-1.5 py-2">
       <Skeleton className="h-48 rounded-lg" />
     </div>
-  )
+  );
 }
 
-interface TimeToLiveFormValues {
-  ttl?: Date
-}
+const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
+const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 
-interface TimeToLiveFormResult {
-  ttl: Date
-}
+function PageBody({ id }: { id: string }) {
+  const intl = useIntl();
+  const [openingDocumentName, setOpeningDocumentName] = useState<string | null>(null);
 
-interface TimeToLiveFormProps {
-  submitButtonText?: string
-  onSubmit: (values: TimeToLiveFormResult) => void
-}
+  const blobUrlTimerRef = useRef<number | null>(null);
 
-const TimeToLiveForm = ({ onSubmit, submitButtonText = "Submit" }: TimeToLiveFormProps) => {
+  useEffect(() => {
+    return () => {
+      if (blobUrlTimerRef.current !== null) {
+        clearTimeout(blobUrlTimerRef.current);
+      }
+    };
+  }, []);
+
   const {
-    watch,
-    handleSubmit,
-    setValue,
-    formState: { isValid, errors },
-  } = useForm<TimeToLiveFormValues>({
-    mode: "all",
-  })
+    quoteData,
+    isFetching,
+    error,
+    isLoading,
+    ebill,
+    endorsementsQuery,
+    effectiveQuoteStatus,
+    isMintComplete,
+    isMintCompleteLoading,
+    feeToken,
+    feeTokenStatusData,
+    isFeeTokenStatusPending,
+    isFeeTokenStatusError,
+    ebillPaid,
+    requestedToPay,
+    rejectedToPay,
+    paymentDeadlineTs,
+    timeOfRequestToPay,
+    isInMempool,
+    showPayment,
+    documentFiles,
+    billId,
+  } = useQuoteDetail(id);
 
-  const { ttl } = watch()
-
-  return (
-    <form
-      className="flex flex-col gap-2 min-w-[8rem]"
-      onSubmit={(e) => {
-        handleSubmit(() => {
-          if (errors.root !== undefined || ttl === undefined) return
-
-          onSubmit({
-            ttl,
-          })
-        })(e).catch(() => {
-          // TODO
-        })
-      }}
-    >
-      <div className="flex flex-col items-center">
-        <InputContainer htmlFor={"ttl"} label={<>Valid until</>}>
-          <input
-            id="ttl"
-            step="1"
-            value={ttl?.toDateString()}
-            className="bg-transparent text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            readOnly
-          />
-        </InputContainer>
-        <div className="flex justify-center my-2 rounded-md border w-full">
-          <Calendar
-            mode="single"
-            selected={ttl}
-            onSelect={(day) => setValue("ttl", day)}
-            hidden={{ before: addDays(new Date(Date.now()), 1) }}
-          />
+  if (error) {
+    const errorMessage = getApiErrorMessage(error);
+    return (
+      <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="text-red-800 font-semibold">
+          {intl.formatMessage({
+            id: "quotes.error.loadQuote.title",
+            defaultMessage: "Failed to load quote",
+          })}
+        </div>
+        <div className="text-red-600 text-sm">
+          {errorMessage ||
+            intl.formatMessage({
+              id: "quotes.error.unknown",
+              defaultMessage: "Unknown error occurred",
+            })}
+        </div>
+        <div className="text-xs text-red-500">
+          {intl.formatMessage({
+            id: "quotes.error.checkApi",
+            defaultMessage: "Check if the API server is running and accessible",
+          })}
         </div>
       </div>
+    );
+  }
 
-      <Button type="submit" size="sm" className="my-[16px]" disabled={!isValid}>
-        {submitButtonText}
-      </Button>
-    </form>
-  )
-}
+  if (isLoading) {
+    return <Loader />;
+  }
 
-interface OfferFormResult {
-  discount: Parameters<Parameters<typeof GrossToNetDiscountForm>[0]["onSubmit"]>[0]
-  ttl: Parameters<Parameters<typeof TimeToLiveForm>[0]["onSubmit"]>[0]
-}
+  const quote = quoteData!;
+  const bill = quote?.bill;
 
-interface OfferFormProps {
-  discount: Omit<Parameters<typeof GrossToNetDiscountForm>[0], "onSubmit">
-  onSubmit: (result: OfferFormResult) => void
-}
+  const handleOpenDocument = async (fileName: string) => {
+    if (!billId || !fileName || openingDocumentName) {
+      return;
+    }
 
-function OfferForm({ onSubmit, discount }: OfferFormProps) {
-  const [discountResult, setDiscountResult] = useState<OfferFormResult["discount"]>()
-  return (
-    <>
-      {!discountResult ? (
-        <>
-          <GrossToNetDiscountForm
-            {...discount}
-            startDate={discount.startDate ?? new Date(Date.now())}
-            onSubmit={setDiscountResult}
-            submitButtonText="Next"
-          />
-        </>
-      ) : (
-        <>
-          <TimeToLiveForm
-            {...discount}
-            onSubmit={(ttlResult) =>
-              onSubmit({
-                discount: discountResult,
-                ttl: ttlResult,
-              })
-            }
-            submitButtonText="Next"
-          />
-        </>
-      )}
-    </>
-  )
-}
+    setOpeningDocumentName(fileName);
 
-type OfferFormDrawerProps = Parameters<typeof BaseDrawer>[0] & {
-  value: InfoReply
-  onSubmit: OfferFormProps["onSubmit"]
-}
-
-function OfferFormDrawer({ value, onSubmit, children, ...drawerProps }: OfferFormDrawerProps) {
-  return (
-    <BaseDrawer {...drawerProps} trigger={children}>
-      <div className="px-4 pt-12">
-        <OfferForm
-          discount={{
-            endDate: new Date(Date.parse(value.bill.maturity_date)),
-            gross: {
-              value: new Big(value.bill.sum),
-              currency: "sat",
-            },
-          }}
-          onSubmit={onSubmit}
-        />
-      </div>
-    </BaseDrawer>
-  )
-}
-
-type OfferConfirmDrawerProps = Parameters<typeof ConfirmDrawer>[0] & {
-  onSubmit: () => void
-  children?: React.ReactNode
-}
-
-function OfferConfirmDrawer({ children, onSubmit, ...drawerProps }: OfferConfirmDrawerProps) {
-  return (
-    <ConfirmDrawer {...drawerProps} onSubmit={onSubmit} submitButtonText="Yes, offer quote.">
-      <>
-        <div className="py-12 text-xl">
-          Are you sure you want to <span className="ps-1 font-bold">offer the quote</span>?
-        </div>
-        <>{children}</>
-      </>
-    </ConfirmDrawer>
-  )
-}
-
-type DenyConfirmDrawerProps = Parameters<typeof ConfirmDrawer>[0] & {
-  onSubmit: () => void
-  children?: React.ReactNode
-}
-
-function DenyConfirmDrawer({ children, onSubmit, ...drawerProps }: DenyConfirmDrawerProps) {
-  return (
-    <ConfirmDrawer
-      {...drawerProps}
-      trigger={children}
-      submitButtonText="Yes, deny quote."
-      submitButtonVariant="destructive"
-      onSubmit={onSubmit}
-    >
-      <div className="py-12 text-xl">
-        Are you sure you want to <span className="ps-1 font-bold">deny offering a quote</span>?
-      </div>
-    </ConfirmDrawer>
-  )
-}
-
-function QuoteActions({
-  value,
-  isFetching,
-  mintingEnabled,
-  ebillPaid,
-  requestedToPay,
-}: {
-  value: InfoReply
-  isFetching: boolean
-  mintingEnabled: boolean
-  ebillPaid: boolean
-  requestedToPay: boolean
-}) {
-  const [offerFormData, setOfferFormData] = useState<OfferFormResult>()
-  const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false)
-  const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false)
-  const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false)
-  const [enableMintingConfirmDrawerOpen, setEnableMintingConfirmDrawerOpen] = useState(false)
-  const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false)
-  const [payRequestResponse, setPayRequestResponse] = useState<RequestToMintResponseInfo | null>(null)
-
-  const effectiveDiscount = useMemo(() => {
-    if (!offerFormData) return
-    console.table(offerFormData)
-    return new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
-  }, [offerFormData])
-
-  const queryClient = useQueryClient()
-
-  const denyQuote = useMutation({
-    ...adminUpdateQuoteMutation(),
-    onSettled: () => {
-      toast.dismiss(`quote-${value.id}-deny`)
-    },
-    onError: (error) => {
-      toast.error("Error while denying quote: " + error.message)
-      console.warn(error)
-    },
-    onSuccess: () => {
-      toast.success("Quote has been denied.")
-      void queryClient.invalidateQueries({
-        queryKey: adminLookupQuoteQueryKey({
-          path: {
-            id: value.id,
-          },
-        }),
-      })
-    },
-  })
-  const offerQuote = useMutation({
-    ...adminUpdateQuoteMutation(),
-    onSettled: () => {
-      toast.dismiss(`quote-${value.id}-offer`)
-    },
-    onError: (error) => {
-      toast.error("Error while offering quote: " + error.message)
-      console.warn(error)
-    },
-    onSuccess: () => {
-      toast.success("Quote has been offered.")
-      void queryClient.invalidateQueries({
-        queryKey: adminLookupQuoteQueryKey({
-          path: {
-            id: value.id,
-          },
-        }),
-      })
-    },
-  })
-
-  const enableMintingMutation = useMutation({
-    mutationFn: async () => {
-      const { data } = await enableMinting({
+    try {
+      const attachment = await client.get({
         path: {
-          id: value.id,
+          bill_id: billId,
+          file_name: fileName,
         },
-        body: {},
-        throwOnError: true,
-      })
-      return data
-    },
-    onMutate: () => {
-      toast.loading("Enabling minting…", { id: `quote-${value.id}-enable-minting` })
-    },
-    onSettled: () => {
-      toast.dismiss(`quote-${value.id}-enable-minting`)
-    },
-    onError: (error) => {
-      toast.error("Error while enabling minting: " + error.message)
-      console.warn(error)
-    },
-    onSuccess: () => {
-      toast.success("Minting has been enabled.")
-      void queryClient.invalidateQueries()
-    },
-  })
+        responseStyle: "data",
+        url: "/v1/admin/bill/attachment/{bill_id}/{file_name}",
+        parseAs: "blob",
+      });
 
-  const requestToPayMutation = useMutation({
-    mutationFn: async () => {
-      const { data } = await requestToMint({
-        body: {
-          ebill_id: value.bill.id,
-          amount: value.bill.sum,
-        },
-        throwOnError: true,
-      })
-      return data
-    },
-    onMutate: () => {
-      toast.loading("Requesting to pay…", { id: `quote-${value.id}-request-to-pay` })
-    },
-    onSettled: () => {
-      toast.dismiss(`quote-${value.id}-request-to-pay`)
-    },
-    onError: (error) => {
-      toast.error("Error while requesting to pay")
-      console.warn(error)
-    },
-    onSuccess: (data) => {
-      toast.success("Payment request has been created.")
-      setPayRequestResponse(data)
-      void queryClient.invalidateQueries({
-        queryKey: ["bill_id", value.bill.id],
-      })
-    },
-  })
+      if (!(attachment instanceof Blob)) {
+        throw new Error(
+          intl.formatMessage({
+            id: "quotes.documents.invalidResponse",
+            defaultMessage: "Document attachment could not be opened.",
+          })
+        );
+      }
 
-  const onDenyQuote = () => {
-    toast.loading("Denying quote…", { id: `quote-${value.id}-deny` })
-    denyQuote.mutate({
-      path: {
-        id: value.id,
-      },
-      body: {
-        action: "Deny",
-      },
-    })
+      const blobUrl = window.URL.createObjectURL(attachment);
+      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+
+      if (!openedWindow) {
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.click();
+      }
+
+      if (blobUrlTimerRef.current !== null) {
+        clearTimeout(blobUrlTimerRef.current);
+      }
+      blobUrlTimerRef.current = window.setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+        blobUrlTimerRef.current = null;
+      }, 60_000);
+    } catch (error) {
+      toast.error(
+        intl.formatMessage({
+          id: "quotes.documents.openError",
+          defaultMessage: "Failed to open document",
+        }),
+        {
+          description: getApiErrorMessage(error),
+        }
+      );
+    } finally {
+      setOpeningDocumentName(null);
+    }
+  };
+
+  if (!quote || !bill) {
+    return (
+      <div className="p-4 text-muted-foreground">
+        {intl.formatMessage({
+          id: "quotes.empty.noQuoteData",
+          defaultMessage: "No quote data available",
+        })}
+      </div>
+    );
   }
 
-  const onOfferQuote = (result: OfferFormResult) => {
-    toast.loading("Offering quote…", { id: `quote-${value.id}-offer` })
-
-    const net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber()
-
-    offerQuote.mutate({
-      path: {
-        id: value.id,
-      },
-      body: {
-        action: "Offer",
-        discounted: net_amount,
-        ttl: result.ttl.ttl.toISOString(),
-      },
-    })
-  }
-
-  const onEnableMinting = () => {
-    enableMintingMutation.mutate()
-  }
-
-  const onRequestToPay = () => {
-    requestToPayMutation.mutate()
-  }
-  return (
-    <>
-      <div className="flex items-center gap-2">
-        {value.status === "Pending" ? (
-          <DenyConfirmDrawer
-            title="Confirm denying quote"
-            open={denyConfirmDrawerOpen}
-            onOpenChange={setDenyConfirmDrawerOpen}
-            onSubmit={() => {
-              onDenyQuote()
-              setDenyConfirmDrawerOpen(false)
-            }}
-          >
-            <Button
-              className="flex-1"
-              disabled={isFetching || denyQuote.isPending || value.status !== "Pending"}
-              variant={value.status !== "Pending" ? "outline" : "destructive"}
-            >
-              Deny {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-            </Button>
-          </DenyConfirmDrawer>
-        ) : (
-          <></>
-        )}
-        {value.status === "Pending" ? (
-          <OfferFormDrawer
-            title="Offer quote"
-            description="Make an offer to the current holder of this bill"
-            value={value}
-            open={offerFormDrawerOpen}
-            onOpenChange={setOfferFormDrawerOpen}
-            onSubmit={(data) => {
-              setOfferFormData(data)
-              setOfferConfirmDrawerOpen(true)
-              setOfferFormDrawerOpen(false)
-            }}
-          >
-            <Button className="flex-1" disabled={isFetching || offerQuote.isPending || value.status !== "Pending"}>
-              Offer {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-            </Button>
-          </OfferFormDrawer>
-        ) : (
-          <></>
-        )}
-
-        <OfferConfirmDrawer
-          title="Confirm offering quote"
-          description="Review your inputs and confirm the offer"
-          open={offerConfirmDrawerOpen}
-          onOpenChange={setOfferConfirmDrawerOpen}
-          onSubmit={() => {
-            if (!offerFormData) return
-            onOfferQuote(offerFormData)
-            setOfferConfirmDrawerOpen(false)
-          }}
-        >
-          <div className="flex flex-col justify-center gap-1 py-8 mb-8">
-            <span>
-              <span className="font-bold">Effective discount (relative):</span>{" "}
-              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
-            </span>
-            <span>
-              <span className="font-bold">Effective discount (absolute):</span>{" "}
-              {offerFormData?.discount.gross.value.minus(offerFormData?.discount.net.value).toFixed(0)}{" "}
-              {offerFormData?.discount.net.currency}
-            </span>
-            <span>
-              <span className="font-bold">Net amount:</span> {offerFormData?.discount.net.value.round(0).toFixed(0)}{" "}
-              {offerFormData?.discount.net.currency}
-            </span>
-            <span>
-              <span className="font-bold">Valid until:</span> {offerFormData?.ttl.ttl.toDateString()} (
-              {offerFormData && humanReadableDuration("en", offerFormData.ttl.ttl)})
-            </span>
-          </div>
-        </OfferConfirmDrawer>
-
-        {value.status === "Accepted" && "keyset_id" in value ? (
-          <ConfirmDrawer
-            title="Confirm enabling minting"
-            description="Are you sure you want to enable minting for this quote?"
-            open={enableMintingConfirmDrawerOpen}
-            onOpenChange={setEnableMintingConfirmDrawerOpen}
-            onSubmit={() => {
-              onEnableMinting()
-              setEnableMintingConfirmDrawerOpen(false)
-            }}
-            submitButtonText="Yes, enable minting"
-            trigger={
-              <Button
-                className="flex-1"
-                disabled={isFetching || enableMintingMutation.isPending || mintingEnabled}
-                variant="default"
-              >
-                Enable Minting {enableMintingMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-              </Button>
-            }
-          />
-        ) : (
-          <></>
-        )}
-
-        {value.status === "Accepted" && "keyset_id" in value && !ebillPaid && !requestedToPay ? (
-          <ConfirmDrawer
-            title="Confirm requesting to pay"
-            description="Are you sure you want to request to pay this e-bill?"
-            open={requestToPayConfirmDrawerOpen}
-            onOpenChange={setRequestToPayConfirmDrawerOpen}
-            onSubmit={() => {
-              onRequestToPay()
-              setRequestToPayConfirmDrawerOpen(false)
-            }}
-            submitButtonText="Yes, request to pay"
-            trigger={
-              <Button className="flex-1" disabled={isFetching || requestToPayMutation.isPending} variant="default">
-                Request to Pay {requestToPayMutation.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
-              </Button>
-            }
-          />
-        ) : (
-          <></>
-        )}
-      </div>
-
-      {payRequestResponse && (
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-bold mb-2">Payment Request</h3>
-          <div className="space-y-2">
-            <div>
-              <span className="font-bold">ID</span>
-              <span className="font-mono ml-2">{payRequestResponse.request_id}</span>
-            </div>
-            <div>
-              <span className="font-bold">Details</span>
-              <div className="font-mono text-sm mt-1 p-2 bg-white rounded border break-all">
-                {payRequestResponse.request}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
-
-export function ParticipantsOverviewCard({
-  drawee,
-  drawer,
-  payee,
-  className,
-}: {
-  drawee?: IdentityPublicData
-  drawer?: IdentityPublicData
-  holder?: PayeePublicData
-  payee?: PayeePublicData
-  className?: string
-}) {
-  return (
-    <div className={cn("flex gap-2 items-center py-1", className)}>
-      <div>
-        <IdentityPublicAvatar value={drawee} tooltip="Drawee" />
-      </div>
-      <div>
-        <IdentityPublicAvatar value={drawer} tooltip="Drawer" />
-      </div>
-      <div>
-        <PayeePublicDataAvatar value={payee} tooltip="Payee" />
-      </div>
-      <div>
-        <PayeePublicDataAvatar value={payee} tooltip="Holder" />
-      </div>
-    </div>
-  )
-}
-
-function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?: React.ReactNode }) {
-  const initials = "?"
-  const backgroundColor = getDeterministicColor(value?.node_id)
-
-  const avatar = (
-    <Avatar>
-      <div
-        className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
-        style={{ backgroundColor }}
-      >
-        {initials}
-      </div>
-    </Avatar>
-  )
-  return !tooltip ? (
-    avatar
-  ) : (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger>{avatar}</TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-}
-
-function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
-  const initials = getInitials(value?.name)
-  const backgroundColor = getDeterministicColor(value?.name ?? value?.node_id)
-
-  const avatar = (
-    <Avatar>
-      <div
-        className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
-        style={{ backgroundColor }}
-      >
-        {initials}
-      </div>
-    </Avatar>
-  )
-  return !tooltip ? (
-    avatar
-  ) : (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger>{avatar}</TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-}
-function PayeePublicDataAvatar({ value, tooltip }: { value?: PayeePublicData; tooltip?: React.ReactNode }) {
-  if (!value) return <></>
-
-  if ("Ident" in value) {
-    const identData = (value as { Ident: IdentityPublicData }).Ident
-    return <IdentityPublicAvatar value={identData} tooltip={tooltip} />
-  } else if ("Anon" in value) {
-    const anonData = (value as { Anon: AnonPublicData }).Anon
-    return <AnonPublicAvatar value={anonData} tooltip={tooltip} />
-  }
-
-  return <></>
-}
-
-function IdentityPublicDataCard({ value }: { value?: IdentityPublicData }) {
-  return (
-    <div className="flex gap-0.5 items-center">
-      <div className="px-1 me-4">
-        <IdentityPublicAvatar value={value} />
-      </div>
-      <div className="flex flex-col">
-        <div className="font-bold">{value?.name}</div>
-        <div>
-          <a className="underline" href={`mailto:${value?.email}`}>
-            {value?.email}
-          </a>
-        </div>
-        <div>
-          {value?.address}, {value?.zip}, {value?.city}, {value?.country}
-        </div>
-        <div>
-          <pre>{value?.node_id}</pre>
-        </div>
-      </div>
-    </div>
-  )
-}
-function AnonPublicDataCard({ value }: { value?: AnonPublicData }) {
-  return (
-    <div className="flex gap-0.5 items-center">
-      <div className="px-1 me-4">
-        <AnonPublicAvatar value={value} />
-      </div>
-      <div className="flex flex-col">
-        <div className="font-bold">{value?.node_id}</div>
-        <div>
-          <a className="underline" href={`mailto:${value?.email}`}>
-            {value?.email}
-          </a>
-        </div>
-        <div>
-          <pre>{value?.node_id}</pre>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PayeePublicDataCard({ value }: { value?: PayeePublicData }) {
-  if (!value) return null
-
-  if ("Ident" in value) {
-    const identData = (value as { Ident: IdentityPublicData }).Ident
-    return IdentityPublicDataCard({ value: identData })
-  } else if ("Anon" in value) {
-    const anonData = (value as { Anon: AnonPublicData }).Anon
-    return AnonPublicDataCard({ value: anonData })
-  }
-
-  return <></>
-}
-
-function Quote({ value, isFetching }: { value: InfoReply; isFetching: boolean }) {
-  const shouldFetchKeyset = (value.status === "Offered" || value.status === "Accepted") && "keyset_id" in value
-
-  const keysetId = "keyset_id" in value ? value.keyset_id : ""
-  const billId = "bill" in value && "id" in value.bill ? value.bill.id : ""
-
-  const { data: keysetData } = useQuery({
-    queryKey: ["keyset", keysetId],
-    queryFn: () =>
-      keysetInfo({
-        path: { keyset_id: keysetId },
-      }),
-    enabled: shouldFetchKeyset,
-  })
-
-  const { data: paymentData } = useQuery({
-    queryKey: ["bill_id", billId],
-    queryFn: () =>
-      paymentStatus({
-        path: { bill_id: billId },
-      }),
-    enabled: !!billId,
-  })
-
-  const requestedToPay = paymentData?.data?.payment_status.requested_to_pay ?? false
-  const paymentAddress = paymentData?.data?.payment_details?.address_to_pay ?? ""
-
-  const ebillPaid = keysetData?.data && "active" in keysetData.data && keysetData.data.active === false
-  const mintingEnabled = value.status === "Accepted" && value.minting_status.status === "Enabled"
+  const quoteStatusValue = quote.status as string;
 
   return (
-    <div className="flex flex-col gap-1">
-      <Table className="my-2">
-        <TableBody>
-          <TableRow>
-            <TableCell className="font-bold">Quote ID: </TableCell>
-            <TableCell>
-              <span className="font-mono">{value.id}</span>
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-bold">Bill ID: </TableCell>
-            <TableCell>
-              <span className="font-mono">{value.bill.id}</span>
-            </TableCell>
-          </TableRow>
-          {(value.status === "Offered" || value.status === "Accepted") && "keyset_id" in value ? (
-            <TableRow>
-              <TableCell className="font-bold">Keyset ID: </TableCell>
-              <TableCell className="flex items-center gap-2">
-                <span className="font-mono">{keysetId}</span>
-                <Badge
-                  variant={ebillPaid ? "default" : "destructive"}
-                  className={ebillPaid ? "bg-green-500" : "bg-red-500"}
-                >
-                  {ebillPaid ? "Paid" : "Unpaid"}
-                </Badge>
-                <Badge
-                  variant={mintingEnabled ? "default" : "destructive"}
-                  className={mintingEnabled ? "bg-red-500" : "bg-blue-500"}
-                >
-                  {mintingEnabled ? "Disabled" : "Enabled"}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          ) : (
-            <></>
-          )}
-          {requestedToPay ? (
-            <TableRow>
-              <TableCell className="font-bold">Payment Address: </TableCell>
-              <TableCell className="flex items-center gap-2">
-                <span className="font-mono">{paymentAddress}</span>
-              </TableCell>
-            </TableRow>
-          ) : (
-            <></>
-          )}
-          <TableRow>
-            <TableCell className="font-bold">Status: </TableCell>
-            <TableCell>
-              <Badge variant={["rejected", "denied"].includes(value.status) ? "destructive" : "default"}>
-                {value.status}
-              </Badge>
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-bold">Sum: </TableCell>
-            <TableCell>{formatNumber("en", value.bill?.sum)} sat</TableCell>
-          </TableRow>
-          {(value.status === "Offered" ||
-            value.status === "Accepted" ||
-            value.status === "Rejected" ||
-            value.status === "OfferExpired") &&
-          "discounted" in value ? (
-            <TableRow>
-              <TableCell className="font-bold">Discounted: </TableCell>
-              <TableCell>{formatNumber("en", value.discounted)} crsat</TableCell>
-            </TableRow>
-          ) : (
-            <></>
-          )}
-          <TableRow>
-            <TableCell className="font-bold">Maturity date: </TableCell>
-            <TableCell>
-              {!value.bill?.maturity_date ? (
-                <>(empty)</>
-              ) : (
-                <div className="flex gap-0.5">
-                  <span>{formatDate("en", new Date(Date.parse(value.bill.maturity_date)))}</span>
-                  <span>({humanReadableDuration("en", new Date(Date.parse(value.bill.maturity_date)))})</span>
-                </div>
-              )}
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-bold">Participants: </TableCell>
-            <TableCell>
-              <ParticipantsOverviewCard
-                drawee={value.bill?.drawee}
-                drawer={value.bill?.drawer}
-                payee={value.bill?.payee}
-                holder={value.bill?.payee}
-              />
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-bold">Drawee: </TableCell>
-            <TableCell>
-              <IdentityPublicDataCard value={value.bill?.drawee} />
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-bold">Drawer: </TableCell>
-            <TableCell>
-              <IdentityPublicDataCard value={value.bill?.drawer} />
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-bold">Payee: </TableCell>
-            <TableCell>
-              <PayeePublicDataCard value={value.bill?.payee} />
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+    <div className="flex flex-col gap-4">
+      <QuoteDetailCard
+        quote={quote}
+        effectiveQuoteStatus={effectiveQuoteStatus}
+        ebillPaid={ebillPaid}
+        isMintComplete={isMintComplete}
+        isMintCompleteLoading={isMintCompleteLoading}
+        showPayment={showPayment}
+        rejectedToPay={rejectedToPay}
+        isInMempool={isInMempool}
+        requestedToPay={requestedToPay}
+        feeToken={feeToken}
+        isFeeTokenStatusPending={isFeeTokenStatusPending}
+        feeTokenStatusData={feeTokenStatusData}
+        isFeeTokenStatusError={isFeeTokenStatusError}
+      />
 
       <QuoteActions
-        value={value}
+        value={quote}
         isFetching={isFetching}
-        mintingEnabled={mintingEnabled}
-        ebillPaid={ebillPaid ?? false}
-        requestedToPay={requestedToPay ?? false}
+        ebillPaid={ebillPaid}
+        isMintComplete={isMintComplete}
+        requestedToPay={requestedToPay}
+        paymentDeadlineTs={paymentDeadlineTs}
+        timeOfRequestToPay={timeOfRequestToPay}
       />
-    </div>
-  )
-}
 
-function PageBody({ id }: { id: InfoReply["id"] }) {
-  const { data, isFetching } = useSuspenseQuery({
-    ...adminLookupQuoteOptions({
-      path: {
-        id,
-      },
-    }),
-  })
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+        <QuoteDocuments documents={documentFiles} openingDocumentName={openingDocumentName} onOpenDocument={handleOpenDocument} />
 
-  return (
-    <>
-      <div className="flex items-center gap-1">
-        {" "}
-        <LoaderIcon
-          className={cn("stroke-1 animate-spin", {
-            "animate-spin": isFetching,
-            invisible: !isFetching,
-          })}
+        <EndorsementChain
+          endorsements={endorsementsQuery.data}
+          isLoading={endorsementsQuery.isLoading}
+          issueDate={ebill?.data?.issue_date}
+          maturityDate={bill.maturity_date}
+          requestToPayTimestamp={ebill?.status?.payment?.time_of_request_to_pay ?? undefined}
+          rejectedToPayTimestamp={ebill?.status?.payment?.rejected_to_pay ? (ebill?.status?.last_block_time ?? undefined) : undefined}
+          paymentTimestamp={ebill?.status?.payment?.paid ? (ebill?.status?.last_block_time ?? undefined) : undefined}
+          acceptanceTimestamp={
+            ebill?.status?.acceptance?.accepted ? (ebill?.status?.acceptance?.time_of_request_to_accept ?? undefined) : undefined
+          }
+          rejectionTimestamp={ebill?.status?.acceptance?.rejected_to_accept ? (ebill?.status?.last_block_time ?? undefined) : undefined}
+          mintingEnabled={quoteStatusValue === "MintingEnabled"}
+          quoteOffered={quoteStatusValue === "Offered" || effectiveQuoteStatus === "Accepted" || quoteStatusValue === "MintingEnabled"}
+          offeredTimestamp={
+            "submitted" in quote
+              ? Math.floor(new Date(quote.submitted).getTime() / 1000)
+              : "tstamp" in quote
+                ? Math.floor(new Date(quote.tstamp).getTime() / 1000)
+                : undefined
+          }
         />
       </div>
-      <Quote value={data} isFetching={isFetching} />
-    </>
-  )
+    </div>
+  );
 }
 
 export default function QuotePage() {
-  const { id } = useParams<{ id: InfoReply["id"] }>()
+  const intl = useIntl();
+  const { id } = useParams();
+  const quoteId = id ?? "";
+  const location = useLocation();
+  const state = location.state as LocationState | null;
+  const fromPath = state?.from;
+  const fromKeyset = fromPath?.startsWith("/keysets/");
+  const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
 
-  if (!id) {
-    throw Error("Missing `id` param.")
-  }
+  const { data: quoteData } = useQuery({
+    ...getQuoteOptions({
+      path: { qid: quoteId },
+    }),
+    retry: 1,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status as string | undefined;
+      if (!status) {
+        return QUOTE_STATUS_POLL_INTERVAL_MS;
+      }
+
+      return QUOTE_POLLING_TERMINAL_STATUSES.has(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
+    },
+    refetchIntervalInBackground: true,
+  });
+
+  const quoteDataStatus = quoteData?.status as string | undefined;
+  const hasKeysetId = quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData;
 
   return (
     <>
       <Breadcrumbs
         parents={[
-          <>
-            <Link to="/quotes">Quotes</Link>
-          </>,
+          <BreadcrumbLink key="quotes" asChild>
+            <Link to="/quotes">
+              {intl.formatMessage({
+                id: "quotes.breadcrumb",
+                defaultMessage: "Quotes",
+              })}
+            </Link>
+          </BreadcrumbLink>,
         ]}
       >
-        {id}
+        {quoteId}
       </Breadcrumbs>
-      <PageTitle>
-        Quote <span className="font-mono">{truncateString(id, 16)}</span>
-      </PageTitle>
-      <Suspense fallback={<Loader />}>
-        <PageBody id={id} />
-      </Suspense>
+
+      <div className="flex items-center justify-between">
+        <PageTitle>
+          {intl.formatMessage({
+            id: "quotes.detail.title",
+            defaultMessage: "Quote",
+          })}{" "}
+          <span className="font-mono">{truncateString(quoteId, 16)}</span>
+        </PageTitle>
+        {fromKeyset && keysetIdFromState ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/keysets/${keysetIdFromState}`} state={{ from: `/quotes/${quoteId}` }}>
+              {intl.formatMessage({
+                id: "quotes.detail.backToKeyset",
+                defaultMessage: "Back to keyset",
+              })}{" "}
+              <span className="font-mono">{truncateString(keysetIdFromState, 16)}</span>
+            </Link>
+          </Button>
+        ) : hasKeysetId ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
+              {intl.formatMessage({
+                id: "quotes.detail.goToKeyset",
+                defaultMessage: "Go to keyset",
+              })}{" "}
+              <span className="font-mono">{truncateString(serializeKeysetId(quoteData.keyset_id), 16)}</span>
+            </Link>
+          </Button>
+        ) : null}
+      </div>
+      <PageBody id={quoteId} />
     </>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-import { API_URL } from "@/constants/api"
-import { INFO } from "@/constants/endpoints"
+import { API_URL } from "@/constants/api";
+import { INFO } from "@/constants/endpoints";
 
 const apiFetch = async <T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> => {
-  const url = `${API_URL}${endpoint}`
+  const url = `${API_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
@@ -11,43 +11,43 @@ const apiFetch = async <T = unknown>(endpoint: string, options: RequestInit = {}
       ...(options.headers || {}),
     }, */
     headers: options.headers ?? [],
-  })
+  });
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.statusText}`)
+    throw new Error(`HTTP error! status: ${response.statusText}`);
   }
 
-  const contentLength = response.headers.get("Content-Length")
+  const contentLength = response.headers.get("Content-Length");
 
   if (contentLength === "0" || response.headers.get("Content-Type")?.includes("application/json") === false) {
-    return {} as T
+    return {} as T;
   }
 
-  return response.json() as Promise<T>
-}
+  return response.json() as Promise<T>;
+};
 
 export interface InfoResponse {
-  name?: string
-  pubkey?: string
-  version?: string
-  description?: string
-  description_long?: string
+  name?: string;
+  pubkey?: string;
+  version?: string;
+  description?: string;
+  description_long?: string;
   contact?: {
-    method?: string
-    info?: string
-  }[]
-  motd?: string
-  icon_url?: string
-  urls?: string[]
-  time?: number
+    method?: string;
+    info?: string;
+  }[];
+  motd?: string;
+  icon_url?: string;
+  urls?: string[];
+  time?: number;
   nuts?: Record<
     string,
     {
-      methods?: Record<string, unknown>[]
-      disabled?: boolean
-      supported?: boolean
+      methods?: Record<string, unknown>[];
+      disabled?: boolean;
+      supported?: boolean;
     }
-  >
+  >;
 }
 
 export async function fetchInfo(): Promise<InfoResponse> {
@@ -55,25 +55,24 @@ export async function fetchInfo(): Promise<InfoResponse> {
     headers: {
       "Content-Type": "application/json",
     },
-  })
+  });
 }
 
 export interface BalancesResponse {
   bitcoin: {
-    value: string
-    currency: string
-  }
+    value: string;
+    currency: string;
+  };
   eiou: {
-    value: string
-    currency: string
-  }
+    value: string;
+    currency: string;
+  };
   debit: {
-    value: string
-    currency: string
-  }
+    value: string;
+    currency: string;
+  };
   credit: {
-    value: string
-    currency: string
-  }
+    value: string;
+    currency: string;
+  };
 }
-

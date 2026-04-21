@@ -1,0 +1,6 @@
+project_id: YOUR_PROJECT_ID
+api_token_env: CROWDIN_PERSONAL_TOKEN
+preserve_hierarchy: 1
+files:
+  - source: /src/i18n/source.json
+    translation: /src/i18n/%locale%/translation.json

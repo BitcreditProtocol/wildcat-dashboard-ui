@@ -1,26 +1,34 @@
 type RuntimeEnv = Partial<{
-  VITE_API_BASE_URL: string
-  VITE_API_MOCKING_ENABLED: string
-  VITE_KEYCLOAK_URL: string
-  VITE_KEYCLOAK_REALM: string
-  VITE_KEYCLOAK_CLIENT_ID: string
-  VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: string
-}>
+  VITE_API_BASE_URL: string;
+  VITE_API_MOCKING_ENABLED: string;
+  VITE_KEYCLOAK_URL: string;
+  VITE_KEYCLOAK_REALM: string;
+  VITE_KEYCLOAK_CLIENT_ID: string;
+  VITE_ESPLORA_BASE_URL: string;
+  VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: string;
+}>;
 
-const runtimeEnv: RuntimeEnv =
-  typeof window !== "undefined" ? (window as { __ENV__?: RuntimeEnv }).__ENV__ ?? {} : {}
+const runtimeEnv: RuntimeEnv = typeof window !== "undefined" ? ((window as { __ENV__?: RuntimeEnv }).__ENV__ ?? {}) : {};
 
-const fallbackEnv = import.meta.env as ImportMetaEnv & RuntimeEnv
+const fallbackEnv = import.meta.env as ImportMetaEnv & RuntimeEnv;
 
-const getEnvValue = <K extends keyof RuntimeEnv>(key: K): RuntimeEnv[K] | undefined => {
-  const value = runtimeEnv[key]
-
-  if (value !== undefined && value !== null && value !== "") {
-    return value
+const normalizeEnvValue = <K extends keyof RuntimeEnv>(value: RuntimeEnv[K] | undefined): RuntimeEnv[K] | undefined => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
   }
 
-  return fallbackEnv[key]
-}
+  return value;
+};
+
+const getEnvValue = <K extends keyof RuntimeEnv>(key: K): RuntimeEnv[K] | undefined => {
+  const runtimeValue = normalizeEnvValue(runtimeEnv[key]);
+
+  if (runtimeValue !== undefined) {
+    return runtimeValue;
+  }
+
+  return normalizeEnvValue(fallbackEnv[key]);
+};
 
 export const env = {
   devModeEnabled: fallbackEnv.DEV,
@@ -29,6 +37,6 @@ export const env = {
   keycloakUrl: getEnvValue("VITE_KEYCLOAK_URL")!,
   keycloakRealm: getEnvValue("VITE_KEYCLOAK_REALM")!,
   keycloakClientId: getEnvValue("VITE_KEYCLOAK_CLIENT_ID")!,
-  crowdinInContextToolingEnabled:
-    (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ?? "false") === "true",
-}
+  esploraBaseUrl: getEnvValue("VITE_ESPLORA_BASE_URL") ?? "https://esplora.minibill.tech",
+  crowdinInContextToolingEnabled: (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ?? "false") === "true",
+};

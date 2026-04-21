@@ -1,26 +1,31 @@
-import { StrictMode } from "react"
-import { createRoot } from "react-dom/client"
-import { BrowserRouter, Route, Routes } from "react-router"
-import "./index.css"
-import Layout from "./layout"
-import HomePage from "./pages/home/HomePage"
-import BalancesPage from "./pages/balances/BalancesPage"
-import SettingsPage from "./pages/settings/SettingsPage"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import InfoPage from "./pages/info/InfoPage"
-import QuotePage from "./pages/quotes/QuotePage"
-import StatusQuotePage from "./pages/quotes/StatusQuotePage"
-import { Toaster } from "./components/ui/sonner"
-import EarningsPage from "./pages/balances/EarningsPage"
-import CashFlowPage from "./pages/balances/CashFlowPage"
-import { initKeycloak } from "./keycloak"
-import "./lib/api-client"
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter, Route, Routes } from "react-router";
+import "./index.css";
+import Layout from "./layout";
+import HomePage from "./pages/home/HomePage";
+import BalancesPage from "./pages/balances/BalancesPage";
+import SettingsPage from "./pages/settings/SettingsPage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import InfoPage from "./pages/info/InfoPage";
+import QuotePage from "./pages/quotes/QuotePage";
+import StatusQuotePage from "./pages/quotes/StatusQuotePage";
+import { Toaster } from "./components/ui/sonner";
+import EarningsPage from "./pages/balances/EarningsPage";
+import CashFlowPage from "./pages/balances/CashFlowPage";
+import { initKeycloak } from "./keycloak";
+import "./lib/api-client";
+import KeysetsPage from "@/pages/keysets/KeysetsPage";
+import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
+import { LanguageProvider } from "@/context/language/LanguageProvider";
+import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
+import { ThemeProvider } from "@/context/theme/ThemeProvider";
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
 const prepare = async () => {
-  await initKeycloak()
-}
+  await initKeycloak();
+};
 
 function App() {
   return (
@@ -41,22 +46,30 @@ function App() {
             <Route path="quotes/denied" element={<StatusQuotePage status="Denied" />} />
             <Route path="quotes/rejected" element={<StatusQuotePage status="Rejected" />} />
             <Route path="quotes/:id" element={<QuotePage />} />
+            <Route path="keysets" element={<KeysetsPage />} />
+            <Route path="keysets/:keysetId" element={<KeysetDetailPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="info" element={<InfoPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
-  )
+  );
 }
 
 void prepare().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <App />
-      <Toaster />
-    </StrictMode>,
-  )
-})
+      <ThemeProvider>
+        <LanguageProvider>
+          <PreferencesProvider>
+            <App />
+            <Toaster />
+          </PreferencesProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </StrictMode>
+  );
+});
 
-export { App }
+export { App };
