@@ -50,7 +50,7 @@ jobs:
 
     steps:
       - name: Checkout ${{ github.ref_name }}
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
@@ -66,7 +66,7 @@ jobs:
           echo "Validation successful: Running from 'dev' branch."
 
       - name: Setup Node
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
@@ -83,7 +83,7 @@ jobs:
       # DEV: manual dispatch, branch dev
       - name: Deploy ${{ github.ref_name }} to DEV of ${{ env.CLOUDFLARE_PROJECT }} project
         id: deploy-dev-dispatch
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -122,7 +122,7 @@ jobs:
 
     steps:
       - name: Checkout ${{ github.ref_name }}
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
@@ -138,7 +138,7 @@ jobs:
           echo "Validation successful: Running from tag '${{ github.ref_name }}'."
 
       - name: Setup Node
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
@@ -156,7 +156,7 @@ jobs:
       - name: Deploy ${{ github.ref_name }} to STAGING PREVIEW of ${{ env.CLOUDFLARE_PROJECT }} project
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         id: deploy-staging-preview-push-master
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -166,7 +166,7 @@ jobs:
       - name: Deploy ${{ github.ref_name }} to STAGING PROD of ${{ env.CLOUDFLARE_PROJECT }} project
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         id: deploy-staging-push-tag
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -176,7 +176,7 @@ jobs:
       - name: Deploy ${{ github.ref_name }} to STAGING PROD of ${{ env.CLOUDFLARE_PROJECT }} project
         id: deploy-staging-dispatch
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -215,7 +215,7 @@ jobs:
 
     steps:
       - name: Checkout ${{ github.ref_name }}
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
@@ -231,7 +231,7 @@ jobs:
           echo "Validation successful: Running from tag '${{ github.ref_name }}'."
 
       - name: Setup Node
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
@@ -249,7 +249,7 @@ jobs:
       - name: Deploy ${{ github.ref_name }} to PRODUCTION PREVIEW of ${{ env.CLOUDFLARE_PROJECT }} project
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         id: deploy-production-preview-push-tag
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -259,7 +259,7 @@ jobs:
       - name: Deploy ${{ github.ref_name }} to PRODUCTION PROD of ${{ env.CLOUDFLARE_PROJECT }} project
         id: deploy-production-dispatch
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
