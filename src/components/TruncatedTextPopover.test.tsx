@@ -52,7 +52,7 @@ beforeEach(() => {
     configurable: true,
     value: 0,
   });
-  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
   if (root && container) {
     act(() => {

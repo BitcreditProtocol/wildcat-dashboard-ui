@@ -2,7 +2,9 @@ import { useState, useMemo } from "react";
 import type { KeySetInfo } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
 
-type SortBy = "maturity-asc" | "maturity-desc" | "status-asc" | "status-desc" | "currency-asc" | "currency-desc";
+type SortField = "maturity" | "status" | "currency";
+type SortDirection = "asc" | "desc";
+type SortBy = `${SortField}-${SortDirection}`;
 
 export type KeysetFilter = "all" | "active" | "inactive" | "expired" | "no-expiry";
 
@@ -129,12 +131,14 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
     [filteredKeysets, sortBy]
   );
 
-  const toggleSort = (field: "maturity" | "status" | "currency") => {
+  const toggleSort = (field: SortField) => {
     if (sortBy.startsWith(field)) {
-      setSortBy(sortBy.endsWith("asc") ? (`${field}-desc` as SortBy) : (`${field}-asc` as SortBy));
-    } else {
-      setSortBy(`${field}-asc` as SortBy);
+      const nextDirection: SortDirection = sortBy.endsWith("asc") ? "desc" : "asc";
+      setSortBy(`${field}-${nextDirection}`);
+      return;
     }
+
+    setSortBy(`${field}-asc`);
   };
 
   const sortOptions = [

@@ -10,7 +10,9 @@ import { useIntl } from "react-intl";
 
 export type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "MintingEnabled";
 
-export type SortBy = "status-asc" | "status-desc" | "sum-asc" | "sum-desc" | "maturity-asc" | "maturity-desc";
+type SortField = "status" | "sum" | "maturity";
+type SortDirection = "asc" | "desc";
+export type SortBy = `${SortField}-${SortDirection}`;
 
 export type QuickFilter = "all" | "requested-to-pay" | "ready-to-request-to-pay" | "active-fee-token" | "maturity-today";
 
@@ -378,12 +380,14 @@ export function useQuoteList(status?: QuoteStatus) {
     }
   });
 
-  const toggleSort = (field: "status" | "sum" | "maturity") => {
+  const toggleSort = (field: SortField) => {
     if (sortBy.startsWith(field)) {
-      setSortBy(sortBy.endsWith("asc") ? (`${field}-desc` as SortBy) : (`${field}-asc` as SortBy));
-    } else {
-      setSortBy(`${field}-asc` as SortBy);
+      const nextDirection: SortDirection = sortBy.endsWith("asc") ? "desc" : "asc";
+      setSortBy(`${field}-${nextDirection}`);
+      return;
     }
+
+    setSortBy(`${field}-asc`);
   };
 
   const sortOptions = [
