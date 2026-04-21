@@ -16,7 +16,7 @@ import type { Endorsement, LightBillParticipant } from "@/generated/client/types
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 
 interface EndorsementChainProps {

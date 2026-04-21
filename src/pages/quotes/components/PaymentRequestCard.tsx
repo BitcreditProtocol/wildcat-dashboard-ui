@@ -1,4 +1,4 @@
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { TruncatedLinkPopover, TruncatedTextPopover } from "@bitcredit/ui-library"
 import { useIntl } from "react-intl";
 
 interface PaymentRequestCardProps {
@@ -38,9 +38,13 @@ export function PaymentRequestCard({ addressToPay, linkToPay, effectiveRequestTi
                 defaultMessage: "Link to mempool",
               })}
             </span>
-            <a href={linkToPay} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center">
-              <TruncatedTextPopover text={linkToPay} maxLength={48} className="font-mono text-sm" />
-            </a>
+            <TruncatedLinkPopover
+              href={linkToPay}
+              maxLength={48}
+              className="font-mono text-sm text-blue-600 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            />
           </div>
         )}
         {effectiveRequestTime && (

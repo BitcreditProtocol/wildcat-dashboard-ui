@@ -40,7 +40,7 @@ vi.mock("@/components/ParticipantsOverview", () => ({
   ParticipantDetail: () => <div>ParticipantDetailMock</div>,
 }));
 
-vi.mock("@/components/TruncatedTextPopover", () => ({
+vi.mock("@bitcredit/ui-library", () => ({
   TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => <span>{text}</span>,
 }));
 

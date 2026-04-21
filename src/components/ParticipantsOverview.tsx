@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getDeterministicColor, getInitials } from "@/utils/strings";
 import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from "@/generated/client/types.gen";
 import { cn } from "@/lib/utils";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { UserAnonymousIcon } from "@/components/icons/UserAnonymous";
 import type React from "react";
 import { useIntl } from "react-intl";
@@ -221,7 +221,7 @@ export function ParticipantDetail({ participant }: { participant: BillIdentParti
           </div>
           {anonData?.node_id && (
             <div className="text-xs text-muted-foreground font-mono break-all">
-              <TruncatedTextPopover text={anonData.node_id} maxLength={50} className="text-sm font-medium" as="span" showFullOnDesktop />
+              <TruncatedTextPopover text={anonData.node_id} maxLength={50} className="text-sm font-medium" as="span" />
             </div>
           )}
         </div>
@@ -255,7 +255,7 @@ export function ParticipantDetail({ participant }: { participant: BillIdentParti
           </div>
         )}
         <div className="text-xs text-muted-foreground font-mono break-all">
-          <TruncatedTextPopover text={data.node_id} maxLength={50} className="text-sm font-medium" as="span" showFullOnDesktop />
+          <TruncatedTextPopover text={data.node_id} maxLength={50} className="text-sm font-medium" as="span" />
         </div>
       </div>
     </div>

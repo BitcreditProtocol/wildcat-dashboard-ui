@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview";
 import { Currency } from "@/components/Currency";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
@@ -231,7 +231,8 @@ export function QuoteDetailCard({
                   defaultMessage: "Fee token:",
                 })}
               </span>
-              <TruncatedTextPopover text={feeToken} maxLength={64} className="font-mono text-sm" showCopyButton={true} />
+              {/* TODO: copy-button support. showCopyButton={true} */}
+              <TruncatedTextPopover text={feeToken} maxLength={64} className="font-mono text-sm" />
               <FeeTokenQRCodeModal feeToken={feeToken} />
               {isFeeTokenStatusPending ? (
                 <Badge variant="default" className="bg-gray-500">
