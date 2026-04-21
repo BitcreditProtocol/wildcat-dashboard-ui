@@ -70,9 +70,7 @@ export function MintInfoCard() {
                 ] as const
               ).map(([message, version]) => (
                 <div key={message.id} className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    {intl.formatMessage(message)}
-                  </span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{intl.formatMessage(message)}</span>
                   <span className="text-sm font-mono">{version}</span>
                 </div>
               ))}

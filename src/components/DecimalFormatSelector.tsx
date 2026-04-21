@@ -54,8 +54,7 @@ export function DecimalFormatSelector({ className }: { className?: string }) {
         <SelectContent>
           {DECIMAL_FORMATS.map((format) => (
             <SelectItem key={format.value} value={format.value}>
-              {intl.formatMessage(format.label)}{" "}
-              ({format.example})
+              {intl.formatMessage(format.label)} ({format.example})
             </SelectItem>
           ))}
         </SelectContent>
