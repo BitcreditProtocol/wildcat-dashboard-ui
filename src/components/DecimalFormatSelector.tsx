@@ -1,29 +1,31 @@
-import { useIntl } from "react-intl";
+import { defineMessages, useIntl } from "react-intl";
 import { type DecimalFormat, usePreferences } from "@/context/preferences/PreferencesContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+const decimalFormatMessages = defineMessages({
+  point: { id: "settings.decimalFormat.point", defaultMessage: "Point" },
+  comma: { id: "settings.decimalFormat.comma", defaultMessage: "Comma" },
+  space: { id: "settings.decimalFormat.space", defaultMessage: "Space" },
+});
+
 const DECIMAL_FORMATS: {
   value: DecimalFormat;
-  labelId: string;
-  defaultLabel: string;
+  label: (typeof decimalFormatMessages)[keyof typeof decimalFormatMessages];
   example: string;
 }[] = [
   {
     value: "point",
-    labelId: "settings.decimalFormat.point",
-    defaultLabel: "Point",
+    label: decimalFormatMessages.point,
     example: "1.000,00",
   },
   {
     value: "comma",
-    labelId: "settings.decimalFormat.comma",
-    defaultLabel: "Comma",
+    label: decimalFormatMessages.comma,
     example: "1,000.00",
   },
   {
     value: "space",
-    labelId: "settings.decimalFormat.space",
-    defaultLabel: "Space",
+    label: decimalFormatMessages.space,
     example: "1 000,00",
   },
 ];
@@ -52,11 +54,7 @@ export function DecimalFormatSelector({ className }: { className?: string }) {
         <SelectContent>
           {DECIMAL_FORMATS.map((format) => (
             <SelectItem key={format.value} value={format.value}>
-              {intl.formatMessage({
-                id: format.labelId,
-                defaultMessage: format.defaultLabel,
-              })}{" "}
-              ({format.example})
+              {intl.formatMessage(format.label)} ({format.example})
             </SelectItem>
           ))}
         </SelectContent>

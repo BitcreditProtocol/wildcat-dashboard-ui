@@ -253,7 +253,7 @@ export function DatePicker({
 
                 <div className="text-xs text-text-200">
                   <FormattedMessage
-                    id="Select date range"
+                    id="datePicker.selectDateRange"
                     defaultMessage="Select date range"
                     description="Header label for picking date range in datepicker form"
                   />
