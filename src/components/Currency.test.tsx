@@ -71,7 +71,14 @@ beforeEach(() => {
 
 describe("Currency", () => {
   it("renders original amount and secondary converted amount when preference differs", async () => {
-    window.localStorage.setItem("display-currency", JSON.stringify("btc"));
+    window.localStorage.setItem(
+      "user-preferences",
+      JSON.stringify({
+        theme: "system",
+        currency: "btc",
+        decimalFormat: "comma",
+      })
+    );
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -99,7 +106,14 @@ describe("Currency", () => {
   });
 
   it("renders only the primary amount when preferred currency matches source", async () => {
-    window.localStorage.setItem("display-currency", JSON.stringify("sat"));
+    window.localStorage.setItem(
+      "user-preferences",
+      JSON.stringify({
+        theme: "system",
+        currency: "sat",
+        decimalFormat: "comma",
+      })
+    );
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -129,7 +143,14 @@ describe("Currency", () => {
 
   it("falls back to primary-only output when fiat conversion rates are unavailable", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    window.localStorage.setItem("display-currency", JSON.stringify("eur"));
+    window.localStorage.setItem(
+      "user-preferences",
+      JSON.stringify({
+        theme: "system",
+        currency: "eur",
+        decimalFormat: "comma",
+      })
+    );
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({

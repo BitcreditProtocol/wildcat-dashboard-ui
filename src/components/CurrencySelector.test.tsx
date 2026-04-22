@@ -82,14 +82,6 @@ describe("CurrencySelector", () => {
 
     expect(select?.value).toBe("sat");
 
-    act(() => {
-      select?.dispatchEvent(
-        new Event("change", {
-          bubbles: true,
-        })
-      );
-    });
-
     if (select) {
       select.value = "eur";
       act(() => {
@@ -97,6 +89,12 @@ describe("CurrencySelector", () => {
       });
     }
 
-    expect(storageData["display-currency"]).toBe(JSON.stringify("eur"));
+    expect(storageData["user-preferences"]).toBe(
+      JSON.stringify({
+        theme: "system",
+        currency: "eur",
+        decimalFormat: "comma",
+      })
+    );
   });
 });

@@ -5,7 +5,6 @@ import "./index.css";
 import Layout from "./layout";
 import HomePage from "./pages/home/HomePage";
 import BalancesPage from "./pages/balances/BalancesPage";
-import SettingsPage from "./pages/settings/SettingsPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import InfoPage from "./pages/info/InfoPage";
 import QuotePage from "./pages/quotes/QuotePage";
@@ -18,8 +17,7 @@ import "./lib/api-client";
 import KeysetsPage from "@/pages/keysets/KeysetsPage";
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
-import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
-import { ThemeProvider } from "@/context/theme/ThemeProvider";
+import { PreferencesProvider } from "@bitcredit/ui-library";
 
 const queryClient = new QueryClient();
 
@@ -48,7 +46,6 @@ function App() {
             <Route path="quotes/:id" element={<QuotePage />} />
             <Route path="keysets" element={<KeysetsPage />} />
             <Route path="keysets/:keysetId" element={<KeysetDetailPage />} />
-            <Route path="settings" element={<SettingsPage />} />
             <Route path="info" element={<InfoPage />} />
           </Route>
         </Routes>
@@ -60,14 +57,12 @@ function App() {
 void prepare().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <ThemeProvider>
-        <LanguageProvider>
-          <PreferencesProvider>
-            <App />
-            <Toaster />
-          </PreferencesProvider>
-        </LanguageProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <PreferencesProvider>
+          <App />
+          <Toaster />
+        </PreferencesProvider>
+      </LanguageProvider>
     </StrictMode>
   );
 });
