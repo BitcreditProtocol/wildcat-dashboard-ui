@@ -60,7 +60,7 @@ function PageBody() {
             size="sm"
           />
           <Select value={keysetFilter} onValueChange={(value) => setKeysetFilter(value as typeof keysetFilter)}>
-            <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64">
+            <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64" label="Filter">
               <SelectValue
                 placeholder={intl.formatMessage({
                   id: "keysets.filter.label",

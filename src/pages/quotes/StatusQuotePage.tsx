@@ -107,7 +107,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             size="sm"
           />
           <Select value={quickFilter} onValueChange={(value) => setQuickFilter(value as QuickFilter)}>
-            <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64">
+            <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64" label="Quick filter">
               <SelectValue
                 placeholder={intl.formatMessage({
                   id: "quotes.filter.label",
@@ -149,7 +149,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
               value={String(itemsPerPage)}
               onValueChange={(value) => setItemsPerPage(value === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_VALUE : Number(value))}
             >
-              <SelectTrigger className="h-8 w-24">
+              <SelectTrigger className="h-8 w-24" label="Items per page">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
