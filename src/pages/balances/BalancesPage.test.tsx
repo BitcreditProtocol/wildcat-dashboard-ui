@@ -117,7 +117,7 @@ beforeEach(() => {
 
 describe("BalancesPage", () => {
   it("shows secondary fiat display for sat balances and leaves custom units unchanged", () => {
-    storageData["display-currency"] = JSON.stringify("eur");
+    storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
     mockUseRates.mockReturnValue({
       data: {
         usdPerBtc: 100_000,
@@ -146,7 +146,7 @@ describe("BalancesPage", () => {
   });
 
   it("shows only original sat amounts when fiat rates are unavailable", () => {
-    storageData["display-currency"] = JSON.stringify("usd");
+    storageData["user-preferences"] = JSON.stringify({ currency: "usd" });
     mockUseRates.mockReturnValue({
       data: undefined,
     });
