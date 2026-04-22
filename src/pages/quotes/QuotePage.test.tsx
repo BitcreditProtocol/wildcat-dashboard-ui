@@ -1,4 +1,5 @@
 import { act, type ReactElement } from "react";
+import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
@@ -33,9 +34,17 @@ const { mockClientGet } = vi.hoisted(() => ({
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const mockUseMutation = vi.fn<() => MutationResult>();
 
-vi.mock("sonner", () => ({
-  toast: { error: vi.fn() },
-}));
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
+  return {
+    ...actual,
+    toast: vi.fn(() => ({
+      id: "toast-id",
+      dismiss: vi.fn(),
+      update: vi.fn(),
+    })),
+  };
+});
 
 vi.mock("./QuoteActions", () => ({
   QuoteActions: () => <div>QuoteActionsMock</div>,
@@ -99,13 +108,15 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 
 function renderPage(entry: string | { pathname: string; state?: Record<string, unknown> }): HTMLDivElement {
   return renderIntoDom(
-    <IntlProvider locale="en">
-      <MemoryRouter initialEntries={[entry]}>
-        <Routes>
-          <Route path="/quotes/:id" element={<QuotePage />} />
-        </Routes>
-      </MemoryRouter>
-    </IntlProvider>
+    <PreferencesProvider>
+      <IntlProvider locale="en">
+        <MemoryRouter initialEntries={[entry]}>
+          <Routes>
+            <Route path="/quotes/:id" element={<QuotePage />} />
+          </Routes>
+        </MemoryRouter>
+      </IntlProvider>
+    </PreferencesProvider>
   );
 }
 

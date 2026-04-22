@@ -1,4 +1,5 @@
 import { act, type ReactElement } from "react";
+import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
@@ -44,9 +45,17 @@ const mutateSpy =
     }) => void
   >();
 
-vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}));
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
+  return {
+    ...actual,
+    toast: vi.fn(() => ({
+      id: "toast-id",
+      dismiss: vi.fn(),
+      update: vi.fn(),
+    })),
+  };
+});
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -93,14 +102,16 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 
 function renderPage(route: string): HTMLDivElement {
   return renderIntoDom(
-    <IntlProvider locale="en">
-      <MemoryRouter initialEntries={[route]}>
-        <Routes>
-          <Route path="/keysets/:keysetId" element={<KeysetDetailPage />} />
-          <Route path="/keysets" element={<KeysetDetailPage />} />
-        </Routes>
-      </MemoryRouter>
-    </IntlProvider>
+    <PreferencesProvider>
+      <IntlProvider locale="en">
+        <MemoryRouter initialEntries={[route]}>
+          <Routes>
+            <Route path="/keysets/:keysetId" element={<KeysetDetailPage />} />
+            <Route path="/keysets" element={<KeysetDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </IntlProvider>
+    </PreferencesProvider>
   );
 }
 

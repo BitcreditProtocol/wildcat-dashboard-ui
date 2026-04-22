@@ -1,3 +1,4 @@
+import { toast } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import { EndorsementChain } from "@/components/EndorsementChain";
 import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { client } from "@/lib/api-client";
 import { QuoteDocuments } from "./QuoteDocuments";
@@ -153,15 +153,14 @@ function PageBody({ id }: { id: string }) {
         blobUrlTimerRef.current = null;
       }, 60_000);
     } catch (error) {
-      toast.error(
-        intl.formatMessage({
+      toast({
+        title: intl.formatMessage({
           id: "quotes.documents.openError",
           defaultMessage: "Failed to open document",
         }),
-        {
-          description: getApiErrorMessage(error),
-        }
-      );
+        description: getApiErrorMessage(error),
+        variant: "error",
+      });
     } finally {
       setOpeningDocumentName(null);
     }

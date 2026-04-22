@@ -10,7 +10,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import InfoPage from "./pages/info/InfoPage";
 import QuotePage from "./pages/quotes/QuotePage";
 import StatusQuotePage from "./pages/quotes/StatusQuotePage";
-import { Toaster } from "./components/ui/sonner";
 import EarningsPage from "./pages/balances/EarningsPage";
 import CashFlowPage from "./pages/balances/CashFlowPage";
 import { initKeycloak } from "./keycloak";
@@ -18,7 +17,7 @@ import "./lib/api-client";
 import KeysetsPage from "@/pages/keysets/KeysetsPage";
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
-import { PreferencesProvider } from "@bitcredit/ui-library";
+import { PreferencesProvider, Toaster } from "@bitcredit/ui-library";
 
 const queryClient = new QueryClient();
 

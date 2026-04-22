@@ -1,3 +1,4 @@
+import { toast } from "@bitcredit/ui-library";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { truncateString, formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
 import type { LightInfo } from "@/generated/client/types.gen";
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
-import { toast } from "sonner";
 import * as React from "react";
 import { HighlightText } from "@/components/ui/search";
 import { useIntl } from "react-intl";
@@ -39,31 +39,29 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
     if (detailsError) {
       e.preventDefault();
       const errorMessage = getApiErrorMessage(detailsError);
-      toast.error(
-        intl.formatMessage({
+      toast({
+        title: intl.formatMessage({
           id: "quotes.card.error.title",
           defaultMessage: "Cannot load quote",
         }),
-        {
-          description: intl.formatMessage(
-            {
-              id: "quotes.card.error.description",
-              defaultMessage: "Quote {id} is unavailable. {message}",
-            },
-            {
-              id: truncateString(quote.id, 12),
-              message:
-                errorMessage ||
-                intl.formatMessage({
-                  id: "quotes.error.tryAgain",
-                  defaultMessage: "Please try again later.",
-                }),
-            }
-          ),
-          id: `quote-error-${quote.id}`,
-          duration: 5000,
-        }
-      );
+        description: intl.formatMessage(
+          {
+            id: "quotes.card.error.description",
+            defaultMessage: "Quote {id} is unavailable. {message}",
+          },
+          {
+            id: truncateString(quote.id, 12),
+            message:
+              errorMessage ||
+              intl.formatMessage({
+                id: "quotes.error.tryAgain",
+                defaultMessage: "Please try again later.",
+              }),
+          }
+        ),
+        variant: "error",
+        duration: 5000,
+      });
     } else {
       void navigate(`/quotes/${quote.id}`);
     }

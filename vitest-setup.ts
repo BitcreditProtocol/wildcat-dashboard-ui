@@ -1,6 +1,23 @@
 import "@testing-library/jest-dom/vitest";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+let storageData: Record<string, string> = {};
+Object.defineProperty(globalThis, "localStorage", {
+  configurable: true,
+  value: {
+    getItem: (key: string) => storageData[key] ?? null,
+    setItem: (key: string, value: string) => {
+      storageData[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete storageData[key];
+    },
+    clear: () => {
+      storageData = {};
+    },
+  },
+});
+
 if (typeof window !== "undefined" && !window.matchMedia) {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,

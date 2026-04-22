@@ -1,5 +1,5 @@
+import { toast } from "@bitcredit/ui-library";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import {
   updateQuoteMutation,
   postEbillReqtopayMutation,
@@ -9,21 +9,29 @@ import {
 import type { OfferFormResult } from "./OfferFormDrawer";
 import Big from "big.js";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { useRef } from "react";
 
 export function useQuoteMutations(quoteId: string, billId: string) {
   const queryClient = useQueryClient();
+  const denyToastRef = useRef<ReturnType<typeof toast> | null>(null);
+  const offerToastRef = useRef<ReturnType<typeof toast> | null>(null);
+  const requestToPayToastRef = useRef<ReturnType<typeof toast> | null>(null);
 
   const denyQuote = useMutation({
     ...updateQuoteMutation(),
     onSettled: () => {
-      toast.dismiss(`quote-${quoteId}-deny`);
+      denyToastRef.current?.dismiss();
+      denyToastRef.current = null;
     },
     onError: (error) => {
-      toast.error(`Error while denying quote: ${getApiErrorMessage(error)}`);
+      toast({
+        title: `Error while denying quote: ${getApiErrorMessage(error)}`,
+        variant: "error",
+      });
       console.warn(error);
     },
     onSuccess: () => {
-      toast.success("Quote has been denied.");
+      toast({ title: "Quote has been denied.", variant: "success" });
       void queryClient.invalidateQueries({
         queryKey: getQuoteOptions({ path: { qid: quoteId } }).queryKey,
       });
@@ -33,14 +41,18 @@ export function useQuoteMutations(quoteId: string, billId: string) {
   const offerQuote = useMutation({
     ...updateQuoteMutation(),
     onSettled: () => {
-      toast.dismiss(`quote-${quoteId}-offer`);
+      offerToastRef.current?.dismiss();
+      offerToastRef.current = null;
     },
     onError: (error) => {
-      toast.error(`Error while offering quote: ${getApiErrorMessage(error)}`);
+      toast({
+        title: `Error while offering quote: ${getApiErrorMessage(error)}`,
+        variant: "error",
+      });
       console.warn(error);
     },
     onSuccess: () => {
-      toast.success("Quote has been offered.");
+      toast({ title: "Quote has been offered.", variant: "success" });
       void queryClient.invalidateQueries({
         queryKey: getQuoteOptions({ path: { qid: quoteId } }).queryKey,
       });
@@ -50,19 +62,24 @@ export function useQuoteMutations(quoteId: string, billId: string) {
   const requestToPayMutation = useMutation({
     ...postEbillReqtopayMutation(),
     onMutate: () => {
-      toast.loading("Requesting to pay…", {
-        id: `quote-${quoteId}-request-to-pay`,
+      requestToPayToastRef.current = toast({
+        title: "Requesting to pay…",
+        variant: "info",
       });
     },
     onSettled: () => {
-      toast.dismiss(`quote-${quoteId}-request-to-pay`);
+      requestToPayToastRef.current?.dismiss();
+      requestToPayToastRef.current = null;
     },
     onError: (error) => {
-      toast.error(`Error while requesting to pay: ${getApiErrorMessage(error)}`);
+      toast({
+        title: `Error while requesting to pay: ${getApiErrorMessage(error)}`,
+        variant: "error",
+      });
       console.warn(error);
     },
     onSuccess: () => {
-      toast.success("Payment request has been created.");
+      toast({ title: "Payment request has been created.", variant: "success" });
       void queryClient.invalidateQueries({
         queryKey: getEbillOptions({ path: { bid: billId } }).queryKey,
       });
@@ -70,7 +87,11 @@ export function useQuoteMutations(quoteId: string, billId: string) {
   });
 
   const handleDenyQuote = () => {
-    toast.loading("Denying quote…", { id: `quote-${quoteId}-deny` });
+    denyToastRef.current?.dismiss();
+    denyToastRef.current = toast({
+      title: "Denying quote…",
+      variant: "info",
+    });
     denyQuote.mutate({
       path: { qid: quoteId },
       body: { action: "Deny" },
@@ -78,7 +99,11 @@ export function useQuoteMutations(quoteId: string, billId: string) {
   };
 
   const handleOfferQuote = (result: OfferFormResult) => {
-    toast.loading("Offering quote…", { id: `quote-${quoteId}-offer` });
+    offerToastRef.current?.dismiss();
+    offerToastRef.current = toast({
+      title: "Offering quote…",
+      variant: "info",
+    });
     const net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber();
 
     offerQuote.mutate({

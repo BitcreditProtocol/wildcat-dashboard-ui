@@ -1,4 +1,5 @@
 import { act, type ReactElement } from "react";
+import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
@@ -52,9 +53,17 @@ const mockUseQueries = vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>()
 const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
 const postTokenStatusMock = vi.fn<(args: { body: { token: string } }) => Promise<{ data: { state: string } }>>();
 
-vi.mock("sonner", () => ({
-  toast: { error: vi.fn() },
-}));
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
+  return {
+    ...actual,
+    toast: vi.fn(() => ({
+      id: "toast-id",
+      dismiss: vi.fn(),
+      update: vi.fn(),
+    })),
+  };
+});
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -127,11 +136,13 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 
 function renderPage(status?: "Accepted" | "Pending"): HTMLDivElement {
   return renderIntoDom(
-    <IntlProvider locale="en">
-      <MemoryRouter>
-        <StatusQuotePage status={status} />
-      </MemoryRouter>
-    </IntlProvider>
+    <PreferencesProvider>
+      <IntlProvider locale="en">
+        <MemoryRouter>
+          <StatusQuotePage status={status} />
+        </MemoryRouter>
+      </IntlProvider>
+    </PreferencesProvider>
   );
 }
 
