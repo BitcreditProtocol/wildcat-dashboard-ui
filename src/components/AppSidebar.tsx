@@ -1,9 +1,8 @@
 import { Bitcoin, Home, Inbox, Key } from "lucide-react";
 import { useContext } from "react";
-import { Theme } from "@bitcredit/ui-library";
+import { DisplayCurrency, Theme } from "@bitcredit/ui-library";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CurrencySelector } from "@/components/CurrencySelector";
 import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
@@ -138,7 +137,7 @@ export function AppSidebar() {
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
         <div className="flex flex-col gap-4">
           <Theme />
-          <CurrencySelector className="flex flex-col gap-2" />
+          <DisplayCurrency />
           <DecimalFormatSelector className="flex flex-col gap-2" />
           <LanguageSelector />
         </div>
