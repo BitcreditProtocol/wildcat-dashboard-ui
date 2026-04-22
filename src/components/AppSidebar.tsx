@@ -1,7 +1,7 @@
 import { Bitcoin, Globe, Home, Inbox, Key, AlignVerticalJustifyCenterIcon } from "lucide-react";
 import { useContext } from "react";
 import { DecimalSeparator, DisplayCurrency, LanguagePreference, MenuOption, Separator, Theme } from "@bitcredit/ui-library";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
 // import { useKeycloak } from "../lib/keycloak-user"
@@ -121,17 +121,17 @@ export function AppSidebar() {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <SidebarSeparator className="my-2" />
+      <Separator className="bg-sidebar-border w-auto mb-2" />
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
         <div className="flex flex-col gap-4">
           <Theme />
-          <Separator className="bg-sidebar-border mx-2 w-auto" />
+          <Separator className="bg-sidebar-border w-auto" />
           <DisplayCurrency />
-          <Separator className="bg-sidebar-border mx-2 w-auto" />
+          <Separator className="bg-sidebar-border w-auto" />
           <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
             <MenuOption icon={<AlignVerticalJustifyCenterIcon className="h-5 w-5 text-muted-foreground" />} label="Decimals" defaultValue={decimalFormat} />
           </DecimalSeparator>
-          <Separator className="bg-sidebar-border mx-2 w-auto" />
+          <Separator className="bg-sidebar-border w-auto" />
           <LanguageSelector />
         </div>
       </SidebarFooter>

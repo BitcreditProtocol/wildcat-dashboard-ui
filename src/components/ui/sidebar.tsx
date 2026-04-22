@@ -8,7 +8,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -321,17 +320,6 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
   return <div data-slot="sidebar-footer" data-sidebar="footer" className={cn("flex flex-col gap-2 p-2", className)} {...props} />;
 }
 
-function SidebarSeparator({ className, ...props }: React.ComponentProps<typeof Separator>) {
-  return (
-    <Separator
-      data-slot="sidebar-separator"
-      data-sidebar="separator"
-      className={cn("bg-sidebar-border mx-2 w-auto", className)}
-      {...props}
-    />
-  );
-}
-
 function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -628,7 +616,6 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
-  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 };
