@@ -114,7 +114,6 @@ vi.mock("@/generated/client/sdk.gen", () => ({
   postTokenStatus: (args: { body: { token: string } }) => postTokenStatusMock(args),
 }));
 
-
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 

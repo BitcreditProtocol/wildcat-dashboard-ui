@@ -3,7 +3,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
-import React from "react";
 
 interface QueryOptions {
   queryKey: { _id: string }[];
