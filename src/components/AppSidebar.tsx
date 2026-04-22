@@ -121,18 +121,18 @@ export function AppSidebar() {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <Separator className="bg-sidebar-border w-auto mb-2" />
+      <Separator className="bg-divider-75 w-auto mb-2" />
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
         <div className="flex flex-col gap-4">
-          <Theme />
-          <Separator className="bg-sidebar-border w-auto" />
+          <LanguageSelector />
+          <Separator className="bg-divider-75 w-auto" />
           <DisplayCurrency />
-          <Separator className="bg-sidebar-border w-auto" />
+          <Separator className="bg-divider-75 w-auto" />
           <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
             <MenuOption icon={<AlignVerticalJustifyCenterIcon className="h-5 w-5 text-muted-foreground" />} label="Decimals" defaultValue={decimalFormat} />
           </DecimalSeparator>
-          <Separator className="bg-sidebar-border w-auto" />
-          <LanguageSelector />
+          <Separator className="bg-divider-75 w-auto" />
+          <Theme />
         </div>
       </SidebarFooter>
       {/* https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/131

@@ -441,7 +441,7 @@ export function EndorsementChain({
                       )}
                     </div>
 
-                    {index < events.length - 1 && <Separator className="my-2" />}
+                    {index < events.length - 1 && <Separator className="bg-divider-75 my-2" />}
                   </div>
                 );
               })}

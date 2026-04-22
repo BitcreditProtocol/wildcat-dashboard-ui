@@ -5,7 +5,7 @@ import { parseFloatSafe, parseIntSafe } from "@/utils/numbers";
 import { daysBetween } from "@/utils/dates";
 import { Act360 } from "@/utils/discount-util";
 import { Button } from "@bitcredit/ui-library";
-import { DrawerFooter, DrawerClose } from "./ui/drawer";
+import { DrawerFooter, DrawerClose } from "@bitcredit/ui-library";
 import { setItem, getItem } from "@/utils/local-storage"; // , removeItem
 import { useIntl } from "react-intl";
 import { useAmountFormatter } from "@/utils/amount-format";

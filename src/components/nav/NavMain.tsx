@@ -130,7 +130,7 @@ export function NavMain({
                   </SidebarMenuItem>
                 </Collapsible>
               )}
-              {index < items.length - 1 ? <Separator className="bg-sidebar-border my-1" /> : null}
+              {index < items.length - 1 ? <Separator className="bg-divider-75 my-1" /> : null}
             </Fragment>
           );
         })}
