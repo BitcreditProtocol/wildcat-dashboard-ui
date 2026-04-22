@@ -49,7 +49,7 @@ vi.mock("@/components/ParticipantsOverview", () => ({
   ParticipantsOverviewCard: () => <div>ParticipantsOverviewMock</div>,
 }));
 
-vi.mock("@/components/ui/search", () => ({
+vi.mock("@/components/ui/highlight-text", () => ({
   HighlightText: ({ text }: { text: string }) => <span>{text}</span>,
 }));
 
@@ -108,7 +108,7 @@ beforeEach(() => {
 
 describe("QuoteItemCard", () => {
   it("renders sat primary and eur secondary amount when rates are available", () => {
-    storageData["display-currency"] = JSON.stringify("eur");
+    storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
     mockUseRates.mockReturnValue({
       data: {
         usdPerBtc: 100_000,
@@ -149,7 +149,7 @@ describe("QuoteItemCard", () => {
   });
 
   it("renders sat-only amount when fiat rates are unavailable", () => {
-    storageData["display-currency"] = JSON.stringify("usd");
+    storageData["user-preferences"] = JSON.stringify({ currency: "usd" });
     mockUseRates.mockReturnValue({
       data: undefined,
     });

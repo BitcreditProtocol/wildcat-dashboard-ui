@@ -28,43 +28,24 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   listKeysetInfosOptions: () => ({ queryKey: [{ _id: "listKeysetInfos" }] }),
 }));
 
-vi.mock("@/components/ui/search", () => ({
-  default: ({ onChange, onSearch }: { onChange?: (value: string) => void; onSearch: (value: string) => void }) => (
-    <button
-      onClick={() => {
-        onChange?.(nextSearchQuery);
-        onSearch(nextSearchQuery);
-      }}
-      type="button"
-    >
-      SearchMock
-    </button>
-  ),
-  HighlightText: ({ text }: { text: string }) => <>{text}</>,
-}));
-
-vi.mock("@/components/SortButtons", () => ({
-  SortButtons: ({
-    options,
-    onSortChange,
-  }: {
-    options: { field: "maturity" | "status" | "currency"; label: string }[];
-    onSortChange: (field: "maturity" | "status" | "currency") => void;
-  }) => (
-    <div>
-      {options.map((option) => (
-        <button key={option.field} onClick={() => onSortChange(option.field)} type="button">
-          {`sort-${option.field}`}
-        </button>
-      ))}
-    </div>
-  ),
-}));
-
-vi.mock("@/components/ui/select", () => {
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
+  const React = await vi.importActual<typeof import("react")>("react");
   const SelectContext = React.createContext<(value: string) => void>(vi.fn());
 
   return {
+    ...actual,
+    Search: ({ onChange, onSearch }: { onChange?: (value: string) => void; onSearch: (value: string) => void }) => (
+      <button
+        onClick={() => {
+          onChange?.(nextSearchQuery);
+          onSearch(nextSearchQuery);
+        }}
+        type="button"
+      >
+        SearchMock
+      </button>
+    ),
     Select: ({
       value,
       onValueChange,
@@ -91,6 +72,24 @@ vi.mock("@/components/ui/select", () => {
     },
   };
 });
+
+vi.mock("@/components/SortButtons", () => ({
+  SortButtons: ({
+    options,
+    onSortChange,
+  }: {
+    options: { field: "maturity" | "status" | "currency"; label: string }[];
+    onSortChange: (field: "maturity" | "status" | "currency") => void;
+  }) => (
+    <div>
+      {options.map((option) => (
+        <button key={option.field} onClick={() => onSortChange(option.field)} type="button">
+          {`sort-${option.field}`}
+        </button>
+      ))}
+    </div>
+  ),
+}));
 
 import KeysetsPage from "./KeysetsPage";
 

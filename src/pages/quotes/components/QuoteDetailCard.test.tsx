@@ -40,9 +40,13 @@ vi.mock("@/components/ParticipantsOverview", () => ({
   ParticipantDetail: () => <div>ParticipantDetailMock</div>,
 }));
 
-vi.mock("@bitcredit/ui-library", () => ({
-  TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => <span>{text}</span>,
-}));
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
+  return {
+    ...actual,
+    TruncatedTextPopover: ({ text }: { text: React.ReactNode }) => <span>{text}</span>,
+  };
+});
 
 vi.mock("@/components/QRCodeWithErrorBoundary", () => ({
   FeeTokenQRCodeModal: () => <div>FeeTokenQRCodeModalMock</div>,
@@ -118,7 +122,7 @@ beforeEach(() => {
 
 describe("QuoteDetailCard", () => {
   it("renders primary sat values with secondary eur conversions when rates are available", () => {
-    storageData["display-currency"] = JSON.stringify("eur");
+    storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
     mockUseRates.mockReturnValue({
       data: {
         usdPerBtc: 100_000,
@@ -153,7 +157,7 @@ describe("QuoteDetailCard", () => {
   });
 
   it("falls back to sat-only values when fiat rates are unavailable", () => {
-    storageData["display-currency"] = JSON.stringify("eur");
+    storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
     mockUseRates.mockReturnValue({
       data: undefined,
     });
