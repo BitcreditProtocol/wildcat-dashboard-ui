@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
+import "@bitcredit/ui-library/style.css";
 import "./index.css";
 import Layout from "./layout";
 import HomePage from "./pages/home/HomePage";

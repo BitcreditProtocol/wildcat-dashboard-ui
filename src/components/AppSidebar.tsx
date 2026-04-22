@@ -1,12 +1,12 @@
-import { Bitcoin, Globe, Home, Inbox, Key } from "lucide-react";
+import { Bitcoin, Globe, Home, Inbox, Key, AlignVerticalJustifyCenterIcon } from "lucide-react";
 import { useContext } from "react";
-import { DisplayCurrency, LanguagePreference, MenuOption, Theme } from "@bitcredit/ui-library";
+import { DecimalSeparator, DisplayCurrency, LanguagePreference, MenuOption, Separator, Theme } from "@bitcredit/ui-library";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar";
-import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
 // import { useKeycloak } from "../lib/keycloak-user"
 import { LanguageContext } from "@/context/language/LanguageContext";
+import { usePreferences } from "@/context/preferences/PreferencesContext";
 import { defineMessages, useIntl } from "react-intl";
 
 const navMessages = defineMessages({
@@ -114,6 +114,7 @@ function LanguageSelector() {
 
 export function AppSidebar() {
   // const { user, isLoading } = useKeycloak()
+  const { decimalFormat, setDecimalFormat } = usePreferences();
 
   return (
     <Sidebar collapsible="icon">
@@ -124,8 +125,13 @@ export function AppSidebar() {
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
         <div className="flex flex-col gap-4">
           <Theme />
+          <Separator className="bg-sidebar-border mx-2 w-auto" />
           <DisplayCurrency />
-          <DecimalFormatSelector className="flex flex-col gap-2" />
+          <Separator className="bg-sidebar-border mx-2 w-auto" />
+          <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
+            <MenuOption icon={<AlignVerticalJustifyCenterIcon className="h-5 w-5 text-muted-foreground" />} label="Decimals" defaultValue={decimalFormat} />
+          </DecimalSeparator>
+          <Separator className="bg-sidebar-border mx-2 w-auto" />
           <LanguageSelector />
         </div>
       </SidebarFooter>
