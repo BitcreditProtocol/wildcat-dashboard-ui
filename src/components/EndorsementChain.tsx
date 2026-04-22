@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 

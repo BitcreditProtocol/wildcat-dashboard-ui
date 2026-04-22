@@ -4,7 +4,7 @@ import Big from "big.js";
 import { parseFloatSafe, parseIntSafe } from "@/utils/numbers";
 import { daysBetween } from "@/utils/dates";
 import { Act360 } from "@/utils/discount-util";
-import { Button } from "./ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { DrawerFooter, DrawerClose } from "./ui/drawer";
 import { setItem, getItem } from "@/utils/local-storage"; // , removeItem
 import { useIntl } from "react-intl";

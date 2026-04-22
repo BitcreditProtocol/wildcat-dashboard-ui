@@ -4,7 +4,7 @@ import { PageTitle } from "@/components/PageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { ChartColumnIncreasingIcon } from "lucide-react";
 import { FormattedMessage } from "react-intl";
 

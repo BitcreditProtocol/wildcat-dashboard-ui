@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { Link } from "react-router";
 import type { KeySetInfo } from "@/generated/client/types.gen";
 import SearchComponent, { HighlightText } from "@/components/ui/search";

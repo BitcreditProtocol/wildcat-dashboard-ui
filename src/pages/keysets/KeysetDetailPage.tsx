@@ -4,7 +4,7 @@ import { useParams, Link, useLocation } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { truncateString } from "@/utils/strings";
 import { FormattedMessage, useIntl } from "react-intl";

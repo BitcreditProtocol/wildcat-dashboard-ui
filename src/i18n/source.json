@@ -21,7 +21,6 @@
   "copyButton.copied": "{label} copied to clipboard",
   "copyButton.defaultLabel": "Value",
   "copyButton.failed": "Failed to copy {label}",
-  "datePicker.selectDateRange": "Select date range",
   "discountForm.annualDiscount": "Annual fee",
   "discountForm.days": "Days",
   "discountForm.discountRate": "Fee rate",

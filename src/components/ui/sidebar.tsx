@@ -6,7 +6,7 @@ import { useIntl } from "react-intl";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -248,7 +248,6 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
       variant="ghost"
-      size="icon"
       className={cn("h-7 w-7", className)}
       onClick={(event) => {
         onClick?.(event);

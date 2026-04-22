@@ -1,6 +1,6 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoaderIcon } from "lucide-react";
 import { Link } from "react-router";

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { ConfirmDrawer } from "@/components/Drawers";
 import { AlertCircleIcon, LoaderIcon } from "lucide-react";
 import { CalendarModal, DatePickerButton } from "./CalendarModal";

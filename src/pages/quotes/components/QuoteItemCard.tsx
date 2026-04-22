@@ -1,7 +1,7 @@
 import { toast } from "@bitcredit/ui-library";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
