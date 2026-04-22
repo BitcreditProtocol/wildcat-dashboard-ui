@@ -1,4 +1,4 @@
-import { TruncatedLinkPopover, TruncatedTextPopover } from "@bitcredit/ui-library"
+import { TruncatedLinkPopover, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 
 interface PaymentRequestCardProps {

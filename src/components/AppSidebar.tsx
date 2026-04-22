@@ -129,7 +129,11 @@ export function AppSidebar() {
           <DisplayCurrency />
           <Separator className="bg-divider-75 w-auto" />
           <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
-            <MenuOption icon={<AlignVerticalJustifyCenterIcon className="h-5 w-5 text-muted-foreground" />} label="Decimals" defaultValue={decimalFormat} />
+            <MenuOption
+              icon={<AlignVerticalJustifyCenterIcon className="h-5 w-5 text-muted-foreground" />}
+              label="Decimals"
+              defaultValue={decimalFormat}
+            />
           </DecimalSeparator>
           <Separator className="bg-divider-75 w-auto" />
           <Theme />
