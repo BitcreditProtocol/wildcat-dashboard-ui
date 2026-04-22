@@ -1,8 +1,7 @@
-import { Bitcoin, Home, Inbox, Key } from "lucide-react";
+import { Bitcoin, Globe, Home, Inbox, Key } from "lucide-react";
 import { useContext } from "react";
-import { DisplayCurrency, Theme } from "@bitcredit/ui-library";
+import { DisplayCurrency, LanguagePreference, MenuOption, Theme } from "@bitcredit/ui-library";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
@@ -95,33 +94,21 @@ function LanguageSelector() {
   const intl = useIntl();
   const { locale, setLocale, availableLocales } = useContext(LanguageContext);
   const locales = availableLocales();
+  const currentLocaleLabel = intl.formatMessage(
+    localeMessages[locale as keyof typeof localeMessages] ?? { id: `locale.${locale}`, defaultMessage: locale }
+  );
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-        {intl.formatMessage({
+    <LanguagePreference value={locale} values={locales} onChange={setLocale}>
+      <MenuOption
+        icon={<Globe className="h-5 w-5 text-muted-foreground" />}
+        label={intl.formatMessage({
           id: "language.label",
           defaultMessage: "Language",
         })}
-      </span>
-      <Select value={locale} onValueChange={setLocale}>
-        <SelectTrigger className="h-9">
-          <SelectValue
-            placeholder={intl.formatMessage({
-              id: "language.select",
-              defaultMessage: "Select language",
-            })}
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {locales.map((loc) => (
-            <SelectItem key={loc} value={loc}>
-              {intl.formatMessage(localeMessages[loc as keyof typeof localeMessages] ?? { id: `locale.${loc}`, defaultMessage: loc })}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+        defaultValue={currentLocaleLabel}
+      />
+    </LanguagePreference>
   );
 }
 
