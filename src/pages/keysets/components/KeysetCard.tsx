@@ -1,9 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@bitcredit/ui-library";
 import { Link } from "react-router";
 import type { KeySetInfo } from "@/generated/client/types.gen";
-import SearchComponent, { HighlightText } from "@/components/ui/search";
+import { Search as SearchComponent } from "@bitcredit/ui-library";
+import { HighlightText } from "@/components/ui/highlight-text";
 import { FormattedMessage, useIntl } from "react-intl";
 
 interface KeysetCardProps {

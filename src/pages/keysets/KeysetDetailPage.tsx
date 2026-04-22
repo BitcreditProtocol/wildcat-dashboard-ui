@@ -1,8 +1,7 @@
 import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useParams, Link, useLocation } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Skeleton } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@bitcredit/ui-library";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";

@@ -1,5 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@bitcredit/ui-library";
 import { getDeterministicColor, getInitials } from "@/utils/strings";
 import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from "@/generated/client/types.gen";
 import { cn } from "@/lib/utils";

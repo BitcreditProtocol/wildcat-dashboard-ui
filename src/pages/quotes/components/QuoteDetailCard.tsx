@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@bitcredit/ui-library";
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview";
 import { Currency } from "@/components/Currency";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";

@@ -1,5 +1,5 @@
 import { toast } from "@bitcredit/ui-library";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Card, CardTitle } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
@@ -11,7 +11,7 @@ import { getQuoteStatusVariant } from "@/utils/quote-status";
 import type { LightInfo } from "@/generated/client/types.gen";
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
 import * as React from "react";
-import { HighlightText } from "@/components/ui/search";
+import { HighlightText } from "@/components/ui/highlight-text";
 import { useIntl } from "react-intl";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { Currency } from "@/components/Currency";

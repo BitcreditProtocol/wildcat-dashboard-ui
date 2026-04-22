@@ -2,7 +2,7 @@ import { toast } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
 import { Button } from "@bitcredit/ui-library";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";

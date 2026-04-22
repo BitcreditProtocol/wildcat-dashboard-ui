@@ -1,7 +1,7 @@
 import { Suspense, useState } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@bitcredit/ui-library";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Link } from "react-router";
 import { Button } from "@bitcredit/ui-library";
