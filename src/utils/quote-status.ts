@@ -1,6 +1,16 @@
 import type { BitcreditBill, InfoReplyDiscriminants } from "@/generated/client/types.gen";
 
-export type QuoteStatusVariant = "default" | "secondary" | "destructive" | "success" | "outline";
+export type QuoteStatusVariant =
+  | "default"
+  | "secondary"
+  | "destructive"
+  | "success"
+  | "pending"
+  | "processing"
+  | "info"
+  | "loading"
+  | "neutral"
+  | "outline";
 
 export type EffectiveQuoteStatus = InfoReplyDiscriminants;
 
