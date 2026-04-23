@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { useIntl } from "react-intl";
 

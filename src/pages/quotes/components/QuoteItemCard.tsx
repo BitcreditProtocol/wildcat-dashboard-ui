@@ -1,6 +1,7 @@
-import { Card, CardTitle } from "@/components/ui/card";
+import { toast } from "@bitcredit/ui-library";
+import { Card, CardTitle } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
@@ -9,9 +10,8 @@ import { truncateString, formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
 import type { LightInfo } from "@/generated/client/types.gen";
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
-import { toast } from "sonner";
 import * as React from "react";
-import { HighlightText } from "@/components/ui/search";
+import { HighlightText } from "@/components/ui/highlight-text";
 import { useIntl } from "react-intl";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { Currency } from "@/components/Currency";
@@ -39,31 +39,29 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
     if (detailsError) {
       e.preventDefault();
       const errorMessage = getApiErrorMessage(detailsError);
-      toast.error(
-        intl.formatMessage({
+      toast({
+        title: intl.formatMessage({
           id: "quotes.card.error.title",
           defaultMessage: "Cannot load quote",
         }),
-        {
-          description: intl.formatMessage(
-            {
-              id: "quotes.card.error.description",
-              defaultMessage: "Quote {id} is unavailable. {message}",
-            },
-            {
-              id: truncateString(quote.id, 12),
-              message:
-                errorMessage ||
-                intl.formatMessage({
-                  id: "quotes.error.tryAgain",
-                  defaultMessage: "Please try again later.",
-                }),
-            }
-          ),
-          id: `quote-error-${quote.id}`,
-          duration: 5000,
-        }
-      );
+        description: intl.formatMessage(
+          {
+            id: "quotes.card.error.description",
+            defaultMessage: "Quote {id} is unavailable. {message}",
+          },
+          {
+            id: truncateString(quote.id, 12),
+            message:
+              errorMessage ||
+              intl.formatMessage({
+                id: "quotes.error.tryAgain",
+                defaultMessage: "Please try again later.",
+              }),
+          }
+        ),
+        variant: "error",
+        duration: 5000,
+      });
     } else {
       void navigate(`/quotes/${quote.id}`);
     }

@@ -1,8 +1,8 @@
 import { Component, ReactNode, ErrorInfo, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertTriangle, QrCode } from "lucide-react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@bitcredit/ui-library";
+import { Button } from "@bitcredit/ui-library";
 import { canGenerateQRCode, canGenerateQRCodeAsync, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils";
 import { useIntl } from "react-intl";
 
@@ -146,7 +146,7 @@ export function QRCodeModal({ value, size = 768, label, title, triggerLabel }: Q
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={resolvedTriggerLabel}>
+        <Button variant="ghost" className="h-8 w-8 p-0" aria-label={resolvedTriggerLabel}>
           <QrCode className="h-4 w-4" />
         </Button>
       </DrawerTrigger>

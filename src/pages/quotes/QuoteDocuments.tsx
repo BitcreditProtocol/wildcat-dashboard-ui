@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useIntl } from "react-intl";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { Button } from "@bitcredit/ui-library";
+import { Card, CardContent, CardHeader, CardTitle } from "@bitcredit/ui-library";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 
 interface QuoteDocument {
   name: string;

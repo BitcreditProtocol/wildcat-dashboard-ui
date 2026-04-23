@@ -1,5 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/DatePicker/calendar";
+import { useState } from "react";
+import { Calendar, YearPicker, MonthPicker } from "@bitcredit/ui-library";
+import { Button } from "@bitcredit/ui-library";
 import { CalendarIcon } from "lucide-react";
 import { addDays, isAfter, isBefore, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -37,11 +38,14 @@ export function CalendarModal({
 }: CalendarModalProps) {
   const intl = useIntl();
   const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [month, setMonth] = useState<Date>(draftDate ?? selectedDate ?? minDate ?? new Date());
+
   const fallbackMin = addDays(new Date(Date.now()), 1);
   const minDay = toUtcStartOfDay(minDate ?? fallbackMin);
   const maxDay = maxDate ? toUtcEndOfDay(maxDate) : null;
   const disabled = (date: Date) => isBefore(date, minDay) || (maxDay ? isAfter(date, maxDay) : false);
-  const displayMonth = draftDate ?? selectedDate ?? minDate ?? new Date();
 
   return (
     <>
@@ -55,7 +59,7 @@ export function CalendarModal({
 
       <div
         className={cn(
-          "fixed bottom-0 z-40 left-0 right-0 w-full bg-white dark:bg-gray-900 transition-transform duration-300 ease-in-out rounded-t-2xl",
+          "fixed bottom-0 z-40 left-0 right-0 w-full bg-elevation-200 transition-transform duration-300 ease-in-out rounded-t-2xl",
           isOpen ? "translate-y-0" : "translate-y-full"
         )}
       >
@@ -67,25 +71,47 @@ export function CalendarModal({
             <div className="text-xs text-text-200">{title}</div>
             <div className="text-base">{draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}</div>
 
-            <Calendar
-              mode="single"
-              month={displayMonth}
-              minDate={minDate}
-              selected={{ from: draftDate ?? selectedDate }}
-              onSelect={(range) => {
-                if (range?.from) {
-                  onDateChange(range.from);
-                }
-              }}
-              disabled={disabled}
-              modifiers={{
-                saved: (d) => !!selectedDate && isSameDay(d, selectedDate),
-              }}
-              modifiersClassNames={{
-                saved:
-                  "relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
-              }}
-            />
+            {showYearPicker ? (
+              <YearPicker
+                value={month}
+                onChange={(newDate) => {
+                  setMonth(newDate);
+                  setShowYearPicker(false);
+                  setShowMonthPicker(true);
+                }}
+                onCaptionLabelClicked={() => setShowYearPicker(false)}
+              />
+            ) : showMonthPicker ? (
+              <MonthPicker
+                value={month}
+                onChange={(newDate) => {
+                  setMonth(newDate);
+                  setShowMonthPicker(false);
+                }}
+                onCaptionLabelClicked={() => setShowMonthPicker(false)}
+              />
+            ) : (
+              <Calendar
+                mode="single"
+                month={month}
+                selected={{ from: draftDate ?? selectedDate }}
+                onCaptionLabelClicked={() => setShowYearPicker(true)}
+                onSelect={(_range, selectedDay) => {
+                  if (selectedDay) {
+                    onDateChange(selectedDay);
+                  }
+                }}
+                disabled={disabled}
+                isFutureNavigationDisabled={false}
+                modifiers={{
+                  saved: (d) => !!selectedDate && isSameDay(d, selectedDate),
+                }}
+                modifiersClassNames={{
+                  saved:
+                    "relative after:content-[''] after:absolute after:left-1/2 after:-translate-x-1/2 after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-text-300/60",
+                }}
+              />
+            )}
 
             <div className="flex gap-2 items-center mt-auto">
               <Button className="w-full border-text-300 max-w-sm" variant="outline" size="sm" type="button" onClick={onCancel}>

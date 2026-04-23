@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton } from "@bitcredit/ui-library";
 import {
   ChevronDown,
   ChevronUp,
@@ -13,10 +13,8 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { Button } from "@bitcredit/ui-library";
+import { Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 
 interface EndorsementChainProps {
@@ -442,7 +440,7 @@ export function EndorsementChain({
                       )}
                     </div>
 
-                    {index < events.length - 1 && <Separator className="my-2" />}
+                    {index < events.length - 1 && <Separator className="bg-divider-75 my-2" />}
                   </div>
                 );
               })}

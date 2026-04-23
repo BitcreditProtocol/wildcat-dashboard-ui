@@ -3,9 +3,8 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useQuery } from "@tanstack/react-query";
 import { listKeysetInfosOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
-import SearchComponent from "@/components/ui/search";
+import { Search as SearchComponent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
 import { SortButtons } from "@/components/SortButtons";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
 import { KeysetCard } from "@/pages/keysets/components/KeysetCard";
 import { useKeysetFiltering } from "@/hooks/use-keyset-filtering";
@@ -61,7 +60,7 @@ function PageBody() {
             size="sm"
           />
           <Select value={keysetFilter} onValueChange={(value) => setKeysetFilter(value as typeof keysetFilter)}>
-            <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64">
+            <SelectTrigger className="h-11 w-full sm:min-w-0 sm:max-w-64" label="">
               <SelectValue
                 placeholder={intl.formatMessage({
                   id: "keysets.filter.label",

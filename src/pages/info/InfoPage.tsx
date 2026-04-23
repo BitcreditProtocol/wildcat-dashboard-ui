@@ -1,6 +1,6 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@bitcredit/ui-library";
 import { fetchInfo } from "@/lib/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";

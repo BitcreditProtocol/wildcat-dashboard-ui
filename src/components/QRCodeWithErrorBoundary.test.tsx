@@ -18,13 +18,17 @@ vi.mock("@/utils/qrCodeUtils", () => ({
   canGenerateQRCodeAsync: (value: string) => mockCanGenerateQRCodeAsync(value),
 }));
 
-vi.mock("@/components/ui/drawer", () => ({
-  Drawer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DrawerTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DrawerContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DrawerHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DrawerTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
+  return {
+    ...actual,
+    Drawer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DrawerTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DrawerContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DrawerHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DrawerTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  };
+});
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;

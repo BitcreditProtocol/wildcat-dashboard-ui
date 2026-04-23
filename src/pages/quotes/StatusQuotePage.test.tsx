@@ -1,4 +1,5 @@
 import { act, type ReactElement } from "react";
+import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
@@ -52,37 +53,18 @@ const mockUseQueries = vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>()
 const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
 const postTokenStatusMock = vi.fn<(args: { body: { token: string } }) => Promise<{ data: { state: string } }>>();
 
-vi.mock("sonner", () => ({
-  toast: { error: vi.fn() },
-}));
-
-vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
-  return {
-    ...actual,
-    useQuery: (options: GetQuoteQueryOptions) => mockUseQuery(options),
-    useInfiniteQuery: () => mockUseInfiniteQuery(),
-    useQueries: (args: UseQueriesArgs) => mockUseQueries(args),
-  };
-});
-
-vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
-  listQuotesInfiniteOptions: () => ({ queryKey: [{ _id: "listQuotes" }] }),
-  listEbillsOptions: () => ({ queryKey: [{ _id: "listEbills" }] }),
-  getQuoteOptions: ({ path }: { path: { qid: string } }) => ({
-    queryKey: [{ _id: "getQuote", path }],
-  }),
-}));
-
-vi.mock("@/generated/client/sdk.gen", () => ({
-  postTokenStatus: (args: { body: { token: string } }) => postTokenStatusMock(args),
-}));
-
-vi.mock("@/components/ui/select", async () => {
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
   const React = await vi.importActual<typeof import("react")>("react");
   const SelectContext = React.createContext<(value: string) => void>(vi.fn());
 
   return {
+    ...actual,
+    toast: vi.fn(() => ({
+      id: "toast-id",
+      dismiss: vi.fn(),
+      update: vi.fn(),
+    })),
     Select: ({
       value,
       onValueChange,
@@ -110,6 +92,28 @@ vi.mock("@/components/ui/select", async () => {
   };
 });
 
+vi.mock("@tanstack/react-query", async () => {
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  return {
+    ...actual,
+    useQuery: (options: GetQuoteQueryOptions) => mockUseQuery(options),
+    useInfiniteQuery: () => mockUseInfiniteQuery(),
+    useQueries: (args: UseQueriesArgs) => mockUseQueries(args),
+  };
+});
+
+vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
+  listQuotesInfiniteOptions: () => ({ queryKey: [{ _id: "listQuotes" }] }),
+  listEbillsOptions: () => ({ queryKey: [{ _id: "listEbills" }] }),
+  getQuoteOptions: ({ path }: { path: { qid: string } }) => ({
+    queryKey: [{ _id: "getQuote", path }],
+  }),
+}));
+
+vi.mock("@/generated/client/sdk.gen", () => ({
+  postTokenStatus: (args: { body: { token: string } }) => postTokenStatusMock(args),
+}));
+
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
@@ -127,11 +131,13 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 
 function renderPage(status?: "Accepted" | "Pending"): HTMLDivElement {
   return renderIntoDom(
-    <IntlProvider locale="en">
-      <MemoryRouter>
-        <StatusQuotePage status={status} />
-      </MemoryRouter>
-    </IntlProvider>
+    <PreferencesProvider>
+      <IntlProvider locale="en">
+        <MemoryRouter>
+          <StatusQuotePage status={status} />
+        </MemoryRouter>
+      </IntlProvider>
+    </PreferencesProvider>
   );
 }
 

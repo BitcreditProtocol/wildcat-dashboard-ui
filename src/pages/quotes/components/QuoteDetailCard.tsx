@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@bitcredit/ui-library";
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview";
 import { Currency } from "@/components/Currency";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
@@ -98,14 +98,14 @@ export function QuoteDetailCard({
                   })}
                 </span>
                 {isMintCompleteLoading ? (
-                  <Badge variant="default" className="bg-yellow-500">
+                  <Badge variant="pending">
                     {intl.formatMessage({
                       id: "quotes.redemption.pending",
                       defaultMessage: "Pending",
                     })}
                   </Badge>
                 ) : (
-                  <Badge variant="default" className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}>
+                  <Badge variant={isMintComplete ? "success" : "pending"}>
                     {isMintComplete
                       ? intl.formatMessage({
                           id: "quotes.redemption.complete",
@@ -140,35 +140,35 @@ export function QuoteDetailCard({
                   })}
                 </span>
                 {ebillPaid ? (
-                  <Badge variant="default" className="bg-green-600">
+                  <Badge variant="success">
                     {intl.formatMessage({
                       id: "quotes.payment.paid",
                       defaultMessage: "Paid",
                     })}
                   </Badge>
                 ) : rejectedToPay ? (
-                  <Badge variant="destructive" className="bg-red-600">
+                  <Badge variant="destructive">
                     {intl.formatMessage({
                       id: "quotes.payment.rejected",
                       defaultMessage: "Rejected to pay",
                     })}
                   </Badge>
                 ) : isInMempool ? (
-                  <Badge variant="default" className="bg-orange-500">
+                  <Badge variant="processing">
                     {intl.formatMessage({
                       id: "quotes.payment.inMempool",
                       defaultMessage: "In mempool",
                     })}
                   </Badge>
                 ) : !requestedToPay ? (
-                  <Badge variant="secondary" className="border border-border">
+                  <Badge variant="neutral">
                     {intl.formatMessage({
                       id: "quotes.payment.notRequested",
                       defaultMessage: "Not requested",
                     })}
                   </Badge>
                 ) : (
-                  <Badge variant="default" className="bg-blue-500">
+                  <Badge variant="info">
                     {intl.formatMessage({
                       id: "quotes.payment.requested",
                       defaultMessage: "Requested",
@@ -231,38 +231,38 @@ export function QuoteDetailCard({
                   defaultMessage: "Fee token:",
                 })}
               </span>
-              <TruncatedTextPopover text={feeToken} maxLength={64} className="font-mono text-sm" showCopyButton={true} />
+              <TruncatedTextPopover text={feeToken} maxLength={64} showCopyButton={true} className="font-mono text-sm" />
               <FeeTokenQRCodeModal feeToken={feeToken} />
               {isFeeTokenStatusPending ? (
-                <Badge variant="default" className="bg-gray-500">
+                <Badge variant="loading">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.checking",
                     defaultMessage: "Checking...",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state === "Spent" ? (
-                <Badge variant="destructive" className="bg-red-600">
+                <Badge variant="destructive">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.spent",
                     defaultMessage: "Spent",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state === "Unspent" ? (
-                <Badge variant="default" className="bg-green-600">
+                <Badge variant="success">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.active",
                     defaultMessage: "Active",
                   })}
                 </Badge>
               ) : isFeeTokenStatusError ? (
-                <Badge variant="destructive" className="bg-red-600">
+                <Badge variant="destructive">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.error",
                     defaultMessage: "Error",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state ? (
-                <Badge variant="secondary" className="border border-border">
+                <Badge variant="neutral">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.unknown",
                     defaultMessage: "Unknown",

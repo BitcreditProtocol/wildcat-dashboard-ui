@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useIntl } from "react-intl";
-import { HighlightText } from "@/components/ui/search";
+import { HighlightText } from "@/components/ui/highlight-text";
 import { cn } from "@/lib/utils";
 import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
 import { convertAmount, formatAmountNumber, getLocaleForFormat } from "@/lib/currency";

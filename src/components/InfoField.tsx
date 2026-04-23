@@ -1,4 +1,4 @@
-import { CopyButton } from "@/components/CopyButton";
+import { CopyToClipboardButton } from "@bitcredit/ui-library";
 import type { ReactNode } from "react";
 
 interface InfoFieldProps {
@@ -13,7 +13,7 @@ export function InfoField({ label, value, mono, copyLabel }: InfoFieldProps) {
     <div className="flex flex-col gap-1">
       <div className="flex items-center">
         <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{label}</span>
-        {copyLabel && <CopyButton value={value} label={copyLabel} />}
+        {copyLabel && <>{copyLabel && <CopyToClipboardButton value={value} label={copyLabel} />}</>}
       </div>
       {mono ? (
         <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">{value}</span>

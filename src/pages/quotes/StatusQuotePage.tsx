@@ -1,7 +1,7 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@bitcredit/ui-library";
+import { Skeleton, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
 import { LoaderIcon } from "lucide-react";
 import { Link } from "react-router";
 import { formatStatusLabel } from "@/utils/strings";
@@ -9,8 +9,7 @@ import { cn } from "@/lib/utils";
 import { useIntl } from "react-intl";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { SortButtons } from "@/components/SortButtons";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import SearchComponent from "@/components/ui/search";
+import { Search as SearchComponent } from "@bitcredit/ui-library";
 import { useQuoteList, PAGE_SIZE_OPTIONS, ALL_PAGE_SIZE_VALUE } from "@/hooks/use-quote-list";
 import type { QuoteStatus, QuickFilter } from "@/hooks/use-quote-list";
 import { QuoteItemCard } from "./components/QuoteItemCard";
@@ -108,7 +107,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             size="sm"
           />
           <Select value={quickFilter} onValueChange={(value) => setQuickFilter(value as QuickFilter)}>
-            <SelectTrigger className="h-11 w-full sm:w-1/3 sm:min-w-0 sm:max-w-64">
+            <SelectTrigger className="h-11 w-full sm:min-w-0 sm:max-w-64" label="">
               <SelectValue
                 placeholder={intl.formatMessage({
                   id: "quotes.filter.label",
@@ -150,7 +149,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
               value={String(itemsPerPage)}
               onValueChange={(value) => setItemsPerPage(value === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_VALUE : Number(value))}
             >
-              <SelectTrigger className="h-8 w-24">
+              <SelectTrigger className="h-8 w-24" label="">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import type { Id } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
 
