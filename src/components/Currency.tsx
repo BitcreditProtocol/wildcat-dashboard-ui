@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useContext, useMemo } from "react";
 import { useIntl } from "react-intl";
 import { HighlightText } from "@/components/ui/highlight-text";
-import { cn } from "@/lib/utils";
+import { cn, useRates } from "@bitcredit/ui-library";
+import { QueryClientContext } from "@tanstack/react-query";
 import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
-import { convertAmount, formatAmountNumber, getLocaleForFormat } from "@/lib/currency";
-import { useRates } from "@/hooks/useRates";
+import { convertAmount, formatAmountNumber, getLocaleForFormat, type Rates } from "@/lib/currency";
 
 export interface CurrencyProps {
   value: number;
@@ -17,7 +17,22 @@ export interface CurrencyProps {
   secondaryClassName?: string;
 }
 
-export function Currency({
+export function Currency({ ...props }: CurrencyProps) {
+  const queryClient = useContext(QueryClientContext);
+
+  if (!queryClient) {
+    return <CurrencyBody {...props} rates={undefined} />;
+  }
+
+  return <CurrencyWithRates {...props} />;
+}
+
+function CurrencyWithRates(props: CurrencyProps) {
+  const { data: ratesData } = useRates();
+  return <CurrencyBody {...props} rates={ratesData ?? undefined} />;
+}
+
+function CurrencyBody({
   value,
   sourceCurrency = "sat",
   currency,
@@ -26,11 +41,10 @@ export function Currency({
   amountClassName,
   currencyClassName,
   secondaryClassName,
-}: CurrencyProps) {
+  rates,
+}: CurrencyProps & { rates?: Rates }) {
   const intl = useIntl();
   const { currency: preferredCurrency, decimalFormat } = usePreferences();
-  const { data: ratesData } = useRates();
-  const rates = ratesData ?? undefined;
   const resolvedCurrency = currency ?? preferredCurrency;
   const locale = getLocaleForFormat(intl.locale, decimalFormat);
 

@@ -1,13 +1,26 @@
 import { PropsWithChildren } from "react";
+import { Heading } from "@bitcredit/ui-library";
 
 export function H1({ children }: PropsWithChildren<unknown>) {
-  return <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-6 pt-4">{children}</h1>;
+  return (
+    <Heading as="h1" variant="page" className="mb-6 pt-4">
+      {children}
+    </Heading>
+  );
 }
 
 export function H2({ children }: PropsWithChildren<unknown>) {
-  return <h2 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-6 pt-4">{children}</h2>;
+  return (
+    <Heading as="h2" variant="section" className="mb-6 pt-4">
+      {children}
+    </Heading>
+  );
 }
 
 export function H3({ children }: PropsWithChildren<unknown>) {
-  return <h3 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">{children}</h3>;
+  return (
+    <Heading as="h3" variant="sub">
+      {children}
+    </Heading>
+  );
 }

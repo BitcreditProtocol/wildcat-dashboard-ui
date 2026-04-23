@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useIntl } from "react-intl";
-import { Button } from "@bitcredit/ui-library";
+import { AppIcon, Button } from "@bitcredit/ui-library";
 import { Card, CardContent, CardHeader, CardTitle } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 
@@ -58,7 +58,7 @@ export function QuoteDocuments({ documents, openingDocumentName, onOpenDocument 
                     defaultMessage: "Show documents",
                   })}
             </span>
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isExpanded ? <AppIcon icon={ChevronUp} size="sm" /> : <AppIcon icon={ChevronDown} size="sm" />}
           </span>
         </button>
       </CardHeader>

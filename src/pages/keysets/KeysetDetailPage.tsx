@@ -1,7 +1,7 @@
 import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useParams, Link, useLocation } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Skeleton } from "@bitcredit/ui-library";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Heading, Skeleton } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@bitcredit/ui-library";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
@@ -121,13 +121,13 @@ function PageBody({ keysetId }: { keysetId: string }) {
             <Skeleton className="h-20 w-full" />
           ) : matchingQuotes.length > 0 ? (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold">
+              <Heading as="h4" variant="sub">
                 <FormattedMessage
                   id="keyset.detail.allQuotes"
                   defaultMessage="All quotes ({count})"
                   values={{ count: matchingQuotes.length }}
                 />
-              </h4>
+              </Heading>
 
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-xs">

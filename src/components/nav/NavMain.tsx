@@ -1,5 +1,5 @@
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { Heading, Separator, Text } from "@bitcredit/ui-library";
+import { AppIcon, Heading, Separator, Text } from "@bitcredit/ui-library";
 import { Fragment } from "react";
 import { NavLink } from "react-router";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -15,7 +15,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import { cn } from "@bitcredit/ui-library";
 
 type NavMessageDescriptor = MessageDescriptor & { id: string };
 
@@ -59,14 +59,14 @@ export function NavMain({
                   <SidebarMenuButton asChild tooltip={title} disabled={item.disabled}>
                     {item.disabled === true ? (
                       <>
-                        {item.icon && <item.icon />}
+                        {item.icon && <AppIcon icon={item.icon} />}
                         <Text as="span" variant="titleSm">
                           {title}
                         </Text>
                       </>
                     ) : (
                       <NavLink to={item.url}>
-                        {item.icon && <item.icon />}
+                        {item.icon && <AppIcon icon={item.icon} />}
                         <Text as="span" variant="titleSm">
                           {title}
                         </Text>
@@ -80,7 +80,7 @@ export function NavMain({
                     <div className="relative flex items-center">
                       <SidebarMenuButton asChild tooltip={title} className="flex-1 pr-8">
                         <NavLink to={item.url}>
-                          {item.icon && <item.icon />}
+                          {item.icon && <AppIcon icon={item.icon} />}
                           <Text as="span" variant="titleSm">
                             {title}
                           </Text>
@@ -97,7 +97,11 @@ export function NavMain({
                             { title }
                           )}
                         >
-                          <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          <AppIcon
+                            icon={ChevronRight}
+                            size="sm"
+                            className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                          />
                         </button>
                       </CollapsibleTrigger>
                     </div>

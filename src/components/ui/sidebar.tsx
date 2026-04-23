@@ -5,7 +5,7 @@ import { PanelLeftIcon } from "lucide-react";
 import { useIntl } from "react-intl";
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { AppIcon, cn } from "@bitcredit/ui-library";
 import { Button } from "@bitcredit/ui-library";
 import { Input } from "@bitcredit/ui-library";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -254,7 +254,7 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <AppIcon icon={PanelLeftIcon} />
       <span className="sr-only">{toggleLabel}</span>
     </Button>
   );

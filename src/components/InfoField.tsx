@@ -1,4 +1,4 @@
-import { CopyToClipboardButton } from "@bitcredit/ui-library";
+import { CopyToClipboardButton, Text } from "@bitcredit/ui-library";
 import type { ReactNode } from "react";
 
 interface InfoFieldProps {
@@ -18,7 +18,7 @@ export function InfoField({ label, value, mono, copyLabel }: InfoFieldProps) {
       {mono ? (
         <span className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">{value}</span>
       ) : (
-        <span className="text-sm">{value}</span>
+        <Text variant="caption">{value}</Text>
       )}
     </div>
   );

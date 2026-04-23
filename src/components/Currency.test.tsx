@@ -33,11 +33,13 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
 }
 
 async function flush() {
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  for (let i = 0; i < 5; i++) {
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  }
 }
 
 beforeEach(() => {

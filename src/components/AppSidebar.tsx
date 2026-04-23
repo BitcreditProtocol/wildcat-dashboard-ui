@@ -1,6 +1,6 @@
 import { Bitcoin, Globe, Home, Inbox, Key, AlignVerticalJustifyCenterIcon } from "lucide-react";
 import { useContext } from "react";
-import { DecimalSeparator, DisplayCurrency, LanguagePreference, MenuOption, Separator, Theme } from "@bitcredit/ui-library";
+import { AppIcon, DecimalSeparator, DisplayCurrency, LanguagePreference, MenuOption, Separator, Theme } from "@bitcredit/ui-library";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
@@ -101,7 +101,7 @@ function LanguageSelector() {
   return (
     <LanguagePreference value={locale} values={locales} onChange={setLocale}>
       <MenuOption
-        icon={<Globe className="h-5 w-5 text-muted-foreground" />}
+        icon={<AppIcon icon={Globe} size="md" className="text-muted-foreground" />}
         label={intl.formatMessage({
           id: "language.label",
           defaultMessage: "Language",
@@ -130,7 +130,7 @@ export function AppSidebar() {
           <Separator className="bg-divider-75 w-auto" />
           <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
             <MenuOption
-              icon={<AlignVerticalJustifyCenterIcon className="h-5 w-5 text-muted-foreground" />}
+              icon={<AppIcon icon={AlignVerticalJustifyCenterIcon} size="md" className="text-muted-foreground" />}
               label="Decimals"
               defaultValue={decimalFormat}
             />
