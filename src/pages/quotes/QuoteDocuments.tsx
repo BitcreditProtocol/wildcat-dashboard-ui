@@ -1,8 +1,3 @@
-// TODO: Replace individual document rows with Attachment from @bitcredit/ui-library once it
-//       supports lazy/on-demand fetching. Currently Attachment eagerly fetches on mount which
-//       would fire N API requests when the list expands. The getFile signature also needs
-//       adaptation from Blob (current API) to { data: ArrayBuffer, content_type: string }.
-
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useIntl } from "react-intl";

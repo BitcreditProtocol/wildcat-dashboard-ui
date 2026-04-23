@@ -5,10 +5,7 @@ import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import type { BillIdentParticipant, BillParticipant, Id, InfoReply } from "@/generated/client/types.gen";
-import type { Rates } from "@/lib/currency";
 import { QuoteDetailCard } from "./QuoteDetailCard";
-
-const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
 
 const participant: BillIdentParticipant = {
   type: "Company",
@@ -30,10 +27,6 @@ const keysetId: Id = {
     V1: [1, 2, 3, 4],
   },
 };
-
-vi.mock("@/hooks/useRates", () => ({
-  useRates: () => mockUseRates(),
-}));
 
 vi.mock("@/components/ParticipantsOverview", () => ({
   ParticipantsOverviewCard: () => <div>ParticipantsOverviewMock</div>,
@@ -70,12 +63,22 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 
 function renderWithProviders(element: ReactElement): HTMLDivElement {
   return renderIntoDom(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <IntlProvider locale="en-US">
         <PreferencesProvider>{element}</PreferencesProvider>
       </IntlProvider>
     </QueryClientProvider>
   );
+}
+
+async function flush() {
+  for (let i = 0; i < 5; i++) {
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  }
 }
 
 const baseQuote: InfoReply = {
@@ -121,14 +124,23 @@ beforeEach(() => {
 });
 
 describe("QuoteDetailCard", () => {
-  it("renders primary sat values with secondary eur conversions when rates are available", () => {
+  it("renders primary sat values with secondary eur conversions when rates are available", async () => {
     storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
-    mockUseRates.mockReturnValue({
-      data: {
-        usdPerBtc: 100_000,
-        eurPerUsd: 0.9,
-      },
-    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              rates: {
+                USD: "100000",
+                EUR: "90000",
+              },
+            },
+          }),
+      })
+    );
 
     const page = renderWithProviders(
       <QuoteDetailCard
@@ -147,6 +159,8 @@ describe("QuoteDetailCard", () => {
         isFeeTokenStatusError={false}
       />
     );
+
+    await flush();
 
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
@@ -156,11 +170,17 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("18,000.00");
   });
 
-  it("falls back to sat-only values when fiat rates are unavailable", () => {
+  it("falls back to sat-only values when fiat rates are unavailable", async () => {
     storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
-    mockUseRates.mockReturnValue({
-      data: undefined,
-    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        text: () => Promise.resolve("Bad Request"),
+      })
+    );
 
     const page = renderWithProviders(
       <QuoteDetailCard
@@ -179,6 +199,8 @@ describe("QuoteDetailCard", () => {
         isFeeTokenStatusError={false}
       />
     );
+
+    await flush();
 
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
