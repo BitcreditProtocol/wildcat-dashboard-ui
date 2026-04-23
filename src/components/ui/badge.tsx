@@ -14,7 +14,7 @@ const badgeVariants = cva(
         secondary:
           "border-transparent bg-[var(--color-secondary)] text-[var(--color-secondary-foreground)] [a&]:hover:bg-[var(--color-secondary)]/90",
         destructive:
-          "border-transparent bg-[var(--color-signal-error)] text-white shado w-sm [a&]:hover:bg-[var(--color-signal-error)]/90",
+          "border-transparent bg-[var(--color-signal-error)] text-white shadow-sm [a&]:hover:bg-[var(--color-signal-error)]/90",
         success:
           "border-transparent bg-[var(--color-signal-success)] text-white shadow-sm [a&]:hover:bg-[var(--color-signal-success)]/90",
         pending:
