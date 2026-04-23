@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Calendar, YearPicker, MonthPicker } from "@bitcredit/ui-library";
+import { AppIcon, Calendar, YearPicker, MonthPicker } from "@bitcredit/ui-library";
 import { Button } from "@bitcredit/ui-library";
 import { CalendarIcon } from "lucide-react";
 import { addDays, isAfter, isBefore, isSameDay } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
 
@@ -149,7 +149,7 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
       onClick={onClick}
       className="w-full cursor-pointer flex gap-2 justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
     >
-      <CalendarIcon className="text-gray-500 dark:text-gray-400 w-5 h-5" strokeWidth={1.5} />
+      <AppIcon icon={CalendarIcon} size="md" weight="default" className="text-gray-500 dark:text-gray-400" />
       <span className="text-gray-900 dark:text-gray-100">
         {date
           ? formatDateMmmDdYyyy(date)

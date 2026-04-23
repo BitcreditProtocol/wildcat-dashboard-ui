@@ -1,7 +1,7 @@
 import { Component, ReactNode, ErrorInfo, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertTriangle, QrCode } from "lucide-react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@bitcredit/ui-library";
+import { AppIcon, Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@bitcredit/ui-library";
 import { Button } from "@bitcredit/ui-library";
 import { canGenerateQRCode, canGenerateQRCodeAsync, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils";
 import { useIntl } from "react-intl";
@@ -52,7 +52,7 @@ class QRCodeErrorBoundary extends Component<QRCodeErrorBoundaryProps, QRCodeErro
     if (this.state.hasError) {
       return (
         <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <AppIcon icon={AlertTriangle} size="sm" className="flex-shrink-0" />
           <span>{this.props.fallbackMessage}</span>
         </div>
       );
@@ -84,7 +84,7 @@ export function QRCode({ value, size = 200, label, className }: QRCodeProps) {
   if (!canGenerateQRCode(value)) {
     return (
       <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+        <AppIcon icon={AlertTriangle} size="sm" className="flex-shrink-0" />
         <span>
           {intl.formatMessage(
             {
@@ -147,7 +147,7 @@ export function QRCodeModal({ value, size = 768, label, title, triggerLabel }: Q
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0" aria-label={resolvedTriggerLabel}>
-          <QrCode className="h-4 w-4" />
+          <AppIcon icon={QrCode} size="sm" />
         </Button>
       </DrawerTrigger>
       <DrawerContent className="max-h-[90vh]">

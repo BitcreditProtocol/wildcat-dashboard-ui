@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@bitcredit/ui-library";
 import { getDeterministicColor, getInitials } from "@/utils/strings";
 import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from "@/generated/client/types.gen";
-import { cn } from "@/lib/utils";
+import { cn } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { UserAnonymousIcon } from "@/components/icons/UserAnonymous";
 import type React from "react";

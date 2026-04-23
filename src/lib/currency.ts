@@ -1,3 +1,5 @@
+// TODO: Replace with currency utilities from @bitcredit/ui-library after new release
+//       exposes convertAmount, formatAmountNumber, and getLocaleForFormat.
 import type { CurrencyCode, DecimalFormat } from "@/context/preferences/PreferencesContext";
 
 export type FiatCurrencyCode = "usd" | "eur";

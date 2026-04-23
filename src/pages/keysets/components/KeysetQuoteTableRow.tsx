@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Currency } from "@/components/Currency";
 import { ArrowRight } from "lucide-react";
+import { AppIcon } from "@bitcredit/ui-library";
 import type { BitcreditBill, EbillPaymentComplete, InfoReply, LightInfo } from "@/generated/client/types.gen";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { truncateString, formatStatusLabel } from "@/utils/strings";
@@ -116,7 +117,7 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
           state={{ from: `/keysets/${keysetId}` }}
           className="text-blue-600 hover:text-blue-800 inline-flex items-center"
         >
-          <ArrowRight className="h-4 w-4" />
+          <AppIcon icon={ArrowRight} size="sm" />
         </Link>
       </td>
     </tr>

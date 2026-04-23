@@ -2,6 +2,7 @@ import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from "lucide-react";
 import { useIntl } from "react-intl";
 
 import {
+  AppIcon,
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -58,7 +59,7 @@ export function NavUser({
                 <span className="truncate font-semibold">{tooltipLabel}</span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              <AppIcon icon={ChevronsUpDown} size="sm" className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -87,14 +88,14 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem disabled>
-                <BadgeCheck />
+                <AppIcon icon={BadgeCheck} />
                 {intl.formatMessage({
                   id: "nav.user.account",
                   defaultMessage: "Account",
                 })}
               </DropdownMenuItem>
               <DropdownMenuItem disabled>
-                <Bell />
+                <AppIcon icon={Bell} />
                 {intl.formatMessage({
                   id: "nav.user.notifications",
                   defaultMessage: "Notifications",
@@ -103,7 +104,7 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled>
-              <LogOut />
+              <AppIcon icon={LogOut} />
               {intl.formatMessage({
                 id: "nav.user.logout",
                 defaultMessage: "Log out",

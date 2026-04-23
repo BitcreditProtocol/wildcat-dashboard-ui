@@ -1,11 +1,11 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Button } from "@bitcredit/ui-library";
+import { AppIcon, Button } from "@bitcredit/ui-library";
 import { Skeleton, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
 import { LoaderIcon } from "lucide-react";
 import { Link } from "react-router";
 import { formatStatusLabel } from "@/utils/strings";
-import { cn } from "@/lib/utils";
+import { cn } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { SortButtons } from "@/components/SortButtons";
@@ -128,8 +128,10 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       </div>
 
       <div className="flex items-center justify-center">
-        <LoaderIcon
-          className={cn("stroke-1", {
+        <AppIcon
+          icon={LoaderIcon}
+          weight="thin"
+          className={cn({
             "animate-spin": (isFetching || isFetchingNextPage) && !isLoading,
             invisible: (!isFetching && !isFetchingNextPage) || isLoading,
           })}

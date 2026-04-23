@@ -1,7 +1,10 @@
+// TODO: Replace with Currency from @bitcredit/ui-library after new release adds
+//       dual-currency display, highlightQuery, amountClassName, currencyClassName,
+//       secondaryClassName, and sourceCurrency conversion support.
 import { useMemo } from "react";
 import { useIntl } from "react-intl";
 import { HighlightText } from "@/components/ui/highlight-text";
-import { cn } from "@/lib/utils";
+import { cn } from "@bitcredit/ui-library";
 import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
 import { convertAmount, formatAmountNumber, getLocaleForFormat } from "@/lib/currency";
 import { useRates } from "@/hooks/useRates";

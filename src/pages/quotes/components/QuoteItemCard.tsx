@@ -1,7 +1,7 @@
 import { toast } from "@bitcredit/ui-library";
 import { Card, CardTitle } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@bitcredit/ui-library";
+import { AppIcon, Button } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
@@ -113,7 +113,7 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
         </div>
         {isLoadingDetails && (
           <div className="text-sm text-gray-500 flex items-center gap-2">
-            <LoaderIcon className="h-4 w-4 animate-spin" />
+            <AppIcon icon={LoaderIcon} size="sm" className="animate-spin" />
             {intl.formatMessage({
               id: "quotes.card.loadingBillDetails",
               defaultMessage: "Loading bill details...",

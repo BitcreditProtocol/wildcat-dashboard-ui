@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
-import { Button } from "@bitcredit/ui-library";
+import { AppIcon, Button } from "@bitcredit/ui-library";
 import { getEbillOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen";
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer";
@@ -127,7 +127,7 @@ export function QuoteActions({
             }}
           >
             <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
-              {denyButtonLabel} {denyQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+              {denyButtonLabel} {denyQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
             </Button>
           </DenyConfirmDrawer>
         )}
@@ -146,7 +146,7 @@ export function QuoteActions({
             }}
           >
             <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
-              {offerButtonLabel} {offerQuote.isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+              {offerButtonLabel} {offerQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
             </Button>
           </OfferFormDrawer>
         )}

@@ -4,7 +4,7 @@ import { PageTitle } from "@/components/PageTitle";
 import { Skeleton } from "@bitcredit/ui-library";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Link } from "react-router";
-import { Button } from "@bitcredit/ui-library";
+import { AppIcon, Button } from "@bitcredit/ui-library";
 import { ChartColumnIncreasingIcon } from "lucide-react";
 import { FormattedMessage } from "react-intl";
 
@@ -79,7 +79,7 @@ function PageBody() {
     <div className="my-4">
       <Link to="/earnings/cashflow">
         <Button className="max-w-sm">
-          <ChartColumnIncreasingIcon />
+          <AppIcon icon={ChartColumnIncreasingIcon} />
           <FormattedMessage id="earnings.cashflow" defaultMessage="CashFlow" />
         </Button>
       </Link>
