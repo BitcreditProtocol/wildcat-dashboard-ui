@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getIdentityOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { InfoField } from "@/components/InfoField";
+import { Heading, Text } from "@bitcredit/ui-library";
 
 export function IdentityCard() {
   const intl = useIntl();
@@ -13,16 +14,16 @@ export function IdentityCard() {
 
   return (
     <div className="bg-card text-card-foreground rounded-lg border p-6">
-      <h3 className="text-lg font-semibold mb-4">
+      <Heading as="h3" variant="sub" className="mb-4">
         <FormattedMessage id="home.identity.title" defaultMessage="Identity" />
-      </h3>
+      </Heading>
       {identityData ? (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
               <FormattedMessage id="home.identity.name" defaultMessage="Name" />
             </span>
-            <span className="font-semibold text-base">{identityData.name}</span>
+            <Text variant="titleSm">{identityData.name}</Text>
           </div>
 
           {identityData.email && (
@@ -30,14 +31,16 @@ export function IdentityCard() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                 <FormattedMessage id="home.identity.email" defaultMessage="Email" />
               </span>
-              <span className="font-mono text-sm text-muted-foreground">{identityData.email}</span>
+              <Text variant="mono" monoSize="sm" className="text-muted-foreground">
+                {identityData.email}
+              </Text>
             </div>
           )}
 
           <div className="border-t pt-4 mt-4">
-            <h4 className="text-md font-semibold mb-4">
+            <Heading as="h4" variant="sub" className="mb-4">
               <FormattedMessage id="home.identity.keys" defaultMessage="Keys" />
-            </h4>
+            </Heading>
             <div className="flex flex-col gap-4">
               <InfoField
                 label={<FormattedMessage id="home.identity.nodeId" defaultMessage="Node ID" />}
@@ -71,9 +74,9 @@ export function IdentityCard() {
 
           {identityData.postal_address && (
             <div className="border-t pt-4 mt-4">
-              <h4 className="text-md font-semibold mb-4">
+              <Heading as="h4" variant="sub" className="mb-4">
                 <FormattedMessage id="home.identity.address" defaultMessage="Address" />
-              </h4>
+              </Heading>
               <div className="text-sm leading-relaxed">
                 <div className="font-medium">{identityData.postal_address.address}</div>
                 <div className="text-muted-foreground">

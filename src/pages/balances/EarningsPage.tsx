@@ -1,10 +1,9 @@
 import { Suspense, useState } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Skeleton } from "@bitcredit/ui-library";
+import { AppIcon, Button, Skeleton, Text } from "@bitcredit/ui-library";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Link } from "react-router";
-import { AppIcon, Button } from "@bitcredit/ui-library";
 import { ChartColumnIncreasingIcon } from "lucide-react";
 import { FormattedMessage } from "react-intl";
 
@@ -29,9 +28,9 @@ function Earnings() {
           <div className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">0.00 000 000 BTC</div>
         </div>
         <div className="flex justify-center gap-2">
-          <div className="scroll-m-20 tracking-tight text-sm">
+          <Text as="div" variant="caption">
             <FormattedMessage id="earnings.summary" defaultMessage="Earned during the selected timeframe" />
-          </div>
+          </Text>
         </div>
       </div>
 
@@ -65,9 +64,9 @@ function Earnings() {
       </div>
       <div className="flex flex-col justify-center gap-2 my-4 mt-8">
         <div className="flex justify-center gap-2">
-          <div className="scroll-m-20 tracking-tight text-sm">
+          <Text as="div" variant="caption">
             <FormattedMessage id="earnings.empty" defaultMessage="No accepted quotes for the selected timeframe." />
-          </div>
+          </Text>
         </div>
       </div>
     </div>
