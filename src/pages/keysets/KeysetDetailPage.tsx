@@ -131,7 +131,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
 
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-xs">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-elevation-50">
                     <tr>
                       <th className="text-left p-2 font-semibold">
                         <FormattedMessage id="keyset.detail.table.quoteId" defaultMessage="Quote ID" />

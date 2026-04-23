@@ -15,8 +15,7 @@ export function InfoField({ label, value, mono, copyLabel }: InfoFieldProps) {
         <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{label}</span>
         {copyLabel && (
           <>
-            {/* TODO: CopyToClipboardButton still lacks CopyButton features used here: label-aware success/error messaging, variant/size hooks, and optional checkmark feedback. {copyLabel && <CopyButton value={value} label={copyLabel} />} */}
-            <CopyToClipboardButton value={value} />
+            {copyLabel && <CopyToClipboardButton value={value} label={copyLabel} />}
           </>
         )}
       </div>

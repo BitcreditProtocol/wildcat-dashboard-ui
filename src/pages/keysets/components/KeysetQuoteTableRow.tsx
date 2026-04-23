@@ -55,43 +55,43 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
       <td className="p-2">
         {ebill ? (
           isPaid ? (
-            <Badge variant="default" className="bg-green-600">
+            <Badge variant="success">
               <FormattedMessage id="quotes.payment.paid" defaultMessage="Paid" />
             </Badge>
           ) : rejectedToPay ? (
-            <Badge variant="destructive" className="bg-red-600">
+            <Badge variant="destructive">
               <FormattedMessage id="quotes.payment.rejected" defaultMessage="Rejected to pay" />
             </Badge>
           ) : isInMempool ? (
-            <Badge variant="default" className="bg-orange-500">
+            <Badge variant="processing">
               <FormattedMessage id="quotes.payment.inMempool" defaultMessage="In mempool" />
             </Badge>
           ) : !requestedToPay ? (
-            <Badge variant="secondary" className="border border-border">
+            <Badge variant="neutral">
               <FormattedMessage id="quotes.payment.notRequested" defaultMessage="Not requested" />
             </Badge>
           ) : (
-            <Badge variant="default" className="bg-blue-500">
+            <Badge variant="info">
               <FormattedMessage id="quotes.payment.requested" defaultMessage="Requested" />
             </Badge>
           )
         ) : (
-          <Badge variant="secondary" className="border border-border">
+          <Badge variant="neutral">
             <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
           </Badge>
         )}
       </td>
       <td className="p-2">
         {!isPaid ? (
-          <Badge variant="secondary" className="border border-border">
+          <Badge variant="neutral">
             <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
           </Badge>
         ) : isMintLoading || !mintCompleteQuery ? (
-          <Badge variant="default" className="bg-yellow-500">
+          <Badge variant="pending">
             <FormattedMessage id="keyset.detail.table.mintPending" defaultMessage="Pending" />
           </Badge>
         ) : (
-          <Badge variant="default" className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}>
+          <Badge variant={isMintComplete ? "success" : "pending"}>
             {isMintComplete ? (
               <FormattedMessage id="keyset.detail.table.mintComplete" defaultMessage="Complete" />
             ) : (
@@ -102,7 +102,7 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
       </td>
       <td className="p-2 font-mono text-xs break-all">
         {paymentAddress ?? (
-          <Badge variant="secondary" className="border border-border">
+          <Badge variant="neutral">
             <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
           </Badge>
         )}
