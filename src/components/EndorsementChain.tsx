@@ -13,7 +13,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen";
-import { AppIcon, Button } from "@bitcredit/ui-library";
+import { AppIcon, Button, Text } from "@bitcredit/ui-library";
 import { Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 
@@ -355,7 +355,7 @@ export function EndorsementChain({
                       {/* Event Header */}
                       <div className="flex items-center gap-2">
                         <AppIcon icon={config.icon} size="sm" className={config.color} />
-                        <span className="text-sm font-semibold">{displayLabel}</span>
+                        <Text variant="label">{displayLabel}</Text>
                       </div>
 
                       {/* Timestamp */}

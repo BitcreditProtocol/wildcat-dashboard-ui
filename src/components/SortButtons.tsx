@@ -1,4 +1,4 @@
-import { AppIcon, Button } from "@bitcredit/ui-library";
+import { AppIcon, Button, Text } from "@bitcredit/ui-library";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { useIntl } from "react-intl";
 
@@ -56,12 +56,12 @@ export function SortButtons<T extends string>({ sortBy, onSortChange, options }:
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm font-medium">
+      <Text variant="label">
         {intl.formatMessage({
           id: "sortButtons.sortByLabel",
           defaultMessage: "Sort by:",
         })}
-      </span>
+      </Text>
       {options.map((option) => (
         <Button
           key={option.field}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppIcon, Button } from "@bitcredit/ui-library";
+import { AppIcon, Button, Text } from "@bitcredit/ui-library";
 import { ConfirmDrawer } from "@/components/Drawers";
 import { AlertCircleIcon, LoaderIcon } from "lucide-react";
 import { CalendarModal, DatePickerButton } from "./CalendarModal";
@@ -162,14 +162,13 @@ export function RequestToPayConfirmation({
       >
         <div className="flex flex-col gap-4 px-4 py-4">
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold">
+            <Text variant="label">
               {intl.formatMessage({
                 id: "quotes.requestToPay.deadlineLabel",
                 defaultMessage: "Payment deadline:",
               })}
-            </span>
+            </Text>
             <DatePickerButton
-              date={validUntilDate}
               onClick={() => {
                 setDraftValidUntilDate(validUntilDate);
                 onOpenChange(false);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppIcon, Calendar, YearPicker, MonthPicker } from "@bitcredit/ui-library";
+import { AppIcon, Calendar, Text, YearPicker, MonthPicker } from "@bitcredit/ui-library";
 import { Button } from "@bitcredit/ui-library";
 import { CalendarIcon } from "lucide-react";
 import { addDays, isAfter, isBefore, isSameDay } from "date-fns";
@@ -69,7 +69,9 @@ export function CalendarModal({
         >
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
-            <div className="text-base">{draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}</div>
+            <Text as="div" variant="body">
+              {draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}
+            </Text>
 
             {showYearPicker ? (
               <YearPicker
