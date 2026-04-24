@@ -11,7 +11,7 @@ interface PaymentRequestCardProps {
 export function PaymentRequestCard({ addressToPay, linkToPay, effectiveRequestTime, effectiveDeadlineTs }: PaymentRequestCardProps) {
   const intl = useIntl();
   return (
-    <div className="mt-4 p-4 bg-white rounded border">
+    <div className="mt-4 p-4 bg-elevation-200 rounded border">
       <Heading as="h2" variant="page" className="mb-3">
         {intl.formatMessage({
           id: "quotes.paymentRequest.title",
