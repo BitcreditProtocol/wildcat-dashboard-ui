@@ -3,6 +3,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
 import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
@@ -285,30 +286,48 @@ export default function QuotePage() {
 
       <div className="flex items-center justify-between">
         <PageTitle>
-          {intl.formatMessage({
-            id: "quotes.detail.title",
-            defaultMessage: "Quote",
-          })}{" "}
-          <span className="font-mono">{truncateString(quoteId, 16)}</span>
+          <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+            <span>
+              {intl.formatMessage({
+                id: "quotes.detail.title",
+                defaultMessage: "Quote",
+              })}
+            </span>
+            <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
+          </span>
         </PageTitle>
         {fromKeyset && keysetIdFromState ? (
           <Button variant="outline" size="sm" asChild>
-            <Link to={`/keysets/${keysetIdFromState}`} state={{ from: `/quotes/${quoteId}` }}>
-              {intl.formatMessage({
-                id: "quotes.detail.backToKeyset",
-                defaultMessage: "Back to keyset",
-              })}{" "}
-              <span className="font-mono">{truncateString(keysetIdFromState, 16)}</span>
+            <Link
+              to={`/keysets/${keysetIdFromState}`}
+              state={{ from: `/quotes/${quoteId}` }}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.backToKeyset",
+                  defaultMessage: "Back to keyset",
+                })}
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
             </Link>
           </Button>
         ) : hasKeysetId ? (
           <Button variant="outline" size="sm" asChild>
-            <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
-              {intl.formatMessage({
-                id: "quotes.detail.goToKeyset",
-                defaultMessage: "Go to keyset",
-              })}{" "}
-              <span className="font-mono">{truncateString(serializeKeysetId(quoteData.keyset_id), 16)}</span>
+            <Link
+              to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
+              state={{ from: `/quotes/${quoteId}` }}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.goToKeyset",
+                  defaultMessage: "Go to keyset",
+                })}
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">
+                {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
+              </span>
             </Link>
           </Button>
         ) : null}

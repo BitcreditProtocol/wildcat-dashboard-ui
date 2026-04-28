@@ -108,6 +108,13 @@ export function QuoteActions({
     id: "quotes.actions.offer.button",
     defaultMessage: "Offer",
   });
+  const showPendingActions = effectiveQuoteStatus === "Pending";
+  const showRequestToPayAction =
+    (effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
+    "keyset_id" in value &&
+    ebill &&
+    !ebillPaidEff &&
+    !requestedToPayEff;
   const { denyQuote, offerQuote, requestToPayMutation, handleDenyQuote, handleOfferQuote, handleRequestToPay } = useQuoteMutations(
     value.id,
     billId
@@ -115,59 +122,56 @@ export function QuoteActions({
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        {effectiveQuoteStatus === "Pending" && (
-          <DenyConfirmDrawer
-            title={denyTitle}
-            open={denyConfirmDrawerOpen}
-            onOpenChange={setDenyConfirmDrawerOpen}
-            onSubmit={() => {
-              handleDenyQuote();
-              setDenyConfirmDrawerOpen(false);
+      {showPendingActions || showRequestToPayAction ? (
+        <div className="flex items-center gap-2">
+          {showPendingActions && (
+            <DenyConfirmDrawer
+              title={denyTitle}
+              open={denyConfirmDrawerOpen}
+              onOpenChange={setDenyConfirmDrawerOpen}
+              onSubmit={() => {
+                handleDenyQuote();
+                setDenyConfirmDrawerOpen(false);
+              }}
+            >
+              <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
+                {denyButtonLabel} {denyQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
+              </Button>
+            </DenyConfirmDrawer>
+          )}
+
+          {showPendingActions && (
+            <OfferFormDrawer
+              title={offerTitle}
+              description={offerDescription}
+              value={value}
+              open={offerFormDrawerOpen}
+              onOpenChange={setOfferFormDrawerOpen}
+              onSubmit={(data) => {
+                setOfferFormData(data);
+                setOfferConfirmDrawerOpen(true);
+                setOfferFormDrawerOpen(false);
+              }}
+            >
+              <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
+                {offerButtonLabel} {offerQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
+              </Button>
+            </OfferFormDrawer>
+          )}
+
+          <OfferConfirmation
+            offerFormData={offerFormData}
+            open={offerConfirmDrawerOpen}
+            onOpenChange={setOfferConfirmDrawerOpen}
+            onSubmit={(finalData) => {
+              removeItem(`offer-form-${value.id}`);
+              handleOfferQuote(finalData);
+              setOfferConfirmDrawerOpen(false);
             }}
-          >
-            <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
-              {denyButtonLabel} {denyQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
-            </Button>
-          </DenyConfirmDrawer>
-        )}
+            quoteId={value.id}
+          />
 
-        {effectiveQuoteStatus === "Pending" && (
-          <OfferFormDrawer
-            title={offerTitle}
-            description={offerDescription}
-            value={value}
-            open={offerFormDrawerOpen}
-            onOpenChange={setOfferFormDrawerOpen}
-            onSubmit={(data) => {
-              setOfferFormData(data);
-              setOfferConfirmDrawerOpen(true);
-              setOfferFormDrawerOpen(false);
-            }}
-          >
-            <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
-              {offerButtonLabel} {offerQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
-            </Button>
-          </OfferFormDrawer>
-        )}
-
-        <OfferConfirmation
-          offerFormData={offerFormData}
-          open={offerConfirmDrawerOpen}
-          onOpenChange={setOfferConfirmDrawerOpen}
-          onSubmit={(finalData) => {
-            removeItem(`offer-form-${value.id}`);
-            handleOfferQuote(finalData);
-            setOfferConfirmDrawerOpen(false);
-          }}
-          quoteId={value.id}
-        />
-
-        {(effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
-          "keyset_id" in value &&
-          ebill &&
-          !ebillPaidEff &&
-          !requestedToPayEff && (
+          {showRequestToPayAction && (
             <RequestToPayConfirmation
               open={requestToPayConfirmDrawerOpen}
               onOpenChange={setRequestToPayConfirmDrawerOpen}
@@ -181,7 +185,8 @@ export function QuoteActions({
               billId={value.bill.id}
             />
           )}
-      </div>
+        </div>
+      ) : null}
 
       {requestedToPayEff && (addressToPay ?? linkToPay) && (
         <PaymentRequestCard
