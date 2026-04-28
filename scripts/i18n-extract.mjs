@@ -9,10 +9,7 @@ const repoRoot = resolve(scriptDir, "..");
 const tempOutputPath = resolve(repoRoot, "src/i18n/.source.extracted.json");
 const tempMergedOutputPath = resolve(repoRoot, "src/i18n/.source.merged.json");
 const finalOutputPath = resolve(repoRoot, "src/i18n/source.json");
-const formatjsBin = resolve(
-  repoRoot,
-  process.platform === "win32" ? "node_modules/.bin/formatjs.cmd" : "node_modules/.bin/formatjs"
-);
+const formatjsBin = resolve(repoRoot, process.platform === "win32" ? "node_modules/.bin/formatjs.cmd" : "node_modules/.bin/formatjs");
 
 if (!existsSync(formatjsBin)) {
   throw new Error(`Could not find local formatjs binary at ${formatjsBin}`);
