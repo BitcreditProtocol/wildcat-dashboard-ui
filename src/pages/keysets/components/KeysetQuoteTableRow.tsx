@@ -39,13 +39,17 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
   }
 
   return (
-    <tr key={quote.id} className="border-t hover:bg-gray-50">
-      <td className="p-2 font-mono">
-        <Link to={{ pathname: `/quotes/${quote.id}` }} state={{ from: `/keysets/${keysetId}` }} className="text-blue-600 hover:underline">
+    <tr key={quote.id} className="border-t hover:[&>td]:bg-white/5">
+      <td className="p-2 font-mono transition-colors">
+        <Link
+          to={{ pathname: `/quotes/${quote.id}` }}
+          state={{ from: `/keysets/${keysetId}` }}
+          className="text-text-300 hover:underline"
+        >
           {truncateString(quote.id, 16)}
         </Link>
       </td>
-      <td className="p-2">
+      <td className="p-2 transition-colors">
         <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
           {intl.formatMessage({
             id: `quote.status.${effectiveQuoteStatus}`,
@@ -53,7 +57,7 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
           })}
         </Badge>
       </td>
-      <td className="p-2">
+      <td className="p-2 transition-colors">
         {ebill ? (
           isPaid ? (
             <Badge variant="success">
@@ -82,7 +86,7 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
           </Badge>
         )}
       </td>
-      <td className="p-2">
+      <td className="p-2 transition-colors">
         {!isPaid ? (
           <Badge variant="neutral">
             <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
@@ -101,21 +105,21 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
           </Badge>
         )}
       </td>
-      <td className="p-2 font-mono text-xs break-all">
+      <td className="p-2 font-mono text-xs break-all transition-colors">
         {paymentAddress ?? (
           <Badge variant="neutral">
             <FormattedMessage id="keyset.detail.table.na" defaultMessage="N/A" />
           </Badge>
         )}
       </td>
-      <td className="p-2 text-right">
+      <td className="p-2 text-right transition-colors">
         <Currency value={quote.sum} sourceCurrency="sat" amountClassName="text-current" />
       </td>
-      <td className="p-2 text-right">
+      <td className="p-2 text-right transition-colors">
         <Link
           to={{ pathname: `/quotes/${quote.id}` }}
           state={{ from: `/keysets/${keysetId}` }}
-          className="text-blue-600 hover:text-blue-800 inline-flex items-center"
+          className="inline-flex items-center text-text-300 hover:text-text-300"
         >
           <AppIcon icon={ArrowRight} size="sm" />
         </Link>

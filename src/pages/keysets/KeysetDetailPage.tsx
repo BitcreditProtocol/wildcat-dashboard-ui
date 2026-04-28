@@ -1,7 +1,7 @@
 import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useParams, Link, useLocation } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Heading, Skeleton } from "@bitcredit/ui-library";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Heading, Skeleton, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@bitcredit/ui-library";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
@@ -226,24 +226,25 @@ export default function KeysetDetailPage() {
       </Breadcrumbs>
       <div className="flex items-center justify-between">
         <PageTitle>
-          <FormattedMessage
-            id="keyset.detail.title"
-            defaultMessage="Keyset {id}"
-            values={{
-              id: <span className="font-mono">{truncateString(keysetId, 16)}</span>,
-            }}
-          />
+          <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+            <span>
+              <FormattedMessage id="keyset.detail.title" defaultMessage="Keyset" />
+            </span>
+            <TruncatedTextPopover text={keysetId} maxLength={16} className="inline font-mono" as="span" />
+          </span>
         </PageTitle>
         {fromQuote && quoteId && (
           <Button variant="outline" size="sm" asChild>
-            <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }}>
-              <FormattedMessage
-                id="keyset.detail.backToQuote"
-                defaultMessage="Back to quote {id}"
-                values={{
-                  id: <span className="font-mono">{truncateString(quoteId, 16)}</span>,
-                }}
-              />
+            <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }} className="inline-flex items-center gap-1">
+              <span className="relative top-px leading-none">
+                <FormattedMessage
+                  id="keyset.detail.backToQuote"
+                  defaultMessage="Back to quote"
+                />
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">
+                {truncateString(quoteId, 16)}
+              </span>
             </Link>
           </Button>
         )}

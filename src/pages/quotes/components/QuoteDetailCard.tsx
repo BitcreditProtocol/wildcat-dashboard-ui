@@ -237,7 +237,7 @@ export function QuoteDetailCard({
                   defaultMessage: "Fee token:",
                 })}
               </Text>
-              <TruncatedTextPopover text={feeToken} maxLength={64} showCopyButton={true} className="font-mono text-sm" />
+              <TruncatedTextPopover text={feeToken} maxLength={64} showCopyButton={true} className="font-mono text-sm cursor-pointer" />
               <FeeTokenQRCodeModal feeToken={feeToken} />
               {isFeeTokenStatusPending ? (
                 <Badge variant="loading">

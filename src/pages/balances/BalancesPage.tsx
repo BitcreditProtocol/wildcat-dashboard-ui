@@ -149,13 +149,13 @@ interface BalanceDisplay {
 export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
-      <Heading as="h3" variant="page">
+      <Heading as="h3" variant="page" className="text-[#1b0f00]">
         {unit === "sat" ? (
           <Currency
             value={Number(amount)}
             sourceCurrency="sat"
             amountClassName="text-current"
-            currencyClassName="text-sm font-medium text-muted-foreground"
+            currencyClassName="text-sm font-medium text-[#6b5a45]"
           />
         ) : (
           `${amount} ${unit}`
@@ -225,9 +225,9 @@ function PageBodyWithDevSection() {
     <>
       <div className="flex flex-col gap-4 my-2">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card className="bg-indigo-100">
+          <Card className="bg-indigo-100 text-[#1b0f00]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#1b0f00]">
                 <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
               </CardTitle>
             </CardHeader>
@@ -235,9 +235,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-orange-100">
+          <Card className="bg-orange-100 text-[#1b0f00]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#1b0f00]">
                 <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
               </CardTitle>
             </CardHeader>
@@ -245,9 +245,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-purple-200">
+          <Card className="bg-purple-200 text-[#1b0f00]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#1b0f00]">
                 <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
               </CardTitle>
             </CardHeader>
@@ -255,9 +255,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-purple-400">
+          <Card className="bg-purple-400 text-[#1b0f00]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#1b0f00]">
                 <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
               </CardTitle>
             </CardHeader>
