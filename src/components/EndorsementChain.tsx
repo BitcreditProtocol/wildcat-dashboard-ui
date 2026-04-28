@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton } from "@bitcredit/ui-library";
 import {
   ChevronDown,
   ChevronUp,
@@ -13,10 +13,8 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { AppIcon, Button, Text } from "@bitcredit/ui-library";
+import { Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 
 interface EndorsementChainProps {
@@ -306,7 +304,7 @@ export function EndorsementChain({
                     defaultMessage: "Show history",
                   })}
             </span>
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isExpanded ? <AppIcon icon={ChevronUp} size="sm" /> : <AppIcon icon={ChevronDown} size="sm" />}
           </span>
         </button>
       </CardHeader>
@@ -323,7 +321,7 @@ export function EndorsementChain({
               }}
               className="gap-2"
             >
-              <ArrowUpDown className="h-3 w-3" />
+              <AppIcon icon={ArrowUpDown} size={12} />
               <span className="text-xs">
                 {sortByTimestamp
                   ? intl.formatMessage({
@@ -349,7 +347,6 @@ export function EndorsementChain({
             <div className="flex flex-col gap-4">
               {events.map((event, index) => {
                 const config = EVENT_CONFIG[event.type];
-                const Icon = config.icon;
                 const displayLabel = intl.formatMessage(config.label);
 
                 return (
@@ -357,14 +354,14 @@ export function EndorsementChain({
                     <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-lg">
                       {/* Event Header */}
                       <div className="flex items-center gap-2">
-                        <Icon className={`h-4 w-4 ${config.color}`} />
-                        <span className="text-sm font-semibold">{displayLabel}</span>
+                        <AppIcon icon={config.icon} size="sm" className={config.color} />
+                        <Text variant="label">{displayLabel}</Text>
                       </div>
 
                       {/* Timestamp */}
                       {event.timestamp !== undefined && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
+                          <AppIcon icon={Clock} size={12} />
                           <span>{new Date(event.timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
                         </div>
                       )}
@@ -442,7 +439,7 @@ export function EndorsementChain({
                       )}
                     </div>
 
-                    {index < events.length - 1 && <Separator className="my-2" />}
+                    {index < events.length - 1 && <Separator className="bg-divider-75 my-2" />}
                   </div>
                 );
               })}

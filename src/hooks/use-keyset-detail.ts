@@ -1,3 +1,4 @@
+import { toast } from "@bitcredit/ui-library";
 import { useMemo } from "react";
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,7 +10,6 @@ import {
   postEnableRedemptionMutation,
 } from "@/generated/client/@tanstack/react-query.gen";
 import type { BitcreditBill } from "@/generated/client/types.gen";
-import { toast } from "sonner";
 import { useIntl } from "react-intl";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
 import { deserializeKeysetId, doesBillMatchKeysetMaturity } from "@/utils/keyset";
@@ -51,12 +51,13 @@ export function useKeysetDetail(keysetId: string) {
   const redemptionMutation = useMutation({
     ...postEnableRedemptionMutation(),
     onSuccess: () => {
-      toast.success(
-        intl.formatMessage({
+      toast({
+        title: intl.formatMessage({
           id: "keyset.detail.redeem.success",
           defaultMessage: "Redemption enabled successfully",
-        })
-      );
+        }),
+        variant: "success",
+      });
       void queryClient.invalidateQueries({
         queryKey: listKeysetInfosQueryKey(),
         exact: false,
@@ -64,15 +65,16 @@ export function useKeysetDetail(keysetId: string) {
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error(
-        intl.formatMessage(
+      toast({
+        title: intl.formatMessage(
           {
             id: "keyset.detail.redeem.error",
             defaultMessage: "Failed to enable redemption: {error}",
           },
           { error: message }
-        )
-      );
+        ),
+        variant: "error",
+      });
     },
   });
 

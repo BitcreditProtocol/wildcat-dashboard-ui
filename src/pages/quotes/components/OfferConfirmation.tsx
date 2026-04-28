@@ -6,6 +6,7 @@ import type { OfferFormResult } from "./OfferFormDrawer";
 import { addDays, addYears } from "date-fns";
 import { getItem, removeItem, setItem } from "@/utils/local-storage";
 import { useIntl } from "react-intl";
+import { Text } from "@bitcredit/ui-library";
 import { toUtcEndOfDay } from "@/utils/dates";
 import { useAmountFormatter } from "@/utils/amount-format";
 
@@ -89,47 +90,49 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
       >
         <div className="flex flex-col gap-4 px-4 py-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold w-48">
+            <Text variant="label" className="w-48">
               {intl.formatMessage({
                 id: "quotes.detail.discount.relative",
                 defaultMessage: "Effective fee (relative):",
               })}
-            </span>
-            <span className="text-sm text-right">{effectiveDiscount?.mul(new Big("100")).toFixed(2)}%</span>
+            </Text>
+            <Text variant="caption" className="text-right">
+              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
+            </Text>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold w-48">
+            <Text variant="label" className="w-48">
               {intl.formatMessage({
                 id: "quotes.detail.discount.absolute",
                 defaultMessage: "Effective fee (absolute):",
               })}
-            </span>
-            <span className="text-sm text-right">
+            </Text>
+            <Text variant="caption" className="text-right">
               {offerFormData
                 ? formatAmount(offerFormData.discount.gross.value.minus(offerFormData.discount.net.value).toFixed(0))
                 : undefined}{" "}
               {offerFormData?.discount.net.currency}
-            </span>
+            </Text>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold w-48">
+            <Text variant="label" className="w-48">
               {intl.formatMessage({
                 id: "quotes.offer.netAmount",
                 defaultMessage: "Net amount:",
               })}
-            </span>
-            <span className="text-sm text-right">
+            </Text>
+            <Text variant="caption" className="text-right">
               {offerFormData ? formatAmount(offerFormData.discount.net.value.round(0).toFixed(0)) : undefined}{" "}
               {offerFormData?.discount.net.currency}
-            </span>
+            </Text>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold w-32">
+            <Text variant="label" className="w-32">
               {intl.formatMessage({
                 id: "quotes.offer.validUntil",
                 defaultMessage: "Valid until:",
               })}
-            </span>
+            </Text>
             <DatePickerButton
               date={validUntilDate}
               onClick={() => {

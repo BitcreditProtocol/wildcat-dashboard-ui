@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@bitcredit/ui-library";
 
 export function KeysetLoader() {
   return (

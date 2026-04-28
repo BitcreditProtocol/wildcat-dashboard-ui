@@ -6,10 +6,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { GrossToNetDiscountForm } from "./GrossToNetDiscountForm";
 
-vi.mock("./ui/drawer", () => ({
-  DrawerFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DrawerClose: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
+  return {
+    ...actual,
+    DrawerFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DrawerClose: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  };
+});
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -70,8 +74,7 @@ beforeEach(() => {
 
 describe("GrossToNetDiscountForm", () => {
   it("formats non-sat summary values using the decimal separator preference", async () => {
-    storageData["decimal-format"] = JSON.stringify("point");
-    storageData["display-currency"] = JSON.stringify("eur");
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "point", currency: "eur" });
     storageData["offer-form-quote-1"] = JSON.stringify({
       daysInput: "30",
       discountRateInput: "10",
@@ -95,8 +98,7 @@ describe("GrossToNetDiscountForm", () => {
   });
 
   it("keeps sat formatting integer even when display currency preference is fiat", async () => {
-    storageData["decimal-format"] = JSON.stringify("space");
-    storageData["display-currency"] = JSON.stringify("usd");
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "space", currency: "usd" });
     storageData["offer-form-quote-2"] = JSON.stringify({
       daysInput: "30",
       discountRateInput: "10",

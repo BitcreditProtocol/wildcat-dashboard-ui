@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getClowderInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { InfoField } from "@/components/InfoField";
+import { Heading, Text } from "@bitcredit/ui-library";
 
 export function ClowderCard() {
   const intl = useIntl();
@@ -16,9 +17,9 @@ export function ClowderCard() {
 
   return (
     <div className="bg-card text-card-foreground rounded-lg border p-6">
-      <h3 className="text-lg font-semibold mb-4">
+      <Heading as="h3" variant="sub" className="mb-4">
         <FormattedMessage id="home.clowder.title" defaultMessage="Clowder" />
-      </h3>
+      </Heading>
       {clowderLoading ? (
         <div className="text-center text-muted-foreground">
           <FormattedMessage id="home.clowder.loading" defaultMessage="Loading clowder information..." />
@@ -54,9 +55,7 @@ export function ClowderCard() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                 <FormattedMessage id="home.clowder.startedAt" defaultMessage="Started At" />
               </span>
-              <span className="text-sm">
-                {new Date(clowderData.uptime_timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}
-              </span>
+              <Text variant="caption">{new Date(clowderData.uptime_timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</Text>
             </div>
           )}
         </div>

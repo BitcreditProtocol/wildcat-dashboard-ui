@@ -59,8 +59,10 @@ beforeEach(() => {
 
 describe("PreferencesProvider", () => {
   it("initializes currency and decimal format from storage", () => {
-    storageData["display-currency"] = JSON.stringify("usd");
-    storageData["decimal-format"] = JSON.stringify("point");
+    storageData["user-preferences"] = JSON.stringify({
+      currency: "usd",
+      decimalFormat: "point",
+    });
 
     const page = renderIntoDom(
       <PreferencesProvider>
@@ -84,7 +86,12 @@ describe("PreferencesProvider", () => {
       page.querySelector('[data-testid="set-decimal"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(storageData["display-currency"]).toBe(JSON.stringify("eur"));
-    expect(storageData["decimal-format"]).toBe(JSON.stringify("space"));
+    expect(storageData["user-preferences"]).toBe(
+      JSON.stringify({
+        theme: "system",
+        currency: "eur",
+        decimalFormat: "space",
+      })
+    );
   });
 });

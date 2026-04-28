@@ -2,8 +2,7 @@ import { PropsWithChildren, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton } from "@bitcredit/ui-library";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
@@ -150,7 +149,7 @@ interface BalanceDisplay {
 export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
-      <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
+      <Heading as="h3" variant="page">
         {unit === "sat" ? (
           <Currency
             value={Number(amount)}
@@ -161,7 +160,7 @@ export function BalanceText({ amount, unit, children }: PropsWithChildren<Balanc
         ) : (
           `${amount} ${unit}`
         )}
-      </h3>
+      </Heading>
       {children}
     </>
   );

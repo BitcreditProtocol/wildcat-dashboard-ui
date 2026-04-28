@@ -1,3 +1,4 @@
+import { toast } from "@bitcredit/ui-library";
 import {
   getQuoteOptions,
   listEbillsOptions,
@@ -8,7 +9,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { useIntl } from "react-intl";
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
 
@@ -80,15 +80,16 @@ export function useQuoteDetail(id: string) {
     retry: 5,
     onError: (error) => {
       const message = getApiErrorMessage(error);
-      toast.error(
-        intl.formatMessage(
+      toast({
+        title: intl.formatMessage(
           {
             id: "quotes.feeToken.check.error",
             defaultMessage: "Failed to check fee token: {error}",
           },
           { error: message }
-        )
-      );
+        ),
+        variant: "error",
+      });
       feeTokenRequestRef.current = null;
     },
   });

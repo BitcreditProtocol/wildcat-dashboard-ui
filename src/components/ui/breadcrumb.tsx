@@ -3,7 +3,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { useIntl } from "react-intl";
 
-import { cn } from "@/lib/utils";
+import { AppIcon, cn } from "@bitcredit/ui-library";
 
 function Breadcrumb({ ...props }: React.ComponentProps<"nav">) {
   const intl = useIntl();
@@ -61,7 +61,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
 function BreadcrumbSeparator({ children, className, ...props }: React.ComponentProps<"li">) {
   return (
     <li data-slot="breadcrumb-separator" role="presentation" aria-hidden="true" className={cn("[&>svg]:size-3.5", className)} {...props}>
-      {children ?? <ChevronRight />}
+      {children ?? <AppIcon icon={ChevronRight} size="sm" />}
     </li>
   );
 }
@@ -76,7 +76,7 @@ function BreadcrumbEllipsis({ className, ...props }: React.ComponentProps<"span"
       className={cn("flex size-9 items-center justify-center", className)}
       {...props}
     >
-      <MoreHorizontal className="size-4" />
+      <AppIcon icon={MoreHorizontal} size="sm" />
       <span className="sr-only">{intl.formatMessage({ id: "ui.breadcrumb.more", defaultMessage: "More" })}</span>
     </span>
   );

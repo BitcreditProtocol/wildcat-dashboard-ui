@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@bitcredit/ui-library";
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { FormattedMessage, useIntl } from "react-intl";
 

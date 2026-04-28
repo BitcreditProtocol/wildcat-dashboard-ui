@@ -1,14 +1,12 @@
-import { Bitcoin, Home, Inbox, Key } from "lucide-react";
+import { Bitcoin, Globe, Home, Inbox, Key, AlignVerticalJustifyCenterIcon } from "lucide-react";
 import { useContext } from "react";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarRail, SidebarSeparator } from "@/components/ui/sidebar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CurrencySelector } from "@/components/CurrencySelector";
-import { DecimalFormatSelector } from "@/components/DecimalFormatSelector";
-import { ThemeSelector } from "@/components/ThemeSelector";
+import { AppIcon, DecimalSeparator, DisplayCurrency, LanguagePreference, MenuOption, Separator, Theme } from "@bitcredit/ui-library";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
 // import { useKeycloak } from "../lib/keycloak-user"
 import { LanguageContext } from "@/context/language/LanguageContext";
+import { usePreferences } from "@/context/preferences/PreferencesContext";
 import { defineMessages, useIntl } from "react-intl";
 
 const navMessages = defineMessages({
@@ -96,51 +94,49 @@ function LanguageSelector() {
   const intl = useIntl();
   const { locale, setLocale, availableLocales } = useContext(LanguageContext);
   const locales = availableLocales();
+  const currentLocaleLabel = intl.formatMessage(
+    localeMessages[locale as keyof typeof localeMessages] ?? { id: `locale.${locale}`, defaultMessage: locale }
+  );
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-        {intl.formatMessage({
+    <LanguagePreference value={locale} values={locales} onChange={setLocale}>
+      <MenuOption
+        icon={<AppIcon icon={Globe} size="md" className="text-muted-foreground" />}
+        label={intl.formatMessage({
           id: "language.label",
           defaultMessage: "Language",
         })}
-      </span>
-      <Select value={locale} onValueChange={setLocale}>
-        <SelectTrigger className="h-9">
-          <SelectValue
-            placeholder={intl.formatMessage({
-              id: "language.select",
-              defaultMessage: "Select language",
-            })}
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {locales.map((loc) => (
-            <SelectItem key={loc} value={loc}>
-              {intl.formatMessage(localeMessages[loc as keyof typeof localeMessages] ?? { id: `locale.${loc}`, defaultMessage: loc })}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+        defaultValue={currentLocaleLabel}
+      />
+    </LanguagePreference>
   );
 }
 
 export function AppSidebar() {
   // const { user, isLoading } = useKeycloak()
+  const { decimalFormat, setDecimalFormat } = usePreferences();
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <SidebarSeparator className="my-2" />
+      <Separator className="bg-divider-75 w-auto mb-2" />
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
         <div className="flex flex-col gap-4">
-          <ThemeSelector className="flex flex-col gap-2" />
-          <CurrencySelector className="flex flex-col gap-2" />
-          <DecimalFormatSelector className="flex flex-col gap-2" />
           <LanguageSelector />
+          <Separator className="bg-divider-75 w-auto" />
+          <DisplayCurrency />
+          <Separator className="bg-divider-75 w-auto" />
+          <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
+            <MenuOption
+              icon={<AppIcon icon={AlignVerticalJustifyCenterIcon} size="md" className="text-muted-foreground" />}
+              label="Decimals"
+              defaultValue={decimalFormat}
+            />
+          </DecimalSeparator>
+          <Separator className="bg-divider-75 w-auto" />
+          <Theme />
         </div>
       </SidebarFooter>
       {/* https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/131
