@@ -235,12 +235,12 @@ export default function KeysetDetailPage() {
         </PageTitle>
         {fromQuote && quoteId && (
           <Button variant="outline" size="sm" asChild>
-              <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }} className="inline-flex items-center gap-1">
-                <span className="relative top-px leading-none">
-                  <FormattedMessage id="keyset.detail.backToQuote" defaultMessage="Back to quote" />
-                </span>
-                <span className="inline-flex items-center font-mono leading-none">{truncateString(quoteId, 16)}</span>
-              </Link>
+            <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }} className="inline-flex items-center gap-1">
+              <span className="relative top-px leading-none">
+                <FormattedMessage id="keyset.detail.backToQuote" defaultMessage="Back to quote" />
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">{truncateString(quoteId, 16)}</span>
+            </Link>
           </Button>
         )}
       </div>

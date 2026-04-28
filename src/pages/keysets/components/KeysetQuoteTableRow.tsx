@@ -39,12 +39,12 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
   }
 
   return (
-      <tr key={quote.id} className="border-t hover:[&>td]:bg-white/5">
-        <td className="p-2 font-mono transition-colors">
-          <Link to={{ pathname: `/quotes/${quote.id}` }} state={{ from: `/keysets/${keysetId}` }} className="text-text-300 hover:underline">
-            {truncateString(quote.id, 16)}
-          </Link>
-        </td>
+    <tr key={quote.id} className="border-t hover:[&>td]:bg-white/5">
+      <td className="p-2 font-mono transition-colors">
+        <Link to={{ pathname: `/quotes/${quote.id}` }} state={{ from: `/keysets/${keysetId}` }} className="text-text-300 hover:underline">
+          {truncateString(quote.id, 16)}
+        </Link>
+      </td>
       <td className="p-2 transition-colors">
         <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
           {intl.formatMessage({
