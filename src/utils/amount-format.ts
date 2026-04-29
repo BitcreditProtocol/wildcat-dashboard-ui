@@ -39,6 +39,20 @@ export function formatAmountString(value: string | number, decimalFormat: Decima
   return `${sign}${groupedInteger}${decimal}${fractionPart}`;
 }
 
+export function formatGroupedSats(value: string | number, decimalFormat: DecimalFormat): string {
+  const raw = String(value).trim();
+  if (!raw || raw.startsWith("-")) {
+    return "";
+  }
+
+  const digits = raw.replace(/\D/g, "").replace(/^0+/, "");
+  if (!digits) {
+    return "";
+  }
+
+  return formatAmountString(digits, decimalFormat);
+}
+
 export function parseAmountString(value: string | undefined, decimalFormat: DecimalFormat): number | undefined {
   if (value === undefined) {
     return undefined;
@@ -73,6 +87,7 @@ export function useAmountFormatter() {
 
   return {
     formatAmount: useCallback((value: string | number) => formatAmountString(value, decimalFormat), [decimalFormat]),
+    formatGroupedSats: useCallback((value: string | number) => formatGroupedSats(value, decimalFormat), [decimalFormat]),
     parseAmount: useCallback((value: string | undefined) => parseAmountString(value, decimalFormat), [decimalFormat]),
   };
 }

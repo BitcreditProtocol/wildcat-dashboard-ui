@@ -50,9 +50,10 @@ type GrossToNetFormValues = FormValues;
 
 const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitButtonText, quoteId }: GrossToNetProps) => {
   const intl = useIntl();
-  const { formatAmount: formatAmountByPreference, parseAmount: parseAmountByPreference } = useAmountFormatter();
+  const { formatAmount: formatAmountByPreference, formatGroupedSats, parseAmount: parseAmountByPreference } = useAmountFormatter();
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false);
   const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null);
+  const [netInputDisplay, setNetInputDisplay] = useState("");
   const isSat = gross.currency === "sat";
   const daysLabel = intl.formatMessage({
     id: "discountForm.days",
@@ -231,7 +232,11 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     const before = input.value.slice(0, start);
     const after = input.value.slice(end);
     const next = (before + digits + after).replace(/\D/g, "");
-    input.value = next;
+    if (field === "netInput") {
+      setNetInputDisplay(formatGroupedSats(next));
+    } else {
+      input.value = next;
+    }
     setValue(field, next, { shouldValidate: true, shouldDirty: true });
     if (field === "netInput") {
       setLastEdited("net");
@@ -305,6 +310,61 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     [formatAmountByPreference]
   );
 
+  const formatNetInputDisplayValue = React.useCallback(
+    (value: Big, currency: string) => {
+      if (currency === "sat") {
+        return formatGroupedSats(value.round(0, Big.roundDown).toFixed(0));
+      }
+      return formatAmountByPreference(value.toFixed(NET_INPUT_DECIMALS));
+    },
+    [formatAmountByPreference, formatGroupedSats]
+  );
+
+  const getCaretPositionForDigitCount = (value: string, digitCount: number) => {
+    if (digitCount <= 0) {
+      return 0;
+    }
+
+    let seenDigits = 0;
+    for (let i = 0; i < value.length; i += 1) {
+      if (/\d/.test(value[i])) {
+        seenDigits += 1;
+      }
+      if (seenDigits === digitCount) {
+        return i + 1;
+      }
+    }
+
+    return value.length;
+  };
+
+  const handleGroupedSatNetChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const input = e.currentTarget;
+    const caret = input.selectionStart ?? input.value.length;
+    const digitsBeforeCaret = input.value.slice(0, caret).replace(/\D/g, "").length;
+    const digits = input.value.replace(/\D/g, "");
+    const formatted = formatGroupedSats(digits);
+    const nextCaret = getCaretPositionForDigitCount(formatted, digitsBeforeCaret);
+
+    setNetInputDisplay(formatted);
+    setValue("netInput", digits, { shouldValidate: true, shouldDirty: true });
+    setLastEdited("net");
+
+    const restoreCaret = () => {
+      try {
+        input.setSelectionRange(nextCaret, nextCaret);
+      } catch {
+        // ignore unsupported setSelectionRange
+      }
+    };
+
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(restoreCaret);
+    } else {
+      window.setTimeout(restoreCaret, 0);
+    }
+  };
+
   useEffect(() => {
     if (hasSetInitialDays) {
       return;
@@ -326,7 +386,11 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
           });
         }
         if (savedData.netInput) {
-          setValue("netInput", isSat ? parseDigitsToInt(savedData.netInput) : savedData.netInput, { shouldValidate: true });
+          const savedNetInput = isSat ? parseDigitsToInt(savedData.netInput) : savedData.netInput;
+          setValue("netInput", savedNetInput, { shouldValidate: true });
+          if (isSat) {
+            setNetInputDisplay(formatGroupedSats(savedNetInput));
+          }
           setLastEdited("net");
         }
         setHasSetInitialDays(true);
@@ -343,7 +407,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     }
 
     setHasSetInitialDays(true);
-  }, [startDate, endDate, setValue, localStorageKey, hasSetInitialDays, isSat]);
+  }, [startDate, endDate, setValue, localStorageKey, hasSetInitialDays, isSat, parseDigitsToInt, formatGroupedSats]);
 
   useEffect(() => {
     if (!localStorageKey || !hasSetInitialDays) {
@@ -393,7 +457,10 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
       skipNetToRateRef.current = true;
       setValue("netInput", formattedNet, { shouldValidate: true });
     }
-  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatNetInputValue]);
+    if (isSat) {
+      setNetInputDisplay(formatNetInputDisplayValue(roundedNetValue, gross.currency));
+    }
+  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatNetInputValue, formatNetInputDisplayValue]);
 
   useEffect(() => {
     if (skipNetToRateRef.current) {
@@ -578,11 +645,11 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
               <div className="flex gap-1 items-center">
                 <input
                   id="netInput"
-                  step={isSat ? "1" : "0.01"}
-                  type={isSat ? "number" : "text"}
+                  type="text"
                   inputMode={isSat ? "numeric" : "decimal"}
                   className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-green-600 dark:text-green-400 w-28"
                   {...netInputRegister}
+                  {...(isSat ? { value: netInputDisplay } : {})}
                   onKeyDown={(e) => {
                     if (isSat) {
                       blockDecimalInput(e);
@@ -592,11 +659,14 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
                       e.currentTarget.blur();
                     }
                   }}
-                  onInput={isSat ? handleIntegerInputFor("netInput") : undefined}
                   onBeforeInput={isSat ? blockNonDigitInput : undefined}
                   onPaste={isSat ? handlePasteDigitsFor("netInput") : undefined}
                   onDrop={handleDrop}
                   onChange={(e) => {
+                    if (isSat) {
+                      handleGroupedSatNetChange(e);
+                      return;
+                    }
                     void netInputRegister.onChange(e);
                     setLastEdited("net");
                   }}

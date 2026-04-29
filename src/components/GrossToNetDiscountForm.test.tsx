@@ -124,7 +124,7 @@ describe("GrossToNetDiscountForm", () => {
     expect(page.textContent).not.toContain("usd");
   });
 
-  it("uses ungrouped digits for calculated sat net input when amount is large", async () => {
+  it("uses grouped display for calculated sat net input when amount is large", async () => {
     storageData["user-preferences"] = JSON.stringify({ decimalFormat: "point", currency: "sat" });
     storageData["offer-form-quote-3"] = JSON.stringify({
       daysInput: "14",
@@ -143,7 +143,7 @@ describe("GrossToNetDiscountForm", () => {
 
     await flush();
 
-    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9805555555555");
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9.805.555.555.555");
     expect(page.textContent).toContain("194.444.444.445");
   });
 
@@ -166,7 +166,7 @@ describe("GrossToNetDiscountForm", () => {
 
     await flush();
 
-    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9805555555555");
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9.805.555.555.555");
     expect(page.textContent).toContain("194.444.444.445");
   });
 });
