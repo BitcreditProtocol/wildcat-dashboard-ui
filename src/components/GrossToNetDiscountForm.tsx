@@ -295,6 +295,16 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     [formatAmountByPreference]
   );
 
+  const formatNetInputValue = React.useCallback(
+    (value: Big, currency: string) => {
+      if (currency === "sat") {
+        return value.round(0, Big.roundDown).toFixed(0);
+      }
+      return formatAmountByPreference(value.toFixed(NET_INPUT_DECIMALS));
+    },
+    [formatAmountByPreference]
+  );
+
   useEffect(() => {
     if (hasSetInitialDays) {
       return;
@@ -316,7 +326,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
           });
         }
         if (savedData.netInput) {
-          setValue("netInput", savedData.netInput, { shouldValidate: true });
+          setValue("netInput", isSat ? parseDigitsToInt(savedData.netInput) : savedData.netInput, { shouldValidate: true });
           setLastEdited("net");
         }
         setHasSetInitialDays(true);
@@ -333,7 +343,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     }
 
     setHasSetInitialDays(true);
-  }, [startDate, endDate, setValue, localStorageKey, hasSetInitialDays]);
+  }, [startDate, endDate, setValue, localStorageKey, hasSetInitialDays, isSat]);
 
   useEffect(() => {
     if (!localStorageKey || !hasSetInitialDays) {
@@ -378,12 +388,12 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
       value: roundedNetValue,
       currency: gross.currency,
     });
-    const formattedNet = formatAmount(roundedNetValue, gross.currency);
+    const formattedNet = formatNetInputValue(roundedNetValue, gross.currency);
     if (formattedNet !== netInput) {
       skipNetToRateRef.current = true;
       setValue("netInput", formattedNet, { shouldValidate: true });
     }
-  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatAmount]);
+  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatNetInputValue]);
 
   useEffect(() => {
     if (skipNetToRateRef.current) {

@@ -123,4 +123,50 @@ describe("GrossToNetDiscountForm", () => {
     expect(page.textContent).not.toContain("$");
     expect(page.textContent).not.toContain("usd");
   });
+
+  it("uses ungrouped digits for calculated sat net input when amount is large", async () => {
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "point", currency: "sat" });
+    storageData["offer-form-quote-3"] = JSON.stringify({
+      daysInput: "14",
+      discountRateInput: "50.0000",
+      netInput: "",
+    });
+
+    const page = renderWithProviders(
+      <GrossToNetDiscountForm
+        endDate={new Date("2026-03-01")}
+        gross={{ value: new Big("10000000000000"), currency: "sat" }}
+        quoteId="quote-3"
+        onSubmit={() => undefined}
+      />
+    );
+
+    await flush();
+
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9805555555555");
+    expect(page.textContent).toContain("194.444.444.445");
+  });
+
+  it("normalizes grouped stored sat net input values", async () => {
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "point", currency: "sat" });
+    storageData["offer-form-quote-4"] = JSON.stringify({
+      daysInput: "14",
+      discountRateInput: "50.0000",
+      netInput: "9.805.555.555.555",
+    });
+
+    const page = renderWithProviders(
+      <GrossToNetDiscountForm
+        endDate={new Date("2026-03-01")}
+        gross={{ value: new Big("10000000000000"), currency: "sat" }}
+        quoteId="quote-4"
+        onSubmit={() => undefined}
+      />
+    );
+
+    await flush();
+
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9805555555555");
+    expect(page.textContent).toContain("194.444.444.445");
+  });
 });
