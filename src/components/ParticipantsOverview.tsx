@@ -218,9 +218,7 @@ export function ParticipantDetail({ participant }: { participant: BillIdentParti
               defaultMessage: "Bearer",
             })}
           </div>
-          {anonData?.node_id && (
-            <NodeIdDisplay nodeId={anonData.node_id} />
-          )}
+          {anonData?.node_id && <NodeIdDisplay nodeId={anonData.node_id} />}
         </div>
       </div>
     );
