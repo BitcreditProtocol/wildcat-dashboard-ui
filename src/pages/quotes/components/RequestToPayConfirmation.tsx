@@ -169,6 +169,7 @@ export function RequestToPayConfirmation({
               })}
             </Text>
             <DatePickerButton
+              date={validUntilDate}
               onClick={() => {
                 setDraftValidUntilDate(validUntilDate);
                 onOpenChange(false);

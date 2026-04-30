@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen";
 import { AppIcon, Button, Text } from "@bitcredit/ui-library";
-import { Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
+import { NodeIdDisplay, Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 
 interface EndorsementChainProps {
@@ -37,7 +37,7 @@ function LightParticipantInfo({ participant }: { participant: LightBillParticipa
             defaultMessage: "Bearer",
           })}
         </span>
-        <TruncatedTextPopover text={participant.Anon.node_id} maxLength={64} className="font-mono text-xs text-muted-foreground" />
+        <NodeIdDisplay nodeId={participant.Anon.node_id} />
       </div>
     );
   } else if ("Ident" in participant) {

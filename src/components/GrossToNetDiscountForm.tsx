@@ -639,15 +639,15 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
 
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <label htmlFor="netInput" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <label htmlFor="netInput" className="text-sm font-medium text-gray-900 dark:text-gray-100 shrink-0">
                 {netAmountLabel}
               </label>
-              <div className="flex gap-1 items-center">
+              <div className="flex gap-1 items-center flex-1 justify-end min-w-0">
                 <input
                   id="netInput"
                   type="text"
                   inputMode={isSat ? "numeric" : "decimal"}
-                  className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-green-600 dark:text-green-400 w-28"
+                  className="text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-green-600 dark:text-green-400 min-w-0 flex-1"
                   {...netInputRegister}
                   {...(isSat ? { value: netInputDisplay } : {})}
                   onKeyDown={(e) => {
@@ -671,7 +671,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
                     setLastEdited("net");
                   }}
                 />
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{gross.currency}</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{gross.currency}</span>
               </div>
             </div>
             {errors.netInput && <div className="text-xs text-red-500">{errors.netInput.message}</div>}
