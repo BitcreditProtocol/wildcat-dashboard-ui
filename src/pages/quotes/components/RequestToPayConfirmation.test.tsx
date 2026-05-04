@@ -46,7 +46,14 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 }));
 
 vi.mock("@/components/Drawers", () => ({
-  ConfirmDrawer: ({ trigger, open, children, onSubmit, submitButtonText, submitButtonDisabled }: {
+  ConfirmDrawer: ({
+    trigger,
+    open,
+    children,
+    onSubmit,
+    submitButtonText,
+    submitButtonDisabled,
+  }: {
     trigger?: ReactNode;
     open: boolean;
     children?: ReactNode;
@@ -138,10 +145,10 @@ describe("RequestToPayConfirmation", () => {
     const button = page.querySelector("button");
     expect(button).not.toBeNull();
     expect(button?.getAttribute("aria-disabled")).toBe("true");
-    expect(button?.disabled).toBe(true);
+    expect(button?.disabled).toBe(false);
 
     act(() => {
-      button?.parentElement?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
 
     expect(onOpenChange).not.toHaveBeenCalled();

@@ -78,9 +78,12 @@ export function RequestToPayConfirmation({
     }
 
     const timeUntilMaturity = maturityUtcStart.getTime() - currentTimeMs;
-    const timeoutId = window.setTimeout(() => {
-      setCurrentTimeMs(Date.now());
-    }, Math.min(timeUntilMaturity, MAX_TIMEOUT_MS));
+    const timeoutId = window.setTimeout(
+      () => {
+        setCurrentTimeMs(Date.now());
+      },
+      Math.min(timeUntilMaturity, MAX_TIMEOUT_MS)
+    );
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -152,9 +155,7 @@ export function RequestToPayConfirmation({
         submitButtonDisabled={!validUntilDate || requestToPayBlockedUntilMaturity}
         trigger={
           <div
-            className={`flex flex-col items-start gap-1 flex-1 max-w-sm${
-              requestToPayBlockedUntilMaturity ? " cursor-not-allowed" : ""
-            }`}
+            className={`flex flex-col items-start gap-1 flex-1 max-w-sm${requestToPayBlockedUntilMaturity ? " cursor-not-allowed" : ""}`}
             aria-disabled={requestToPayBlockedUntilMaturity}
             title={requestToPayBlockedUntilMaturity ? maturityBlockedMessage : undefined}
             onClick={(e) => {
@@ -166,8 +167,8 @@ export function RequestToPayConfirmation({
             }}
           >
             <Button
-              className={requestToPayBlockedUntilMaturity ? "w-full pointer-events-none cursor-not-allowed opacity-50" : "w-full"}
-              disabled={requestToPayTriggerDisabled || requestToPayBlockedUntilMaturity}
+              className={requestToPayBlockedUntilMaturity ? "w-full cursor-not-allowed opacity-50" : "w-full"}
+              disabled={requestToPayTriggerDisabled}
               aria-disabled={requestToPayBlockedUntilMaturity}
               title={requestToPayBlockedUntilMaturity ? maturityBlockedMessage : undefined}
               variant="default"
