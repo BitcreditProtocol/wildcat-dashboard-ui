@@ -4,6 +4,7 @@ import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
 import type { BitcreditBill, BillInfo, InfoReply, LightInfo } from "@/generated/client/types.gen";
 import type { TokenStateResponse } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
+import { isBeforeUtcStartOfDate } from "@/utils/dates";
 import * as React from "react";
 import { useState } from "react";
 import { useIntl } from "react-intl";
@@ -103,7 +104,8 @@ function canRequestToPay(args: {
     hasKeysetId(quoteDetails) &&
     Boolean(ebill) &&
     !payment?.paid &&
-    !payment?.requested_to_pay
+    !payment?.requested_to_pay &&
+    !isBeforeUtcStartOfDate(quoteDetails?.bill?.maturity_date)
   );
 }
 
