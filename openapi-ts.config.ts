@@ -3,8 +3,6 @@ import { defineConfig } from "@hey-api/openapi-ts";
 export default defineConfig({
   input: "opt/wildcat/openapi.json",
   output: {
-    format: "biome",
-    lint: "eslint",
     path: "./src/generated/client",
   },
   plugins: [
