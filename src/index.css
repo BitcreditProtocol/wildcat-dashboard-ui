@@ -2,13 +2,39 @@
 
 @plugin "tailwindcss-animate";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:is(.dark, .dark *));
 
 @theme {
   --font-sans: Geist, system-ui, sans-serif;
   --font-mono: Geist Mono, monospace;
 
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
 
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
@@ -16,10 +42,78 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
+  --color-divider-50: #ece8de;
+  --color-divider-75: #d9d5cc;
+  --color-divider-100: #d1ccc1;
+  --color-divider-200: #bab4a9;
+  --color-divider-300: #a39d91;
+
+  --color-elevation-50: #fefbf1;
+  --color-elevation-100: #faf7ef;
+  --color-elevation-200: #f6f2e7;
+  --color-elevation-250: #f2eddf;
+  --color-elevation-300: #d1ccc1;
+  --color-elevation-350: #e3d9ca;
+
+  --color-text-50: #d6d2ca;
+  --color-text-100: #c5c1b9;
+  --color-text-200: #8d8579;
+  --color-text-300: #1b0f00;
+  --color-text-active: #ffffff;
+  --color-text-inactive: #f1ede4;
+
+  --color-signal-success: #006f29;
+  --color-signal-alert: #ae5f00;
+  --color-signal-error: #a32b16;
+
+  --color-brand-50: #fff2e2;
+  --color-brand-100: #fbdbb0;
+  --color-brand-200: #f7931a;
+
+  --color-base-hover: #331c00;
+  --color-base-active: #1b0f00;
+  --color-base-inactive: #d1ccc1;
+
   --shadow-active-tab: 0 1px 3px 0 rgba(16, 24, 40, 0.1), 0 1px 2px 0 rgba(16, 24, 40, 0.06);
 }
 
 @layer base {
+  @variant dark {
+    --color-black: #1b0f00;
+
+    --color-divider-50: #232221;
+    --color-divider-75: #282625;
+    --color-divider-100: #272726;
+    --color-divider-200: #2c2b2a;
+    --color-divider-300: #434241;
+
+    --color-elevation-50: #0b0600;
+    --color-elevation-100: #141414;
+    --color-elevation-200: #1a1a1a;
+    --color-elevation-250: #1f1f1f;
+    --color-elevation-300: #242424;
+    --color-elevation-350: #292929;
+
+    --color-text-50: #6c757d;
+    --color-text-100: #4d4d4d;
+    --color-text-200: #808080;
+    --color-text-300: #fff2e2;
+    --color-text-active: #000000;
+    --color-text-inactive: #3a3a3a;
+
+    --color-signal-success: #4daa4e;
+    --color-signal-alert: #e07b00;
+    --color-signal-error: #cf371c;
+
+    --color-brand-50: #fff2e2;
+    --color-brand-100: #fbdbb0;
+    --color-brand-200: #f7931a;
+
+    --color-base-hover: #dadada;
+    --color-base-active: #fff2e2;
+    --color-base-inactive: #606060;
+  }
+
   *,
   ::after,
   ::before,
