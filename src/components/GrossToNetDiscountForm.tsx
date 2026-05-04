@@ -76,13 +76,13 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     defaultMessage: "Gross amount",
   });
 
-  const parseDigitsToInt = (value: unknown) => {
+  const parseDigitsToInt = React.useCallback((value: unknown) => {
     let str = "";
     if (typeof value === "string" || typeof value === "number") {
       str = String(value);
     }
     return str.replace(/\D/g, "");
-  };
+  }, []);
 
   const validateNetAmount = (value?: string) => {
     if (value == null || value === "") {
