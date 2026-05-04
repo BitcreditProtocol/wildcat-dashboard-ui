@@ -7,6 +7,9 @@ import { FeeTokenQRCodeModal, QRCode, QRCodeModal } from "./QRCodeWithErrorBound
 const mockCanGenerateQRCode = vi.fn<(value: string) => boolean>();
 const mockCanGenerateQRCodeAsync = vi.fn<(value: string) => Promise<boolean>>();
 const mockQrSvg = vi.fn<(props: { value: string }) => React.ReactNode>();
+const mockShouldUseDynamicQr = vi.fn<(value: string, chunkSize: number) => boolean>();
+const mockSplitIntoDynamicQrFrames = vi.fn<(value: string, opts?: { chunkSize?: number }) => string[]>();
+const mockDynamicQrProgress = vi.fn<(props: { currentFrameIndex: number; totalFrames: number; className?: string }) => React.ReactNode>();
 
 vi.mock("qrcode.react", () => ({
   QRCodeSVG: ({ value }: { value: string }) => mockQrSvg({ value }),
@@ -22,6 +25,9 @@ vi.mock("@bitcredit/ui-library", async () => {
   const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
   return {
     ...actual,
+    shouldUseDynamicQr: (value: string, chunkSize: number) => mockShouldUseDynamicQr(value, chunkSize),
+    splitIntoDynamicQrFrames: (value: string, opts?: { chunkSize?: number }) => mockSplitIntoDynamicQrFrames(value, opts),
+    DynamicQrProgress: (props: { currentFrameIndex: number; totalFrames: number; className?: string }) => mockDynamicQrProgress(props),
     Drawer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     DrawerTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     DrawerContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -55,6 +61,11 @@ beforeEach(() => {
   mockCanGenerateQRCode.mockReturnValue(true);
   mockCanGenerateQRCodeAsync.mockResolvedValue(true);
   mockQrSvg.mockImplementation(({ value }: { value: string }) => <svg data-value={value} />);
+  mockShouldUseDynamicQr.mockReturnValue(false);
+  mockSplitIntoDynamicQrFrames.mockImplementation((value) => [value]);
+  mockDynamicQrProgress.mockImplementation(({ currentFrameIndex, totalFrames }) => (
+    <div role="progressbar" aria-valuemax={totalFrames} data-current-frame={currentFrameIndex} />
+  ));
 
   if (root && container) {
     act(() => {
@@ -109,12 +120,40 @@ describe("QRCodeWithErrorBoundary", () => {
     expect(page.textContent).toContain("Fee Token QR Code");
   });
 
-  it("renders long fee tokens as dynamic QR frames", () => {
-    const page = renderWithIntl(<FeeTokenQRCodeModal feeToken={"x".repeat(1100)} />);
-    const qrCode = page.querySelector('svg[data-value^="BCQR:"]');
-    const progress = page.querySelector('[role="progressbar"][aria-valuemax="3"]');
+  it("keeps the fee-token drawer shell when QR rendering fails", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mockQrSvg.mockImplementation(() => {
+      throw new Error("render error");
+    });
 
-    expect(qrCode?.getAttribute("data-value")).toMatch(/^BCQR:3:0:/);
-    expect(progress).not.toBeNull();
+    const page = renderWithIntl(<FeeTokenQRCodeModal feeToken="fee-token-abc" />);
+    const triggerButton = page.querySelector('button[aria-label="Show QR code for fee token"]');
+
+    expect(triggerButton).not.toBeNull();
+    expect(page.textContent).toContain("Fee Token QR Code");
+    expect(page.textContent).toContain("QR code cannot be generated");
+    errorSpy.mockRestore();
   });
+
+   it("renders long fee tokens as dynamic QR frames with progress indicator", async () => {
+     const feeToken = "x".repeat(1100);
+     const mockFrames = ["frame-1", "frame-2", "frame-3"];
+     
+     mockShouldUseDynamicQr.mockReturnValue(true);
+     mockSplitIntoDynamicQrFrames.mockReturnValue(mockFrames);
+     
+     const page = renderWithIntl(<FeeTokenQRCodeModal feeToken={feeToken} />);
+     await act(async () => {
+       await Promise.resolve();
+     });
+     
+     // Assert the component renders the first frame in the QR code
+     const qrCode = page.querySelector("svg[data-value]");
+     expect(qrCode?.getAttribute("data-value")).toBe(mockFrames[0]);
+     
+     // Assert progress indicator is rendered when dynamic mode is active
+     const progress = page.querySelector('[role="progressbar"]');
+     expect(progress).not.toBeNull();
+     expect(progress?.getAttribute("aria-valuemax")).toBe(String(mockFrames.length));
+   });
 });
