@@ -107,4 +107,13 @@ describe("QRCodeWithErrorBoundary", () => {
     expect(triggerButton).not.toBeNull();
     expect(page.textContent).toContain("Fee Token QR Code");
   });
+
+  it("renders long fee tokens as dynamic QR frames", () => {
+    const page = renderWithIntl(<FeeTokenQRCodeModal feeToken={"x".repeat(1100)} />);
+    const qrCode = page.querySelector('svg[data-value^="BCQR:"]');
+    const progress = page.querySelector('[role="progressbar"][aria-valuemax="3"]');
+
+    expect(qrCode?.getAttribute("data-value")).toMatch(/^BCQR:3:0:/);
+    expect(progress).not.toBeNull();
+  });
 });

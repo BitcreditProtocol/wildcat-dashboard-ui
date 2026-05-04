@@ -1,8 +1,21 @@
-import { Component, ReactNode, ErrorInfo, useEffect, useState } from "react";
+import { Component, ReactNode, ErrorInfo, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertTriangle, QrCode } from "lucide-react";
-import { AppIcon, Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@bitcredit/ui-library";
-import { Button } from "@bitcredit/ui-library";
+import {
+  AppIcon,
+  Button,
+  DEFAULT_DYNAMIC_QR_CHUNK_SIZE,
+  DEFAULT_DYNAMIC_QR_INTERVAL_MS,
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DynamicQrProgress,
+  createDynamicQrFrameLoop,
+  shouldUseDynamicQr,
+  splitIntoDynamicQrFrames,
+} from "@bitcredit/ui-library";
 import { canGenerateQRCode, canGenerateQRCodeAsync, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils";
 import { useIntl } from "react-intl";
 
@@ -169,6 +182,48 @@ export function QRCodeModal({ value, size = 768, label, title, triggerLabel }: Q
 
 export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string; size?: number }) {
   const intl = useIntl();
+  const [open, setOpen] = useState(false);
+  const useDynamicQr = shouldUseDynamicQr(feeToken, DEFAULT_DYNAMIC_QR_CHUNK_SIZE);
+  const frames = useMemo(
+    () => (useDynamicQr ? splitIntoDynamicQrFrames(feeToken, { chunkSize: DEFAULT_DYNAMIC_QR_CHUNK_SIZE }) : [feeToken]),
+    [feeToken, useDynamicQr]
+  );
+  const [currentFrame, setCurrentFrame] = useState(frames[0] ?? feeToken);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  const resolvedTitle = intl.formatMessage({
+    id: "qrCode.feeToken.title",
+    defaultMessage: "Fee Token QR Code",
+  });
+  const resolvedTriggerLabel = intl.formatMessage({
+    id: "qrCode.feeToken.triggerLabel",
+    defaultMessage: "Show QR code for fee token",
+  });
+  const resolvedLabel = intl.formatMessage({
+    id: "qrCode.feeToken.label",
+    defaultMessage: "Scan to use fee token",
+  });
+
+  useEffect(() => {
+    setCurrentFrame(frames[0] ?? feeToken);
+    setCurrentFrameIndex(0);
+
+    if (!open || !useDynamicQr || frames.length <= 1) {
+      return;
+    }
+
+    const controller = createDynamicQrFrameLoop(
+      frames,
+      (frame, index) => {
+        setCurrentFrame(frame);
+        setCurrentFrameIndex(index);
+      },
+      { intervalMs: DEFAULT_DYNAMIC_QR_INTERVAL_MS }
+    );
+
+    return () => {
+      controller.stop();
+    };
+  }, [feeToken, frames, open, useDynamicQr]);
 
   return (
     <QRCodeErrorBoundary
@@ -177,22 +232,25 @@ export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string
         defaultMessage: "QR code cannot be generated (data too large)",
       })}
     >
-      <QRCodeModal
-        value={feeToken}
-        size={size}
-        label={intl.formatMessage({
-          id: "qrCode.feeToken.label",
-          defaultMessage: "Scan to use fee token",
-        })}
-        title={intl.formatMessage({
-          id: "qrCode.feeToken.title",
-          defaultMessage: "Fee Token QR Code",
-        })}
-        triggerLabel={intl.formatMessage({
-          id: "qrCode.feeToken.triggerLabel",
-          defaultMessage: "Show QR code for fee token",
-        })}
-      />
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0" aria-label={resolvedTriggerLabel}>
+            <AppIcon icon={QrCode} size="sm" />
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader>
+            <DrawerTitle>{resolvedTitle}</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex flex-col items-center gap-4 p-0 sm:p-6">
+            <div className="flex flex-col items-center gap-3 p-4 bg-white border rounded-lg w-full max-w-[90vw] sm:max-w-md">
+              <QRCodeSVG value={currentFrame} size={size} level="M" className="w-full h-auto" />
+              {useDynamicQr && frames.length > 1 && <DynamicQrProgress currentFrameIndex={currentFrameIndex} totalFrames={frames.length} />}
+              <span className="text-xs text-muted-foreground text-center">{resolvedLabel}</span>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </QRCodeErrorBoundary>
   );
 }
