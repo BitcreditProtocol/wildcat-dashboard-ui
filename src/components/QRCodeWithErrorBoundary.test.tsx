@@ -27,6 +27,7 @@ vi.mock("@bitcredit/ui-library", async () => {
     DrawerContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     DrawerHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     DrawerTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DrawerDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
   };
 });
 

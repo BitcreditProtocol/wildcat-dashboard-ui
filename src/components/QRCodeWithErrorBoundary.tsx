@@ -4,10 +4,12 @@ import { AlertTriangle, QrCode } from "lucide-react";
 import {
   AppIcon,
   Button,
+  CopyToClipboardButton,
   DEFAULT_DYNAMIC_QR_CHUNK_SIZE,
   DEFAULT_DYNAMIC_QR_INTERVAL_MS,
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -202,6 +204,12 @@ export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string
     id: "qrCode.feeToken.label",
     defaultMessage: "Scan to use fee token",
   });
+  const copyLabel = intl
+    .formatMessage({
+      id: "quotes.detail.feeToken",
+      defaultMessage: "Fee token:",
+    })
+    .replace(/:$/, "");
 
   useEffect(() => {
     setCurrentFrame(frames[0] ?? feeToken);
@@ -238,15 +246,34 @@ export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string
             <AppIcon icon={QrCode} size="sm" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>{resolvedTitle}</DrawerTitle>
+        <DrawerContent className="max-w-full max-w-sm-[430px] max-h-none rounded-none border-0 bg-elevation-50 px-6 pb-8 text-text-300 dark:bg-elevation-50 [&>div:first-child]:hidden">
+          <DrawerHeader className="px-0 pb-5 pt-20 text-center sm:text-center">
+            <DrawerTitle className="text-xl font-semibold text-text-300">{resolvedTitle}</DrawerTitle>
+            <DrawerDescription className="text-sm text-text-200">{resolvedLabel}</DrawerDescription>
           </DrawerHeader>
-          <div className="flex flex-col items-center gap-4 p-0 sm:p-6">
-            <div className="flex flex-col items-center gap-3 p-4 bg-white border rounded-lg w-full max-w-[90vw] sm:max-w-md">
-              <QRCodeSVG value={currentFrame} size={size} level="M" className="w-full h-auto" />
-              {useDynamicQr && frames.length > 1 && <DynamicQrProgress currentFrameIndex={currentFrameIndex} totalFrames={frames.length} />}
-              <span className="text-xs text-muted-foreground text-center">{resolvedLabel}</span>
+          <div className="flex flex-col items-center gap-4 px-0">
+            <div className="w-full max-w-[330px] rounded-2xl border border-divider-200 bg-elevation-200 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+              <QRCodeSVG
+                value={currentFrame}
+                size={size}
+                level="M"
+                bgColor="var(--color-elevation-200)"
+                fgColor="var(--color-text-300)"
+                className="h-auto w-full"
+              />
+            </div>
+            {useDynamicQr && frames.length > 1 && (
+              <DynamicQrProgress currentFrameIndex={currentFrameIndex} totalFrames={frames.length} className="w-full max-w-[296px]" />
+            )}
+            <div className="flex w-full max-w-[260px] items-center justify-center gap-2 text-text-200">
+              <span className="min-w-0 truncate font-mono text-xs">{feeToken}</span>
+              <CopyToClipboardButton
+                value={feeToken}
+                label={copyLabel}
+                variant="ghost"
+                size="xxs"
+                className="shrink-0 !bg-transparent !p-0 text-text-200 hover:text-text-300"
+              />
             </div>
           </div>
         </DrawerContent>
