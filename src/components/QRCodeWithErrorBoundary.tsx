@@ -243,32 +243,32 @@ export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string
           <DrawerTitle className="text-xl font-semibold text-text-300">{resolvedTitle}</DrawerTitle>
           <DrawerDescription className="text-sm text-text-200">{resolvedLabel}</DrawerDescription>
         </DrawerHeader>
-         <div className="flex flex-col items-center gap-4 px-0">
-           <QRCodeErrorBoundary fallbackMessage={errorFallback}>
-             <div className="w-full max-w-[330px] rounded-2xl border border-divider-200 bg-elevation-200 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-               <QRCodeSVG
-                 value={currentFrame}
-                 size={size}
-                 level="M"
-                 bgColor="var(--color-elevation-200)"
-                 fgColor="var(--color-text-300)"
-                 className="h-auto w-full"
-               />
-             </div>
-             {shouldUseDynamicQrForToken && frames.length > 1 && (
-               <DynamicQrProgress currentFrameIndex={currentFrameIndex} totalFrames={frames.length} className="w-full max-w-[296px]" />
-             )}
-           </QRCodeErrorBoundary>
-           <div className="w-full text-text-200 flex justify-center">
-             <TruncatedTextPopover
-               text={feeToken}
-               maxLength={28}
-               showCopyButton={true}
-               truncationMode="middle"
-               className="font-mono text-xs text-text-200 hover:text-text-300"
-               contentClassName="border-divider-200 bg-elevation-200 text-text-300"
-             />
-           </div>
+        <div className="flex flex-col items-center gap-4 px-0">
+          <QRCodeErrorBoundary fallbackMessage={errorFallback}>
+            <div className="w-full max-w-[330px] rounded-2xl border border-divider-200 bg-elevation-200 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+              <QRCodeSVG
+                value={currentFrame}
+                size={size}
+                level="M"
+                bgColor="var(--color-elevation-200)"
+                fgColor="var(--color-text-300)"
+                className="h-auto w-full"
+              />
+            </div>
+            {shouldUseDynamicQrForToken && frames.length > 1 && (
+              <DynamicQrProgress currentFrameIndex={currentFrameIndex} totalFrames={frames.length} className="w-full max-w-[296px]" />
+            )}
+          </QRCodeErrorBoundary>
+          <div className="w-full text-text-200 flex justify-center">
+            <TruncatedTextPopover
+              text={feeToken}
+              maxLength={28}
+              showCopyButton={true}
+              truncationMode="middle"
+              className="font-mono text-xs text-text-200 hover:text-text-300"
+              contentClassName="border-divider-200 bg-elevation-200 text-text-300"
+            />
+          </div>
         </div>
       </DrawerContent>
     </Drawer>

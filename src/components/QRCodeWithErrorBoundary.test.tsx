@@ -135,25 +135,25 @@ describe("QRCodeWithErrorBoundary", () => {
     errorSpy.mockRestore();
   });
 
-   it("renders long fee tokens as dynamic QR frames with progress indicator", async () => {
-     const feeToken = "x".repeat(1100);
-     const mockFrames = ["frame-1", "frame-2", "frame-3"];
-     
-     mockShouldUseDynamicQr.mockReturnValue(true);
-     mockSplitIntoDynamicQrFrames.mockReturnValue(mockFrames);
-     
-     const page = renderWithIntl(<FeeTokenQRCodeModal feeToken={feeToken} />);
-     await act(async () => {
-       await Promise.resolve();
-     });
-     
-     // Assert the component renders the first frame in the QR code
-     const qrCode = page.querySelector("svg[data-value]");
-     expect(qrCode?.getAttribute("data-value")).toBe(mockFrames[0]);
-     
-     // Assert progress indicator is rendered when dynamic mode is active
-     const progress = page.querySelector('[role="progressbar"]');
-     expect(progress).not.toBeNull();
-     expect(progress?.getAttribute("aria-valuemax")).toBe(String(mockFrames.length));
-   });
+  it("renders long fee tokens as dynamic QR frames with progress indicator", async () => {
+    const feeToken = "x".repeat(1100);
+    const mockFrames = ["frame-1", "frame-2", "frame-3"];
+
+    mockShouldUseDynamicQr.mockReturnValue(true);
+    mockSplitIntoDynamicQrFrames.mockReturnValue(mockFrames);
+
+    const page = renderWithIntl(<FeeTokenQRCodeModal feeToken={feeToken} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Assert the component renders the first frame in the QR code
+    const qrCode = page.querySelector("svg[data-value]");
+    expect(qrCode?.getAttribute("data-value")).toBe(mockFrames[0]);
+
+    // Assert progress indicator is rendered when dynamic mode is active
+    const progress = page.querySelector('[role="progressbar"]');
+    expect(progress).not.toBeNull();
+    expect(progress?.getAttribute("aria-valuemax")).toBe(String(mockFrames.length));
+  });
 });

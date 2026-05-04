@@ -229,17 +229,17 @@ export function QuoteDetailCard({
               </div>
             </>
           )}
-           {quote.status === "MintingEnabled" && feeToken && (
-             <div className="flex items-center gap-2">
-               <Text variant="label" className="w-32">
-                 {intl.formatMessage({
-                   id: "quotes.detail.feeToken",
-                   defaultMessage: "Fee token:",
-                 })}
-               </Text>
-               <TruncatedTextPopover text={feeToken} maxLength={64} showCopyButton={true} className="font-mono text-sm cursor-pointer" />
-               <FeeTokenQRCodeModal feeToken={feeToken} />
-               {isFeeTokenStatusPending ? (
+          {quote.status === "MintingEnabled" && feeToken && (
+            <div className="flex items-center gap-2">
+              <Text variant="label" className="w-32">
+                {intl.formatMessage({
+                  id: "quotes.detail.feeToken",
+                  defaultMessage: "Fee token:",
+                })}
+              </Text>
+              <TruncatedTextPopover text={feeToken} maxLength={64} showCopyButton={true} className="font-mono text-sm cursor-pointer" />
+              <FeeTokenQRCodeModal feeToken={feeToken} />
+              {isFeeTokenStatusPending ? (
                 <Badge variant="loading">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.checking",
