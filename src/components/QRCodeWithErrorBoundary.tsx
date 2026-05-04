@@ -1,8 +1,23 @@
-import { Component, ReactNode, ErrorInfo, useEffect, useState } from "react";
+import { Component, ReactNode, ErrorInfo, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertTriangle, QrCode } from "lucide-react";
-import { AppIcon, Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@bitcredit/ui-library";
-import { Button } from "@bitcredit/ui-library";
+import {
+  AppIcon,
+  Button,
+  DEFAULT_DYNAMIC_QR_CHUNK_SIZE,
+  DEFAULT_DYNAMIC_QR_INTERVAL_MS,
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DynamicQrProgress,
+  TruncatedTextPopover,
+  createDynamicQrFrameLoop,
+  shouldUseDynamicQr,
+  splitIntoDynamicQrFrames,
+} from "@bitcredit/ui-library";
 import { canGenerateQRCode, canGenerateQRCodeAsync, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils";
 import { useIntl } from "react-intl";
 
@@ -169,30 +184,93 @@ export function QRCodeModal({ value, size = 768, label, title, triggerLabel }: Q
 
 export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string; size?: number }) {
   const intl = useIntl();
+  const [open, setOpen] = useState(false);
+  const shouldUseDynamicQrForToken = shouldUseDynamicQr(feeToken, DEFAULT_DYNAMIC_QR_CHUNK_SIZE);
+  const frames = useMemo(
+    () => (shouldUseDynamicQrForToken ? splitIntoDynamicQrFrames(feeToken, { chunkSize: DEFAULT_DYNAMIC_QR_CHUNK_SIZE }) : [feeToken]),
+    [feeToken, shouldUseDynamicQrForToken]
+  );
+  const [currentFrame, setCurrentFrame] = useState(frames[0] ?? feeToken);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  const resolvedTitle = intl.formatMessage({
+    id: "qrCode.feeToken.title",
+    defaultMessage: "Fee Token QR Code",
+  });
+  const resolvedTriggerLabel = intl.formatMessage({
+    id: "qrCode.feeToken.triggerLabel",
+    defaultMessage: "Show QR code for fee token",
+  });
+  const resolvedLabel = intl.formatMessage({
+    id: "qrCode.feeToken.label",
+    defaultMessage: "Scan to use fee token",
+  });
+  const errorFallback = intl.formatMessage({
+    id: "qrCode.error.generic",
+    defaultMessage: "QR code cannot be generated (data too large)",
+  });
+
+  useEffect(() => {
+    setCurrentFrame(frames[0] ?? feeToken);
+    setCurrentFrameIndex(0);
+
+    if (!open || !shouldUseDynamicQrForToken || frames.length <= 1) {
+      return;
+    }
+
+    const controller = createDynamicQrFrameLoop(
+      frames,
+      (frame, index) => {
+        setCurrentFrame(frame);
+        setCurrentFrameIndex(index);
+      },
+      { intervalMs: DEFAULT_DYNAMIC_QR_INTERVAL_MS }
+    );
+
+    return () => {
+      controller.stop();
+    };
+  }, [feeToken, frames, open, shouldUseDynamicQrForToken]);
 
   return (
-    <QRCodeErrorBoundary
-      fallbackMessage={intl.formatMessage({
-        id: "qrCode.error.generic",
-        defaultMessage: "QR code cannot be generated (data too large)",
-      })}
-    >
-      <QRCodeModal
-        value={feeToken}
-        size={size}
-        label={intl.formatMessage({
-          id: "qrCode.feeToken.label",
-          defaultMessage: "Scan to use fee token",
-        })}
-        title={intl.formatMessage({
-          id: "qrCode.feeToken.title",
-          defaultMessage: "Fee Token QR Code",
-        })}
-        triggerLabel={intl.formatMessage({
-          id: "qrCode.feeToken.triggerLabel",
-          defaultMessage: "Show QR code for fee token",
-        })}
-      />
-    </QRCodeErrorBoundary>
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0" aria-label={resolvedTriggerLabel}>
+          <AppIcon icon={QrCode} size="sm" />
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent className="max-w-full max-w-sm-[430px] max-h-none rounded-none border-0 bg-elevation-50 px-6 pb-8 text-text-300 dark:bg-elevation-50 [&>div:first-child]:hidden">
+        <DrawerHeader className="px-0 pb-5 pt-20 text-center sm:text-center">
+          <DrawerTitle className="text-xl font-semibold text-text-300">{resolvedTitle}</DrawerTitle>
+          <DrawerDescription className="text-sm text-text-200">{resolvedLabel}</DrawerDescription>
+        </DrawerHeader>
+        <div className="flex flex-col items-center gap-4 px-0">
+          <QRCodeErrorBoundary fallbackMessage={errorFallback}>
+            <div className="w-full max-w-[330px] rounded-2xl border border-divider-200 bg-elevation-200 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+              <QRCodeSVG
+                value={currentFrame}
+                size={size}
+                level="M"
+                bgColor="var(--color-elevation-200)"
+                fgColor="var(--color-text-300)"
+                className="h-auto w-full"
+              />
+            </div>
+            {shouldUseDynamicQrForToken && frames.length > 1 && (
+              <DynamicQrProgress currentFrameIndex={currentFrameIndex} totalFrames={frames.length} className="w-full max-w-[296px]" />
+            )}
+          </QRCodeErrorBoundary>
+          <div className="w-full text-text-200 flex justify-center">
+            <TruncatedTextPopover
+              text={feeToken}
+              maxLength={28}
+              showCopyButton={true}
+              truncationMode="middle"
+              className="font-mono text-xs text-text-200 hover:text-text-300"
+              contentClassName="border-divider-200 bg-elevation-200 text-text-300"
+            />
+          </div>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
