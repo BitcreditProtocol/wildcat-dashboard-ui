@@ -5,6 +5,7 @@ import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { getEbillAttachment } from "@/generated/client/sdk.gen";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
@@ -15,7 +16,6 @@ import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { client } from "@/lib/api-client";
 import { QuoteDocuments } from "./QuoteDocuments";
 import { useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
@@ -116,13 +116,12 @@ function PageBody({ id }: { id: string }) {
     setOpeningDocumentName(fileName);
 
     try {
-      const attachment = await client.get({
+      const attachment = await getEbillAttachment({
         path: {
-          bill_id: billId,
-          file_name: fileName,
+          bid: billId,
+          fname: fileName,
         },
         responseStyle: "data",
-        url: "/v1/admin/bill/attachment/{bill_id}/{file_name}",
         parseAs: "blob",
       });
 

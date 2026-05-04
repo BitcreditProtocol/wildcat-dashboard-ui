@@ -126,7 +126,7 @@ beforeEach(() => {
 });
 
 describe("QuoteActions", () => {
-  it("does not request mint info when backend mempool link is present", () => {
+  it("builds a mempool link from tx_id and requests mint info", () => {
     mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) => {
       if (options.queryKey[0]._id === "getEbill") {
         return {
@@ -140,48 +140,7 @@ describe("QuoteActions", () => {
                   time_of_request: 1,
                   currency: "sat",
                   sum: "100",
-                  link_to_pay: "",
                   address_to_pay: "tb1address",
-                  mempool_link_for_address_to_pay: "https://backend.example/tx/abc",
-                  tx_id: "abc",
-                  in_mempool: false,
-                  confirmations: 0,
-                  payment_deadline: 2,
-                },
-              },
-            },
-          },
-          error: null,
-        };
-      }
-
-      return { data: undefined, error: null };
-    });
-
-    const page = renderComponent();
-
-    expect(page.textContent).toContain("https://backend.example/tx/abc");
-    expect(mockUseQuery).toHaveBeenCalledTimes(2);
-    expect(seenQueryOptions[1]?.enabled).toBe(false);
-  });
-
-  it("builds a fallback mempool link when backend value is blank", () => {
-    mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) => {
-      if (options.queryKey[0]._id === "getEbill") {
-        return {
-          data: {
-            status: {
-              payment: { requested_to_pay: true, paid: false },
-            },
-            current_waiting_state: {
-              Payment: {
-                payment_data: {
-                  time_of_request: 1,
-                  currency: "sat",
-                  sum: "100",
-                  link_to_pay: "",
-                  address_to_pay: "tb1address",
-                  mempool_link_for_address_to_pay: "",
                   tx_id: "abc",
                   in_mempool: false,
                   confirmations: 0,

@@ -66,20 +66,16 @@ export function QuoteActions({
   const effectiveRequestTime = timeOfRequestToPay ?? paymentStatus?.time_of_request_to_pay ?? waitingPaymentData?.time_of_request ?? null;
   const effectiveDeadlineTs =
     paymentDeadlineTs ?? paymentStatus?.payment_deadline_timestamp ?? waitingPaymentData?.payment_deadline ?? null;
-  const rawBackendMempoolLink = waitingPaymentData?.mempool_link_for_address_to_pay?.trim();
-  const backendMempoolLink = rawBackendMempoolLink === "" ? undefined : rawBackendMempoolLink;
   const mintInfoQuery = useQuery({
     ...getMintInfoOptions(),
     retry: 1,
-    enabled: Boolean(waitingPaymentData?.tx_id && !backendMempoolLink),
+    enabled: Boolean(waitingPaymentData?.tx_id),
     staleTime: 5 * 60 * 1000,
   });
-  const linkToPay: string | undefined =
-    backendMempoolLink ??
-    buildMempoolTransactionUrl({
-      txId: waitingPaymentData?.tx_id,
-      network: mintInfoQuery.data?.network,
-    });
+  const linkToPay: string | undefined = buildMempoolTransactionUrl({
+    txId: waitingPaymentData?.tx_id,
+    network: mintInfoQuery.data?.network,
+  });
   const addressToPay: string | undefined = waitingPaymentData?.address_to_pay;
 
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>();
