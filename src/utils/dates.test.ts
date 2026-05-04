@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { daysBetween, formatDate, getDefaultDeadline, humanReadableDuration, humanReadableDurationDays, toUtcEndOfDay } from "./dates";
+import {
+  daysBetween,
+  formatDate,
+  getDefaultDeadline,
+  getUtcStartOfDate,
+  humanReadableDuration,
+  humanReadableDurationDays,
+  isBeforeUtcStartOfDate,
+  toUtcEndOfDay,
+} from "./dates";
 
 describe("dates utils", () => {
   beforeEach(() => {
@@ -32,6 +41,15 @@ describe("dates utils", () => {
   it("normalizes a date to the end of its UTC day", () => {
     const date = new Date("2026-02-20T08:15:00.000Z");
     expect(toUtcEndOfDay(date).toISOString()).toBe("2026-02-20T23:59:59.999Z");
+  });
+
+  it("normalizes an ISO date string to the start of its UTC day", () => {
+    expect(getUtcStartOfDate("2026-03-01")?.toISOString()).toBe("2026-03-01T00:00:00.000Z");
+  });
+
+  it("detects times before the UTC start of a date", () => {
+    expect(isBeforeUtcStartOfDate("2026-03-01", new Date("2026-02-28T23:59:59.999Z"))).toBe(true);
+    expect(isBeforeUtcStartOfDate("2026-03-01", new Date("2026-03-01T00:00:00.000Z"))).toBe(false);
   });
 
   it("uses maturity -2 days when maturity is in the future", () => {
