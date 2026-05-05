@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { AppIcon, Button, Text } from "@bitcredit/ui-library";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { useIntl } from "react-intl";
 
@@ -24,7 +24,7 @@ export function SortButtons<T extends string>({ sortBy, onSortChange, options }:
     if (!sortBy.startsWith(field)) {
       return null;
     }
-    return sortBy.endsWith("asc") ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+    return sortBy.endsWith("asc") ? <AppIcon icon={ArrowUp} size="sm" /> : <AppIcon icon={ArrowDown} size="sm" />;
   };
 
   const getTitle = (field: T, label: string) => {
@@ -56,12 +56,12 @@ export function SortButtons<T extends string>({ sortBy, onSortChange, options }:
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm font-medium">
+      <Text variant="label">
         {intl.formatMessage({
           id: "sortButtons.sortByLabel",
           defaultMessage: "Sort by:",
         })}
-      </span>
+      </Text>
       {options.map((option) => (
         <Button
           key={option.field}

@@ -6,10 +6,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { GrossToNetDiscountForm } from "./GrossToNetDiscountForm";
 
-vi.mock("./ui/drawer", () => ({
-  DrawerFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DrawerClose: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
+vi.mock("@bitcredit/ui-library", async () => {
+  const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
+  return {
+    ...actual,
+    DrawerFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DrawerClose: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  };
+});
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -70,8 +74,7 @@ beforeEach(() => {
 
 describe("GrossToNetDiscountForm", () => {
   it("formats non-sat summary values using the decimal separator preference", async () => {
-    storageData["decimal-format"] = JSON.stringify("point");
-    storageData["display-currency"] = JSON.stringify("eur");
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "point", currency: "eur" });
     storageData["offer-form-quote-1"] = JSON.stringify({
       daysInput: "30",
       discountRateInput: "10",
@@ -95,8 +98,7 @@ describe("GrossToNetDiscountForm", () => {
   });
 
   it("keeps sat formatting integer even when display currency preference is fiat", async () => {
-    storageData["decimal-format"] = JSON.stringify("space");
-    storageData["display-currency"] = JSON.stringify("usd");
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "space", currency: "usd" });
     storageData["offer-form-quote-2"] = JSON.stringify({
       daysInput: "30",
       discountRateInput: "10",
@@ -120,5 +122,51 @@ describe("GrossToNetDiscountForm", () => {
     expect(page.textContent).toContain("sat");
     expect(page.textContent).not.toContain("$");
     expect(page.textContent).not.toContain("usd");
+  });
+
+  it("uses grouped display for calculated sat net input when amount is large", async () => {
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "point", currency: "sat" });
+    storageData["offer-form-quote-3"] = JSON.stringify({
+      daysInput: "14",
+      discountRateInput: "50.0000",
+      netInput: "",
+    });
+
+    const page = renderWithProviders(
+      <GrossToNetDiscountForm
+        endDate={new Date("2026-03-01")}
+        gross={{ value: new Big("10000000000000"), currency: "sat" }}
+        quoteId="quote-3"
+        onSubmit={() => undefined}
+      />
+    );
+
+    await flush();
+
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9.805.555.555.555");
+    expect(page.textContent).toContain("194.444.444.445");
+  });
+
+  it("normalizes grouped stored sat net input values", async () => {
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "point", currency: "sat" });
+    storageData["offer-form-quote-4"] = JSON.stringify({
+      daysInput: "14",
+      discountRateInput: "50.0000",
+      netInput: "9.805.555.555.555",
+    });
+
+    const page = renderWithProviders(
+      <GrossToNetDiscountForm
+        endDate={new Date("2026-03-01")}
+        gross={{ value: new Big("10000000000000"), currency: "sat" }}
+        quoteId="quote-4"
+        onSubmit={() => undefined}
+      />
+    );
+
+    await flush();
+
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9.805.555.555.555");
+    expect(page.textContent).toContain("194.444.444.445");
   });
 });

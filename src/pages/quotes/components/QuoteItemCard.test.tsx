@@ -5,7 +5,6 @@ import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
-import type { Rates } from "@/lib/currency";
 import type { LightInfo } from "@/generated/client/types.gen";
 import { QuoteItemCard } from "./QuoteItemCard";
 
@@ -24,18 +23,19 @@ interface MockQuoteQuery {
   error: unknown;
 }
 
-const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
 const mockUseQuery = vi.fn<() => MockQuoteQuery>();
-
-vi.mock("@/hooks/useRates", () => ({
-  useRates: () => mockUseRates(),
-}));
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
-    useQuery: () => mockUseQuery(),
+    useQuery: (options: Parameters<typeof actual.useQuery>[0]) => {
+      const key = options?.queryKey;
+      if (Array.isArray(key) && key[0] === "rates" && key[1] === "coinbase") {
+        return actual.useQuery(options);
+      }
+      return mockUseQuery();
+    },
   };
 });
 
@@ -49,7 +49,7 @@ vi.mock("@/components/ParticipantsOverview", () => ({
   ParticipantsOverviewCard: () => <div>ParticipantsOverviewMock</div>,
 }));
 
-vi.mock("@/components/ui/search", () => ({
+vi.mock("@/components/ui/highlight-text", () => ({
   HighlightText: ({ text }: { text: string }) => <span>{text}</span>,
 }));
 
@@ -71,7 +71,7 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 
 function renderWithProviders(element: ReactElement): HTMLDivElement {
   return renderIntoDom(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <IntlProvider locale="en-US">
         <PreferencesProvider>
           <MemoryRouter>{element}</MemoryRouter>
@@ -79,6 +79,16 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
       </IntlProvider>
     </QueryClientProvider>
   );
+}
+
+async function flush() {
+  for (let i = 0; i < 5; i++) {
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  }
 }
 
 beforeEach(() => {
@@ -107,14 +117,23 @@ beforeEach(() => {
 });
 
 describe("QuoteItemCard", () => {
-  it("renders sat primary and eur secondary amount when rates are available", () => {
-    storageData["display-currency"] = JSON.stringify("eur");
-    mockUseRates.mockReturnValue({
-      data: {
-        usdPerBtc: 100_000,
-        eurPerUsd: 0.9,
-      },
-    });
+  it("renders sat primary and eur secondary amount when rates are available", async () => {
+    storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              rates: {
+                USD: "100000",
+                EUR: "90000",
+              },
+            },
+          }),
+      })
+    );
     mockUseQuery.mockReturnValue({
       data: {
         bill: {
@@ -142,17 +161,25 @@ describe("QuoteItemCard", () => {
       />
     );
 
+    await flush();
+
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
     expect(page.textContent).toContain("90,000.00");
     expect(page.textContent).toContain("eur");
   });
 
-  it("renders sat-only amount when fiat rates are unavailable", () => {
-    storageData["display-currency"] = JSON.stringify("usd");
-    mockUseRates.mockReturnValue({
-      data: undefined,
-    });
+  it("renders sat-only amount when fiat rates are unavailable", async () => {
+    storageData["user-preferences"] = JSON.stringify({ currency: "usd" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        text: () => Promise.resolve("Bad Request"),
+      })
+    );
     mockUseQuery.mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -166,6 +193,8 @@ describe("QuoteItemCard", () => {
         searchQuery=""
       />
     );
+
+    await flush();
 
     expect(page.textContent).toContain("12,345");
     expect(page.textContent).toContain("sat");

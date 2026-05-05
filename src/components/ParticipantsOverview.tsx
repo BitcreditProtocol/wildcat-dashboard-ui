@@ -1,9 +1,8 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@bitcredit/ui-library";
 import { getDeterministicColor, getInitials } from "@/utils/strings";
 import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from "@/generated/client/types.gen";
-import { cn } from "@/lib/utils";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { cn } from "@bitcredit/ui-library";
+import { NodeIdDisplay, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { UserAnonymousIcon } from "@/components/icons/UserAnonymous";
 import type React from "react";
 import { useIntl } from "react-intl";
@@ -219,11 +218,7 @@ export function ParticipantDetail({ participant }: { participant: BillIdentParti
               defaultMessage: "Bearer",
             })}
           </div>
-          {anonData?.node_id && (
-            <div className="text-xs text-muted-foreground font-mono break-all">
-              <TruncatedTextPopover text={anonData.node_id} maxLength={50} className="text-sm font-medium" as="span" showFullOnDesktop />
-            </div>
-          )}
+          {anonData?.node_id && <NodeIdDisplay nodeId={anonData.node_id} />}
         </div>
       </div>
     );
@@ -254,9 +249,7 @@ export function ParticipantDetail({ participant }: { participant: BillIdentParti
             <TruncatedTextPopover text={`${data.city}, ${data.country}`} maxLength={50} className="text-xs" as="span" />
           </div>
         )}
-        <div className="text-xs text-muted-foreground font-mono break-all">
-          <TruncatedTextPopover text={data.node_id} maxLength={50} className="text-sm font-medium" as="span" showFullOnDesktop />
-        </div>
+        <NodeIdDisplay nodeId={data.node_id} />
       </div>
     </div>
   );

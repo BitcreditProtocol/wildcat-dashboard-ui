@@ -29,6 +29,9 @@
     "indentWidth": 2,
     "lineWidth": 140
   },
+  "assist": {
+    "enabled": false
+  },
   "linter": {
     "enabled": false
   },

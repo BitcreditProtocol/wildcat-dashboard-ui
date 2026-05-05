@@ -1,8 +1,11 @@
+import { toast } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@bitcredit/ui-library";
+import { Skeleton } from "@bitcredit/ui-library";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { getEbillAttachment } from "@/generated/client/sdk.gen";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
@@ -12,9 +15,7 @@ import { EndorsementChain } from "@/components/EndorsementChain";
 import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { client } from "@/lib/api-client";
 import { QuoteDocuments } from "./QuoteDocuments";
 import { useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
@@ -115,13 +116,12 @@ function PageBody({ id }: { id: string }) {
     setOpeningDocumentName(fileName);
 
     try {
-      const attachment = await client.get({
+      const attachment = await getEbillAttachment({
         path: {
-          bill_id: billId,
-          file_name: fileName,
+          bid: billId,
+          fname: fileName,
         },
         responseStyle: "data",
-        url: "/v1/admin/bill/attachment/{bill_id}/{file_name}",
         parseAs: "blob",
       });
 
@@ -153,15 +153,14 @@ function PageBody({ id }: { id: string }) {
         blobUrlTimerRef.current = null;
       }, 60_000);
     } catch (error) {
-      toast.error(
-        intl.formatMessage({
+      toast({
+        title: intl.formatMessage({
           id: "quotes.documents.openError",
           defaultMessage: "Failed to open document",
         }),
-        {
-          description: getApiErrorMessage(error),
-        }
-      );
+        description: getApiErrorMessage(error),
+        variant: "error",
+      });
     } finally {
       setOpeningDocumentName(null);
     }
@@ -286,30 +285,48 @@ export default function QuotePage() {
 
       <div className="flex items-center justify-between">
         <PageTitle>
-          {intl.formatMessage({
-            id: "quotes.detail.title",
-            defaultMessage: "Quote",
-          })}{" "}
-          <span className="font-mono">{truncateString(quoteId, 16)}</span>
+          <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+            <span>
+              {intl.formatMessage({
+                id: "quotes.detail.title",
+                defaultMessage: "Quote",
+              })}
+            </span>
+            <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
+          </span>
         </PageTitle>
         {fromKeyset && keysetIdFromState ? (
           <Button variant="outline" size="sm" asChild>
-            <Link to={`/keysets/${keysetIdFromState}`} state={{ from: `/quotes/${quoteId}` }}>
-              {intl.formatMessage({
-                id: "quotes.detail.backToKeyset",
-                defaultMessage: "Back to keyset",
-              })}{" "}
-              <span className="font-mono">{truncateString(keysetIdFromState, 16)}</span>
+            <Link
+              to={`/keysets/${keysetIdFromState}`}
+              state={{ from: `/quotes/${quoteId}` }}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.backToKeyset",
+                  defaultMessage: "Back to keyset",
+                })}
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
             </Link>
           </Button>
         ) : hasKeysetId ? (
           <Button variant="outline" size="sm" asChild>
-            <Link to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`} state={{ from: `/quotes/${quoteId}` }}>
-              {intl.formatMessage({
-                id: "quotes.detail.goToKeyset",
-                defaultMessage: "Go to keyset",
-              })}{" "}
-              <span className="font-mono">{truncateString(serializeKeysetId(quoteData.keyset_id), 16)}</span>
+            <Link
+              to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
+              state={{ from: `/quotes/${quoteId}` }}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.goToKeyset",
+                  defaultMessage: "Go to keyset",
+                })}
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">
+                {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
+              </span>
             </Link>
           </Button>
         ) : null}

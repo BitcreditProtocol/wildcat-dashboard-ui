@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { AppIcon, Button, Text, toast } from "@bitcredit/ui-library";
 import { ConfirmDrawer } from "@/components/Drawers";
 import { AlertCircleIcon, LoaderIcon } from "lucide-react";
 import { CalendarModal, DatePickerButton } from "./CalendarModal";
@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useIntl } from "react-intl";
 import { getItem, setItem } from "@/utils/local-storage";
+import { getUtcStartOfDate } from "@/utils/dates";
 
 interface RequestToPayConfirmationProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface RequestToPayConfirmationProps {
 
 const REQUEST_TO_PAY_DEADLINE_STORAGE_KEY = "requestToPayDeadlineUtc";
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+const MAX_TIMEOUT_MS = 2_147_483_647;
 
 const getMinSelectableDate = (maturityDate?: string | null): Date => {
   const now = new Date();
@@ -46,6 +48,9 @@ export function RequestToPayConfirmation({
   const [showPaymentCalendar, setShowPaymentCalendar] = useState(false);
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined);
   const minSelectableDate = useMemo(() => getMinSelectableDate(maturityDate), [maturityDate]);
+  const maturityUtcStart = useMemo(() => getUtcStartOfDate(maturityDate), [maturityDate]);
+  const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
+  const requestToPayBlockedUntilMaturity = Boolean(maturityUtcStart && currentTimeMs < maturityUtcStart.getTime());
 
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
@@ -58,6 +63,39 @@ export function RequestToPayConfirmation({
   });
 
   const ebillAvailable = !ebillQuery.isLoading && !ebillQuery.error && !!ebillQuery.data;
+  const requestToPayTriggerDisabled = isFetching || isPending || !ebillAvailable;
+  const maturityBlockedMessage = intl.formatMessage(
+    {
+      id: "quotes.requestToPay.blockedUntilMaturity",
+      defaultMessage: "Request to pay is available on the maturity date ({maturityDate}).",
+    },
+    { maturityDate: maturityDate ?? "" }
+  );
+
+  useEffect(() => {
+    if (!maturityUtcStart || currentTimeMs >= maturityUtcStart.getTime()) {
+      return;
+    }
+
+    const timeUntilMaturity = maturityUtcStart.getTime() - currentTimeMs;
+    const timeoutId = window.setTimeout(
+      () => {
+        setCurrentTimeMs(Date.now());
+      },
+      Math.min(timeUntilMaturity, MAX_TIMEOUT_MS)
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentTimeMs, maturityUtcStart]);
+
+  const showMaturityBlockedToast = () => {
+    toast({
+      title: maturityBlockedMessage,
+      variant: "info",
+    });
+  };
 
   useEffect(() => {
     if (!open || validUntilDate) {
@@ -93,9 +131,19 @@ export function RequestToPayConfirmation({
         })}
         open={open}
         onOpenChange={(isOpen) => {
+          if (isOpen && requestToPayBlockedUntilMaturity) {
+            showMaturityBlockedToast();
+            return;
+          }
+
           onOpenChange(isOpen);
         }}
         onSubmit={() => {
+          if (requestToPayBlockedUntilMaturity) {
+            showMaturityBlockedToast();
+            return;
+          }
+
           if (validUntilDate) {
             onSubmit(validUntilDate);
           }
@@ -104,22 +152,40 @@ export function RequestToPayConfirmation({
           id: "quotes.requestToPay.confirmButton",
           defaultMessage: "Yes, request to pay",
         })}
-        submitButtonDisabled={!validUntilDate}
+        submitButtonDisabled={!validUntilDate || requestToPayBlockedUntilMaturity}
         trigger={
-          <div className="flex flex-col items-start gap-1 flex-1 max-w-sm">
+          <div
+            className={`flex flex-col items-start gap-1 flex-1 max-w-sm${requestToPayBlockedUntilMaturity ? " cursor-not-allowed" : ""}`}
+            aria-disabled={requestToPayBlockedUntilMaturity}
+            title={requestToPayBlockedUntilMaturity ? maturityBlockedMessage : undefined}
+            onClick={(e) => {
+              if (requestToPayBlockedUntilMaturity) {
+                e.preventDefault();
+                e.stopPropagation();
+                showMaturityBlockedToast();
+              }
+            }}
+          >
             <Button
-              className="w-full"
-              disabled={isFetching || isPending || !ebillAvailable}
+              className={requestToPayBlockedUntilMaturity ? "w-full cursor-not-allowed opacity-50" : "w-full"}
+              disabled={requestToPayTriggerDisabled}
+              aria-disabled={requestToPayBlockedUntilMaturity}
+              title={requestToPayBlockedUntilMaturity ? maturityBlockedMessage : undefined}
               variant="default"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (requestToPayBlockedUntilMaturity) {
+                  showMaturityBlockedToast();
+                  return;
+                }
+
                 onOpenChange(true);
               }}
             >
               {ebillQuery.isError ? (
                 <span className="flex items-center gap-2">
-                  <AlertCircleIcon className="stroke-1" />
+                  <AppIcon icon={AlertCircleIcon} weight="thin" />
                   {intl.formatMessage({
                     id: "quotes.requestToPay.errorInfo",
                     defaultMessage: "Failed to load payment info",
@@ -127,7 +193,7 @@ export function RequestToPayConfirmation({
                 </span>
               ) : !ebillAvailable ? (
                 <span className="flex items-center gap-2">
-                  <LoaderIcon className="stroke-1 animate-spin" />
+                  <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />
                   {intl.formatMessage({
                     id: "quotes.requestToPay.loadingInfo",
                     defaultMessage: "Loading information for payment",
@@ -139,7 +205,7 @@ export function RequestToPayConfirmation({
                     id: "quotes.requestToPay.button",
                     defaultMessage: "Request to pay",
                   })}{" "}
-                  {isPending && <LoaderIcon className="stroke-1 animate-spin" />}
+                  {isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
                 </span>
               )}
             </Button>
@@ -162,12 +228,12 @@ export function RequestToPayConfirmation({
       >
         <div className="flex flex-col gap-4 px-4 py-4">
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold">
+            <Text variant="label">
               {intl.formatMessage({
                 id: "quotes.requestToPay.deadlineLabel",
                 defaultMessage: "Payment deadline:",
               })}
-            </span>
+            </Text>
             <DatePickerButton
               date={validUntilDate}
               onClick={() => {

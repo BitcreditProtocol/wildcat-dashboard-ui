@@ -1,7 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
-import { FormattedMessage, useIntl } from "react-intl";
+import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import { InfoField } from "@/components/InfoField";
+import { Heading, Text } from "@bitcredit/ui-library";
+
+const versionMessages = defineMessages({
+  wildcat: { id: "home.mint.version.wildcat", defaultMessage: "Wildcat" },
+  ebillCore: { id: "home.mint.version.ebillCore", defaultMessage: "BCR eBill Core" },
+  cdkMintd: { id: "home.mint.version.cdkMintd", defaultMessage: "CDK Mintd" },
+  clowder: { id: "home.mint.version.clowder", defaultMessage: "Clowder" },
+});
 
 export function MintInfoCard() {
   const intl = useIntl();
@@ -16,9 +24,9 @@ export function MintInfoCard() {
 
   return (
     <div className="bg-card text-card-foreground rounded-lg border p-6">
-      <h3 className="text-lg font-semibold mb-4">
+      <Heading as="h3" variant="sub" className="mb-4">
         <FormattedMessage id="home.mint.title" defaultMessage="Mint Info" />
-      </h3>
+      </Heading>
       {mintLoading ? (
         <div className="text-center text-muted-foreground">
           <FormattedMessage id="home.mint.loading" defaultMessage="Loading mint information..." />
@@ -50,23 +58,23 @@ export function MintInfoCard() {
           />
 
           <div className="border-t pt-4 mt-4">
-            <h4 className="text-md font-semibold mb-4">
+            <Heading as="h4" variant="sub" className="mb-4">
               <FormattedMessage id="home.mint.versions" defaultMessage="Versions" />
-            </h4>
+            </Heading>
             <div className="flex flex-col gap-3">
               {(
                 [
-                  ["home.mint.version.wildcat", "Wildcat", mintData.versions.wildcat],
-                  ["home.mint.version.ebillCore", "BCR eBill Core", mintData.versions.bcr_ebill_core],
-                  ["home.mint.version.cdkMintd", "CDK Mintd", mintData.versions.cdk_mintd],
-                  ["home.mint.version.clowder", "Clowder", mintData.versions.clowder],
+                  [versionMessages.wildcat, mintData.versions.wildcat],
+                  [versionMessages.ebillCore, mintData.versions.bcr_ebill_core],
+                  [versionMessages.cdkMintd, mintData.versions.cdk_mintd],
+                  [versionMessages.clowder, mintData.versions.clowder],
                 ] as const
-              ).map(([id, defaultMessage, version]) => (
-                <div key={id} className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    {intl.formatMessage({ id, defaultMessage })}
-                  </span>
-                  <span className="text-sm font-mono">{version}</span>
+              ).map(([message, version]) => (
+                <div key={message.id} className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{intl.formatMessage(message)}</span>
+                  <Text variant="mono" monoSize="sm">
+                    {version}
+                  </Text>
                 </div>
               ))}
             </div>
@@ -78,18 +86,18 @@ export function MintInfoCard() {
                 <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                   <FormattedMessage id="home.mint.startedAt" defaultMessage="Started At" />
                 </span>
-                <span className="text-sm">{new Date(mintData.uptime_timestamp).toLocaleString(undefined, { timeZone: "UTC" })}</span>
+                <Text variant="caption">{new Date(mintData.uptime_timestamp).toLocaleString(undefined, { timeZone: "UTC" })}</Text>
               </div>
               {mintData.build_time && (
                 <div className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                     <FormattedMessage id="home.mint.buildTime" defaultMessage="Build Time" />
                   </span>
-                  <span className="text-sm">
+                  <Text variant="caption">
                     {new Date(mintData.build_time).toLocaleString(undefined, {
                       timeZone: "UTC",
                     })}
-                  </span>
+                  </Text>
                 </div>
               )}
             </div>

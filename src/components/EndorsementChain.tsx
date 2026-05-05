@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton } from "@bitcredit/ui-library";
 import {
   ChevronDown,
   ChevronUp,
@@ -13,11 +13,9 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
-import { useIntl } from "react-intl";
+import { AppIcon, Button, Text } from "@bitcredit/ui-library";
+import { NodeIdDisplay, Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
+import { defineMessages, useIntl } from "react-intl";
 
 interface EndorsementChainProps {
   endorsements?: Endorsement[];
@@ -39,7 +37,7 @@ function LightParticipantInfo({ participant }: { participant: LightBillParticipa
             defaultMessage: "Bearer",
           })}
         </span>
-        <TruncatedTextPopover text={participant.Anon.node_id} maxLength={64} className="font-mono text-xs text-muted-foreground" />
+        <NodeIdDisplay nodeId={participant.Anon.node_id} />
       </div>
     );
   } else if ("Ident" in participant) {
@@ -65,60 +63,63 @@ interface HistoryEvent {
   data: Endorsement | null;
 }
 
+const eventMessages = defineMessages({
+  issue: { id: "endorsement.event.issue", defaultMessage: "Bill issued" },
+  offered: { id: "endorsement.event.offered", defaultMessage: "Quote offered" },
+  acceptance: { id: "endorsement.event.acceptance", defaultMessage: "Bill accepted" },
+  rejection: { id: "endorsement.event.rejection", defaultMessage: "Bill rejected" },
+  endorsement: { id: "endorsement.event.endorsed", defaultMessage: "Bill endorsed" },
+  minting: { id: "endorsement.event.minting", defaultMessage: "Minting enabled" },
+  requestToPay: { id: "endorsement.event.requestToPay", defaultMessage: "Request to pay" },
+  rejectedToPay: { id: "endorsement.event.rejectedToPay", defaultMessage: "Payment rejected" },
+  payment: { id: "endorsement.event.payment", defaultMessage: "Payment received" },
+});
+
 const EVENT_CONFIG = {
   issue: {
     icon: PencilLine,
     color: "text-blue-500",
-    labelId: "endorsement.event.issue",
-    defaultLabel: "Bill issued",
+    label: eventMessages.issue,
   },
   offered: {
     icon: CheckCircle2,
     color: "text-blue-500",
-    labelId: "endorsement.event.offered",
-    defaultLabel: "Quote offered",
+    label: eventMessages.offered,
   },
   acceptance: {
     icon: CheckCircle2,
     color: "text-green-500",
-    labelId: "endorsement.event.acceptance",
-    defaultLabel: "Bill accepted",
+    label: eventMessages.acceptance,
   },
   rejection: {
     icon: XCircle,
     color: "text-red-500",
-    labelId: "endorsement.event.rejection",
-    defaultLabel: "Bill rejected",
+    label: eventMessages.rejection,
   },
   endorsement: {
     icon: CheckCircle2,
     color: "text-green-500",
-    labelId: "endorsement.event.endorsed",
-    defaultLabel: "Bill endorsed",
+    label: eventMessages.endorsement,
   },
   minting: {
     icon: Coins,
     color: "text-purple-500",
-    labelId: "endorsement.event.minting",
-    defaultLabel: "Minting enabled",
+    label: eventMessages.minting,
   },
   requestToPay: {
     icon: AlertTriangle,
     color: "text-orange-500",
-    labelId: "endorsement.event.requestToPay",
-    defaultLabel: "Request to pay",
+    label: eventMessages.requestToPay,
   },
   rejectedToPay: {
     icon: XCircle,
     color: "text-red-500",
-    labelId: "endorsement.event.rejectedToPay",
-    defaultLabel: "Payment rejected",
+    label: eventMessages.rejectedToPay,
   },
   payment: {
     icon: DollarSign,
     color: "text-green-600",
-    labelId: "endorsement.event.payment",
-    defaultLabel: "Payment received",
+    label: eventMessages.payment,
   },
 } as const;
 
@@ -303,7 +304,7 @@ export function EndorsementChain({
                     defaultMessage: "Show history",
                   })}
             </span>
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isExpanded ? <AppIcon icon={ChevronUp} size="sm" /> : <AppIcon icon={ChevronDown} size="sm" />}
           </span>
         </button>
       </CardHeader>
@@ -320,7 +321,7 @@ export function EndorsementChain({
               }}
               className="gap-2"
             >
-              <ArrowUpDown className="h-3 w-3" />
+              <AppIcon icon={ArrowUpDown} size={12} />
               <span className="text-xs">
                 {sortByTimestamp
                   ? intl.formatMessage({
@@ -346,25 +347,21 @@ export function EndorsementChain({
             <div className="flex flex-col gap-4">
               {events.map((event, index) => {
                 const config = EVENT_CONFIG[event.type];
-                const Icon = config.icon;
-                const displayLabel = intl.formatMessage({
-                  id: config.labelId,
-                  defaultMessage: config.defaultLabel,
-                });
+                const displayLabel = intl.formatMessage(config.label);
 
                 return (
                   <div key={index}>
                     <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-lg">
                       {/* Event Header */}
                       <div className="flex items-center gap-2">
-                        <Icon className={`h-4 w-4 ${config.color}`} />
-                        <span className="text-sm font-semibold">{displayLabel}</span>
+                        <AppIcon icon={config.icon} size="sm" className={config.color} />
+                        <Text variant="label">{displayLabel}</Text>
                       </div>
 
                       {/* Timestamp */}
                       {event.timestamp !== undefined && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
+                          <AppIcon icon={Clock} size={12} />
                           <span>{new Date(event.timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
                         </div>
                       )}
@@ -442,7 +439,7 @@ export function EndorsementChain({
                       )}
                     </div>
 
-                    {index < events.length - 1 && <Separator className="my-2" />}
+                    {index < events.length - 1 && <Separator className="bg-divider-75 my-2" />}
                   </div>
                 );
               })}

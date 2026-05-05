@@ -5,7 +5,6 @@ import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
-import type { Rates } from "@/lib/currency";
 import BalancesPage from "./BalancesPage";
 
 interface MockCoverage {
@@ -19,18 +18,19 @@ interface MockCoverage {
   refetch: ReturnType<typeof vi.fn>;
 }
 
-const mockUseRates = vi.fn<() => { data: Rates | undefined }>();
 const mockUseQuery = vi.fn<() => MockCoverage>();
-
-vi.mock("@/hooks/useRates", () => ({
-  useRates: () => mockUseRates(),
-}));
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
-    useQuery: () => mockUseQuery(),
+    useQuery: (options: Parameters<typeof actual.useQuery>[0]) => {
+      const key = options?.queryKey;
+      if (Array.isArray(key) && key[0] === "rates" && key[1] === "coinbase") {
+        return actual.useQuery(options);
+      }
+      return mockUseQuery();
+    },
   };
 });
 
@@ -80,7 +80,7 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 
 function renderWithProviders(element: ReactElement): HTMLDivElement {
   return renderIntoDom(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter>
         <IntlProvider locale="en-US">
           <PreferencesProvider>{element}</PreferencesProvider>
@@ -88,6 +88,16 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
       </MemoryRouter>
     </QueryClientProvider>
   );
+}
+
+async function flush() {
+  for (let i = 0; i < 5; i++) {
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  }
 }
 
 beforeEach(() => {
@@ -116,14 +126,23 @@ beforeEach(() => {
 });
 
 describe("BalancesPage", () => {
-  it("shows secondary fiat display for sat balances and leaves custom units unchanged", () => {
-    storageData["display-currency"] = JSON.stringify("eur");
-    mockUseRates.mockReturnValue({
-      data: {
-        usdPerBtc: 100_000,
-        eurPerUsd: 0.9,
-      },
-    });
+  it("shows secondary fiat display for sat balances and leaves custom units unchanged", async () => {
+    storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              rates: {
+                USD: "100000",
+                EUR: "90000",
+              },
+            },
+          }),
+      })
+    );
     mockUseQuery.mockReturnValue({
       data: {
         onchain_collateral: 100_000_000,
@@ -136,6 +155,7 @@ describe("BalancesPage", () => {
     });
 
     const page = renderWithProviders(<BalancesPage />);
+    await flush();
 
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("90,000.00");
@@ -145,11 +165,17 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("777 crsat");
   });
 
-  it("shows only original sat amounts when fiat rates are unavailable", () => {
-    storageData["display-currency"] = JSON.stringify("usd");
-    mockUseRates.mockReturnValue({
-      data: undefined,
-    });
+  it("shows only original sat amounts when fiat rates are unavailable", async () => {
+    storageData["user-preferences"] = JSON.stringify({ currency: "usd" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        text: () => Promise.resolve("Bad Request"),
+      })
+    );
     mockUseQuery.mockReturnValue({
       data: {
         onchain_collateral: 12_345,
@@ -162,6 +188,7 @@ describe("BalancesPage", () => {
     });
 
     const page = renderWithProviders(<BalancesPage />);
+    await flush();
 
     expect(page.textContent).toContain("12,345");
     expect(page.textContent).toContain("67,890");

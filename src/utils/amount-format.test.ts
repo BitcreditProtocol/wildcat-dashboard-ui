@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmountString, parseAmountString } from "./amount-format";
+import { formatAmountString, formatGroupedSats, parseAmountString } from "./amount-format";
 
 describe("amount formatting", () => {
   it("formats and parses comma-style numbers", () => {
@@ -22,5 +22,13 @@ describe("amount formatting", () => {
     expect(parseAmountString("", "comma")).toBeUndefined();
     expect(parseAmountString("abc", "comma")).toBeUndefined();
     expect(parseAmountString("1,234.56", "point")).toBeUndefined();
+  });
+
+  it("formats grouped sats without decimals", () => {
+    expect(formatGroupedSats(9805555555555, "comma")).toBe("9,805,555,555,555");
+    expect(formatGroupedSats("9805555555555", "point")).toBe("9.805.555.555.555");
+    expect(formatGroupedSats("9805555555555", "space")).toBe("9 805 555 555 555");
+    expect(formatGroupedSats(0, "comma")).toBe("");
+    expect(formatGroupedSats(-1, "comma")).toBe("");
   });
 });

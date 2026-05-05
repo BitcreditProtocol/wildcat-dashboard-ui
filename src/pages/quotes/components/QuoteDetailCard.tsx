@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, Text } from "@bitcredit/ui-library";
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview";
 import { Currency } from "@/components/Currency";
-import { TruncatedTextPopover } from "@/components/TruncatedTextPopover";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
@@ -58,30 +58,34 @@ export function QuoteDetailCard({
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold w-32">
+              <Text variant="label" className="w-32">
                 {intl.formatMessage({
                   id: "quotes.detail.quoteId",
                   defaultMessage: "Quote ID:",
                 })}
-              </span>
-              <span className="font-mono text-sm">{quote.id}</span>
+              </Text>
+              <Text variant="mono" monoSize="sm">
+                {quote.id}
+              </Text>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold w-32">
+              <Text variant="label" className="w-32">
                 {intl.formatMessage({
                   id: "quotes.detail.billId",
                   defaultMessage: "Bill ID:",
                 })}
-              </span>
-              <span className="font-mono text-sm">{quote.bill.id}</span>
+              </Text>
+              <Text variant="mono" monoSize="sm">
+                {quote.bill.id}
+              </Text>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold w-32">
+              <Text variant="label" className="w-32">
                 {intl.formatMessage({
                   id: "quotes.detail.status",
                   defaultMessage: "Quote status:",
                 })}
-              </span>
+              </Text>
               <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
                 {intl.formatMessage({
                   id: `quote.status.${effectiveQuoteStatus}`,
@@ -91,21 +95,21 @@ export function QuoteDetailCard({
             </div>
             {ebillPaid && (
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">
+                <Text variant="label" className="w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.redemptionStatus",
                     defaultMessage: "Redemption status:",
                   })}
-                </span>
+                </Text>
                 {isMintCompleteLoading ? (
-                  <Badge variant="default" className="bg-yellow-500">
+                  <Badge variant="pending">
                     {intl.formatMessage({
                       id: "quotes.redemption.pending",
                       defaultMessage: "Pending",
                     })}
                   </Badge>
                 ) : (
-                  <Badge variant="default" className={isMintComplete ? "bg-green-600" : "bg-yellow-500"}>
+                  <Badge variant={isMintComplete ? "success" : "pending"}>
                     {isMintComplete
                       ? intl.formatMessage({
                           id: "quotes.redemption.complete",
@@ -122,53 +126,53 @@ export function QuoteDetailCard({
 
             {quote.status === "Offered" && "ttl" in quote && quote.ttl && (
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">
+                <Text variant="label" className="w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.deadline",
                     defaultMessage: "Deadline:",
                   })}
-                </span>
-                <span>{new Date(quote.ttl).toISOString().split("T")[0]}</span>
+                </Text>
+                <Text variant="caption">{new Date(quote.ttl).toISOString().split("T")[0]}</Text>
               </div>
             )}
             {showPayment && (
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">
+                <Text variant="label" className="w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.payment",
                     defaultMessage: "Payment status:",
                   })}
-                </span>
+                </Text>
                 {ebillPaid ? (
-                  <Badge variant="default" className="bg-green-600">
+                  <Badge variant="success">
                     {intl.formatMessage({
                       id: "quotes.payment.paid",
                       defaultMessage: "Paid",
                     })}
                   </Badge>
                 ) : rejectedToPay ? (
-                  <Badge variant="destructive" className="bg-red-600">
+                  <Badge variant="destructive">
                     {intl.formatMessage({
                       id: "quotes.payment.rejected",
                       defaultMessage: "Rejected to pay",
                     })}
                   </Badge>
                 ) : isInMempool ? (
-                  <Badge variant="default" className="bg-orange-500">
+                  <Badge variant="processing">
                     {intl.formatMessage({
                       id: "quotes.payment.inMempool",
                       defaultMessage: "In mempool",
                     })}
                   </Badge>
                 ) : !requestedToPay ? (
-                  <Badge variant="secondary" className="border border-border">
+                  <Badge variant="neutral">
                     {intl.formatMessage({
                       id: "quotes.payment.notRequested",
                       defaultMessage: "Not requested",
                     })}
                   </Badge>
                 ) : (
-                  <Badge variant="default" className="bg-blue-500">
+                  <Badge variant="info">
                     {intl.formatMessage({
                       id: "quotes.payment.requested",
                       defaultMessage: "Requested",
@@ -179,32 +183,32 @@ export function QuoteDetailCard({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold w-32">
+            <Text variant="label" className="w-32">
               {intl.formatMessage({
                 id: "quotes.detail.sum",
                 defaultMessage: "Sum:",
               })}
-            </span>
+            </Text>
             <Currency value={bill.sum} sourceCurrency="sat" className="text-lg font-bold" amountClassName="text-current" />
           </div>
           {"discounted" in quote && quote.discounted && (
             <>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">
+                <Text variant="label" className="w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.discounted",
                     defaultMessage: "Fee:",
                   })}
-                </span>
+                </Text>
                 <Currency value={quote.discounted} sourceCurrency="sat" className="text-lg font-bold" amountClassName="text-current" />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">
+                <Text variant="label" className="w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.discount.absolute",
                     defaultMessage: "Effective fee (absolute):",
                   })}
-                </span>
+                </Text>
                 <Currency
                   value={bill.sum - quote.discounted}
                   sourceCurrency="sat"
@@ -213,56 +217,58 @@ export function QuoteDetailCard({
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold w-32">
+                <Text variant="label" className="w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.discount.relative",
                     defaultMessage: "Effective fee (relative):",
                   })}
-                </span>
-                <span className="text-sm font-mono">{(((bill.sum - quote.discounted) / bill.sum) * 100).toFixed(4)}%</span>
+                </Text>
+                <Text variant="mono" monoSize="sm">
+                  {(((bill.sum - quote.discounted) / bill.sum) * 100).toFixed(4)}%
+                </Text>
               </div>
             </>
           )}
           {quote.status === "MintingEnabled" && feeToken && (
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold w-32">
+              <Text variant="label" className="w-32">
                 {intl.formatMessage({
                   id: "quotes.detail.feeToken",
                   defaultMessage: "Fee token:",
                 })}
-              </span>
-              <TruncatedTextPopover text={feeToken} maxLength={64} className="font-mono text-sm" showCopyButton={true} />
+              </Text>
+              <TruncatedTextPopover text={feeToken} maxLength={64} showCopyButton={true} className="font-mono text-sm cursor-pointer" />
               <FeeTokenQRCodeModal feeToken={feeToken} />
               {isFeeTokenStatusPending ? (
-                <Badge variant="default" className="bg-gray-500">
+                <Badge variant="loading">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.checking",
                     defaultMessage: "Checking...",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state === "Spent" ? (
-                <Badge variant="destructive" className="bg-red-600">
+                <Badge variant="destructive">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.spent",
                     defaultMessage: "Spent",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state === "Unspent" ? (
-                <Badge variant="default" className="bg-green-600">
+                <Badge variant="success">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.active",
                     defaultMessage: "Active",
                   })}
                 </Badge>
               ) : isFeeTokenStatusError ? (
-                <Badge variant="destructive" className="bg-red-600">
+                <Badge variant="destructive">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.error",
                     defaultMessage: "Error",
                   })}
                 </Badge>
               ) : feeTokenStatusData?.state ? (
-                <Badge variant="secondary" className="border border-border">
+                <Badge variant="neutral">
                   {intl.formatMessage({
                     id: "quotes.feeToken.badge.unknown",
                     defaultMessage: "Unknown",
@@ -272,65 +278,65 @@ export function QuoteDetailCard({
             </div>
           )}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold w-32">
+            <Text variant="label" className="w-32">
               {intl.formatMessage({
                 id: "quotes.detail.maturityDate",
                 defaultMessage: "Maturity date:",
               })}
-            </span>
-            <span className="text-sm">
+            </Text>
+            <Text variant="caption">
               {bill.maturity_date} ({maturityLabel})
-            </span>
+            </Text>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold w-32">
+            <Text variant="label" className="w-32">
               {intl.formatMessage({
                 id: "quotes.detail.participants",
                 defaultMessage: "Participants:",
               })}
-            </span>
+            </Text>
             <ParticipantsOverviewCard drawee={bill.drawee} drawer={bill.drawer} payee={bill.payee} holder={bill.endorsees} />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold w-32">
+            <Text variant="label" className="w-32">
               {intl.formatMessage({
                 id: "participants.role.drawee",
                 defaultMessage: "Drawee",
               })}
               :
-            </span>
+            </Text>
             <ParticipantDetail participant={bill.drawee} />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold w-32">
+            <Text variant="label" className="w-32">
               {intl.formatMessage({
                 id: "participants.role.drawer",
                 defaultMessage: "Drawer",
               })}
               :
-            </span>
+            </Text>
             <ParticipantDetail participant={bill.drawer} />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold w-32">
+            <Text variant="label" className="w-32">
               {intl.formatMessage({
                 id: "participants.role.payee",
                 defaultMessage: "Payee",
               })}
               :
-            </span>
+            </Text>
             <ParticipantDetail participant={bill.payee} />
           </div>
 
           {bill.endorsees && bill.endorsees.length > 0 && (
             <span className="flex items-center gap-2">
-              <span className="text-sm font-semibold w-32">
+              <Text variant="label" className="w-32">
                 {intl.formatMessage({
                   id: "participants.role.holder",
                   defaultMessage: "Holder",
                 })}
                 :
-              </span>
+              </Text>
               <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
             </span>
           )}

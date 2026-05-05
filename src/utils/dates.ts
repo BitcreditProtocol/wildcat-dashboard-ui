@@ -3,6 +3,7 @@ import { differenceInCalendarDays, differenceInCalendarMonths, differenceInHours
 
 const UTC_TIME_ZONE = "UTC";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const ISO_DATE_PART_PATTERN = /^(\d{4})-(\d{2})-(\d{2})/;
 
 export const daysBetween = (startDate: Date, endDate: Date): number => {
   const startUtc = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
@@ -106,6 +107,38 @@ export const formatYearNumeric = (date: Date, locale: string): string => {
 
 export const toUtcEndOfDay = (date: Date): Date => {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
+};
+
+export const getUtcStartOfDate = (dateValue?: string | null): Date | null => {
+  if (!dateValue) {
+    return null;
+  }
+
+  const isoDatePart = ISO_DATE_PART_PATTERN.exec(dateValue);
+  if (isoDatePart) {
+    const year = Number(isoDatePart[1]);
+    const monthIndex = Number(isoDatePart[2]) - 1;
+    const day = Number(isoDatePart[3]);
+    const utcStart = new Date(Date.UTC(year, monthIndex, day));
+
+    if (utcStart.getUTCFullYear() === year && utcStart.getUTCMonth() === monthIndex && utcStart.getUTCDate() === day) {
+      return utcStart;
+    }
+
+    return null;
+  }
+
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate()));
+};
+
+export const isBeforeUtcStartOfDate = (dateValue?: string | null, now = new Date()): boolean => {
+  const utcStart = getUtcStartOfDate(dateValue);
+  return Boolean(utcStart && now.getTime() < utcStart.getTime());
 };
 
 /**

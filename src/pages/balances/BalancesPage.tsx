@@ -2,8 +2,7 @@ import { PropsWithChildren, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageTitle } from "@/components/PageTitle";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton } from "@bitcredit/ui-library";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
@@ -150,18 +149,18 @@ interface BalanceDisplay {
 export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
-      <h3 className="scroll-m-20 text-2xl font-extrabold tracking-tight">
+      <Heading as="h3" variant="page" className="text-[#1b0f00]">
         {unit === "sat" ? (
           <Currency
             value={Number(amount)}
             sourceCurrency="sat"
             amountClassName="text-current"
-            currencyClassName="text-sm font-medium text-muted-foreground"
+            currencyClassName="text-sm font-medium text-[#6b5a45]"
           />
         ) : (
           `${amount} ${unit}`
         )}
-      </h3>
+      </Heading>
       {children}
     </>
   );
@@ -226,9 +225,9 @@ function PageBodyWithDevSection() {
     <>
       <div className="flex flex-col gap-4 my-2">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card className="bg-indigo-100">
+          <Card className="bg-indigo-100 text-[#1b0f00]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#1b0f00]">
                 <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
               </CardTitle>
             </CardHeader>
@@ -236,9 +235,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-orange-100">
+          <Card className="bg-orange-100 text-[#1b0f00]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#1b0f00]">
                 <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
               </CardTitle>
             </CardHeader>
@@ -246,9 +245,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-purple-200">
+          <Card className="bg-purple-200 text-[#1b0f00]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#1b0f00]">
                 <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
               </CardTitle>
             </CardHeader>
@@ -256,9 +255,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-purple-400">
+          <Card className="bg-purple-400 text-[#1b0f00]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#1b0f00]">
                 <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
               </CardTitle>
             </CardHeader>

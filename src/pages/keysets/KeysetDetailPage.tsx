@@ -1,10 +1,9 @@
 import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useParams, Link, useLocation } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Heading, Skeleton, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@bitcredit/ui-library";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { truncateString } from "@/utils/strings";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -122,17 +121,17 @@ function PageBody({ keysetId }: { keysetId: string }) {
             <Skeleton className="h-20 w-full" />
           ) : matchingQuotes.length > 0 ? (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold">
+              <Heading as="h4" variant="sub">
                 <FormattedMessage
                   id="keyset.detail.allQuotes"
                   defaultMessage="All quotes ({count})"
                   values={{ count: matchingQuotes.length }}
                 />
-              </h4>
+              </Heading>
 
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-xs">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-elevation-50">
                     <tr>
                       <th className="text-left p-2 font-semibold">
                         <FormattedMessage id="keyset.detail.table.quoteId" defaultMessage="Quote ID" />
@@ -227,24 +226,20 @@ export default function KeysetDetailPage() {
       </Breadcrumbs>
       <div className="flex items-center justify-between">
         <PageTitle>
-          <FormattedMessage
-            id="keyset.detail.title"
-            defaultMessage="Keyset {id}"
-            values={{
-              id: <span className="font-mono">{truncateString(keysetId, 16)}</span>,
-            }}
-          />
+          <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+            <span>
+              <FormattedMessage id="keyset.detail.title" defaultMessage="Keyset" />
+            </span>
+            <TruncatedTextPopover text={keysetId} maxLength={16} className="inline font-mono" as="span" />
+          </span>
         </PageTitle>
         {fromQuote && quoteId && (
           <Button variant="outline" size="sm" asChild>
-            <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }}>
-              <FormattedMessage
-                id="keyset.detail.backToQuote"
-                defaultMessage="Back to quote {id}"
-                values={{
-                  id: <span className="font-mono">{truncateString(quoteId, 16)}</span>,
-                }}
-              />
+            <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }} className="inline-flex items-center gap-1">
+              <span className="relative top-px leading-none">
+                <FormattedMessage id="keyset.detail.backToQuote" defaultMessage="Back to quote" />
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">{truncateString(quoteId, 16)}</span>
             </Link>
           </Button>
         )}
