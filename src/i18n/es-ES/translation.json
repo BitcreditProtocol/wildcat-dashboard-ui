@@ -280,6 +280,7 @@
   "quotes.requestToPay.deadlineTitle": "Payment deadline",
   "quotes.requestToPay.errorInfo": "Failed to load payment info",
   "quotes.requestToPay.loadingInfo": "Loading information for payment",
+  "quotes.requestToPay.blockedUntilMaturity": "Request to pay is available from 00:00:00 UTC on the maturity date ({maturityDate}).",
   "quotes.requestToPay.retry": "Retry",
   "quotes.search.noMatch": "No quotes match your search criteria",
   "quotes.search.placeholder": "Search by quote ID, participant, status, amount, or maturity...",
