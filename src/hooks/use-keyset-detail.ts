@@ -1,18 +1,14 @@
-import { toast } from "@bitcredit/ui-library";
 import { useMemo } from "react";
-import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import {
   listKeysetInfosOptions,
-  listKeysetInfosQueryKey,
   listQuotesOptions,
   getQuoteOptions,
   listEbillsOptions,
-  postEnableRedemptionMutation,
 } from "@/generated/client/@tanstack/react-query.gen";
 import type { BitcreditBill } from "@/generated/client/types.gen";
-import { useIntl } from "react-intl";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
-import { deserializeKeysetId, doesBillMatchKeysetMaturity } from "@/utils/keyset";
+import { doesBillMatchKeysetMaturity } from "@/utils/keyset";
 
 const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
 const MINT_COMPLETE_POLL_INTERVAL_MS = 60_000;
@@ -22,9 +18,6 @@ const MINT_COMPLETE_RETRY_DELAY_MS = 30_000;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 
 export function useKeysetDetail(keysetId: string) {
-  const intl = useIntl();
-  const queryClient = useQueryClient();
-
   const { data: keysets, isLoading: keysetsLoading } = useQuery({
     ...listKeysetInfosOptions(),
     refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
@@ -46,37 +39,6 @@ export function useKeysetDetail(keysetId: string) {
   });
 
   const keyset = keysets?.data.find((k) => k.id === keysetId);
-  const parsedKeysetId = keyset ? deserializeKeysetId(keyset.id) : null;
-
-  const redemptionMutation = useMutation({
-    ...postEnableRedemptionMutation(),
-    onSuccess: () => {
-      toast({
-        title: intl.formatMessage({
-          id: "keyset.detail.redeem.success",
-          defaultMessage: "Redemption enabled successfully",
-        }),
-        variant: "success",
-      });
-      void queryClient.invalidateQueries({
-        queryKey: listKeysetInfosQueryKey(),
-        exact: false,
-      });
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      toast({
-        title: intl.formatMessage(
-          {
-            id: "keyset.detail.redeem.error",
-            defaultMessage: "Failed to enable redemption: {error}",
-          },
-          { error: message }
-        ),
-        variant: "error",
-      });
-    },
-  });
 
   const quoteDetailsQueries = useQueries({
     queries: allQuotes.map((quote) => ({
@@ -143,19 +105,6 @@ export function useKeysetDetail(keysetId: string) {
     })),
   });
 
-  const allBillsPaid =
-    matchingBillIds.length > 0 &&
-    matchingBillIds.every((billId) => {
-      const ebill = ebills?.find((e) => e.id === billId);
-      return ebill?.status?.payment?.paid === true;
-    });
-
-  const allMintComplete = matchingBillIds.length > 0 && mintCompleteQueries.every((query) => query.data?.complete === true);
-
-  const canEnableRedemption = allBillsPaid && allMintComplete;
-  const anyMintCompleteLoading = mintCompleteQueries.some((q) => q.isLoading);
-  const hasNoMatchingBills = matchingBillIds.length === 0;
-
   const billIdToEbillMap = useMemo(() => {
     const map = new Map<string, BitcreditBill>();
     if (ebills) {
@@ -179,19 +128,11 @@ export function useKeysetDetail(keysetId: string) {
 
   return {
     keyset,
-    parsedKeysetId,
-    redemptionMutation,
     allQuotes,
     quoteDetailsQueries,
     matchingBillIds,
     mintCompleteQueries,
-    allBillsPaid,
-    allMintComplete,
-    canEnableRedemption,
-    anyMintCompleteLoading,
-    hasNoMatchingBills,
     matchingQuotes,
-    ebills,
     billIdToEbillMap,
     keysetsLoading,
     quotesLoading,

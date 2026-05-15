@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, postEnableRedemption, postTokenStatus, updateQuote } from '../sdk.gen';
-import type { GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, PostEnableRedemptionData, PostEnableRedemptionResponse, PostTokenStatusData, PostTokenStatusResponse, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
+import { getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, postTokenStatus, updateQuote } from '../sdk.gen';
+import type { GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, PostTokenStatusData, PostTokenStatusResponse, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -181,20 +181,6 @@ export const listMintopsOptions = (options: Options<ListMintopsData>) => queryOp
     },
     queryKey: listMintopsQueryKey(options)
 });
-
-export const postEnableRedemptionMutation = (options?: Partial<Options<PostEnableRedemptionData>>): UseMutationOptions<PostEnableRedemptionResponse, DefaultError, Options<PostEnableRedemptionData>> => {
-    const mutationOptions: UseMutationOptions<PostEnableRedemptionResponse, DefaultError, Options<PostEnableRedemptionData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await postEnableRedemption({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
 
 export const postTokenStatusMutation = (options?: Partial<Options<PostTokenStatusData>>): UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> => {
     const mutationOptions: UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> = {

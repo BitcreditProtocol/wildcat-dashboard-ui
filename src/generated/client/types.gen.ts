@@ -216,17 +216,6 @@ export type CurrencyUnit = 'Sat' | 'Msat' | 'Usd' | 'Eur' | 'Auth' | {
 };
 
 /**
- * --------------------------- Deactivate keyset
- */
-export type DeactivateKeysetRequest = {
-    kid: Id;
-};
-
-export type DeactivateKeysetResponse = {
-    kid: Id;
-};
-
-/**
  * --------------------------- eCash wallet balance
  */
 export type ECashBalance = {
@@ -781,29 +770,6 @@ export type ListMintopsResponses = {
 };
 
 export type ListMintopsResponse = ListMintopsResponses[keyof ListMintopsResponses];
-
-export type PostEnableRedemptionData = {
-    body: DeactivateKeysetRequest;
-    path?: never;
-    query?: never;
-    url: '/v1/admin/credit/enable_redemption';
-};
-
-export type PostEnableRedemptionErrors = {
-    /**
-     * keyset id not found
-     */
-    404: unknown;
-};
-
-export type PostEnableRedemptionResponses = {
-    /**
-     * Successful response
-     */
-    200: DeactivateKeysetResponse;
-};
-
-export type PostEnableRedemptionResponse = PostEnableRedemptionResponses[keyof PostEnableRedemptionResponses];
 
 export type PostTokenStatusData = {
     body: TokenStateRequest;
