@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetClowderAlphasData, GetClowderAlphasResponses, GetClowderBetasData, GetClowderBetasResponses, GetClowderForeignCoverageData, GetClowderForeignCoverageErrors, GetClowderForeignCoverageResponses, GetClowderInfoData, GetClowderInfoResponses, GetClowderLocalCoverageData, GetClowderLocalCoverageResponses, GetClowderMystatusData, GetClowderMystatusResponses, GetClowderStatusData, GetClowderStatusErrors, GetClowderStatusResponses, GetEbillAttachmentData, GetEbillAttachmentErrors, GetEbillAttachmentResponses, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsErrors, GetEbillEndorsementsResponses, GetEbillErrors, GetEbillFileFromRequestToMintData, GetEbillFileFromRequestToMintErrors, GetEbillFileFromRequestToMintResponses, GetEbillPaymentstatusData, GetEbillPaymentstatusErrors, GetEbillPaymentstatusResponses, GetEbillResponses, GetHealthData, GetHealthResponses, GetIdentityData, GetIdentityResponses, GetKeysetInfoData, GetKeysetInfoErrors, GetKeysetInfoResponses, GetMintInfoData, GetMintInfoResponses, GetMintopStatusData, GetMintopStatusErrors, GetMintopStatusResponses, GetQuoteData, GetQuoteErrors, GetQuoteResponses, ListEbillsData, ListEbillsResponses, ListKeysetInfosData, ListKeysetInfosResponses, ListMintopsData, ListMintopsErrors, ListMintopsResponses, ListQuotesData, ListQuotesResponses, PostEbillReqtopayData, PostEbillReqtopayErrors, PostEbillReqtopayResponses, PostEnableRedemptionData, PostEnableRedemptionErrors, PostEnableRedemptionResponses, PostTokenStatusData, PostTokenStatusResponses, UpdateQuoteData, UpdateQuoteErrors, UpdateQuoteResponses } from './types.gen';
+import type { GetClowderAlphasData, GetClowderAlphasResponses, GetClowderBetasData, GetClowderBetasResponses, GetClowderForeignCoverageData, GetClowderForeignCoverageErrors, GetClowderForeignCoverageResponses, GetClowderInfoData, GetClowderInfoResponses, GetClowderLocalCoverageData, GetClowderLocalCoverageResponses, GetClowderMystatusData, GetClowderMystatusResponses, GetClowderStatusData, GetClowderStatusErrors, GetClowderStatusResponses, GetEbillAttachmentData, GetEbillAttachmentErrors, GetEbillAttachmentResponses, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsErrors, GetEbillEndorsementsResponses, GetEbillErrors, GetEbillFileFromRequestToMintData, GetEbillFileFromRequestToMintErrors, GetEbillFileFromRequestToMintResponses, GetEbillPaymentstatusData, GetEbillPaymentstatusErrors, GetEbillPaymentstatusResponses, GetEbillResponses, GetHealthData, GetHealthResponses, GetIdentityData, GetIdentityResponses, GetKeysetInfoData, GetKeysetInfoErrors, GetKeysetInfoResponses, GetMintInfoData, GetMintInfoResponses, GetMintopStatusData, GetMintopStatusErrors, GetMintopStatusResponses, GetQuoteData, GetQuoteErrors, GetQuoteResponses, ListEbillsData, ListEbillsResponses, ListKeysetInfosData, ListKeysetInfosResponses, ListMintopsData, ListMintopsErrors, ListMintopsResponses, ListQuotesData, ListQuotesResponses, PostEbillReqtopayData, PostEbillReqtopayErrors, PostEbillReqtopayResponses, PostTokenStatusData, PostTokenStatusResponses, UpdateQuoteData, UpdateQuoteErrors, UpdateQuoteResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -29,15 +29,6 @@ export const listKeysetInfos = <ThrowOnError extends boolean = false>(options?: 
 export const getMintopStatus = <ThrowOnError extends boolean = false>(options: Options<GetMintopStatusData, ThrowOnError>) => (options.client ?? client).get<GetMintopStatusResponses, GetMintopStatusErrors, ThrowOnError>({ url: '/v1/admin/treasury/credit/mint_op_status/{qid}', ...options });
 
 export const listMintops = <ThrowOnError extends boolean = false>(options: Options<ListMintopsData, ThrowOnError>) => (options.client ?? client).get<ListMintopsResponses, ListMintopsErrors, ThrowOnError>({ url: '/v1/admin/treasury/credit/mint_ops/{kid}', ...options });
-
-export const postEnableRedemption = <ThrowOnError extends boolean = false>(options: Options<PostEnableRedemptionData, ThrowOnError>) => (options.client ?? client).post<PostEnableRedemptionResponses, PostEnableRedemptionErrors, ThrowOnError>({
-    url: '/v1/admin/credit/enable_redemption',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
 
 export const postTokenStatus = <ThrowOnError extends boolean = false>(options: Options<PostTokenStatusData, ThrowOnError>) => (options.client ?? client).post<PostTokenStatusResponses, unknown, ThrowOnError>({
     url: '/v1/admin/credit/token_status',

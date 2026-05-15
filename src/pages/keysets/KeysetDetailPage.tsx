@@ -8,7 +8,6 @@ import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { truncateString } from "@/utils/strings";
 import { FormattedMessage, useIntl } from "react-intl";
 import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
-import { KeysetRedemptionButton } from "@/pages/keysets/components/KeysetRedemptionButton";
 import { KeysetQuoteTableRow } from "@/pages/keysets/components/KeysetQuoteTableRow";
 import { useKeysetDetail } from "@/hooks/use-keyset-detail";
 
@@ -20,17 +19,10 @@ function PageBody({ keysetId }: { keysetId: string }) {
   const intl = useIntl();
   const {
     keyset,
-    parsedKeysetId,
-    redemptionMutation,
     allQuotes,
     quoteDetailsQueries,
     matchingBillIds,
     mintCompleteQueries,
-    allBillsPaid,
-    allMintComplete,
-    canEnableRedemption,
-    anyMintCompleteLoading,
-    hasNoMatchingBills,
     matchingQuotes,
     billIdToEbillMap,
     keysetsLoading,
@@ -101,20 +93,6 @@ function PageBody({ keysetId }: { keysetId: string }) {
               </Badge>
             </div>
           </div>
-          {keyset.active && (
-            <div className="w-full my-4">
-              <KeysetRedemptionButton
-                onRedeem={() => redemptionMutation.mutate({ body: { kid: parsedKeysetId! } })}
-                isPending={redemptionMutation.isPending}
-                parsedKeysetId={parsedKeysetId}
-                canEnableRedemption={canEnableRedemption}
-                anyMintCompleteLoading={anyMintCompleteLoading}
-                hasNoMatchingBills={hasNoMatchingBills}
-                allBillsPaid={allBillsPaid}
-                allMintComplete={allMintComplete}
-              />
-            </div>
-          )}
         </CardHeader>
         <CardContent>
           {quotesLoading ? (
