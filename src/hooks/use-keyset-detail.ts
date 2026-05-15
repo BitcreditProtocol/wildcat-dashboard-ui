@@ -105,18 +105,6 @@ export function useKeysetDetail(keysetId: string) {
     })),
   });
 
-  const allBillsPaid =
-    matchingBillIds.length > 0 &&
-    matchingBillIds.every((billId) => {
-      const ebill = ebills?.find((e) => e.id === billId);
-      return ebill?.status?.payment?.paid === true;
-    });
-
-  const allMintComplete = matchingBillIds.length > 0 && mintCompleteQueries.every((query) => query.data?.complete === true);
-
-  const anyMintCompleteLoading = mintCompleteQueries.some((q) => q.isLoading);
-  const hasNoMatchingBills = matchingBillIds.length === 0;
-
   const billIdToEbillMap = useMemo(() => {
     const map = new Map<string, BitcreditBill>();
     if (ebills) {
@@ -144,12 +132,7 @@ export function useKeysetDetail(keysetId: string) {
     quoteDetailsQueries,
     matchingBillIds,
     mintCompleteQueries,
-    allBillsPaid,
-    allMintComplete,
-    anyMintCompleteLoading,
-    hasNoMatchingBills,
     matchingQuotes,
-    ebills,
     billIdToEbillMap,
     keysetsLoading,
     quotesLoading,

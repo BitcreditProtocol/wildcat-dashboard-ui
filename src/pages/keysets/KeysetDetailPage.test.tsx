@@ -132,7 +132,8 @@ describe("KeysetDetailPage", () => {
     expect(page.textContent).toContain("Invalid keyset ID");
   });
 
-  it("shows not found when keyset does not exist", () => {    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+  it("shows not found when keyset does not exist", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
       const id = opts.queryKey[0]._id;
       if (id === "listKeysetInfos") {
         return {
