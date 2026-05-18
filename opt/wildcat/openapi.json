@@ -201,39 +201,6 @@
         }
       }
     },
-    "/v1/admin/credit/enable_redemption": {
-      "post": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "post_enable_redemption",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeactivateKeysetRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeactivateKeysetResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "keyset id not found"
-          }
-        }
-      }
-    },
     "/v1/admin/credit/token_status": {
       "post": {
         "tags": [
@@ -1611,7 +1578,8 @@
         ],
         "properties": {
           "mint": {
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           },
           "clowder": {
             "type": "string",
@@ -1730,29 +1698,6 @@
           }
         ],
         "description": "Currency Unit"
-      },
-      "DeactivateKeysetRequest": {
-        "type": "object",
-        "description": "--------------------------- Deactivate keyset",
-        "required": [
-          "kid"
-        ],
-        "properties": {
-          "kid": {
-            "$ref": "#/components/schemas/Id"
-          }
-        }
-      },
-      "DeactivateKeysetResponse": {
-        "type": "object",
-        "required": [
-          "kid"
-        ],
-        "properties": {
-          "kid": {
-            "$ref": "#/components/schemas/Id"
-          }
-        }
       },
       "ECashBalance": {
         "type": "object",

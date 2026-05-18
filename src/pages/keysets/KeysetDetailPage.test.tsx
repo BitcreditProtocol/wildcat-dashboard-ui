@@ -28,22 +28,8 @@ interface UseQueriesResultItem {
   data?: { bill?: { id?: string; maturity_date?: string }; complete?: boolean };
 }
 
-interface MutationResult {
-  mutate: (value: { body: { kid: { version: string; id: { V1: number[] } | { V2: number[] } } } }) => void;
-  isPending: boolean;
-}
-
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const mockUseQueries = vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
-const mockUseMutation = vi.fn<() => MutationResult>();
-const mutateSpy =
-  vi.fn<
-    (value: {
-      body: {
-        kid: { version: string; id: { V1: number[] } | { V2: number[] } };
-      };
-    }) => void
-  >();
 
 vi.mock("@bitcredit/ui-library", async () => {
   const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
@@ -63,7 +49,6 @@ vi.mock("@tanstack/react-query", async () => {
     ...actual,
     useQuery: (options: QueryOptions) => mockUseQuery(options),
     useQueries: (args: UseQueriesArgs) => mockUseQueries(args),
-    useMutation: () => mockUseMutation(),
     useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   };
 });
@@ -75,7 +60,6 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getQuoteOptions: ({ path }: { path: { qid: string } }) => ({
     queryKey: [{ _id: "getQuote", path }],
   }),
-  postEnableRedemptionMutation: () => ({ mutationFn: vi.fn() }),
   listKeysetInfosQueryKey: () => [{ _id: "listKeysetInfos" }],
 }));
 
@@ -125,7 +109,6 @@ beforeEach(() => {
     root = null;
     container = null;
   }
-  mockUseMutation.mockReturnValue({ mutate: mutateSpy, isPending: false });
   mockUseQueries.mockImplementation(({ queries }: UseQueriesArgs) => {
     const id = queries[0]?.queryKey?.[0]?._id;
     if (id === "getQuote") {
@@ -169,60 +152,5 @@ describe("KeysetDetailPage", () => {
 
     const page = renderPage("/keysets/target-keyset");
     expect(page.textContent).toContain("Keyset not found");
-  });
-
-  it("enables redemption and calls mutation when Redeem is clicked", () => {
-    const serializedKeysetId = "000001ff";
-
-    mockUseQuery.mockImplementation((opts: QueryOptions) => {
-      const id = opts.queryKey[0]._id;
-      if (id === "listKeysetInfos") {
-        return {
-          data: {
-            data: [
-              {
-                id: serializedKeysetId,
-                active: true,
-                final_expiry: 1771545600,
-                unit: "sat",
-              },
-            ],
-            total: 1,
-          },
-          isLoading: false,
-        };
-      }
-      if (id === "listQuotes") {
-        return {
-          data: {
-            data: [{ id: "quote-1", status: "Pending", sum: 100 }],
-            total: 1,
-          },
-          isLoading: false,
-        };
-      }
-      if (id === "listEbills") {
-        return {
-          data: [{ id: "bill-1", status: { payment: { paid: true } } }],
-          isLoading: false,
-        };
-      }
-      return { data: undefined, isLoading: false };
-    });
-
-    const page = renderPage(`/keysets/${serializedKeysetId}`);
-    const redeemButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "Redeem");
-    expect(redeemButton?.disabled).toBe(false);
-    act(() => {
-      redeemButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    expect(mutateSpy).toHaveBeenCalledWith({
-      body: {
-        kid: {
-          version: "Version00",
-          id: { V1: [0, 1, 255] },
-        },
-      },
-    });
   });
 });
