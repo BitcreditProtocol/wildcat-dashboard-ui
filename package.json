@@ -26,7 +26,7 @@
     "crowdin:status": "crowdin status"
   },
   "dependencies": {
-    "@bitcredit/ui-library": "^0.1.4-improve-truncate",
+    "@bitcredit/ui-library": "^0.1.5",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.4",
@@ -37,7 +37,7 @@
     "big.js": "^7.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.2.1",
     "keycloak-js": "^26.2.4",
     "lucide-react": "^1.16.0",
     "next-themes": "^0.4.6",
@@ -62,7 +62,7 @@
     "@hey-api/openapi-ts": "^0.97.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/big.js": "^6.2.2",
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.0",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
