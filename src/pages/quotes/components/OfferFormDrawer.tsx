@@ -1,4 +1,5 @@
 import Big from "big.js";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BaseDrawer } from "@/components/Drawers";
 import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm";
 import type { InfoReply } from "@/generated/client/types.gen";
@@ -51,18 +52,31 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     onSubmit(result);
   };
 
-  const startDate = new Date();
-  const endDate = value.bill.maturity_date ? new Date(value.bill.maturity_date) : new Date();
+  const [formKey, setFormKey] = useState(0);
+  const prevOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setFormKey((k) => k + 1);
+    }
+    prevOpenRef.current = open;
+  }, [open]);
+
+  const startDate = useMemo(() => new Date(), [formKey]);
+  const endDate = useMemo(
+    () => (value.bill.maturity_date ? new Date(value.bill.maturity_date) : new Date()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [value.bill.maturity_date, formKey]
+  );
+  const gross = useMemo(() => ({ value: new Big(value.bill.sum), currency: "sat" as const }), [value.bill.sum]);
 
   return (
     <BaseDrawer title={title} description={description} open={open} onOpenChange={onOpenChange} trigger={children}>
       <GrossToNetDiscountForm
+        key={formKey}
         startDate={startDate}
         endDate={endDate}
-        gross={{
-          value: new Big(value.bill.sum),
-          currency: "sat",
-        }}
+        gross={gross}
         onSubmit={handleFormSubmit}
         quoteId={value.id}
       />
