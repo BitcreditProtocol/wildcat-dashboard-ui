@@ -1,6 +1,5 @@
-import { toast } from "@bitcredit/ui-library";
+import { toast, Heading } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
 import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
@@ -60,9 +59,6 @@ function PageBody({ id }: { id: string }) {
     isMintComplete,
     isMintCompleteLoading,
     feeToken,
-    feeTokenStatusData,
-    isFeeTokenStatusPending,
-    isFeeTokenStatusError,
     ebillPaid,
     requestedToPay,
     rejectedToPay,
@@ -192,9 +188,6 @@ function PageBody({ id }: { id: string }) {
         isInMempool={isInMempool}
         requestedToPay={requestedToPay}
         feeToken={feeToken}
-        isFeeTokenStatusPending={isFeeTokenStatusPending}
-        feeTokenStatusData={feeTokenStatusData}
-        isFeeTokenStatusError={isFeeTokenStatusError}
       />
 
       <QuoteActions
@@ -284,7 +277,7 @@ export default function QuotePage() {
       </Breadcrumbs>
 
       <div className="flex items-center justify-between">
-        <PageTitle>
+        <Heading as="h1" variant="page" className="mb-6 pt-4">
           <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
             <span>
               {intl.formatMessage({
@@ -294,7 +287,7 @@ export default function QuotePage() {
             </span>
             <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
           </span>
-        </PageTitle>
+        </Heading>
         {fromKeyset && keysetIdFromState ? (
           <Button variant="outline" size="sm" asChild>
             <Link
