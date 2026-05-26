@@ -51,7 +51,6 @@ const mockUseQuery = vi.fn<(options: GetQuoteQueryOptions | ListEbillsQueryOptio
 const mockUseInfiniteQuery = vi.fn<() => InfiniteQueryResult>();
 const mockUseQueries = vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
 const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
-const postTokenStatusMock = vi.fn<(args: { body: { token: string } }) => Promise<{ data: { state: string } }>>();
 
 vi.mock("@bitcredit/ui-library", async () => {
   const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
@@ -110,9 +109,7 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   }),
 }));
 
-vi.mock("@/generated/client/sdk.gen", () => ({
-  postTokenStatus: (args: { body: { token: string } }) => postTokenStatusMock(args),
-}));
+
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -167,7 +164,6 @@ function clickSelectItem(page: HTMLDivElement, value: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   fetchNextPageSpy.mockResolvedValue(undefined);
-  postTokenStatusMock.mockResolvedValue({ data: { state: "Spent" } });
   if (root && container) {
     act(() => {
       root?.unmount();
@@ -689,7 +685,7 @@ describe("StatusQuotePage", () => {
           data: {
             id: qid,
             status: "MintingEnabled",
-            fee: qid === "quote-active-fee" ? "token-a" : "token-b",
+            fee: 1000,
             keyset_id: "keyset-1",
             bill: {
               id: `bill-${qid}`,
@@ -704,13 +700,6 @@ describe("StatusQuotePage", () => {
         };
       })
     );
-    postTokenStatusMock.mockImplementation(({ body }: { body: { token: string } }) =>
-      Promise.resolve({
-        data: {
-          state: body.token === "token-a" ? "Unspent" : "Spent",
-        },
-      })
-    );
 
     const page = renderPage();
     await act(async () => {
@@ -719,8 +708,9 @@ describe("StatusQuotePage", () => {
       await Promise.resolve();
     });
 
-    expect(page.textContent).toContain("quote-active-fee");
+    expect(page.textContent).not.toContain("quote-active-fee");
     expect(page.textContent).not.toContain("quote-spent-fee");
+    expect(page.textContent).toContain("No quotes match your search criteria");
   });
 
   it("filters quotes maturing today", () => {

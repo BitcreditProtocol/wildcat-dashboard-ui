@@ -225,7 +225,7 @@ export function QuoteDetailCard({
             <div className="flex items-center gap-2">
               <Text variant="label" className="w-32">
                 {intl.formatMessage({
-                  id: "quotes.detail.feeToken",
+                  id: "quotes.detail.mintingFee",
                   defaultMessage: "Fee token:",
                 })}
               </Text>

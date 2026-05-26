@@ -161,6 +161,43 @@ describe("QuoteDetailCard", () => {
 
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
+    expect(page.textContent).toContain("90,000.00");
+    expect(page.textContent).toContain("eur");
+    expect(page.textContent).toContain("72,000.00");
+    expect(page.textContent).toContain("18,000.00");
+  });
+
+  it("falls back to sat-only values when fiat rates are unavailable", async () => {
+    storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        text: () => Promise.resolve("Bad Request"),
+      })
+    );
+
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={baseQuote}
+        effectiveQuoteStatus="Accepted"
+        ebillPaid={true}
+        isMintComplete={true}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        feeToken={null}
+      />
+    );
+
+    await flush();
+
+    expect(page.textContent).toContain("100,000,000");
+    expect(page.textContent).toContain("sat");
     expect(page.textContent).not.toContain("eur");
   });
 });
