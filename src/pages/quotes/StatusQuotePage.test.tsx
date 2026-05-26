@@ -109,8 +109,6 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   }),
 }));
 
-
-
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
