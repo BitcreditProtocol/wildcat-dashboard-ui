@@ -280,7 +280,9 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
           })}
       </Breadcrumbs>
 
-      <Heading as="h1" variant="page" className="mb-6 pt-4">{pageTitle}</Heading>
+      <Heading as="h1" variant="page" className="mb-6 pt-4">
+        {pageTitle}
+      </Heading>
       <PageBody status={status} />
     </>
   );

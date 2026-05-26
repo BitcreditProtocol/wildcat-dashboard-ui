@@ -1,8 +1,4 @@
-import {
-  getQuoteOptions,
-  listEbillsOptions,
-  getEbillEndorsementsOptions,
-} from "@/generated/client/@tanstack/react-query.gen";
+import { getQuoteOptions, listEbillsOptions, getEbillEndorsementsOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
@@ -12,7 +8,6 @@ const QUOTE_DETAIL_POLL_INTERVAL_MS = 10_000;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 
 export function useQuoteDetail(id: string) {
-
   const {
     data: quoteData,
     isFetching,
@@ -60,7 +55,6 @@ export function useQuoteDetail(id: string) {
   const effectiveQuoteStatus = getEffectiveQuoteStatus(quoteData?.status ?? "Pending", ebill);
   const isPaid = ebill?.status?.payment?.paid === true;
   const shouldCheckMintComplete = effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled" || isPaid;
-
 
   const mintCompleteQuery = useQuery({
     ...getEbillMintCompleteQueryOptions({ billId: billId ?? "" }),

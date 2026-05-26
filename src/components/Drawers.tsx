@@ -11,7 +11,7 @@ import {
 } from "@bitcredit/ui-library";
 import { VariantProps } from "class-variance-authority";
 import { useIntl } from "react-intl";
-import React from "react"
+import React from "react";
 
 type DrawerProps = Parameters<typeof Drawer>[0];
 type BaseDrawerProps = DrawerProps & {
