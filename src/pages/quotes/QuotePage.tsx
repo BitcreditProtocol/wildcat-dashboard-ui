@@ -18,6 +18,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { QuoteDocuments } from "./QuoteDocuments";
 import { useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
+import { MELT_REQUESTS_PATH } from "@/pages/melts/constants";
 
 interface LocationState {
   from?: string;
@@ -33,7 +34,6 @@ function Loader() {
 
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
-const MELT_REQUESTS_PATH = "/melt-requests";
 
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();

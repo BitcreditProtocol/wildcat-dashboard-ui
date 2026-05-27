@@ -11,11 +11,14 @@ export function useMeltRequestsList(operations: DeniedMeltOp[]) {
   const [sortBy, setSortBy] = useState<MeltRequestsSortBy>("created-desc");
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
+  const now = new Date();
+  const utcDayBucket = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
   const filteredOperations = useMemo(() => {
-    const now = new Date();
+    const filterNow = new Date(utcDayBucket);
 
     return operations.filter((operation) => {
-      if (!matchesRequestFilter(operation, requestFilter, now)) {
+      if (!matchesRequestFilter(operation, requestFilter, filterNow)) {
         return false;
       }
 
@@ -25,7 +28,7 @@ export function useMeltRequestsList(operations: DeniedMeltOp[]) {
 
       return getSearchableContent(operation, intl.locale).includes(normalizedSearchQuery);
     });
-  }, [intl.locale, normalizedSearchQuery, operations, requestFilter]);
+  }, [intl.locale, normalizedSearchQuery, operations, requestFilter, utcDayBucket]);
 
   const sortedOperations = useMemo(
     () =>

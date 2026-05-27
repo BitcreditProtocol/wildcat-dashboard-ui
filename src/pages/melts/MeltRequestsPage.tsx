@@ -6,7 +6,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { listDeniedMeltopsOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { DENIED_MELT_REQUESTS_POLL_INTERVAL_MS } from "./constants";
 import { DeleteMeltRequestConfirmation } from "./components/DeleteMeltRequestConfirmation";
-import { MeltRequestsFilter } from "./components/MeltRequestsFilter.tsx";
+import { MeltRequestsFilter } from "./components/MeltRequestsFilter";
 import { MeltRequestsSummary } from "./components/MeltRequestsSummary";
 import { MeltRequestsTable } from "./components/MeltRequestsTable";
 import { MeltRequestsEmptyState, MeltRequestsErrorState, MeltRequestsLoader } from "./components/MeltRequestsStates";
