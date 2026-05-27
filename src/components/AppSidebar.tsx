@@ -1,4 +1,4 @@
-import { Bitcoin, Globe, Home, Inbox, Key, AlignVerticalJustifyCenterIcon } from "lucide-react";
+import { AlignVerticalJustifyCenterIcon, Ban, Bitcoin, Globe, Home, Inbox, Key } from "lucide-react";
 import { useContext } from "react";
 import { AppIcon, DecimalSeparator, DisplayCurrency, LanguagePreference, MenuOption, Separator, Theme } from "@bitcredit/ui-library";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar";
@@ -12,6 +12,7 @@ import { defineMessages, useIntl } from "react-intl";
 const navMessages = defineMessages({
   home: { id: "nav.home", defaultMessage: "Home" },
   balances: { id: "nav.balances", defaultMessage: "Balances" },
+  deniedMeltRequests: { id: "nav.deniedMeltRequests", defaultMessage: "Melt requests" },
   quotes: { id: "nav.quotes", defaultMessage: "Quotes" },
   quotesPending: { id: "nav.quotes.pending", defaultMessage: "Pending" },
   quotesOffered: { id: "nav.quotes.offered", defaultMessage: "Offered" },
@@ -86,6 +87,11 @@ const data = {
       title: navMessages.keysets,
       url: "/keysets",
       icon: Key,
+    },
+    {
+      title: navMessages.deniedMeltRequests,
+      url: "/melt-requests",
+      icon: Ban,
     },
   ],
 };

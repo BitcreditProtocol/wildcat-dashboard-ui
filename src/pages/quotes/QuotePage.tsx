@@ -33,6 +33,7 @@ function Loader() {
 
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
+const MELT_REQUESTS_PATH = "/melt-requests";
 
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
@@ -238,6 +239,7 @@ export default function QuotePage() {
   const state = location.state as LocationState | null;
   const fromPath = state?.from;
   const fromKeyset = fromPath?.startsWith("/keysets/");
+  const fromMeltRequests = fromPath === MELT_REQUESTS_PATH;
   const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
 
   const { data: quoteData } = useQuery({
@@ -257,7 +259,11 @@ export default function QuotePage() {
   });
 
   const quoteDataStatus = quoteData?.status as string | undefined;
-  const hasKeysetId = quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData;
+  const keysetIdFromQuote =
+    quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData
+      ? serializeKeysetId(quoteData.keyset_id)
+      : null;
+  const hasHeaderActions = fromMeltRequests || Boolean(keysetIdFromState) || Boolean(keysetIdFromQuote);
 
   return (
     <>
@@ -276,7 +282,7 @@ export default function QuotePage() {
         {quoteId}
       </Breadcrumbs>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Heading as="h1" variant="page" className="mb-6 pt-4">
           <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
             <span>
@@ -288,40 +294,58 @@ export default function QuotePage() {
             <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
           </span>
         </Heading>
-        {fromKeyset && keysetIdFromState ? (
-          <Button variant="outline" size="sm" asChild>
-            <Link
-              to={`/keysets/${keysetIdFromState}`}
-              state={{ from: `/quotes/${quoteId}` }}
-              className="inline-flex items-center gap-1 leading-none"
-            >
-              <span className="relative top-px leading-none">
-                {intl.formatMessage({
-                  id: "quotes.detail.backToKeyset",
-                  defaultMessage: "Back to keyset",
-                })}
-              </span>
-              <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
-            </Link>
-          </Button>
-        ) : hasKeysetId ? (
-          <Button variant="outline" size="sm" asChild>
-            <Link
-              to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
-              state={{ from: `/quotes/${quoteId}` }}
-              className="inline-flex items-center gap-1 leading-none"
-            >
-              <span className="relative top-px leading-none">
-                {intl.formatMessage({
-                  id: "quotes.detail.goToKeyset",
-                  defaultMessage: "Go to keyset",
-                })}
-              </span>
-              <span className="inline-flex items-center font-mono leading-none">
-                {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
-              </span>
-            </Link>
-          </Button>
+        {hasHeaderActions ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {fromMeltRequests ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to={MELT_REQUESTS_PATH}
+                  state={{ from: `/quotes/${quoteId}` }}
+                  className="inline-flex items-center gap-1 leading-none"
+                >
+                  <span className="relative top-px leading-none">
+                    {intl.formatMessage({
+                      id: "quotes.detail.backToMeltRequests",
+                      defaultMessage: "Back to melt requests",
+                    })}
+                  </span>
+                </Link>
+              </Button>
+            ) : null}
+            {fromKeyset && keysetIdFromState ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to={`/keysets/${keysetIdFromState}`}
+                  state={{ from: `/quotes/${quoteId}` }}
+                  className="inline-flex items-center gap-1 leading-none"
+                >
+                  <span className="relative top-px leading-none">
+                    {intl.formatMessage({
+                      id: "quotes.detail.backToKeyset",
+                      defaultMessage: "Back to keyset",
+                    })}
+                  </span>
+                  <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
+                </Link>
+              </Button>
+            ) : keysetIdFromQuote ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to={`/keysets/${keysetIdFromQuote}`}
+                  state={{ from: `/quotes/${quoteId}` }}
+                  className="inline-flex items-center gap-1 leading-none"
+                >
+                  <span className="relative top-px leading-none">
+                    {intl.formatMessage({
+                      id: "quotes.detail.goToKeyset",
+                      defaultMessage: "Go to keyset",
+                    })}
+                  </span>
+                  <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromQuote, 16)}</span>
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         ) : null}
       </div>
       <PageBody id={quoteId} />
