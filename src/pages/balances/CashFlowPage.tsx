@@ -2,8 +2,7 @@ import { Suspense } from "react";
 import { Link } from "react-router";
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
-import { Skeleton } from "@bitcredit/ui-library";
+import { Heading, Skeleton } from "@bitcredit/ui-library";
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { FormattedMessage, useIntl } from "react-intl";
 
@@ -113,9 +112,9 @@ export default function CashFlowPage() {
       >
         <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
       </Breadcrumbs>
-      <PageTitle>
+      <Heading as="h1" variant="page" className="mb-6 pt-4">
         <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
-      </PageTitle>
+      </Heading>
 
       <Suspense fallback={<Loader />}>
         <PageBody />

@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, postTokenStatus, updateQuote } from '../sdk.gen';
-import type { GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, PostTokenStatusData, PostTokenStatusResponse, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
+import { deleteDeniedMeltop, getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, listDeniedMeltops, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, updateQuote } from '../sdk.gen';
+import type { DeleteDeniedMeltopData, GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, ListDeniedMeltopsData, ListDeniedMeltopsResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -181,20 +181,6 @@ export const listMintopsOptions = (options: Options<ListMintopsData>) => queryOp
     },
     queryKey: listMintopsQueryKey(options)
 });
-
-export const postTokenStatusMutation = (options?: Partial<Options<PostTokenStatusData>>): UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> => {
-    const mutationOptions: UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await postTokenStatus({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
 
 export const getQuoteQueryKey = (options: Options<GetQuoteData>) => createQueryKey('getQuote', options);
 
@@ -484,6 +470,35 @@ export const postEbillReqtopayMutation = (options?: Partial<Options<PostEbillReq
     const mutationOptions: UseMutationOptions<PostEbillReqtopayResponse, DefaultError, Options<PostEbillReqtopayData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await postEbillReqtopay({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listDeniedMeltopsQueryKey = (options?: Options<ListDeniedMeltopsData>) => createQueryKey('listDeniedMeltops', options);
+
+export const listDeniedMeltopsOptions = (options?: Options<ListDeniedMeltopsData>) => queryOptions<ListDeniedMeltopsResponse, DefaultError, ListDeniedMeltopsResponse, ReturnType<typeof listDeniedMeltopsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listDeniedMeltops({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listDeniedMeltopsQueryKey(options)
+});
+
+export const deleteDeniedMeltopMutation = (options?: Partial<Options<DeleteDeniedMeltopData>>): UseMutationOptions<unknown, DefaultError, Options<DeleteDeniedMeltopData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<DeleteDeniedMeltopData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteDeniedMeltop({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

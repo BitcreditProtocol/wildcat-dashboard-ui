@@ -216,6 +216,19 @@ export type CurrencyUnit = 'Sat' | 'Msat' | 'Usd' | 'Eur' | 'Auth' | {
 };
 
 /**
+ * --------------------------- denied melt operations
+ */
+export type DeniedMeltOp = {
+    id: string;
+    amount: number;
+    created: string;
+};
+
+export type DeniedMeltOperations = {
+    ops: Array<DeniedMeltOp>;
+};
+
+/**
  * --------------------------- eCash wallet balance
  */
 export type ECashBalance = {
@@ -334,7 +347,7 @@ export type InfoReply = {
     bill: BillInfo;
     keyset_id: Id;
     discounted: number;
-    fee: string;
+    fee: Amount;
     status: 'MintingEnabled';
 };
 
@@ -557,16 +570,6 @@ export type SimplifiedBillPaymentStatus = {
     payment_details?: null | BillWaitingForPaymentState;
 };
 
-export type TokenState = 'Unspent' | 'Spent';
-
-export type TokenStateRequest = {
-    token: string;
-};
-
-export type TokenStateResponse = {
-    state: TokenState;
-};
-
 /**
  * --------------------------- Update quote status request
  */
@@ -724,7 +727,7 @@ export type GetMintopStatusData = {
         qid: string;
     };
     query?: never;
-    url: '/v1/admin/treasury/credit/mint_op_status/{qid}';
+    url: '/v1/admin/treasury/ebill/mint_op_status/{qid}';
 };
 
 export type GetMintopStatusErrors = {
@@ -752,7 +755,7 @@ export type ListMintopsData = {
         kid: Id;
     };
     query?: never;
-    url: '/v1/admin/treasury/credit/mint_ops/{kid}';
+    url: '/v1/admin/treasury/ebill/mint_ops/{kid}';
 };
 
 export type ListMintopsErrors = {
@@ -770,22 +773,6 @@ export type ListMintopsResponses = {
 };
 
 export type ListMintopsResponse = ListMintopsResponses[keyof ListMintopsResponses];
-
-export type PostTokenStatusData = {
-    body: TokenStateRequest;
-    path?: never;
-    query?: never;
-    url: '/v1/admin/credit/token_status';
-};
-
-export type PostTokenStatusResponses = {
-    /**
-     * Successful response
-     */
-    200: TokenStateResponse;
-};
-
-export type PostTokenStatusResponse = PostTokenStatusResponses[keyof PostTokenStatusResponses];
 
 export type GetQuoteData = {
     body?: never;
@@ -1198,3 +1185,45 @@ export type PostEbillReqtopayResponses = {
 };
 
 export type PostEbillReqtopayResponse = PostEbillReqtopayResponses[keyof PostEbillReqtopayResponses];
+
+export type ListDeniedMeltopsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/treasury/onchain/meltops/denied';
+};
+
+export type ListDeniedMeltopsResponses = {
+    /**
+     * Successful response
+     */
+    200: DeniedMeltOperations;
+};
+
+export type ListDeniedMeltopsResponse = ListDeniedMeltopsResponses[keyof ListDeniedMeltopsResponses];
+
+export type DeleteDeniedMeltopData = {
+    body?: never;
+    path: {
+        /**
+         * the uid of the denied melt operation to delete
+         */
+        qid: string;
+    };
+    query?: never;
+    url: '/v1/admin/treasury/onchain/meltops/denied/{qid}';
+};
+
+export type DeleteDeniedMeltopErrors = {
+    /**
+     * denied melt operation id not found
+     */
+    404: unknown;
+};
+
+export type DeleteDeniedMeltopResponses = {
+    /**
+     * Successful response
+     */
+    200: unknown;
+};

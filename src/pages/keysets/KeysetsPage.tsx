@@ -1,9 +1,8 @@
-import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useQuery } from "@tanstack/react-query";
 import { listKeysetInfosOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
-import { Search as SearchComponent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
+import { Heading, Search as SearchComponent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
 import { SortButtons } from "@/components/SortButtons";
 import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
 import { KeysetCard } from "@/pages/keysets/components/KeysetCard";
@@ -101,9 +100,9 @@ export default function KeysetsPage() {
       <Breadcrumbs>
         <FormattedMessage id="keysets.page.title" defaultMessage="Keysets" />
       </Breadcrumbs>
-      <PageTitle>
+      <Heading as="h1" variant="page" className="mb-6 pt-4">
         <FormattedMessage id="keysets.page.title" defaultMessage="Keysets" />
-      </PageTitle>
+      </Heading>
       <PageBody />
     </>
   );

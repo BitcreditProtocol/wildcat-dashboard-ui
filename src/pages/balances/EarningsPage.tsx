@@ -1,7 +1,6 @@
 import { Suspense, useState } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
-import { AppIcon, Button, Skeleton, Text } from "@bitcredit/ui-library";
+import { AppIcon, Button, Heading, Skeleton, Text } from "@bitcredit/ui-library";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Link } from "react-router";
 import { ChartColumnIncreasingIcon } from "lucide-react";
@@ -93,9 +92,9 @@ export default function EarningsPage() {
       <Breadcrumbs>
         <FormattedMessage id="earnings.page.title" defaultMessage="Earnings" />
       </Breadcrumbs>
-      <PageTitle>
+      <Heading as="h1" variant="page" className="mb-6 pt-4">
         <FormattedMessage id="earnings.page.title" defaultMessage="Earnings" />
-      </PageTitle>
+      </Heading>
 
       <Suspense fallback={<Loader />}>
         <PageBody />

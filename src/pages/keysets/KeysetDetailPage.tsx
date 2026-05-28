@@ -1,4 +1,3 @@
-import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useParams, Link, useLocation } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Heading, Skeleton, TruncatedTextPopover } from "@bitcredit/ui-library";
@@ -203,14 +202,14 @@ export default function KeysetDetailPage() {
         {keysetId}
       </Breadcrumbs>
       <div className="flex items-center justify-between">
-        <PageTitle>
+        <Heading as="h1" variant="page" className="mb-6 pt-4">
           <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
             <span>
               <FormattedMessage id="keyset.detail.title" defaultMessage="Keyset" />
             </span>
             <TruncatedTextPopover text={keysetId} maxLength={16} className="inline font-mono" as="span" />
           </span>
-        </PageTitle>
+        </Heading>
         {fromQuote && quoteId && (
           <Button variant="outline" size="sm" asChild>
             <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }} className="inline-flex items-center gap-1">

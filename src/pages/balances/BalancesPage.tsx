@@ -1,7 +1,6 @@
 import { PropsWithChildren, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
 import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton } from "@bitcredit/ui-library";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
@@ -291,9 +290,9 @@ export default function BalancesPage() {
       <Breadcrumbs>
         <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
       </Breadcrumbs>
-      <PageTitle>
+      <Heading as="h1" variant="page" className="mb-6 pt-4">
         <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
-      </PageTitle>
+      </Heading>
 
       <Suspense fallback={<Loader />}>
         <PageBodyWithDevSection />
