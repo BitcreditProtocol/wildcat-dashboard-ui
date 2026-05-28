@@ -186,15 +186,8 @@ function clickSelectItem(page: HTMLDivElement, value: string) {
   });
 }
 
-function orderedQuoteLinks(page: HTMLDivElement): string[] {
-  const hrefs = Array.from(page.querySelectorAll('a[href^="/quotes/"]')).map((node) => node.getAttribute("href") ?? "");
-  const unique: string[] = [];
-  for (const href of hrefs) {
-    if (!unique.includes(href)) {
-      unique.push(href);
-    }
-  }
-  return unique;
+function orderedOperationIds(page: HTMLDivElement): string[] {
+  return Array.from(page.querySelectorAll("tr[data-operation-id]")).map((node) => node.getAttribute("data-operation-id") ?? "");
 }
 
 function mockOpsQuery(ops: DeniedMeltOp[], overrides: Partial<QueryResult> = {}) {
@@ -274,7 +267,7 @@ describe("MeltRequestsPage", () => {
     it("links each row to the corresponding quote detail page", () => {
       mockOpsQuery([OP_TODAY, OP_OLD]);
       const page = renderPage();
-      expect(orderedQuoteLinks(page)).toEqual(["/quotes/op-today", "/quotes/op-old"]);
+      expect(orderedOperationIds(page)).toEqual(["op-today", "op-old"]);
     });
 
     it("shows no-match message when search query matches nothing", () => {
@@ -291,20 +284,20 @@ describe("MeltRequestsPage", () => {
       mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
       const page = renderPage();
       clickSelectItem(page, "today");
-      const links = orderedQuoteLinks(page);
-      expect(links).toContain("/quotes/op-today");
-      expect(links).not.toContain("/quotes/op-lastweek");
-      expect(links).not.toContain("/quotes/op-old");
+      const links = orderedOperationIds(page);
+      expect(links).toContain("op-today");
+      expect(links).not.toContain("op-lastweek");
+      expect(links).not.toContain("op-old");
     });
 
     it("'Last 7 days' filter excludes operations older than 7 UTC days", () => {
       mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
       const page = renderPage();
       clickSelectItem(page, "last-7-days");
-      const links = orderedQuoteLinks(page);
-      expect(links).toContain("/quotes/op-today");
-      expect(links).toContain("/quotes/op-lastweek");
-      expect(links).not.toContain("/quotes/op-old");
+      const links = orderedOperationIds(page);
+      expect(links).toContain("op-today");
+      expect(links).toContain("op-lastweek");
+      expect(links).not.toContain("op-old");
     });
 
     it("time bucket changes when the clock advances past UTC midnight", () => {
@@ -316,7 +309,7 @@ describe("MeltRequestsPage", () => {
       const page = renderPage();
       clickSelectItem(page, "today");
       // Before midnight: only OP_TODAY qualifies for "today"
-      expect(orderedQuoteLinks(page)).toEqual(["/quotes/op-today"]);
+      expect(orderedOperationIds(page)).toEqual(["op-today"]);
 
       // Advance past midnight into 2026-02-21 — re-render to trigger fresh bucket
       vi.setSystemTime(new Date("2026-02-21T00:05:00.000Z"));
@@ -330,7 +323,7 @@ describe("MeltRequestsPage", () => {
         );
       });
       // Now "today" is 2026-02-21 so opNewDay qualifies, OP_TODAY does not
-      expect(orderedQuoteLinks(page)).toEqual(["/quotes/op-newday"]);
+      expect(orderedOperationIds(page)).toEqual(["op-newday"]);
     });
   });
 
@@ -339,18 +332,18 @@ describe("MeltRequestsPage", () => {
       mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
       const page = renderPage();
       clickSelectItem(page, "zero-amount");
-      const links = orderedQuoteLinks(page);
-      expect(links).toEqual(["/quotes/op-lastweek"]);
+      const links = orderedOperationIds(page);
+      expect(links).toEqual(["op-lastweek"]);
     });
 
     it("'Non-zero amount' filter hides zero-amount operations", () => {
       mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
       const page = renderPage();
       clickSelectItem(page, "non-zero-amount");
-      const links = orderedQuoteLinks(page);
-      expect(links).not.toContain("/quotes/op-lastweek");
-      expect(links).toContain("/quotes/op-today");
-      expect(links).toContain("/quotes/op-old");
+      const links = orderedOperationIds(page);
+      expect(links).not.toContain("op-lastweek");
+      expect(links).toContain("op-today");
+      expect(links).toContain("op-old");
     });
   });
 
@@ -361,11 +354,11 @@ describe("MeltRequestsPage", () => {
 
       // First click: amount-asc (0, 500, 1000)
       clickButtonByText(page, "sort-amount");
-      expect(orderedQuoteLinks(page)).toEqual(["/quotes/op-lastweek", "/quotes/op-today", "/quotes/op-old"]);
+      expect(orderedOperationIds(page)).toEqual(["op-lastweek", "op-today", "op-old"]);
 
       // Second click: amount-desc (1000, 500, 0)
       clickButtonByText(page, "sort-amount");
-      expect(orderedQuoteLinks(page)).toEqual(["/quotes/op-old", "/quotes/op-today", "/quotes/op-lastweek"]);
+      expect(orderedOperationIds(page)).toEqual(["op-old", "op-today", "op-lastweek"]);
     });
 
     it("sorts by request ID ascending", () => {
@@ -374,13 +367,13 @@ describe("MeltRequestsPage", () => {
 
       clickButtonByText(page, "sort-id");
       // op-lastweek, op-old, op-today (lexicographic)
-      expect(orderedQuoteLinks(page)).toEqual(["/quotes/op-lastweek", "/quotes/op-old", "/quotes/op-today"]);
+      expect(orderedOperationIds(page)).toEqual(["op-lastweek", "op-old", "op-today"]);
     });
 
     it("defaults to created-desc (newest first)", () => {
       mockOpsQuery([OP_OLD, OP_TODAY, OP_LAST_WEEK]);
       const page = renderPage();
-      expect(orderedQuoteLinks(page)).toEqual(["/quotes/op-today", "/quotes/op-lastweek", "/quotes/op-old"]);
+      expect(orderedOperationIds(page)).toEqual(["op-today", "op-lastweek", "op-old"]);
     });
   });
 

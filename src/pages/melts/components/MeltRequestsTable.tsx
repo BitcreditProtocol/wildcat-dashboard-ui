@@ -46,7 +46,7 @@ export function MeltRequestsTable({
                 const isDeleting = deletingId === operation.id;
 
                 return (
-                  <tr key={operation.id} className="border-b last:border-b-0">
+                  <tr key={operation.id} data-operation-id={operation.id} className="border-b last:border-b-0">
                     <td className="max-w-[280px] p-3 font-mono">
                       <TruncatedTextPopover text={operation.id} className="font-mono" as="span" />
                     </td>

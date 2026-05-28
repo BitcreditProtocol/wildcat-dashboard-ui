@@ -40,7 +40,7 @@ export function DeleteMeltRequestConfirmation({
       submitButtonDisabled={isPending}
     >
       {operation ? (
-        <div className="space-y-3 px-4 text-sm">
+        <div className="space-y-3 px-4 text-sm w-full">
           <div>
             <div className="text-xs font-medium text-muted-foreground">
               <FormattedMessage id="deniedMeltRequests.table.id" defaultMessage="Request ID" />
