@@ -18,7 +18,6 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { QuoteDocuments } from "./QuoteDocuments";
 import { useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
-import { MELT_REQUESTS_PATH } from "@/pages/melts/constants";
 
 interface LocationState {
   from?: string;
@@ -239,7 +238,6 @@ export default function QuotePage() {
   const state = location.state as LocationState | null;
   const fromPath = state?.from;
   const fromKeyset = fromPath?.startsWith("/keysets/");
-  const fromMeltRequests = fromPath === MELT_REQUESTS_PATH;
   const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
 
   const { data: quoteData } = useQuery({
@@ -259,11 +257,7 @@ export default function QuotePage() {
   });
 
   const quoteDataStatus = quoteData?.status as string | undefined;
-  const keysetIdFromQuote =
-    quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData
-      ? serializeKeysetId(quoteData.keyset_id)
-      : null;
-  const hasHeaderActions = fromMeltRequests || Boolean(keysetIdFromState) || Boolean(keysetIdFromQuote);
+  const hasKeysetId = quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData;
 
   return (
     <>
@@ -294,58 +288,40 @@ export default function QuotePage() {
             <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
           </span>
         </Heading>
-        {hasHeaderActions ? (
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {fromMeltRequests ? (
-              <Button variant="outline" size="sm" asChild>
-                <Link
-                  to={MELT_REQUESTS_PATH}
-                  state={{ from: `/quotes/${quoteId}` }}
-                  className="inline-flex items-center gap-1 leading-none"
-                >
-                  <span className="relative top-px leading-none">
-                    {intl.formatMessage({
-                      id: "quotes.detail.backToMeltRequests",
-                      defaultMessage: "Back to melt requests",
-                    })}
-                  </span>
-                </Link>
-              </Button>
-            ) : null}
-            {fromKeyset && keysetIdFromState ? (
-              <Button variant="outline" size="sm" asChild>
-                <Link
-                  to={`/keysets/${keysetIdFromState}`}
-                  state={{ from: `/quotes/${quoteId}` }}
-                  className="inline-flex items-center gap-1 leading-none"
-                >
-                  <span className="relative top-px leading-none">
-                    {intl.formatMessage({
-                      id: "quotes.detail.backToKeyset",
-                      defaultMessage: "Back to keyset",
-                    })}
-                  </span>
-                  <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
-                </Link>
-              </Button>
-            ) : keysetIdFromQuote ? (
-              <Button variant="outline" size="sm" asChild>
-                <Link
-                  to={`/keysets/${keysetIdFromQuote}`}
-                  state={{ from: `/quotes/${quoteId}` }}
-                  className="inline-flex items-center gap-1 leading-none"
-                >
-                  <span className="relative top-px leading-none">
-                    {intl.formatMessage({
-                      id: "quotes.detail.goToKeyset",
-                      defaultMessage: "Go to keyset",
-                    })}
-                  </span>
-                  <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromQuote, 16)}</span>
-                </Link>
-              </Button>
-            ) : null}
-          </div>
+        {fromKeyset && keysetIdFromState ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              to={`/keysets/${keysetIdFromState}`}
+              state={{ from: `/quotes/${quoteId}` }}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.backToKeyset",
+                  defaultMessage: "Back to keyset",
+                })}
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
+            </Link>
+          </Button>
+        ) : hasKeysetId ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
+              state={{ from: `/quotes/${quoteId}` }}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.goToKeyset",
+                  defaultMessage: "Go to keyset",
+                })}
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">
+                {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
+              </span>
+            </Link>
+          </Button>
         ) : null}
       </div>
       <PageBody id={quoteId} />
