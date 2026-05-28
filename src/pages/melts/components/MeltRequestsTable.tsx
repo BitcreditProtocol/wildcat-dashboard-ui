@@ -1,11 +1,11 @@
 import { AppIcon, Button, Card, CardContent, cn } from "@bitcredit/ui-library";
 import { LoaderIcon, Trash2 } from "lucide-react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { Link } from "react-router";
 import { Currency } from "@/components/Currency";
 import type { DeniedMeltOp } from "@/generated/client/types.gen";
-import { MELT_REQUESTS_PATH, UTC_TIME_ZONE } from "../constants";
+import { UTC_TIME_ZONE } from "../constants";
 import { formatCreatedAt } from "../utils";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 
 export function MeltRequestsTable({
   operations,
@@ -48,14 +48,7 @@ export function MeltRequestsTable({
                 return (
                   <tr key={operation.id} className="border-b last:border-b-0">
                     <td className="max-w-[280px] p-3 font-mono">
-                      <Link
-                        to={`/quotes/${operation.id}`}
-                        state={{ from: MELT_REQUESTS_PATH }}
-                        className="block max-w-[260px] truncate text-primary underline-offset-4 hover:underline"
-                        title={operation.id}
-                      >
-                        {operation.id}
-                      </Link>
+                      <TruncatedTextPopover text={operation.id} className="font-mono" as="span" />
                     </td>
                     <td className="p-3">
                       <Currency value={operation.amount} sourceCurrency="sat" amountClassName="text-current" />
