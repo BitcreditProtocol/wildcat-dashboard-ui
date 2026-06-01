@@ -154,9 +154,6 @@ describe("QuoteDetailCard", () => {
         isInMempool={false}
         requestedToPay={false}
         feeToken={null}
-        isFeeTokenStatusPending={false}
-        feeTokenStatusData={undefined}
-        isFeeTokenStatusError={false}
       />
     );
 
@@ -194,9 +191,6 @@ describe("QuoteDetailCard", () => {
         isInMempool={false}
         requestedToPay={false}
         feeToken={null}
-        isFeeTokenStatusPending={false}
-        feeTokenStatusData={undefined}
-        isFeeTokenStatusError={false}
       />
     );
 

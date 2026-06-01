@@ -1,8 +1,6 @@
 import { listQuotesInfiniteOptions, getQuoteOptions, listEbillsOptions } from "@/generated/client/@tanstack/react-query.gen";
-import { postTokenStatus } from "@/generated/client/sdk.gen";
 import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
 import type { BitcreditBill, BillInfo, InfoReply, LightInfo } from "@/generated/client/types.gen";
-import type { TokenStateResponse } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { isBeforeUtcStartOfDate } from "@/utils/dates";
 import * as React from "react";
@@ -26,7 +24,6 @@ export const ALL_PAGE_SIZE_VALUE = "all";
 const ALL_PAGE_SIZE_LIMIT = 100_000;
 const RETRY_COUNT = 2;
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
-const FEE_TOKEN_STATUS_CONCURRENCY = 5;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
 
@@ -113,10 +110,6 @@ function matchesRequestToPaySearch(query: string): boolean {
   return /\b(request(?:ed)?(?:\s+to)?\s+pay|req\s+to\s+pay)\b/i.test(query);
 }
 
-function isDefined<T>(value: T | null | undefined): value is T {
-  return value != null;
-}
-
 function shouldPollStatusPage(status?: QuoteStatus): boolean {
   return status === undefined || status === "Pending" || status === "Offered" || status === "Accepted" || status === "MintingEnabled";
 }
@@ -131,12 +124,10 @@ export function useQuoteList(status?: QuoteStatus) {
   const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [itemsPerPage, setItemsPerPage] = useState<ItemsPerPageValue>(PAGE_SIZE);
-  const [feeTokenStatusByQuoteId, setFeeTokenStatusByQuoteId] = useState<Map<string, TokenStateResponse>>(new Map());
   const limit = itemsPerPage === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_LIMIT : itemsPerPage;
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const todayIsoDate = new Date().toISOString().split("T")[0];
   const paymentSearchRequested = matchesRequestToPaySearch(normalizedSearchQuery);
-  const feeTokenSearchRequested = normalizedSearchQuery.includes("fee token") || normalizedSearchQuery.includes("active fee");
 
   const { data, isFetching, error, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteQuery({
     ...listQuotesInfiniteOptions({
@@ -188,84 +179,6 @@ export function useQuoteList(status?: QuoteStatus) {
     })),
   });
 
-  const shouldFetchFeeTokenStatuses = quickFilter === "active-fee-token" || feeTokenSearchRequested;
-
-  React.useEffect(() => {
-    if (!shouldFetchFeeTokenStatuses) {
-      return;
-    }
-
-    const feeTokenQuotes = quotes
-      .map((quote, index) => {
-        const quoteDetails = quoteDetailsQueries[index]?.data;
-        const feeToken = quoteDetails && "fee" in quoteDetails && typeof quoteDetails.fee === "string" ? quoteDetails.fee : undefined;
-
-        if (!feeToken) {
-          return null;
-        }
-
-        return { quoteId: quote.id, feeToken };
-      })
-      .filter(isDefined);
-
-    const pendingQuotes = feeTokenQuotes.filter((entry) => !feeTokenStatusByQuoteId.has(entry.quoteId));
-
-    if (pendingQuotes.length === 0) {
-      return;
-    }
-
-    let cancelled = false;
-    let nextIndex = 0;
-
-    const runWorker = async () => {
-      while (!cancelled) {
-        const currentIndex = nextIndex;
-        nextIndex += 1;
-
-        if (currentIndex >= pendingQuotes.length) {
-          return;
-        }
-
-        const entry = pendingQuotes[currentIndex];
-
-        try {
-          const { data } = await postTokenStatus({
-            body: { token: entry.feeToken },
-            throwOnError: true,
-          });
-
-          if (cancelled) {
-            return;
-          }
-
-          setFeeTokenStatusByQuoteId((current) => {
-            if (current.has(entry.quoteId)) {
-              return current;
-            }
-
-            const next = new Map(current);
-            next.set(entry.quoteId, data);
-            return next;
-          });
-        } catch {
-          if (cancelled) {
-            return;
-          }
-        }
-      }
-    };
-
-    const workers = Array.from({
-      length: Math.min(FEE_TOKEN_STATUS_CONCURRENCY, pendingQuotes.length),
-    }).map(() => runWorker());
-
-    void Promise.allSettled(workers);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [feeTokenStatusByQuoteId, quoteDetailsQueries, quotes, shouldFetchFeeTokenStatuses]);
-
   const noQuotesMessage = intl.formatMessage({
     id: "quotes.list.empty",
     defaultMessage: "No quotes available.",
@@ -295,8 +208,7 @@ export function useQuoteList(status?: QuoteStatus) {
       quoteDetails,
       ebill,
     });
-    const feeTokenStatus = feeTokenStatusByQuoteId.get(quote.id);
-    const hasActiveFeeToken = feeTokenStatus?.state === "Unspent";
+    const hasActiveFeeToken = false;
     const matchesMaturityToday = isMaturityToday(bill?.maturity_date, todayIsoDate);
 
     if (status && effectiveStatus !== status) {

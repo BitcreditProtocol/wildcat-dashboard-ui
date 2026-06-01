@@ -1,6 +1,5 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
-import { Skeleton } from "@bitcredit/ui-library";
+import { Heading, Skeleton } from "@bitcredit/ui-library";
 import { fetchInfo } from "@/lib/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
@@ -33,9 +32,9 @@ export default function InfoPage() {
       <Breadcrumbs>
         <FormattedMessage id="info.page.title" defaultMessage="Info" />
       </Breadcrumbs>
-      <PageTitle>
+      <Heading as="h1" variant="page" className="mb-6 pt-4">
         <FormattedMessage id="info.page.title" defaultMessage="Info" />
-      </PageTitle>
+      </Heading>
       <Suspense fallback={<Loader />}>
         <PageBody />
       </Suspense>

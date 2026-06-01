@@ -1,6 +1,5 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
-import { AppIcon, Button } from "@bitcredit/ui-library";
+import { AppIcon, Button, Heading } from "@bitcredit/ui-library";
 import { Skeleton, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
 import { LoaderIcon } from "lucide-react";
 import { Link } from "react-router";
@@ -281,7 +280,9 @@ export default function StatusQuotePage({ status }: StatusQuotePageProps) {
           })}
       </Breadcrumbs>
 
-      <PageTitle>{pageTitle}</PageTitle>
+      <Heading as="h1" variant="page" className="mb-6 pt-4">
+        {pageTitle}
+      </Heading>
       <PageBody status={status} />
     </>
   );

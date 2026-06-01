@@ -128,7 +128,7 @@
         }
       }
     },
-    "/v1/admin/treasury/credit/mint_op_status/{qid}": {
+    "/v1/admin/treasury/ebill/mint_op_status/{qid}": {
       "get": {
         "tags": [
           "admin"
@@ -163,7 +163,7 @@
         }
       }
     },
-    "/v1/admin/treasury/credit/mint_ops/{kid}": {
+    "/v1/admin/treasury/ebill/mint_ops/{kid}": {
       "get": {
         "tags": [
           "admin"
@@ -197,36 +197,6 @@
           },
           "404": {
             "description": "keyset id not found"
-          }
-        }
-      }
-    },
-    "/v1/admin/credit/token_status": {
-      "post": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "post_token_status",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TokenStateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenStateResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -875,6 +845,57 @@
           },
           "404": {
             "description": "bill id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/treasury/onchain/meltops/denied": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "list_denied_meltops",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeniedMeltOperations"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/treasury/onchain/meltops/denied/{qid}": {
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "delete_denied_meltop",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "the uid of the denied melt operation to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "404": {
+            "description": "denied melt operation id not found"
           }
         }
       }
@@ -1699,6 +1720,44 @@
         ],
         "description": "Currency Unit"
       },
+      "DeniedMeltOp": {
+        "type": "object",
+        "description": "--------------------------- denied melt operations",
+        "required": [
+          "id",
+          "amount",
+          "created"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DeniedMeltOperations": {
+        "type": "object",
+        "required": [
+          "ops"
+        ],
+        "properties": {
+          "ops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeniedMeltOp"
+            }
+          }
+        }
+      },
       "ECashBalance": {
         "type": "object",
         "description": "--------------------------- eCash wallet balance",
@@ -2177,7 +2236,7 @@
                 "minimum": 0
               },
               "fee": {
-                "type": "string"
+                "$ref": "#/components/schemas/Amount"
               },
               "status": {
                 "type": "string",
@@ -2767,35 +2826,6 @@
                 "$ref": "#/components/schemas/BillWaitingForPaymentState"
               }
             ]
-          }
-        }
-      },
-      "TokenState": {
-        "type": "string",
-        "enum": [
-          "Unspent",
-          "Spent"
-        ]
-      },
-      "TokenStateRequest": {
-        "type": "object",
-        "required": [
-          "token"
-        ],
-        "properties": {
-          "token": {
-            "type": "string"
-          }
-        }
-      },
-      "TokenStateResponse": {
-        "type": "object",
-        "required": [
-          "state"
-        ],
-        "properties": {
-          "state": {
-            "$ref": "#/components/schemas/TokenState"
           }
         }
       },

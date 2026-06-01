@@ -88,7 +88,6 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getEbillEndorsementsOptions: ({ path }: { path: { bid: string } }) => ({
     queryKey: [{ _id: "getEbillEndorsements", path }],
   }),
-  postTokenStatusMutation: () => ({ mutationFn: vi.fn() }),
 }));
 
 let root: Root | null = null;
