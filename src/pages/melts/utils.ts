@@ -21,10 +21,6 @@ export function matchesRequestFilter(operation: DeniedMeltOp, filter: MeltReques
       const createdTime = parseCreatedTime(operation.created);
       return createdTime >= now.getTime() - 7 * MS_PER_DAY;
     }
-    case "zero-amount":
-      return operation.amount === 0;
-    case "non-zero-amount":
-      return operation.amount !== 0;
     default:
       return true;
   }

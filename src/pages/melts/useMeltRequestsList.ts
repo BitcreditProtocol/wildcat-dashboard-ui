@@ -111,20 +111,6 @@ export function useMeltRequestsList(operations: DeniedMeltOp[]) {
         defaultMessage: "Last 7 days",
       }),
     },
-    {
-      value: "zero-amount" as const,
-      label: intl.formatMessage({
-        id: "deniedMeltRequests.filter.zeroAmount",
-        defaultMessage: "Zero amount",
-      }),
-    },
-    {
-      value: "non-zero-amount" as const,
-      label: intl.formatMessage({
-        id: "deniedMeltRequests.filter.nonZeroAmount",
-        defaultMessage: "Non-zero amount",
-      }),
-    },
   ];
 
   return {
