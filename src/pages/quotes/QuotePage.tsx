@@ -276,7 +276,7 @@ export default function QuotePage() {
         {quoteId}
       </Breadcrumbs>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Heading as="h1" variant="page" className="mb-6 pt-4">
           <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
             <span>

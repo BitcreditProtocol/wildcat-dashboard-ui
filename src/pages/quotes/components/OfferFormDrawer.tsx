@@ -62,7 +62,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     prevOpenRef.current = open;
   }, [open]);
 
-  const startDate = useMemo(() => new Date(), [formKey]);
+  const startDate = useMemo(() => new Date(), []);
   const endDate = useMemo(
     () => (value.bill.maturity_date ? new Date(value.bill.maturity_date) : new Date()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
