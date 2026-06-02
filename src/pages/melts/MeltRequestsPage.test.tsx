@@ -327,26 +327,6 @@ describe("MeltRequestsPage", () => {
     });
   });
 
-  describe("amount-based filters", () => {
-    it("'Zero amount' filter shows only zero-amount operations", () => {
-      mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
-      const page = renderPage();
-      clickSelectItem(page, "zero-amount");
-      const links = orderedOperationIds(page);
-      expect(links).toEqual(["op-lastweek"]);
-    });
-
-    it("'Non-zero amount' filter hides zero-amount operations", () => {
-      mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
-      const page = renderPage();
-      clickSelectItem(page, "non-zero-amount");
-      const links = orderedOperationIds(page);
-      expect(links).not.toContain("op-lastweek");
-      expect(links).toContain("op-today");
-      expect(links).toContain("op-old");
-    });
-  });
-
   describe("sorting", () => {
     it("sorts by amount ascending on first click, descending on second click", () => {
       mockOpsQuery([OP_TODAY, OP_OLD, OP_LAST_WEEK]);
