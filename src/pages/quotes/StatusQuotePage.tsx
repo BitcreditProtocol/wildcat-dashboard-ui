@@ -3,7 +3,6 @@ import { AppIcon, Button, Heading } from "@bitcredit/ui-library";
 import { Skeleton, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
 import { LoaderIcon } from "lucide-react";
 import { Link } from "react-router";
-import { formatStatusLabel } from "@/utils/strings";
 import { cn } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
@@ -11,6 +10,7 @@ import { SortButtons } from "@/components/SortButtons";
 import { Search as SearchComponent } from "@bitcredit/ui-library";
 import { useQuoteList, PAGE_SIZE_OPTIONS, ALL_PAGE_SIZE_VALUE } from "@/hooks/use-quote-list";
 import type { QuoteStatus, QuickFilter } from "@/hooks/use-quote-list";
+import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { QuoteItemCard } from "./components/QuoteItemCard";
 
 interface StatusQuotePageProps {
@@ -236,12 +236,7 @@ function PageBody({ status }: { status?: QuoteStatus }) {
 
 export default function StatusQuotePage({ status }: StatusQuotePageProps) {
   const intl = useIntl();
-  const statusLabel = status
-    ? intl.formatMessage({
-        id: `quote.status.${status}`,
-        defaultMessage: formatStatusLabel(status),
-      })
-    : undefined;
+  const statusLabel = status ? intl.formatMessage(getQuoteStatusMessage(status)) : undefined;
   const pageTitle = status
     ? intl.formatMessage(
         {

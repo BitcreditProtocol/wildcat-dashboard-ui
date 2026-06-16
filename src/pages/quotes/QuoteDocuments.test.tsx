@@ -53,9 +53,10 @@ describe("QuoteDocuments", () => {
           {
             name: "invoice.pdf",
             hash: "hash-1",
+            source: "billAttachment",
           },
         ]}
-        openingDocumentName={null}
+        openingDocumentHash={null}
         onOpenDocument={() => undefined}
       />
     );
@@ -67,20 +68,23 @@ describe("QuoteDocuments", () => {
   });
 
   it("shows documents and calls onOpenDocument when expanded", () => {
-    const onOpenDocument = vi.fn<(fileName: string) => void>();
+    const onOpenDocument = vi.fn();
     const page = renderWithIntl(
       <QuoteDocuments
         documents={[
           {
             name: "contact-qrcode.png",
             hash: "hash-1",
+            source: "billAttachment",
           },
           {
             name: "invoice.pdf",
             hash: "hash-2",
+            source: "requestToMint",
+            fileUrl: "https://example.com/invoice.pdf",
           },
         ]}
-        openingDocumentName={null}
+        openingDocumentHash={null}
         onOpenDocument={onOpenDocument}
       />
     );
@@ -105,6 +109,10 @@ describe("QuoteDocuments", () => {
       viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(onOpenDocument).toHaveBeenCalledWith("contact-qrcode.png");
+    expect(onOpenDocument).toHaveBeenCalledWith({
+      name: "contact-qrcode.png",
+      hash: "hash-1",
+      source: "billAttachment",
+    });
   });
 });

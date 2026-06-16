@@ -5,9 +5,10 @@ import { ArrowRight } from "lucide-react";
 import { AppIcon } from "@bitcredit/ui-library";
 import type { BitcreditBill, EbillPaymentComplete, InfoReply, LightInfo } from "@/generated/client/types.gen";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { truncateString, formatStatusLabel } from "@/utils/strings";
+import { truncateString } from "@/utils/strings";
 import { getEffectiveQuoteStatus, getQuoteStatusVariant } from "@/utils/quote-status";
 import { FormattedMessage, useIntl } from "react-intl";
+import { getQuoteStatusMessage } from "@/i18n/descriptors";
 
 interface KeysetQuoteTableRowProps {
   quote: LightInfo;
@@ -47,10 +48,7 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
       </td>
       <td className="p-2 transition-colors">
         <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
-          {intl.formatMessage({
-            id: `quote.status.${effectiveQuoteStatus}`,
-            defaultMessage: formatStatusLabel(effectiveQuoteStatus),
-          })}
+          {intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
         </Badge>
       </td>
       <td className="p-2 transition-colors">

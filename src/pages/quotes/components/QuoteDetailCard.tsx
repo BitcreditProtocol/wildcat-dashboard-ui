@@ -2,8 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, Text } from "@bitcredit/ui-library";
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview";
 import { Currency } from "@/components/Currency";
-import { formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
+import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
 import type { InfoReply } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
@@ -79,10 +79,7 @@ export function QuoteDetailCard({
                 })}
               </Text>
               <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
-                {intl.formatMessage({
-                  id: `quote.status.${effectiveQuoteStatus}`,
-                  defaultMessage: formatStatusLabel(effectiveQuoteStatus),
-                })}
+                {intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
               </Badge>
             </div>
             {ebillPaid && (

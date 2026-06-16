@@ -6,8 +6,9 @@ import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { truncateString, formatStatusLabel } from "@/utils/strings";
+import { truncateString } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
+import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import type { LightInfo } from "@/generated/client/types.gen";
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
 import * as React from "react";
@@ -93,10 +94,7 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
           </div>
           <Badge variant={getQuoteStatusVariant(effectiveStatus)}>
             <HighlightText
-              text={intl.formatMessage({
-                id: `quote.status.${effectiveStatus}`,
-                defaultMessage: formatStatusLabel(effectiveStatus),
-              })}
+              text={intl.formatMessage(getQuoteStatusMessage(effectiveStatus))}
               highlight={searchQuery}
             />
           </Badge>

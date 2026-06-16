@@ -30,6 +30,10 @@ interface MutationResult {
 const { mockClientGet } = vi.hoisted(() => ({
   mockClientGet: vi.fn(),
 }));
+const { mockGetEbillAttachment, mockGetEbillFileFromRequestToMint } = vi.hoisted(() => ({
+  mockGetEbillAttachment: vi.fn(),
+  mockGetEbillFileFromRequestToMint: vi.fn(),
+}));
 
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const mockUseMutation = vi.fn<() => MutationResult>();
@@ -54,6 +58,11 @@ vi.mock("@/lib/api-client", () => ({
   client: {
     get: mockClientGet,
   },
+}));
+
+vi.mock("@/generated/client/sdk.gen", () => ({
+  getEbillAttachment: mockGetEbillAttachment,
+  getEbillFileFromRequestToMint: mockGetEbillFileFromRequestToMint,
 }));
 
 vi.mock("@/lib/ebill-mint-complete", () => ({
@@ -138,6 +147,16 @@ beforeEach(() => {
     data: undefined,
   });
   mockClientGet.mockReset();
+  mockGetEbillAttachment.mockReset();
+  mockGetEbillFileFromRequestToMint.mockReset();
+  mockGetEbillAttachment.mockResolvedValue(new Blob(["attachment"]));
+  mockGetEbillFileFromRequestToMint.mockResolvedValue(new Blob(["request-to-mint"]));
+  vi.stubGlobal(
+    "open",
+    vi.fn(() => ({ closed: false }) as Window)
+  );
+  globalThis.URL.createObjectURL = vi.fn(() => "blob:test-url");
+  globalThis.URL.revokeObjectURL = vi.fn();
 
   mockUseQuery.mockImplementation((opts: QueryOptions) => {
     const id = opts.queryKey[0]._id;
@@ -305,5 +324,108 @@ describe("QuotePage", () => {
     expect(page.textContent).toContain("Documents");
     expect(page.textContent).toContain("Show documents");
     expect(page.textContent).not.toContain("invoice.pdf");
+  });
+
+  it("opens minted bill documents with the attachment endpoint", async () => {
+    const page = renderPage("/quotes/quote-1");
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+
+    act(() => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const buttons = Array.from(page.querySelectorAll("button"));
+    const viewButton = buttons.find((button) => button.textContent === "View");
+
+    await act(async () => {
+      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mockGetEbillAttachment).toHaveBeenCalledWith({
+      path: {
+        bid: "bill-1",
+        fname: "invoice.pdf",
+      },
+      responseStyle: "data",
+      parseAs: "blob",
+    });
+    expect(mockGetEbillFileFromRequestToMint).not.toHaveBeenCalled();
+  });
+
+  it("opens request-to-mint documents with the file-url endpoint before minting", async () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      const id = opts.queryKey[0]._id;
+      if (id === "getQuote") {
+        return {
+          data: {
+            id: opts.queryKey[0].path?.qid ?? "quote-1",
+            status: "Pending",
+            bill: {
+              id: "bill-1",
+              sum: 100,
+              maturity_date: "2026-03-01",
+              drawee: {},
+              drawer: {},
+              payee: {},
+              endorsees: [],
+              file_urls: ["https://files.example.com/invoices/invoice-preview.pdf"],
+            },
+          },
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        };
+      }
+
+      if (id === "listEbills") {
+        return {
+          data: [],
+          isLoading: false,
+          error: null,
+        };
+      }
+
+      if (id === "getEbillEndorsements") {
+        return { data: [], isLoading: false, error: null };
+      }
+
+      if (id === "getEbillMintComplete") {
+        return { data: { complete: false }, isLoading: false, error: null };
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        error: null,
+      };
+    });
+
+    const page = renderPage("/quotes/quote-1");
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+
+    act(() => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(page.textContent).toContain("invoice-preview.pdf");
+
+    const buttons = Array.from(page.querySelectorAll("button"));
+    const viewButton = buttons.find((button) => button.textContent === "View");
+
+    await act(async () => {
+      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mockGetEbillFileFromRequestToMint).toHaveBeenCalledWith({
+      query: {
+        file_url: "https://files.example.com/invoices/invoice-preview.pdf",
+      },
+      responseStyle: "data",
+      parseAs: "blob",
+    });
+    expect(mockGetEbillAttachment).not.toHaveBeenCalled();
   });
 });
