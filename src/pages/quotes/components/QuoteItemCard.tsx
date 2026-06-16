@@ -93,10 +93,7 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
             />
           </div>
           <Badge variant={getQuoteStatusVariant(effectiveStatus)}>
-            <HighlightText
-              text={intl.formatMessage(getQuoteStatusMessage(effectiveStatus))}
-              highlight={searchQuery}
-            />
+            <HighlightText text={intl.formatMessage(getQuoteStatusMessage(effectiveStatus))} highlight={searchQuery} />
           </Badge>
         </div>
       </div>

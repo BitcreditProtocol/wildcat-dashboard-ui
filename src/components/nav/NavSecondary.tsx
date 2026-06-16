@@ -24,7 +24,7 @@ export function NavSecondary({
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => {
-            const title = item.titleMessage ? intl.formatMessage(item.titleMessage) : item.title ?? "";
+            const title = item.titleMessage ? intl.formatMessage(item.titleMessage) : (item.title ?? "");
 
             return (
               <SidebarMenuItem key={item.titleMessage?.id ?? item.title}>
