@@ -10,8 +10,14 @@ export type AlphaStateResponse = {
 
 /**
  * Amount can be any unit
+ *
+ * Note: `PartialOrd` is implemented manually for `Amount<CurrencyUnit>` to return `None`
+ * when comparing amounts with different units. `Ord` is only implemented for `Amount<()>`.
  */
-export type Amount = number;
+export type Amount = {
+    value: number;
+    unit: TupleUnit;
+};
 
 export type BillAcceptanceStatus = {
     time_of_request_to_accept?: number | null;
@@ -228,26 +234,16 @@ export type DeniedMeltOperations = {
     ops: Array<DeniedMeltOp>;
 };
 
-/**
- * --------------------------- eCash wallet balance
- */
-export type ECashBalance = {
-    amount: Amount;
-    unit: CurrencyUnit;
-};
-
-/**
- * --------------------------- ebill minting completed
- */
-export type EbillPaymentComplete = {
-    complete: boolean;
-};
-
 export type Endorsement = {
     pay_to_the_order_of: LightBillParticipant;
     signed: LightSignedBy;
     signing_timestamp: number;
     signing_address?: null | PostalAddress;
+};
+
+export type FeesTokenResponse = {
+    token: string;
+    total: Amount;
 };
 
 export type File = {
@@ -569,6 +565,8 @@ export type SimplifiedBillPaymentStatus = {
     payment_status: BillPaymentStatus;
     payment_details?: null | BillWaitingForPaymentState;
 };
+
+export type TupleUnit = unknown;
 
 /**
  * --------------------------- Update quote status request
@@ -1227,3 +1225,19 @@ export type DeleteDeniedMeltopResponses = {
      */
     200: unknown;
 };
+
+export type CollectFeesTokenData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/fees/token';
+};
+
+export type CollectFeesTokenResponses = {
+    /**
+     * Successful response
+     */
+    200: FeesTokenResponse;
+};
+
+export type CollectFeesTokenResponse = CollectFeesTokenResponses[keyof CollectFeesTokenResponses];

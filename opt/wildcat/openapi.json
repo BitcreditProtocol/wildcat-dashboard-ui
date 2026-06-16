@@ -899,6 +899,26 @@
           }
         }
       }
+    },
+    "/v1/admin/fees/token": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "collect_fees_token",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeesTokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -915,10 +935,22 @@
         }
       },
       "Amount": {
-        "type": "integer",
-        "format": "int64",
-        "description": "Amount can be any unit",
-        "minimum": 0
+        "type": "object",
+        "description": "Amount can be any unit\n\nNote: `PartialOrd` is implemented manually for `Amount<CurrencyUnit>` to return `None`\nwhen comparing amounts with different units. `Ord` is only implemented for `Amount<()>`.",
+        "required": [
+          "value",
+          "unit"
+        ],
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "unit": {
+            "$ref": "#/components/schemas/TupleUnit"
+          }
+        }
       },
       "BillAcceptanceStatus": {
         "type": "object",
@@ -1758,34 +1790,6 @@
           }
         }
       },
-      "ECashBalance": {
-        "type": "object",
-        "description": "--------------------------- eCash wallet balance",
-        "required": [
-          "amount",
-          "unit"
-        ],
-        "properties": {
-          "amount": {
-            "$ref": "#/components/schemas/Amount"
-          },
-          "unit": {
-            "$ref": "#/components/schemas/CurrencyUnit"
-          }
-        }
-      },
-      "EbillPaymentComplete": {
-        "type": "object",
-        "description": "--------------------------- ebill minting completed",
-        "required": [
-          "complete"
-        ],
-        "properties": {
-          "complete": {
-            "type": "boolean"
-          }
-        }
-      },
       "Endorsement": {
         "type": "object",
         "required": [
@@ -1814,6 +1818,21 @@
                 "$ref": "#/components/schemas/PostalAddress"
               }
             ]
+          }
+        }
+      },
+      "FeesTokenResponse": {
+        "type": "object",
+        "required": [
+          "token",
+          "total"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/Amount"
           }
         }
       },
@@ -2828,6 +2847,9 @@
             ]
           }
         }
+      },
+      "TupleUnit": {
+        "default": null
       },
       "UpdateQuoteRequest": {
         "oneOf": [
