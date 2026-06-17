@@ -146,7 +146,11 @@ interface BalanceDisplay {
   unit: string;
 }
 
-function formatAmountValue(amount?: Amount | null) {
+function formatAmountValue(amount?: Amount | number | null) {
+  if (typeof amount === "number") {
+    return String(amount);
+  }
+
   return amount ? String(amount.value) : "0";
 }
 
