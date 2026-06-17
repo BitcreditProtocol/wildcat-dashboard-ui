@@ -1,13 +1,13 @@
 import { useMemo } from "react";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery, useQueries, type UseQueryResult } from "@tanstack/react-query";
 import {
   listKeysetInfosOptions,
   listQuotesOptions,
   getQuoteOptions,
   listEbillsOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
-import type { BitcreditBill } from "@/generated/client/types.gen";
-import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
+import type { BitcreditBill, InfoReply } from "@/generated/client/types.gen";
+import { getEbillMintCompleteQueryOptions, type EbillMintComplete } from "@/lib/ebill-mint-complete";
 import { doesBillMatchKeysetMaturity } from "@/utils/keyset";
 
 const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
@@ -16,6 +16,8 @@ const MINT_COMPLETE_RETRY_COUNT = 3;
 const MINT_COMPLETE_RETRY_DELAY_MS = 30_000;
 
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
+type QuoteDetailQueryResult = UseQueryResult<InfoReply>;
+type MintCompleteQueryResult = UseQueryResult<EbillMintComplete>;
 
 export function useKeysetDetail(keysetId: string) {
   const { data: keysets, isLoading: keysetsLoading } = useQuery({
@@ -51,6 +53,7 @@ export function useKeysetDetail(keysetId: string) {
       },
       refetchIntervalInBackground: true,
     })),
+    combine: (results) => results as QuoteDetailQueryResult[],
   });
 
   const quoteDetailsLoading = quoteDetailsQueries.some((q) => q.isLoading);
@@ -103,6 +106,7 @@ export function useKeysetDetail(keysetId: string) {
       retryDelay: MINT_COMPLETE_RETRY_DELAY_MS,
       refetchOnWindowFocus: false,
     })),
+    combine: (results) => results as MintCompleteQueryResult[],
   });
 
   const billIdToEbillMap = useMemo(() => {

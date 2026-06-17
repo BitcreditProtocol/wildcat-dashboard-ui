@@ -18,9 +18,19 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { QuoteDocuments } from "./QuoteDocuments";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
+import type { InfoReply } from "@/generated/client/types.gen";
 
 interface LocationState {
   from?: string;
+}
+
+function getLocationState(value: unknown): LocationState | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const { from } = value as { from?: unknown };
+  return typeof from === "string" ? { from } : {};
 }
 
 function Loader() {
@@ -264,10 +274,11 @@ function PageBody({ id }: { id: string }) {
 
 export default function QuotePage() {
   const intl = useIntl();
-  const { id } = useParams();
+  const params = useParams();
+  const id = typeof params.id === "string" ? params.id : undefined;
   const quoteId = id ?? "";
   const location = useLocation();
-  const state = location.state as LocationState | null;
+  const state = getLocationState(location.state);
   const fromPath = state?.from;
   const fromKeyset = fromPath?.startsWith("/keysets/");
   const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
@@ -277,8 +288,8 @@ export default function QuotePage() {
       path: { qid: quoteId },
     }),
     retry: 1,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status as string | undefined;
+    refetchInterval: (query: { state: { data?: InfoReply } }) => {
+      const status = query.state.data?.status;
       if (!status) {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
       }
@@ -288,7 +299,7 @@ export default function QuotePage() {
     refetchIntervalInBackground: true,
   });
 
-  const quoteDataStatus = quoteData?.status as string | undefined;
+  const quoteDataStatus = quoteData?.status;
   const hasKeysetId = quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData;
 
   return (

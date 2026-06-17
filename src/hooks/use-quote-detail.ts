@@ -1,5 +1,6 @@
 import { getQuoteOptions, listEbillsOptions, getEbillEndorsementsOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
+import type { InfoReply, ListEbillsResponse } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
 
@@ -38,8 +39,8 @@ export function useQuoteDetail(id: string) {
       path: { qid: id },
     }),
     retry: 1,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status as string | undefined;
+    refetchInterval: (query: { state: { data?: InfoReply } }) => {
+      const status = query.state.data?.status;
       if (!status) {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
       }
@@ -55,9 +56,9 @@ export function useQuoteDetail(id: string) {
     ...listEbillsOptions(),
     retry: 1,
     enabled: !!billId,
-    refetchInterval: (query) => {
+    refetchInterval: (query: { state: { data?: ListEbillsResponse; error?: unknown } }) => {
       if (query.state.error) return false;
-      const ebill = (query.state.data ?? []).find((item) => item.id === billId);
+      const ebill = query.state.data?.find((item) => item.id === billId);
       return ebill?.status?.payment?.paid ? false : QUOTE_DETAIL_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
@@ -85,14 +86,13 @@ export function useQuoteDetail(id: string) {
         return false;
       }
 
-      const data = query.state.data;
-      return data?.complete === false ? 60000 : false;
+      return query.state.data?.complete === false ? 60000 : false;
     },
   });
 
   const isMintComplete = mintCompleteQuery.data?.complete ?? false;
   const isMintCompleteLoading = mintCompleteQuery.isLoading;
-  const feeToken = quoteData && "fee" in quoteData ? quoteData.fee : null;
+  const feeToken = quoteData && "fee" in quoteData ? quoteData.fee.value : null;
 
   const billStatus = ebill?.status;
   const paymentStatus = billStatus?.payment;
@@ -106,7 +106,6 @@ export function useQuoteDetail(id: string) {
 
   const isInMempool = cws && "Payment" in cws && cws.Payment.payment_data?.in_mempool;
   const showPayment = effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled";
-  console.log(quoteData?.bill);
   const billAttachmentDocuments: QuoteDocument[] =
     ebill?.data?.files.map((file) => ({
       name: file.name,

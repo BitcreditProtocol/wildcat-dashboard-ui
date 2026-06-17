@@ -3,8 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Currency } from "@/components/Currency";
 import { ArrowRight } from "lucide-react";
 import { AppIcon } from "@bitcredit/ui-library";
-import type { BitcreditBill, EbillPaymentComplete, InfoReply, LightInfo } from "@/generated/client/types.gen";
+import type { BitcreditBill, InfoReply, LightInfo } from "@/generated/client/types.gen";
 import type { UseQueryResult } from "@tanstack/react-query";
+import type { EbillMintComplete } from "@/lib/ebill-mint-complete";
 import { truncateString } from "@/utils/strings";
 import { getEffectiveQuoteStatus, getQuoteStatusVariant } from "@/utils/quote-status";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -14,7 +15,7 @@ interface KeysetQuoteTableRowProps {
   quote: LightInfo;
   quoteDetails: InfoReply | undefined;
   ebill: BitcreditBill | null | undefined;
-  mintCompleteQuery: UseQueryResult<EbillPaymentComplete> | null;
+  mintCompleteQuery: UseQueryResult<EbillMintComplete> | null;
   keysetId: string;
 }
 
