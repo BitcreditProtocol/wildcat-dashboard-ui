@@ -4,6 +4,7 @@ import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from 
 import { cn } from "@bitcredit/ui-library";
 import { NodeIdDisplay, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { UserAnonymousIcon } from "@/components/icons/UserAnonymous";
+import { participantRoleMessages } from "@/i18n/descriptors";
 import type React from "react";
 import { useIntl } from "react-intl";
 
@@ -96,19 +97,7 @@ export function ParticipantsOverviewCard({
 }) {
   const intl = useIntl();
   const getRoleLabel = (role: "drawee" | "drawer" | "payee" | "holder") => {
-    const defaults = {
-      drawee: "Drawee",
-      drawer: "Drawer",
-      payee: "Payee",
-      holder: "Holder",
-    };
-    return intl.formatMessage(
-      {
-        id: `participants.role.${role}`,
-        defaultMessage: defaults[role],
-      },
-      {}
-    );
+    return intl.formatMessage(participantRoleMessages[role]);
   };
   const bearerLabel = intl.formatMessage({
     id: "participants.role.bearer",

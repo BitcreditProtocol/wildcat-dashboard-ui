@@ -4,7 +4,7 @@ import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
-import { getEbillAttachment } from "@/generated/client/sdk.gen";
+import { getEbillAttachment, getEbillFileFromRequestToMint } from "@/generated/client/sdk.gen";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
@@ -16,11 +16,21 @@ import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { QuoteDocuments } from "./QuoteDocuments";
-import { useQuoteDetail } from "@/hooks/use-quote-detail";
+import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
+import type { InfoReply } from "@/generated/client/types.gen";
 
 interface LocationState {
   from?: string;
+}
+
+function getLocationState(value: unknown): LocationState | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const { from } = value as { from?: unknown };
+  return typeof from === "string" ? { from } : {};
 }
 
 function Loader() {
@@ -36,7 +46,7 @@ const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled
 
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
-  const [openingDocumentName, setOpeningDocumentName] = useState<string | null>(null);
+  const [openingDocumentHash, setOpeningDocumentHash] = useState<string | null>(null);
 
   const blobUrlTimerRef = useRef<number | null>(null);
 
@@ -104,24 +114,56 @@ function PageBody({ id }: { id: string }) {
   const quote = quoteData!;
   const bill = quote?.bill;
 
-  const handleOpenDocument = async (fileName: string) => {
-    if (!billId || !fileName || openingDocumentName) {
+  const handleOpenDocument = async (documentFile: QuoteDocument) => {
+    if (!documentFile.name || openingDocumentHash) {
       return;
     }
 
-    setOpeningDocumentName(fileName);
+    setOpeningDocumentHash(documentFile.hash);
 
     try {
-      const attachment = await getEbillAttachment({
-        path: {
-          bid: billId,
-          fname: fileName,
-        },
-        responseStyle: "data",
-        parseAs: "blob",
-      });
+      let resolvedAttachment: unknown;
 
-      if (!(attachment instanceof Blob)) {
+      if (documentFile.source === "billAttachment") {
+        if (!billId) {
+          throw new Error(
+            intl.formatMessage({
+              id: "quotes.documents.invalidResponse",
+              defaultMessage: "Document attachment could not be opened.",
+            })
+          );
+        }
+
+        const resolvedBillId: string = billId;
+        resolvedAttachment = await getEbillAttachment({
+          path: {
+            bid: resolvedBillId,
+            fname: documentFile.name,
+          },
+          responseStyle: "data",
+          parseAs: "blob",
+        });
+      } else {
+        const resolvedFileUrl = documentFile.fileUrl;
+        if (!resolvedFileUrl) {
+          throw new Error(
+            intl.formatMessage({
+              id: "quotes.documents.invalidResponse",
+              defaultMessage: "Document attachment could not be opened.",
+            })
+          );
+        }
+
+        resolvedAttachment = await getEbillFileFromRequestToMint({
+          query: {
+            file_url: resolvedFileUrl,
+          },
+          responseStyle: "data",
+          parseAs: "blob",
+        });
+      }
+
+      if (!(resolvedAttachment instanceof Blob)) {
         throw new Error(
           intl.formatMessage({
             id: "quotes.documents.invalidResponse",
@@ -130,7 +172,7 @@ function PageBody({ id }: { id: string }) {
         );
       }
 
-      const blobUrl = window.URL.createObjectURL(attachment);
+      const blobUrl = window.URL.createObjectURL(resolvedAttachment);
       const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
 
       if (!openedWindow) {
@@ -158,7 +200,7 @@ function PageBody({ id }: { id: string }) {
         variant: "error",
       });
     } finally {
-      setOpeningDocumentName(null);
+      setOpeningDocumentHash(null);
     }
   };
 
@@ -201,7 +243,7 @@ function PageBody({ id }: { id: string }) {
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-        <QuoteDocuments documents={documentFiles} openingDocumentName={openingDocumentName} onOpenDocument={handleOpenDocument} />
+        <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
 
         <EndorsementChain
           endorsements={endorsementsQuery.data}
@@ -232,10 +274,11 @@ function PageBody({ id }: { id: string }) {
 
 export default function QuotePage() {
   const intl = useIntl();
-  const { id } = useParams();
+  const params = useParams();
+  const id = typeof params.id === "string" ? params.id : undefined;
   const quoteId = id ?? "";
   const location = useLocation();
-  const state = location.state as LocationState | null;
+  const state = getLocationState(location.state);
   const fromPath = state?.from;
   const fromKeyset = fromPath?.startsWith("/keysets/");
   const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
@@ -245,8 +288,8 @@ export default function QuotePage() {
       path: { qid: quoteId },
     }),
     retry: 1,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status as string | undefined;
+    refetchInterval: (query: { state: { data?: InfoReply } }) => {
+      const status = query.state.data?.status;
       if (!status) {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
       }
@@ -256,7 +299,7 @@ export default function QuotePage() {
     refetchIntervalInBackground: true,
   });
 
-  const quoteDataStatus = quoteData?.status as string | undefined;
+  const quoteDataStatus = quoteData?.status;
   const hasKeysetId = quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData;
 
   return (

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton } from "@bi
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
+import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Currency } from "@/components/Currency";
 
@@ -145,6 +146,14 @@ interface BalanceDisplay {
   unit: string;
 }
 
+function formatAmountValue(amount?: Amount | number | null) {
+  if (typeof amount === "number") {
+    return String(amount);
+  }
+
+  return amount ? String(amount.value) : "0";
+}
+
 export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
@@ -189,11 +198,11 @@ function useBalances() {
       unit: "e-IOU",
     },
     credit: {
-      amount: coverage?.credit_circulating_supply?.toString() ?? "0",
+      amount: formatAmountValue(coverage?.credit_circulating_supply),
       unit: "crsat",
     },
     debit: {
-      amount: coverage?.debit_circulating_supply?.toString() ?? "0",
+      amount: formatAmountValue(coverage?.debit_circulating_supply),
       unit: "sat",
     },
   };

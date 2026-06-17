@@ -14,6 +14,15 @@ interface LocationState {
   from?: string;
 }
 
+function getLocationState(value: unknown): LocationState | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const { from } = value as { from?: unknown };
+  return typeof from === "string" ? { from } : {};
+}
+
 function PageBody({ keysetId }: { keysetId: string }) {
   const intl = useIntl();
   const {
@@ -167,9 +176,10 @@ function PageBody({ keysetId }: { keysetId: string }) {
 }
 
 export default function KeysetDetailPage() {
-  const { keysetId } = useParams<{ keysetId: string }>();
+  const params = useParams();
+  const keysetId = typeof params.keysetId === "string" ? params.keysetId : undefined;
   const location = useLocation();
-  const state = location.state as LocationState | null;
+  const state = getLocationState(location.state);
   const fromPath = state?.from;
   const fromQuote = fromPath?.startsWith("/quotes/");
   const quoteId = fromQuote && fromPath ? fromPath.split("/quotes/")[1] : null;
