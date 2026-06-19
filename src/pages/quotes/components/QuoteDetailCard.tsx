@@ -18,7 +18,6 @@ interface QuoteDetailCardProps {
   rejectedToPay: boolean;
   isInMempool: boolean | null | undefined;
   requestedToPay: boolean;
-  feeToken: number | null;
 }
 
 export function QuoteDetailCard({
@@ -31,7 +30,6 @@ export function QuoteDetailCard({
   rejectedToPay,
   isInMempool,
   requestedToPay,
-  feeToken,
 }: QuoteDetailCardProps) {
   const intl = useIntl();
   const bill = quote.bill;
@@ -217,17 +215,6 @@ export function QuoteDetailCard({
                 </Text>
               </div>
             </>
-          )}
-          {quote.status === "MintingEnabled" && feeToken !== null && (
-            <div className="flex items-center gap-2">
-              <Text variant="label" className="w-32">
-                {intl.formatMessage({
-                  id: "quotes.detail.mintingFee",
-                  defaultMessage: "Fee token:",
-                })}
-              </Text>
-              <Currency value={feeToken} sourceCurrency="sat" className="text-sm font-mono" amountClassName="text-current" />
-            </div>
           )}
           <div className="flex items-center gap-2">
             <Text variant="label" className="w-32">

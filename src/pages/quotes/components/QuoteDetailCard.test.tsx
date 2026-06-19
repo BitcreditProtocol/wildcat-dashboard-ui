@@ -153,7 +153,6 @@ describe("QuoteDetailCard", () => {
         rejectedToPay={false}
         isInMempool={false}
         requestedToPay={false}
-        feeToken={null}
       />
     );
 
@@ -190,7 +189,6 @@ describe("QuoteDetailCard", () => {
         rejectedToPay={false}
         isInMempool={false}
         requestedToPay={false}
-        feeToken={null}
       />
     );
 

@@ -8,6 +8,7 @@ import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/rea
 import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Currency } from "@/components/Currency";
+import { CollectFeesCard } from "./CollectFeesCard";
 
 function Loader() {
   return (
@@ -274,6 +275,8 @@ function PageBodyWithDevSection() {
             </CardContent>
           </Card>
         </div>
+
+        <CollectFeesCard />
 
         {/*
           TODO Charts display mock data - will be updated when historical data endpoint is available

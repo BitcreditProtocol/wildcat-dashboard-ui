@@ -18,7 +18,18 @@ interface MockCoverage {
   refetch: ReturnType<typeof vi.fn>;
 }
 
-const mockUseQuery = vi.fn<() => MockCoverage>();
+interface MockFeesToken {
+  data?: {
+    amount: number;
+    token: string;
+  };
+  error: unknown;
+  isFetching: boolean;
+  refetch: ReturnType<typeof vi.fn>;
+}
+
+const mockUseCoverageQuery = vi.fn<() => MockCoverage>();
+const mockUseCollectFeesQuery = vi.fn<() => MockFeesToken>();
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -29,12 +40,20 @@ vi.mock("@tanstack/react-query", async () => {
       if (Array.isArray(key) && key[0] === "rates" && key[1] === "coinbase") {
         return actual.useQuery(options);
       }
-      return mockUseQuery();
+      const queryId =
+        Array.isArray(key) && typeof key[0] === "object" && key[0] !== null && "_id" in key[0] ? (key[0] as { _id?: unknown })._id : null;
+      if (queryId === "collectFeesToken") {
+        return mockUseCollectFeesQuery();
+      }
+      return mockUseCoverageQuery();
     },
   };
 });
 
 vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
+  collectFeesTokenOptions: () => ({
+    queryKey: [{ _id: "collectFeesToken" }],
+  }),
   getClowderLocalCoverageOptions: () => ({
     queryKey: [{ _id: "coverage" }],
   }),
@@ -102,6 +121,15 @@ async function flush() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUseCollectFeesQuery.mockReturnValue({
+    data: {
+      amount: 123,
+      token: "bitcr-test-token",
+    },
+    error: null,
+    isFetching: false,
+    refetch: vi.fn(),
+  });
   storageData = {};
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
@@ -143,7 +171,7 @@ describe("BalancesPage", () => {
           }),
       })
     );
-    mockUseQuery.mockReturnValue({
+    mockUseCoverageQuery.mockReturnValue({
       data: {
         onchain_collateral: 100_000_000,
         eiou_collateral: 555,
@@ -176,7 +204,7 @@ describe("BalancesPage", () => {
         text: () => Promise.resolve("Bad Request"),
       })
     );
-    mockUseQuery.mockReturnValue({
+    mockUseCoverageQuery.mockReturnValue({
       data: {
         onchain_collateral: 12_345,
         eiou_collateral: 0,
