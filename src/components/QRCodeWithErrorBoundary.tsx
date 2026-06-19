@@ -238,7 +238,7 @@ export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string
           <AppIcon icon={QrCode} size="sm" />
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="max-w-full max-w-sm-[430px] max-h-none rounded-none border-0 bg-elevation-50 px-6 pb-8 text-text-300 dark:bg-elevation-50 [&>div:first-child]:hidden">
+      <DrawerContent className="max-w-full max-w-sm-[430px] max-h-none rounded-none border-0 bg-elevation-50 px-6 pb-8 text-text-300 dark:bg-elevation-50">
         <DrawerHeader className="px-0 pb-5 pt-20 text-center sm:text-center">
           <DrawerTitle className="text-xl font-semibold text-text-300">{resolvedTitle}</DrawerTitle>
           <DrawerDescription className="text-sm text-text-200">{resolvedLabel}</DrawerDescription>
