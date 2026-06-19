@@ -68,7 +68,6 @@ function PageBody({ id }: { id: string }) {
     effectiveQuoteStatus,
     isMintComplete,
     isMintCompleteLoading,
-    feeToken,
     ebillPaid,
     requestedToPay,
     rejectedToPay,
@@ -229,7 +228,6 @@ function PageBody({ id }: { id: string }) {
         rejectedToPay={rejectedToPay}
         isInMempool={isInMempool}
         requestedToPay={requestedToPay}
-        feeToken={feeToken}
       />
 
       <QuoteActions
