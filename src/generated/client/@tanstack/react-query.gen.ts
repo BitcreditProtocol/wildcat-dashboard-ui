@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { collectFeesToken, deleteDeniedMeltop, getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, listDeniedMeltops, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, updateQuote } from '../sdk.gen';
-import type { CollectFeesTokenData, CollectFeesTokenResponse, DeleteDeniedMeltopData, GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, ListDeniedMeltopsData, ListDeniedMeltopsResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
+import { collectFeesToken, deleteDeniedMeltop, getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillHistory, getEbillPaymentactions, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, getSharedEbillHistory, listDeniedMeltops, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, syncEbillChain, updateQuote } from '../sdk.gen';
+import type { CollectFeesTokenData, CollectFeesTokenResponse, DeleteDeniedMeltopData, GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillHistoryData, GetEbillHistoryResponse, GetEbillPaymentactionsData, GetEbillPaymentactionsResponse, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, GetSharedEbillHistoryData, GetSharedEbillHistoryResponse, ListDeniedMeltopsData, ListDeniedMeltopsResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, SyncEbillChainData, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -130,27 +130,30 @@ const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'hea
 
 export const listKeysetInfosInfiniteQueryKey = (options?: Options<ListKeysetInfosData>): QueryKey<Options<ListKeysetInfosData>> => createQueryKey('listKeysetInfos', options, true);
 
-export const listKeysetInfosInfiniteOptions = (options?: Options<ListKeysetInfosData>) => infiniteQueryOptions<ListKeysetInfosResponse, DefaultError, InfiniteData<ListKeysetInfosResponse>, QueryKey<Options<ListKeysetInfosData>>, number | null | Pick<QueryKey<Options<ListKeysetInfosData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-// @ts-ignore
-{
-    queryFn: async ({ pageParam, queryKey, signal }) => {
-        // @ts-ignore
-        const page: Pick<QueryKey<Options<ListKeysetInfosData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
-            query: {
-                offset: pageParam
-            }
-        };
-        const params = createInfiniteParams(queryKey, page);
-        const { data } = await listKeysetInfos({
-            ...options,
-            ...params,
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: listKeysetInfosInfiniteQueryKey(options)
-});
+export const listKeysetInfosInfiniteOptions = (options?: Options<ListKeysetInfosData>) => {
+    const opts = infiniteQueryOptions<ListKeysetInfosResponse, DefaultError, InfiniteData<ListKeysetInfosResponse>, QueryKey<Options<ListKeysetInfosData>>, number | null | Pick<QueryKey<Options<ListKeysetInfosData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListKeysetInfosData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listKeysetInfos({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listKeysetInfosInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
 
 export const getMintopStatusQueryKey = (options: Options<GetMintopStatusData>) => createQueryKey('getMintopStatus', options);
 
@@ -228,26 +231,44 @@ export const listQuotesOptions = (options?: Options<ListQuotesData>) => queryOpt
 
 export const listQuotesInfiniteQueryKey = (options?: Options<ListQuotesData>): QueryKey<Options<ListQuotesData>> => createQueryKey('listQuotes', options, true);
 
-export const listQuotesInfiniteOptions = (options?: Options<ListQuotesData>) => infiniteQueryOptions<ListQuotesResponse, DefaultError, InfiniteData<ListQuotesResponse>, QueryKey<Options<ListQuotesData>>, number | null | Pick<QueryKey<Options<ListQuotesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-// @ts-ignore
-{
-    queryFn: async ({ pageParam, queryKey, signal }) => {
-        // @ts-ignore
-        const page: Pick<QueryKey<Options<ListQuotesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
-            query: {
-                offset: pageParam
-            }
-        };
-        const params = createInfiniteParams(queryKey, page);
-        const { data } = await listQuotes({
+export const listQuotesInfiniteOptions = (options?: Options<ListQuotesData>) => {
+    const opts = infiniteQueryOptions<ListQuotesResponse, DefaultError, InfiniteData<ListQuotesResponse>, QueryKey<Options<ListQuotesData>>, number | null | Pick<QueryKey<Options<ListQuotesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListQuotesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listQuotes({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listQuotesInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getSharedEbillHistoryQueryKey = (options: Options<GetSharedEbillHistoryData>) => createQueryKey('getSharedEbillHistory', options);
+
+export const getSharedEbillHistoryOptions = (options: Options<GetSharedEbillHistoryData>) => queryOptions<GetSharedEbillHistoryResponse, DefaultError, GetSharedEbillHistoryResponse, ReturnType<typeof getSharedEbillHistoryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getSharedEbillHistory({
             ...options,
-            ...params,
+            ...queryKey[0],
             signal,
             throwOnError: true
         });
         return data;
     },
-    queryKey: listQuotesInfiniteQueryKey(options)
+    queryKey: getSharedEbillHistoryQueryKey(options)
 });
 
 export const getIdentityQueryKey = (options?: Options<GetIdentityData>) => createQueryKey('getIdentity', options);
@@ -354,6 +375,50 @@ export const getEbillFileFromRequestToMintOptions = (options: Options<GetEbillFi
     },
     queryKey: getEbillFileFromRequestToMintQueryKey(options)
 });
+
+export const getEbillPaymentactionsQueryKey = (options: Options<GetEbillPaymentactionsData>) => createQueryKey('getEbillPaymentactions', options);
+
+export const getEbillPaymentactionsOptions = (options: Options<GetEbillPaymentactionsData>) => queryOptions<GetEbillPaymentactionsResponse, DefaultError, GetEbillPaymentactionsResponse, ReturnType<typeof getEbillPaymentactionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getEbillPaymentactions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getEbillPaymentactionsQueryKey(options)
+});
+
+export const getEbillHistoryQueryKey = (options: Options<GetEbillHistoryData>) => createQueryKey('getEbillHistory', options);
+
+export const getEbillHistoryOptions = (options: Options<GetEbillHistoryData>) => queryOptions<GetEbillHistoryResponse, DefaultError, GetEbillHistoryResponse, ReturnType<typeof getEbillHistoryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getEbillHistory({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getEbillHistoryQueryKey(options)
+});
+
+export const syncEbillChainMutation = (options?: Partial<Options<SyncEbillChainData>>): UseMutationOptions<unknown, DefaultError, Options<SyncEbillChainData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<SyncEbillChainData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await syncEbillChain({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const getClowderInfoQueryKey = (options?: Options<GetClowderInfoData>) => createQueryKey('getClowderInfo', options);
 

@@ -33,6 +33,45 @@ export type BillAnonParticipant = {
     nostr_relays: Array<string>;
 };
 
+export type BillCallerPayment = {
+    Sell: {
+        buyer: BillParticipant;
+        seller: BillParticipant;
+        state: BillCallerPaymentState;
+    };
+} | {
+    Payment: {
+        payer: BillIdentParticipant;
+        payee: BillParticipant;
+        state: BillCallerPaymentState;
+    };
+} | {
+    Recourse: {
+        recourser: BillParticipant;
+        recoursee: BillIdentParticipant;
+        state: BillCallerPaymentState;
+    };
+};
+
+export type BillCallerPaymentAction = {
+    Pay: BillCallerPayment;
+} | {
+    CheckPayment: BillCallerPayment;
+};
+
+export type BillCallerPaymentState = {
+    time_of_request: number;
+    sum: string;
+    currency: string;
+    address_to_pay: string;
+    status: PaymentStatus;
+    payment_deadline: number;
+    tx_id?: string | null;
+    in_mempool: boolean;
+    confirmations: number;
+    private_descriptor_to_spend?: string | null;
+};
+
 export type BillCurrentWaitingState = {
     Sell: BillWaitingForSellState;
 } | {
@@ -54,6 +93,23 @@ export type BillData = {
     sum: string;
     files: Array<File>;
     active_notification?: null | Notification;
+};
+
+export type BillHistoryBlock = {
+    block_id: number;
+    block_type: string;
+    pay_to_the_order_of?: null | BillParticipant;
+    payment_data?: null | BillHistoryBlockPaymentData;
+    request_deadline?: number | null;
+    signed: SignedBy;
+    signing_timestamp: number;
+    signing_address?: null | PostalAddress;
+};
+
+export type BillHistoryBlockPaymentData = {
+    sum: string;
+    currency: string;
+    payment_address: string;
 };
 
 export type BillIdentParticipant = PostalAddress & {
@@ -120,6 +176,11 @@ export type BillSellStatus = {
     offer_to_sell_timed_out: boolean;
     rejected_offer_to_sell: boolean;
     buying_deadline_timestamp?: number | null;
+};
+
+export type BillSignatory = {
+    node_id: string;
+    name?: string | null;
 };
 
 export type BillStatus = {
@@ -486,12 +547,26 @@ export type PaginatedResponseLightInfo = {
     total: number;
 };
 
+export type PaymentStatus = {
+    Requested: number;
+} | {
+    Paid: number;
+} | {
+    Rejected: number;
+} | {
+    Expired: number;
+};
+
 /**
  * Reflects what the majority of Beta mints think about the current Alpha mint
  */
 export type PerceivedState = {
     substitute_beta?: string | null;
     alpha_state: MintState;
+    /**
+     * Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.
+     */
+    offline_since?: number | null;
 };
 
 export type PostalAddress = {
@@ -519,6 +594,16 @@ export type RequestToPayFromEBillRequest = {
 
 export type RequestToPayFromEBillResponse = {
     [key: string]: unknown;
+};
+
+export type ResyncBillPayload = {
+    bill_id: string;
+    from_nostr?: boolean | null;
+};
+
+export type SignedBy = {
+    data: BillParticipant;
+    signatory?: null | BillSignatory;
 };
 
 /**
@@ -856,6 +941,34 @@ export type ListQuotesResponses = {
 
 export type ListQuotesResponse = ListQuotesResponses[keyof ListQuotesResponses];
 
+export type GetSharedEbillHistoryData = {
+    body?: never;
+    path: {
+        /**
+         * the qid of the quote to get the bill history from
+         */
+        qid: string;
+    };
+    query?: never;
+    url: '/v1/admin/credit/quote/{qid}/ebill/history';
+};
+
+export type GetSharedEbillHistoryErrors = {
+    /**
+     * resource id not found
+     */
+    404: unknown;
+};
+
+export type GetSharedEbillHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: Array<BillHistoryBlock>;
+};
+
+export type GetSharedEbillHistoryResponse = GetSharedEbillHistoryResponses[keyof GetSharedEbillHistoryResponses];
+
 export type GetIdentityData = {
     body?: never;
     path?: never;
@@ -1019,6 +1132,83 @@ export type GetEbillFileFromRequestToMintErrors = {
 };
 
 export type GetEbillFileFromRequestToMintResponses = {
+    /**
+     * Successful response
+     */
+    200: unknown;
+};
+
+export type GetEbillPaymentactionsData = {
+    body?: never;
+    path: {
+        /**
+         * the ebill id
+         */
+        bid: string;
+    };
+    query?: never;
+    url: '/v1/admin/ebill/payment_actions/{bid}';
+};
+
+export type GetEbillPaymentactionsErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type GetEbillPaymentactionsResponses = {
+    /**
+     * Successful response
+     */
+    200: Array<BillCallerPaymentAction>;
+};
+
+export type GetEbillPaymentactionsResponse = GetEbillPaymentactionsResponses[keyof GetEbillPaymentactionsResponses];
+
+export type GetEbillHistoryData = {
+    body?: never;
+    path: {
+        /**
+         * the ebill id
+         */
+        bid: string;
+    };
+    query?: never;
+    url: '/v1/admin/ebill/history/{bid}';
+};
+
+export type GetEbillHistoryErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type GetEbillHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: Array<BillHistoryBlock>;
+};
+
+export type GetEbillHistoryResponse = GetEbillHistoryResponses[keyof GetEbillHistoryResponses];
+
+export type SyncEbillChainData = {
+    body: ResyncBillPayload;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/ebill/sync_bill_chain';
+};
+
+export type SyncEbillChainErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type SyncEbillChainResponses = {
     /**
      * Successful response
      */

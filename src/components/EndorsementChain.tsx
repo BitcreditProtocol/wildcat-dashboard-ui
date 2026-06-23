@@ -11,22 +11,22 @@ import {
   Coins,
   DollarSign,
   ArrowUpDown,
+  HelpCircle,
 } from "lucide-react";
-import type { Endorsement, LightBillParticipant } from "@/generated/client/types.gen";
+
+import type { LucideIcon } from "lucide-react";
+import type { BillHistoryBlock, BillParticipant } from "@/generated/client/types.gen";
 import { AppIcon, Button, Text } from "@bitcredit/ui-library";
 import { NodeIdDisplay, Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 
 interface EndorsementChainProps {
-  endorsements?: Endorsement[];
+  historyBlocks?: BillHistoryBlock[];
   isLoading?: boolean;
-  issueDate?: string;
   maturityDate?: string;
-  mintingEnabled?: boolean;
-  quoteOffered?: boolean;
 }
 
-function LightParticipantInfo({ participant }: { participant: LightBillParticipant }) {
+function BillParticipantInfo({ participant }: { participant: BillParticipant }) {
   const intl = useIntl();
   if ("Anon" in participant) {
     return (
@@ -40,115 +40,54 @@ function LightParticipantInfo({ participant }: { participant: LightBillParticipa
         <NodeIdDisplay nodeId={participant.Anon.node_id} />
       </div>
     );
-  } else if ("Ident" in participant) {
-    return (
-      <div className="flex flex-col gap-0.5">
-        <TruncatedTextPopover text={participant.Ident.name} maxLength={50} className="font-medium text-sm" />
-        {participant.Ident.city && participant.Ident.country && (
-          <TruncatedTextPopover
-            text={`${participant.Ident.city}, ${participant.Ident.country}`}
-            maxLength={40}
-            className="text-xs text-muted-foreground"
-          />
-        )}
-      </div>
-    );
   }
-  return null;
-}
-
-interface HistoryEvent {
-  type: "issue" | "offered" | "endorsement" | "requestToPay" | "payment" | "acceptance" | "rejection" | "minting" | "rejectedToPay";
-  timestamp?: number;
-  data: Endorsement | null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <TruncatedTextPopover text={participant.Ident.name} maxLength={50} className="font-medium text-sm" />
+      {participant.Ident.city && participant.Ident.country && (
+        <TruncatedTextPopover
+          text={`${participant.Ident.city}, ${participant.Ident.country}`}
+          maxLength={40}
+          className="text-xs text-muted-foreground"
+        />
+      )}
+    </div>
+  );
 }
 
 const eventMessages = defineMessages({
-  issue: { id: "endorsement.event.issue", defaultMessage: "Bill issued" },
-  offered: { id: "endorsement.event.offered", defaultMessage: "Quote offered" },
-  acceptance: { id: "endorsement.event.acceptance", defaultMessage: "Bill accepted" },
-  rejection: { id: "endorsement.event.rejection", defaultMessage: "Bill rejected" },
-  endorsement: { id: "endorsement.event.endorsed", defaultMessage: "Bill endorsed" },
-  minting: { id: "endorsement.event.minting", defaultMessage: "Minting enabled" },
-  requestToPay: { id: "endorsement.event.requestToPay", defaultMessage: "Request to pay" },
-  rejectedToPay: { id: "endorsement.event.rejectedToPay", defaultMessage: "Payment rejected" },
-  payment: { id: "endorsement.event.payment", defaultMessage: "Payment received" },
+  Issue: { id: "bill.history.Issue", defaultMessage: "Bill issued" },
+  Endorse: { id: "bill.history.Endorse", defaultMessage: "Bill endorsed" },
+  RequestToAccept: { id: "bill.history.RequestToAccept", defaultMessage: "Request to accept" },
+  Accept: { id: "bill.history.Accept", defaultMessage: "Bill accepted" },
+  RejectToAccept: { id: "bill.history.RejectToAccept", defaultMessage: "Acceptance rejected" },
+  RequestToPay: { id: "bill.history.RequestToPay", defaultMessage: "Request to pay" },
+  RejectToPay: { id: "bill.history.RejectToPay", defaultMessage: "Payment rejected" },
+  Pay: { id: "bill.history.Pay", defaultMessage: "Payment received" },
+  Mint: { id: "bill.history.Mint", defaultMessage: "Minting enabled" },
 });
 
-const EVENT_CONFIG = {
-  issue: {
-    icon: PencilLine,
-    color: "text-blue-500",
-    label: eventMessages.issue,
-  },
-  offered: {
-    icon: CheckCircle2,
-    color: "text-blue-500",
-    label: eventMessages.offered,
-  },
-  acceptance: {
-    icon: CheckCircle2,
-    color: "text-green-500",
-    label: eventMessages.acceptance,
-  },
-  rejection: {
-    icon: XCircle,
-    color: "text-red-500",
-    label: eventMessages.rejection,
-  },
-  endorsement: {
-    icon: CheckCircle2,
-    color: "text-green-500",
-    label: eventMessages.endorsement,
-  },
-  minting: {
-    icon: Coins,
-    color: "text-purple-500",
-    label: eventMessages.minting,
-  },
-  requestToPay: {
-    icon: AlertTriangle,
-    color: "text-orange-500",
-    label: eventMessages.requestToPay,
-  },
-  rejectedToPay: {
-    icon: XCircle,
-    color: "text-red-500",
-    label: eventMessages.rejectedToPay,
-  },
-  payment: {
-    icon: DollarSign,
-    color: "text-green-600",
-    label: eventMessages.payment,
-  },
-} as const;
+const BLOCK_TYPE_CONFIG: Record<string, { icon: LucideIcon; color: string; messageKey: keyof typeof eventMessages }> = {
+  Issue: { icon: PencilLine, color: "text-blue-500", messageKey: "Issue" },
+  Endorse: { icon: CheckCircle2, color: "text-green-500", messageKey: "Endorse" },
+  RequestToAccept: { icon: AlertTriangle, color: "text-orange-500", messageKey: "RequestToAccept" },
+  Accept: { icon: CheckCircle2, color: "text-green-500", messageKey: "Accept" },
+  RejectToAccept: { icon: XCircle, color: "text-red-500", messageKey: "RejectToAccept" },
+  RequestToPay: { icon: AlertTriangle, color: "text-orange-500", messageKey: "RequestToPay" },
+  RejectToPay: { icon: XCircle, color: "text-red-500", messageKey: "RejectToPay" },
+  Pay: { icon: DollarSign, color: "text-green-600", messageKey: "Pay" },
+  Mint: { icon: Coins, color: "text-purple-500", messageKey: "Mint" },
+};
 
 export function EndorsementChain({
-  endorsements,
+  historyBlocks,
   isLoading,
-  issueDate,
   maturityDate,
-  requestToPayTimestamp,
-  rejectedToPayTimestamp,
-  paymentTimestamp,
-  acceptanceTimestamp,
-  rejectionTimestamp,
-  mintingTimestamp,
-  mintingEnabled,
-  quoteOffered,
-  offeredTimestamp,
-}: EndorsementChainProps & {
-  requestToPayTimestamp?: number;
-  rejectedToPayTimestamp?: number;
-  paymentTimestamp?: number;
-  acceptanceTimestamp?: number;
-  rejectionTimestamp?: number;
-  mintingTimestamp?: number;
-  offeredTimestamp?: number;
-}) {
+}: EndorsementChainProps) {
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [sortByTimestamp, setSortByTimestamp] = useState(false);
+  const [sortDescending, setSortDescending] = useState(false);
+
   const titleLabel = intl.formatMessage({
     id: "endorsement.history.title",
     defaultMessage: "Bill history",
@@ -167,107 +106,9 @@ export function EndorsementChain({
     );
   }
 
-  const events: HistoryEvent[] = [];
-
-  if (issueDate) {
-    const issueTimestamp = new Date(issueDate).getTime() / 1000;
-    events.push({
-      type: "issue",
-      timestamp: issueTimestamp,
-      data: null,
-    });
-  }
-
-  if (quoteOffered) {
-    events.push({
-      type: "offered",
-      timestamp: offeredTimestamp ?? undefined,
-      data: null,
-    });
-  }
-
-  if (endorsements) {
-    endorsements.forEach((endorsement) => {
-      events.push({
-        type: "endorsement",
-        timestamp: endorsement.signing_timestamp,
-        data: endorsement,
-      });
-    });
-  }
-
-  if (requestToPayTimestamp) {
-    events.push({
-      type: "requestToPay",
-      timestamp: requestToPayTimestamp,
-      data: null,
-    });
-  }
-
-  if (rejectedToPayTimestamp) {
-    events.push({
-      type: "rejectedToPay",
-      timestamp: rejectedToPayTimestamp,
-      data: null,
-    });
-  }
-
-  if (paymentTimestamp) {
-    events.push({
-      type: "payment",
-      timestamp: paymentTimestamp,
-      data: null,
-    });
-  }
-
-  if (acceptanceTimestamp) {
-    events.push({
-      type: "acceptance",
-      timestamp: acceptanceTimestamp,
-      data: null,
-    });
-  }
-
-  if (rejectionTimestamp) {
-    events.push({
-      type: "rejection",
-      timestamp: rejectionTimestamp,
-      data: null,
-    });
-  }
-
-  if (mintingTimestamp !== undefined) {
-    events.push({
-      type: "minting",
-      timestamp: mintingTimestamp,
-      data: null,
-    });
-  } else if (mintingEnabled) {
-    events.push({
-      type: "minting",
-      timestamp: undefined,
-      data: null,
-    });
-  }
-
-  const typePriority: Record<HistoryEvent["type"], number> = {
-    issue: 0,
-    offered: 1,
-    acceptance: 2,
-    rejection: 2,
-    endorsement: 3,
-    minting: 4,
-    requestToPay: 5,
-    rejectedToPay: 6,
-    payment: 7,
-  };
-
-  events.sort((a, b) => {
-    if (!sortByTimestamp) {
-      return typePriority[a.type] - typePriority[b.type];
-    }
-    return typePriority[b.type] - typePriority[a.type];
-  });
+  const events = [...(historyBlocks ?? [])].sort((a, b) =>
+    sortDescending ? b.signing_timestamp - a.signing_timestamp : a.signing_timestamp - b.signing_timestamp
+  );
 
   const eventCount = events.length;
 
@@ -317,13 +158,13 @@ export function EndorsementChain({
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                setSortByTimestamp(!sortByTimestamp);
+                setSortDescending(!sortDescending);
               }}
               className="gap-2"
             >
               <AppIcon icon={ArrowUpDown} size={12} />
               <span className="text-xs">
-                {sortByTimestamp
+                {sortDescending
                   ? intl.formatMessage({
                       id: "endorsement.history.descending",
                       defaultMessage: "Descending",
@@ -345,108 +186,136 @@ export function EndorsementChain({
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {events.map((event, index) => {
-                const config = EVENT_CONFIG[event.type];
-                const displayLabel = intl.formatMessage(config.label);
-
-                return (
-                  <div key={index}>
-                    <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-lg">
-                      {/* Event Header */}
-                      <div className="flex items-center gap-2">
-                        <AppIcon icon={config.icon} size="sm" className={config.color} />
-                        <Text variant="label">{displayLabel}</Text>
-                      </div>
-
-                      {/* Timestamp */}
-                      {event.timestamp !== undefined && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <AppIcon icon={Clock} size={12} />
-                          <span>{new Date(event.timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
-                        </div>
-                      )}
-
-                      {/* Event-specific content */}
-                      {event.type === "issue" && maturityDate && (
-                        <div className="text-xs text-muted-foreground">
-                          <span className="font-semibold">
-                            {intl.formatMessage({
-                              id: "endorsement.history.maturityDateLabel",
-                              defaultMessage: "Maturity date:",
-                            })}{" "}
-                          </span>
-                          {maturityDate}
-                        </div>
-                      )}
-
-                      {event.type === "endorsement" && event.data && (
-                        <>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                            <div>
-                              <div className="text-xs font-semibold text-muted-foreground mb-1">
-                                {intl.formatMessage({
-                                  id: "endorsement.history.signedBy",
-                                  defaultMessage: "Signed by",
-                                })}
-                              </div>
-                              <LightParticipantInfo participant={event.data.signed.data} />
-                              {event.data.signed.signatory && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  <div>
-                                    {intl.formatMessage({
-                                      id: "endorsement.history.signatory",
-                                      defaultMessage: "Signatory:",
-                                    })}
-                                  </div>
-                                  <TruncatedTextPopover text={event.data.signed.signatory.name} maxLength={40} className="inline" />
-                                </div>
-                              )}
-                            </div>
-
-                            <div>
-                              <div className="text-xs font-semibold text-muted-foreground mb-1">
-                                {intl.formatMessage({
-                                  id: "endorsement.history.endorsedTo",
-                                  defaultMessage: "Endorsed to",
-                                })}
-                              </div>
-                              <LightParticipantInfo participant={event.data.pay_to_the_order_of} />
-                            </div>
-                          </div>
-
-                          {event.data.signing_address && (
-                            <div className="text-xs text-muted-foreground mt-2">
-                              <div className="font-semibold">
-                                {intl.formatMessage({
-                                  id: "endorsement.history.locationLabel",
-                                  defaultMessage: "Location:",
-                                })}{" "}
-                              </div>
-                              <TruncatedTextPopover
-                                text={[
-                                  event.data.signing_address.address,
-                                  event.data.signing_address.city,
-                                  event.data.signing_address.country,
-                                ]
-                                  .filter(Boolean)
-                                  .join(", ")}
-                                maxLength={50}
-                                className="inline"
-                              />
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    {index < events.length - 1 && <Separator className="bg-divider-75 my-2" />}
-                  </div>
-                );
-              })}
+              {events.map((block, index) => (
+                <div key={block.block_id}>
+                  <BlockEventRow block={block} maturityDate={maturityDate} />
+                  {index < events.length - 1 && <Separator className="bg-divider-75 my-2" />}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       )}
     </Card>
+  );
+}
+
+
+function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; maturityDate?: string }) {
+  const intl = useIntl();
+  const config = BLOCK_TYPE_CONFIG[block.block_type];
+  const label = config
+    ? intl.formatMessage(eventMessages[config.messageKey])
+    : block.block_type;
+  const IconComponent: LucideIcon = config?.icon ?? HelpCircle;
+  const iconColor = config?.color ?? "text-muted-foreground";
+
+  return (
+    <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-lg">
+      <div className="flex items-center gap-2">
+        <AppIcon icon={IconComponent} size="sm" className={iconColor} />
+        <Text variant="label">{label}</Text>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <AppIcon icon={Clock} size={12} />
+        <span>{new Date(block.signing_timestamp * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })}</span>
+      </div>
+
+      {block.block_type === "Issue" && maturityDate && (
+        <div className="text-xs text-muted-foreground">
+          <span className="font-semibold">
+            {intl.formatMessage({
+              id: "endorsement.history.maturityDateLabel",
+              defaultMessage: "Maturity date:",
+            })}{" "}
+          </span>
+          {maturityDate}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <div>
+          <div className="text-xs font-semibold text-muted-foreground mb-1">
+            {intl.formatMessage({
+              id: "endorsement.history.signedBy",
+              defaultMessage: "Signed by",
+            })}
+          </div>
+          <BillParticipantInfo participant={block.signed.data} />
+          {block.signed.signatory && (
+            <div className="text-xs text-muted-foreground mt-1">
+              <div>
+                {intl.formatMessage({
+                  id: "endorsement.history.signatory",
+                  defaultMessage: "Signatory:",
+                })}
+              </div>
+              <TruncatedTextPopover
+                text={block.signed.signatory.name ?? block.signed.signatory.node_id}
+                maxLength={40}
+                className="inline"
+              />
+            </div>
+          )}
+        </div>
+
+        {block.pay_to_the_order_of && (
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground mb-1">
+              {intl.formatMessage({
+                id: "endorsement.history.endorsedTo",
+                defaultMessage: "Endorsed to",
+              })}
+            </div>
+            <BillParticipantInfo participant={block.pay_to_the_order_of} />
+          </div>
+        )}
+      </div>
+
+      {block.payment_data && (
+        <div className="text-xs text-muted-foreground mt-2 space-y-1">
+          <div>
+            <span className="font-semibold">
+              {intl.formatMessage({ id: "bill.history.amount", defaultMessage: "Amount:" })}{" "}
+            </span>
+            {block.payment_data.sum} {block.payment_data.currency}
+          </div>
+          <div>
+            <span className="font-semibold">
+              {intl.formatMessage({ id: "bill.history.paymentAddress", defaultMessage: "Address:" })}{" "}
+            </span>
+            <TruncatedTextPopover text={block.payment_data.payment_address} maxLength={40} className="inline font-mono" />
+          </div>
+        </div>
+      )}
+
+      {block.request_deadline && (
+        <div className="text-xs text-muted-foreground">
+          <span className="font-semibold">
+            {intl.formatMessage({ id: "bill.history.deadline", defaultMessage: "Deadline:" })}{" "}
+          </span>
+          {new Date(block.request_deadline * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })}
+        </div>
+      )}
+
+      {block.signing_address && (
+        <div className="text-xs text-muted-foreground">
+          <div className="font-semibold">
+            {intl.formatMessage({
+              id: "endorsement.history.locationLabel",
+              defaultMessage: "Location:",
+            })}{" "}
+          </div>
+          <TruncatedTextPopover
+            text={[block.signing_address.address, block.signing_address.city, block.signing_address.country]
+              .filter(Boolean)
+              .join(", ")}
+            maxLength={50}
+            className="inline"
+          />
+        </div>
+      )}
+    </div>
   );
 }
