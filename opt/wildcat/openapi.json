@@ -435,6 +435,44 @@
         }
       }
     },
+    "/v1/admin/credit/quote/{qid}/ebill/history": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_shared_ebill_history",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "the qid of the quote to get the bill history from",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BillHistoryBlock"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "resource id not found"
+          }
+        }
+      }
+    },
     "/v1/admin/ebill/identity": {
       "get": {
         "tags": [
@@ -642,6 +680,109 @@
           },
           "404": {
             "description": "file url not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/payment_actions/{bid}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_ebill_paymentactions",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BillCallerPaymentAction"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/history/{bid}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_ebill_history",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BillHistoryBlock"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/sync_bill_chain": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "sync_ebill_chain",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResyncBillPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
           }
         }
       }
@@ -1009,6 +1150,174 @@
           }
         }
       },
+      "BillCallerPayment": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Sell"
+            ],
+            "properties": {
+              "Sell": {
+                "type": "object",
+                "required": [
+                  "buyer",
+                  "seller",
+                  "state"
+                ],
+                "properties": {
+                  "buyer": {
+                    "$ref": "#/components/schemas/BillParticipant"
+                  },
+                  "seller": {
+                    "$ref": "#/components/schemas/BillParticipant"
+                  },
+                  "state": {
+                    "$ref": "#/components/schemas/BillCallerPaymentState"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Payment"
+            ],
+            "properties": {
+              "Payment": {
+                "type": "object",
+                "required": [
+                  "payer",
+                  "payee",
+                  "state"
+                ],
+                "properties": {
+                  "payer": {
+                    "$ref": "#/components/schemas/BillIdentParticipant"
+                  },
+                  "payee": {
+                    "$ref": "#/components/schemas/BillParticipant"
+                  },
+                  "state": {
+                    "$ref": "#/components/schemas/BillCallerPaymentState"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Recourse"
+            ],
+            "properties": {
+              "Recourse": {
+                "type": "object",
+                "required": [
+                  "recourser",
+                  "recoursee",
+                  "state"
+                ],
+                "properties": {
+                  "recourser": {
+                    "$ref": "#/components/schemas/BillParticipant"
+                  },
+                  "recoursee": {
+                    "$ref": "#/components/schemas/BillIdentParticipant"
+                  },
+                  "state": {
+                    "$ref": "#/components/schemas/BillCallerPaymentState"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BillCallerPaymentAction": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Pay"
+            ],
+            "properties": {
+              "Pay": {
+                "$ref": "#/components/schemas/BillCallerPayment"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "CheckPayment"
+            ],
+            "properties": {
+              "CheckPayment": {
+                "$ref": "#/components/schemas/BillCallerPayment"
+              }
+            }
+          }
+        ]
+      },
+      "BillCallerPaymentState": {
+        "type": "object",
+        "required": [
+          "time_of_request",
+          "sum",
+          "currency",
+          "address_to_pay",
+          "status",
+          "payment_deadline",
+          "in_mempool",
+          "confirmations"
+        ],
+        "properties": {
+          "time_of_request": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "sum": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "address_to_pay": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "payment_deadline": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "tx_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "in_mempool": {
+            "type": "boolean"
+          },
+          "confirmations": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "private_descriptor_to_spend": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "BillCurrentWaitingState": {
         "oneOf": [
           {
@@ -1113,6 +1422,90 @@
                 "$ref": "#/components/schemas/Notification"
               }
             ]
+          }
+        }
+      },
+      "BillHistoryBlock": {
+        "type": "object",
+        "required": [
+          "block_id",
+          "block_type",
+          "signed",
+          "signing_timestamp"
+        ],
+        "properties": {
+          "block_id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "block_type": {
+            "type": "string"
+          },
+          "pay_to_the_order_of": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillParticipant"
+              }
+            ]
+          },
+          "payment_data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillHistoryBlockPaymentData"
+              }
+            ]
+          },
+          "request_deadline": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "signed": {
+            "$ref": "#/components/schemas/SignedBy"
+          },
+          "signing_timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "signing_address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PostalAddress"
+              }
+            ]
+          }
+        }
+      },
+      "BillHistoryBlockPaymentData": {
+        "type": "object",
+        "required": [
+          "sum",
+          "currency",
+          "payment_address"
+        ],
+        "properties": {
+          "sum": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "payment_address": {
+            "type": "string"
           }
         }
       },
@@ -1403,6 +1796,23 @@
             ],
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "BillSignatory": {
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -2665,6 +3075,62 @@
           }
         }
       },
+      "PaymentStatus": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Requested"
+            ],
+            "properties": {
+              "Requested": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Paid"
+            ],
+            "properties": {
+              "Paid": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Rejected"
+            ],
+            "properties": {
+              "Rejected": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Expired"
+            ],
+            "properties": {
+              "Expired": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
       "PerceivedState": {
         "type": "object",
         "description": "Reflects what the majority of Beta mints think about the current Alpha mint",
@@ -2680,6 +3146,15 @@
           },
           "alpha_state": {
             "$ref": "#/components/schemas/MintState"
+          },
+          "offline_since": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.",
+            "minimum": 0
           }
         }
       },
@@ -2745,6 +3220,44 @@
       },
       "RequestToPayFromEBillResponse": {
         "type": "object"
+      },
+      "ResyncBillPayload": {
+        "type": "object",
+        "required": [
+          "bill_id"
+        ],
+        "properties": {
+          "bill_id": {
+            "type": "string"
+          },
+          "from_nostr": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "SignedBy": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BillParticipant"
+          },
+          "signatory": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillSignatory"
+              }
+            ]
+          }
+        }
       },
       "SimpleAlphaState": {
         "oneOf": [

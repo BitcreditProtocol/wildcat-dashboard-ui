@@ -1,4 +1,9 @@
-import { getQuoteOptions, listEbillsOptions, getEbillEndorsementsOptions } from "@/generated/client/@tanstack/react-query.gen";
+import {
+  getQuoteOptions,
+  listEbillsOptions,
+  getEbillHistoryOptions,
+  getSharedEbillHistoryOptions,
+} from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import type { InfoReply, ListEbillsResponse } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
@@ -64,16 +69,25 @@ export function useQuoteDetail(id: string) {
     refetchIntervalInBackground: true,
   });
 
-  const endorsementsQuery = useQuery({
-    ...getEbillEndorsementsOptions({ path: { bid: billId ?? "" } }),
+  const ebill = ebillsQuery.data?.find((item) => item.id === billId);
+  const effectiveQuoteStatus = getEffectiveQuoteStatus(quoteData?.status ?? "Pending", ebill);
+  const billEndorsedToMint = effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled";
+
+  const billHistoryQuery = useQuery({
+    ...getEbillHistoryOptions({ path: { bid: billId ?? "" } }),
     retry: 1,
-    enabled: !!billId,
+    enabled: !!billId && billEndorsedToMint,
     refetchInterval: QUOTE_DETAIL_POLL_INTERVAL_MS,
     refetchIntervalInBackground: true,
   });
 
-  const ebill = ebillsQuery.data?.find((item) => item.id === billId);
-  const effectiveQuoteStatus = getEffectiveQuoteStatus(quoteData?.status ?? "Pending", ebill);
+  const sharedHistoryQuery = useQuery({
+    ...getSharedEbillHistoryOptions({ path: { qid: id } }),
+    retry: 1,
+    enabled: !!billId && !billEndorsedToMint,
+    refetchInterval: QUOTE_DETAIL_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: true,
+  });
   const isPaid = ebill?.status?.payment?.paid === true;
   const shouldCheckMintComplete = effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled" || isPaid;
 
@@ -121,16 +135,17 @@ export function useQuoteDetail(id: string) {
     })) ?? [];
   const documentFiles = billAttachmentDocuments.length > 0 ? billAttachmentDocuments : requestToMintDocuments;
 
+  const historyBlocks = billEndorsedToMint ? billHistoryQuery.data : sharedHistoryQuery.data;
+  const isHistoryLoading = billEndorsedToMint ? billHistoryQuery.isLoading : sharedHistoryQuery.isLoading;
+
   return {
     quoteData,
     isFetching,
     error,
     isLoading,
     ebill,
-    endorsementsQuery: {
-      data: endorsementsQuery.data,
-      isLoading: endorsementsQuery.isLoading,
-    },
+    historyBlocks,
+    isHistoryLoading,
     effectiveQuoteStatus,
     isPaid,
     isMintComplete,

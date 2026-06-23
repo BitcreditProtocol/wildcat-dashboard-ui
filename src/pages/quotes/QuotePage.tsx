@@ -18,6 +18,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { QuoteDocuments } from "./QuoteDocuments";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
+import { EndorseeList } from "./components/EndorseeList";
 import type { InfoReply } from "@/generated/client/types.gen";
 
 interface LocationState {
@@ -63,8 +64,8 @@ function PageBody({ id }: { id: string }) {
     isFetching,
     error,
     isLoading,
-    ebill,
-    endorsementsQuery,
+    historyBlocks,
+    isHistoryLoading,
     effectiveQuoteStatus,
     isMintComplete,
     isMintCompleteLoading,
@@ -214,8 +215,6 @@ function PageBody({ id }: { id: string }) {
     );
   }
 
-  const quoteStatusValue = quote.status as string;
-
   return (
     <div className="flex flex-col gap-4">
       <QuoteDetailCard
@@ -243,28 +242,9 @@ function PageBody({ id }: { id: string }) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
         <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
 
-        <EndorsementChain
-          endorsements={endorsementsQuery.data}
-          isLoading={endorsementsQuery.isLoading}
-          issueDate={ebill?.data?.issue_date}
-          maturityDate={bill.maturity_date}
-          requestToPayTimestamp={ebill?.status?.payment?.time_of_request_to_pay ?? undefined}
-          rejectedToPayTimestamp={ebill?.status?.payment?.rejected_to_pay ? (ebill?.status?.last_block_time ?? undefined) : undefined}
-          paymentTimestamp={ebill?.status?.payment?.paid ? (ebill?.status?.last_block_time ?? undefined) : undefined}
-          acceptanceTimestamp={
-            ebill?.status?.acceptance?.accepted ? (ebill?.status?.acceptance?.time_of_request_to_accept ?? undefined) : undefined
-          }
-          rejectionTimestamp={ebill?.status?.acceptance?.rejected_to_accept ? (ebill?.status?.last_block_time ?? undefined) : undefined}
-          mintingEnabled={quoteStatusValue === "MintingEnabled"}
-          quoteOffered={quoteStatusValue === "Offered" || effectiveQuoteStatus === "Accepted" || quoteStatusValue === "MintingEnabled"}
-          offeredTimestamp={
-            "submitted" in quote
-              ? Math.floor(new Date(quote.submitted).getTime() / 1000)
-              : "tstamp" in quote
-                ? Math.floor(new Date(quote.tstamp).getTime() / 1000)
-                : undefined
-          }
-        />
+        <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
+
+        <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
       </div>
     </div>
   );

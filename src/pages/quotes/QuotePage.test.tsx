@@ -63,6 +63,7 @@ vi.mock("@/lib/api-client", () => ({
 vi.mock("@/generated/client/sdk.gen", () => ({
   getEbillAttachment: mockGetEbillAttachment,
   getEbillFileFromRequestToMint: mockGetEbillFileFromRequestToMint,
+  syncEbillChain: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock("@/lib/ebill-mint-complete", () => ({
@@ -86,6 +87,7 @@ vi.mock("@tanstack/react-query", async () => {
     ...actual,
     useQuery: (options: QueryOptions) => mockUseQuery(options),
     useMutation: () => mockUseMutation(),
+    useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   };
 });
 
@@ -94,8 +96,15 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
     queryKey: [{ _id: "getQuote", path }],
   }),
   listEbillsOptions: () => ({ queryKey: [{ _id: "listEbills" }] }),
-  getEbillEndorsementsOptions: ({ path }: { path: { bid: string } }) => ({
-    queryKey: [{ _id: "getEbillEndorsements", path }],
+  getEbillHistoryOptions: ({ path }: { path: { bid: string } }) => ({
+    queryKey: [{ _id: "getEbillHistory", path }],
+  }),
+  getSharedEbillHistoryOptions: ({ path }: { path: { qid: string } }) => ({
+    queryKey: [{ _id: "getSharedEbillHistory", path }],
+  }),
+  getMintInfoOptions: () => ({ queryKey: [{ _id: "getMintInfo" }] }),
+  getEbillOptions: ({ path }: { path: { bid: string } }) => ({
+    queryKey: [{ _id: "getEbill", path }],
   }),
 }));
 
