@@ -55,9 +55,7 @@ export function EndorseeList({ payee, endorsees }: EndorseeListProps) {
           aria-expanded={isExpanded}
         >
           <span className="flex items-center gap-2">
-            <CardTitle>
-              {intl.formatMessage({ id: "bill.endorsees.title", defaultMessage: "Endorsees" })}
-            </CardTitle>
+            <CardTitle>{intl.formatMessage({ id: "bill.endorsees.title", defaultMessage: "Endorsees" })}</CardTitle>
             <span className="text-sm text-muted-foreground">
               {intl.formatMessage(
                 { id: "bill.endorsees.count", defaultMessage: "({count, plural, one {# party} other {# parties}})" },

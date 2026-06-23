@@ -5,7 +5,7 @@ import { Skeleton } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { getEbillAttachment, getEbillFileFromRequestToMint } from "@/generated/client/sdk.gen";
-import { useQuery, } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { QuoteActions } from "./QuoteActions";
@@ -242,11 +242,7 @@ function PageBody({ id }: { id: string }) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
         <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
 
-        <EndorsementChain
-          historyBlocks={historyBlocks}
-          isLoading={isHistoryLoading}
-          maturityDate={bill.maturity_date}
-        />
+        <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
 
         <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
       </div>

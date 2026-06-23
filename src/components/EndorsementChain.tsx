@@ -79,11 +79,7 @@ const BLOCK_TYPE_CONFIG: Record<string, { icon: LucideIcon; color: string; messa
   Mint: { icon: Coins, color: "text-purple-500", messageKey: "Mint" },
 };
 
-export function EndorsementChain({
-  historyBlocks,
-  isLoading,
-  maturityDate,
-}: EndorsementChainProps) {
+export function EndorsementChain({ historyBlocks, isLoading, maturityDate }: EndorsementChainProps) {
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
   const [sortDescending, setSortDescending] = useState(false);
@@ -200,13 +196,10 @@ export function EndorsementChain({
   );
 }
 
-
 function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; maturityDate?: string }) {
   const intl = useIntl();
   const config = BLOCK_TYPE_CONFIG[block.block_type];
-  const label = config
-    ? intl.formatMessage(eventMessages[config.messageKey])
-    : block.block_type;
+  const label = config ? intl.formatMessage(eventMessages[config.messageKey]) : block.block_type;
   const IconComponent: LucideIcon = config?.icon ?? HelpCircle;
   const iconColor = config?.color ?? "text-muted-foreground";
 
@@ -219,7 +212,14 @@ function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; matur
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <AppIcon icon={Clock} size={12} />
-        <span>{new Date(block.signing_timestamp * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })}</span>
+        <span>
+          {new Date(block.signing_timestamp * 1000).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "UTC",
+          })}
+        </span>
       </div>
 
       {block.block_type === "Issue" && maturityDate && (
@@ -276,15 +276,11 @@ function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; matur
       {block.payment_data && (
         <div className="text-xs text-muted-foreground mt-2 space-y-1">
           <div>
-            <span className="font-semibold">
-              {intl.formatMessage({ id: "bill.history.amount", defaultMessage: "Amount:" })}{" "}
-            </span>
+            <span className="font-semibold">{intl.formatMessage({ id: "bill.history.amount", defaultMessage: "Amount:" })} </span>
             {block.payment_data.sum} {block.payment_data.currency}
           </div>
           <div>
-            <span className="font-semibold">
-              {intl.formatMessage({ id: "bill.history.paymentAddress", defaultMessage: "Address:" })}{" "}
-            </span>
+            <span className="font-semibold">{intl.formatMessage({ id: "bill.history.paymentAddress", defaultMessage: "Address:" })} </span>
             <TruncatedTextPopover text={block.payment_data.payment_address} maxLength={40} className="inline font-mono" />
           </div>
         </div>
@@ -292,10 +288,13 @@ function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; matur
 
       {block.request_deadline && (
         <div className="text-xs text-muted-foreground">
-          <span className="font-semibold">
-            {intl.formatMessage({ id: "bill.history.deadline", defaultMessage: "Deadline:" })}{" "}
-          </span>
-          {new Date(block.request_deadline * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })}
+          <span className="font-semibold">{intl.formatMessage({ id: "bill.history.deadline", defaultMessage: "Deadline:" })} </span>
+          {new Date(block.request_deadline * 1000).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "UTC",
+          })}
         </div>
       )}
 
@@ -308,9 +307,7 @@ function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; matur
             })}{" "}
           </div>
           <TruncatedTextPopover
-            text={[block.signing_address.address, block.signing_address.city, block.signing_address.country]
-              .filter(Boolean)
-              .join(", ")}
+            text={[block.signing_address.address, block.signing_address.city, block.signing_address.country].filter(Boolean).join(", ")}
             maxLength={50}
             className="inline"
           />
