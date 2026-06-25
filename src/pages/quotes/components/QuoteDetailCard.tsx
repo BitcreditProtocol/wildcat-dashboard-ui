@@ -20,6 +20,12 @@ interface QuoteDetailCardProps {
   requestedToPay: boolean;
 }
 
+const formatLocalDateTime = (date: Date): string => {
+  const pad = (value: number) => value.toString().padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 export function QuoteDetailCard({
   quote,
   effectiveQuoteStatus,
@@ -119,7 +125,7 @@ export function QuoteDetailCard({
                     defaultMessage: "Deadline:",
                   })}
                 </Text>
-                <Text variant="caption">{new Date(quote.ttl).toISOString().replace("T", " ").substring(0, 16)} UTC</Text>
+                <Text variant="caption">{formatLocalDateTime(new Date(quote.ttl))}</Text>
               </div>
             )}
             {showPayment && (

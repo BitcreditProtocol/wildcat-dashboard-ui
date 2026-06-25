@@ -3,7 +3,6 @@ import { ConfirmDrawer } from "@/components/Drawers";
 import Big from "big.js";
 import type { OfferFormResult } from "./OfferFormDrawer";
 import { addYears } from "date-fns";
-import { getItem, removeItem, setItem } from "@/utils/local-storage";
 import { useIntl } from "react-intl";
 import { DatePicker, Text } from "@bitcredit/ui-library";
 import type { DateRange } from "@bitcredit/ui-library";
@@ -17,46 +16,23 @@ interface OfferConfirmationProps {
   quoteId?: string;
 }
 
-const OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX = "offer-valid-until-";
-
 export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit, quoteId }: OfferConfirmationProps) {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
   const [validUntilDateTime, setValidUntilDateTime] = useState<Date | undefined>(undefined);
 
   const maxDate = useMemo(() => addYears(new Date(), 1), []);
-  const storageKey = quoteId ? `${OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX}${quoteId}` : null;
 
   useEffect(() => {
-    if (!open || validUntilDateTime) {
+    if (!open) {
       return;
     }
 
-    if (storageKey) {
-      const stored = getItem<string>(storageKey);
-      if (stored) {
-        const parsed = new Date(stored);
-        if (!Number.isNaN(parsed.getTime()) && parsed > new Date() && parsed <= maxDate) {
-          setValidUntilDateTime(parsed);
-          return;
-        }
-        removeItem(storageKey);
-      }
-    }
-
-    if (offerFormData?.ttl.ttl) {
-      setValidUntilDateTime(offerFormData.ttl.ttl);
-    }
-  }, [open, validUntilDateTime, storageKey, maxDate, offerFormData?.ttl.ttl]);
+    setValidUntilDateTime(offerFormData?.ttl.ttl);
+  }, [open, quoteId, offerFormData?.ttl.ttl]);
 
   const handleDateTimeChange = (range: DateRange | undefined) => {
-    const selected = range?.from;
-    setValidUntilDateTime(selected);
-    if (selected && storageKey) {
-      setItem(storageKey, selected.toISOString());
-    } else if (!selected && storageKey) {
-      removeItem(storageKey);
-    }
+    setValidUntilDateTime(range?.from);
   };
 
   const effectiveDiscount =
