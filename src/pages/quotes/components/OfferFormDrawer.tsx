@@ -33,7 +33,7 @@ interface OfferFormDrawerProps {
   children: ReactNode;
 }
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 export function OfferFormDrawer({ title, description, value, open, onOpenChange, onSubmit, children }: OfferFormDrawerProps) {
   const handleFormSubmit = (values: {
@@ -42,7 +42,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     net: { value: Big; currency: string };
     gross: { value: Big; currency: string };
   }) => {
-    const ttl = value.status === "Pending" ? new Date(value.suggested_expiration) : new Date(Date.now() + THIRTY_DAYS_MS);
+    const ttl = new Date(Date.now() + ONE_HOUR_MS);
 
     const result: OfferFormResult = {
       discount: values,

@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmDrawer } from "@/components/Drawers";
-import { CalendarModal, DatePickerButton } from "./CalendarModal";
 import Big from "big.js";
 import type { OfferFormResult } from "./OfferFormDrawer";
-import { addDays, addYears } from "date-fns";
+import { addYears } from "date-fns";
 import { getItem, removeItem, setItem } from "@/utils/local-storage";
 import { useIntl } from "react-intl";
-import { Text } from "@bitcredit/ui-library";
-import { toUtcEndOfDay } from "@/utils/dates";
+import { DatePicker, Text } from "@bitcredit/ui-library";
+import type { DateRange } from "@bitcredit/ui-library";
 import { useAmountFormatter } from "@/utils/amount-format";
 
 interface OfferConfirmationProps {
@@ -23,36 +22,42 @@ const OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX = "offer-valid-until-";
 export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit, quoteId }: OfferConfirmationProps) {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
-  const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined);
-  const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false);
-  const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined);
-  const minDate = useMemo(() => {
-    const date = addDays(new Date(), 1);
-    date.setHours(0, 0, 0, 0);
-    return date;
-  }, []);
-  const maxDate = useMemo(() => {
-    const date = addYears(new Date(), 1);
-    date.setHours(23, 59, 59, 999);
-    return date;
-  }, []);
+  const [validUntilDateTime, setValidUntilDateTime] = useState<Date | undefined>(undefined);
+
+  const maxDate = useMemo(() => addYears(new Date(), 1), []);
   const storageKey = quoteId ? `${OFFER_VALID_UNTIL_STORAGE_KEY_PREFIX}${quoteId}` : null;
 
   useEffect(() => {
-    if (!open || validUntilDate || !storageKey) {
+    if (!open || validUntilDateTime) {
       return;
     }
-    const stored = getItem<string>(storageKey);
-    if (!stored) {
-      return;
+
+    if (storageKey) {
+      const stored = getItem<string>(storageKey);
+      if (stored) {
+        const parsed = new Date(stored);
+        if (!Number.isNaN(parsed.getTime()) && parsed > new Date() && parsed <= maxDate) {
+          setValidUntilDateTime(parsed);
+          return;
+        }
+        removeItem(storageKey);
+      }
     }
-    const parsed = new Date(stored);
-    if (!Number.isNaN(parsed.getTime()) && parsed >= minDate && parsed <= maxDate) {
-      setValidUntilDate(parsed);
-    } else {
+
+    if (offerFormData?.ttl.ttl) {
+      setValidUntilDateTime(offerFormData.ttl.ttl);
+    }
+  }, [open, validUntilDateTime, storageKey, maxDate, offerFormData?.ttl.ttl]);
+
+  const handleDateTimeChange = (range: DateRange | undefined) => {
+    const selected = range?.from;
+    setValidUntilDateTime(selected);
+    if (selected && storageKey) {
+      setItem(storageKey, selected.toISOString());
+    } else if (!selected && storageKey) {
       removeItem(storageKey);
     }
-  }, [open, validUntilDate, storageKey, minDate, maxDate]);
+  };
 
   const effectiveDiscount =
     offerFormData && !offerFormData.discount.gross.value.eq(0)
@@ -60,123 +65,83 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
       : undefined;
 
   return (
-    <>
-      <ConfirmDrawer
-        title={intl.formatMessage({
-          id: "quotes.offer.confirmTitle",
-          defaultMessage: "Confirm offering quote",
-        })}
-        description={intl.formatMessage({
-          id: "quotes.offer.confirmDescription",
-          defaultMessage: "Review your inputs and confirm the offer",
-        })}
-        open={open}
-        onOpenChange={(isOpen) => {
-          onOpenChange(isOpen);
-        }}
-        submitButtonDisabled={!validUntilDate}
-        onSubmit={() => {
-          if (!offerFormData || !validUntilDate) {
-            return;
-          }
-
-          const finalOfferData = {
-            ...offerFormData,
-            ttl: { ttl: toUtcEndOfDay(validUntilDate) },
-          };
-
-          onSubmit(finalOfferData);
-        }}
-      >
-        <div className="flex flex-col gap-4 px-4 py-4">
-          <div className="flex justify-between items-center">
-            <Text variant="label" className="w-48">
-              {intl.formatMessage({
-                id: "quotes.detail.discount.relative",
-                defaultMessage: "Effective fee (relative):",
-              })}
-            </Text>
-            <Text variant="caption" className="text-right">
-              {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
-            </Text>
-          </div>
-          <div className="flex justify-between items-center">
-            <Text variant="label" className="w-48">
-              {intl.formatMessage({
-                id: "quotes.detail.discount.absolute",
-                defaultMessage: "Effective fee (absolute):",
-              })}
-            </Text>
-            <Text variant="caption" className="text-right">
-              {offerFormData
-                ? formatAmount(offerFormData.discount.gross.value.minus(offerFormData.discount.net.value).toFixed(0))
-                : undefined}{" "}
-              {offerFormData?.discount.net.currency}
-            </Text>
-          </div>
-          <div className="flex justify-between items-center">
-            <Text variant="label" className="w-48">
-              {intl.formatMessage({
-                id: "quotes.offer.netAmount",
-                defaultMessage: "Net amount:",
-              })}
-            </Text>
-            <Text variant="caption" className="text-right">
-              {offerFormData ? formatAmount(offerFormData.discount.net.value.round(0).toFixed(0)) : undefined}{" "}
-              {offerFormData?.discount.net.currency}
-            </Text>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <Text variant="label" className="w-32">
-              {intl.formatMessage({
-                id: "quotes.offer.validUntil",
-                defaultMessage: "Valid until:",
-              })}
-            </Text>
-            <DatePickerButton
-              date={validUntilDate}
-              onClick={() => {
-                setDraftValidUntilDate(validUntilDate);
-                onOpenChange(false);
-                setShowValidUntilCalendar(true);
-              }}
+    <ConfirmDrawer
+      title={intl.formatMessage({
+        id: "quotes.offer.confirmTitle",
+        defaultMessage: "Confirm offering quote",
+      })}
+      description={intl.formatMessage({
+        id: "quotes.offer.confirmDescription",
+        defaultMessage: "Review your inputs and confirm the offer",
+      })}
+      open={open}
+      onOpenChange={onOpenChange}
+      submitButtonDisabled={!validUntilDateTime}
+      onSubmit={() => {
+        if (!offerFormData || !validUntilDateTime) {
+          return;
+        }
+        onSubmit({ ...offerFormData, ttl: { ttl: validUntilDateTime } });
+      }}
+    >
+      <div className="flex flex-col gap-4 px-4 py-4">
+        <div className="flex justify-between items-center">
+          <Text variant="label" className="w-48">
+            {intl.formatMessage({
+              id: "quotes.detail.discount.relative",
+              defaultMessage: "Effective fee (relative):",
+            })}
+          </Text>
+          <Text variant="caption" className="text-right">
+            {effectiveDiscount?.mul(new Big("100")).toFixed(2)}%
+          </Text>
+        </div>
+        <div className="flex justify-between items-center">
+          <Text variant="label" className="w-48">
+            {intl.formatMessage({
+              id: "quotes.detail.discount.absolute",
+              defaultMessage: "Effective fee (absolute):",
+            })}
+          </Text>
+          <Text variant="caption" className="text-right">
+            {offerFormData
+              ? formatAmount(offerFormData.discount.gross.value.minus(offerFormData.discount.net.value).toFixed(0))
+              : undefined}{" "}
+            {offerFormData?.discount.net.currency}
+          </Text>
+        </div>
+        <div className="flex justify-between items-center">
+          <Text variant="label" className="w-48">
+            {intl.formatMessage({
+              id: "quotes.offer.netAmount",
+              defaultMessage: "Net amount:",
+            })}
+          </Text>
+          <Text variant="caption" className="text-right">
+            {offerFormData ? formatAmount(offerFormData.discount.net.value.round(0).toFixed(0)) : undefined}{" "}
+            {offerFormData?.discount.net.currency}
+          </Text>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <Text variant="label" className="w-32">
+            {intl.formatMessage({
+              id: "quotes.offer.validUntil",
+              defaultMessage: "Valid until:",
+            })}
+          </Text>
+          <div className="flex-1">
+            <DatePicker
+              className="max-w-full [&>div]:mx-auto [&>div]:w-full [&>div]:max-w-[430px]"
+              mode="single"
+              withTime
+              timeFormat="24h"
+              value={validUntilDateTime ? { from: validUntilDateTime } : undefined}
+              onChange={handleDateTimeChange}
+              disabled={[{ before: new Date() }, { after: maxDate }]}
             />
           </div>
         </div>
-      </ConfirmDrawer>
-
-      <CalendarModal
-        isOpen={showValidUntilCalendar}
-        selectedDate={validUntilDate}
-        draftDate={draftValidUntilDate}
-        title={intl.formatMessage({
-          id: "quotes.calendar.selectedDate",
-          defaultMessage: "Selected date",
-        })}
-        minDate={minDate}
-        maxDate={maxDate}
-        onClose={() => {
-          setShowValidUntilCalendar(false);
-          onOpenChange(true);
-        }}
-        onDateChange={setDraftValidUntilDate}
-        onConfirm={() => {
-          if (draftValidUntilDate) {
-            const utcValidUntilDate = toUtcEndOfDay(draftValidUntilDate);
-            setValidUntilDate(utcValidUntilDate);
-            if (storageKey) {
-              setItem(storageKey, utcValidUntilDate.toISOString());
-            }
-          }
-          setShowValidUntilCalendar(false);
-          onOpenChange(true);
-        }}
-        onCancel={() => {
-          setShowValidUntilCalendar(false);
-          setDraftValidUntilDate(undefined);
-          onOpenChange(true);
-        }}
-      />
-    </>
+      </div>
+    </ConfirmDrawer>
   );
 }

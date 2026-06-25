@@ -119,7 +119,7 @@ export function QuoteDetailCard({
                     defaultMessage: "Deadline:",
                   })}
                 </Text>
-                <Text variant="caption">{new Date(quote.ttl).toISOString().split("T")[0]}</Text>
+                <Text variant="caption">{new Date(quote.ttl).toISOString().replace("T", " ").substring(0, 16)} UTC</Text>
               </div>
             )}
             {showPayment && (
