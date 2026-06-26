@@ -24,7 +24,7 @@ export function BaseDrawer({ title, description = "", trigger, children, ...draw
   return (
     <Drawer {...drawerProps}>
       {trigger && <DrawerTrigger asChild>{trigger}</DrawerTrigger>}
-      <DrawerContent>
+      <DrawerContent className="max-w-full border-x-0">
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
