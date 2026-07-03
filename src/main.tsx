@@ -20,6 +20,7 @@ import MeltRequestsPage from "@/pages/melts/MeltRequestsPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
 import { PreferencesProvider, Toaster } from "@bitcredit/ui-library";
 import NotFoundPage from "@/pages/NotFoundPage";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -62,10 +63,12 @@ void prepare().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <LanguageProvider>
-        <PreferencesProvider>
-          <App />
-          <Toaster />
-        </PreferencesProvider>
+        <GlobalErrorBoundary>
+          <PreferencesProvider>
+            <App />
+            <Toaster />
+          </PreferencesProvider>
+        </GlobalErrorBoundary>
       </LanguageProvider>
     </StrictMode>
   );
