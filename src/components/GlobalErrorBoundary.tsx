@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { FormattedMessage } from "react-intl";
+import { env } from "@/lib/env";
 
 interface Props {
   children: ReactNode;
@@ -36,7 +37,9 @@ export class GlobalErrorBoundary extends Component<Props, State> {
               defaultMessage="An unexpected error occurred. Please reload the page or contact support if the problem persists."
             />
           </p>
-          <p className="font-mono text-xs text-destructive">{this.state.error.message}</p>
+          {env.devModeEnabled && (
+            <p className="font-mono text-xs text-destructive">{this.state.error.message}</p>
+          )}
           <button
             className="mt-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             onClick={() => window.location.reload()}

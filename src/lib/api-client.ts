@@ -15,13 +15,25 @@ heyApiClient.interceptors.error.use((error, response) =>
   })
 );
 
-const TOKEN_REFRESH_RETRIES = 3;
+const TOKEN_REFRESH_MAX_ATTEMPTS = 4;
 const TOKEN_REFRESH_RETRY_DELAY_MS = 1000;
 
+let isRedirectingToLogin = false;
+
+const abortedRequest = (request: Request): Request => {
+  const controller = new AbortController();
+  controller.abort();
+  return new Request(request, { signal: controller.signal });
+};
+
 heyApiClient.interceptors.request.use(async (request) => {
+  if (isRedirectingToLogin) {
+    return abortedRequest(request);
+  }
+
   let refreshFailed = false;
 
-  for (let attempt = 0; attempt <= TOKEN_REFRESH_RETRIES; attempt++) {
+  for (let attempt = 0; attempt < TOKEN_REFRESH_MAX_ATTEMPTS; attempt++) {
     try {
       if (attempt > 0) {
         await new Promise<void>((resolve) => setTimeout(resolve, TOKEN_REFRESH_RETRY_DELAY_MS));
@@ -29,16 +41,17 @@ heyApiClient.interceptors.request.use(async (request) => {
       await keycloak.updateToken(30);
       break;
     } catch (error) {
-      console.error(`Token refresh failed (attempt ${attempt + 1}/${TOKEN_REFRESH_RETRIES + 1}):`, error);
-      if (attempt === TOKEN_REFRESH_RETRIES) {
+      console.error(`Token refresh failed (attempt ${attempt + 1}/${TOKEN_REFRESH_MAX_ATTEMPTS}):`, error);
+      if (attempt === TOKEN_REFRESH_MAX_ATTEMPTS - 1) {
         refreshFailed = true;
       }
     }
   }
 
   if (refreshFailed) {
+    isRedirectingToLogin = true;
     void keycloak.login();
-    return request;
+    return abortedRequest(request);
   }
 
   const token = keycloak.token;
