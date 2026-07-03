@@ -4,7 +4,7 @@ import Big from "big.js";
 import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
-import { GrossToNetDiscountForm } from "./GrossToNetDiscountForm";
+import { GrossToNetDiscountForm } from ".";
 
 vi.mock("@bitcredit/ui-library", async () => {
   const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
