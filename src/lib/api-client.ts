@@ -15,12 +15,35 @@ heyApiClient.interceptors.error.use((error, response) =>
   })
 );
 
-// Add the auth token interceptor
+const TOKEN_REFRESH_RETRIES = 3;
+const TOKEN_REFRESH_RETRY_DELAY_MS = 1000;
+
 heyApiClient.interceptors.request.use(async (request) => {
-  try {
-    await keycloak.updateToken(30);
-  } catch (error) {
-    console.error("Failed to refresh token:", error);
+  let refreshFailed = false;
+
+  for (let attempt = 0; attempt <= TOKEN_REFRESH_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        await new Promise<void>((resolve) =>
+          setTimeout(resolve, TOKEN_REFRESH_RETRY_DELAY_MS)
+        );
+      }
+      await keycloak.updateToken(30);
+      break;
+    } catch (error) {
+      console.error(
+        `Token refresh failed (attempt ${attempt + 1}/${TOKEN_REFRESH_RETRIES + 1}):`,
+        error
+      );
+      if (attempt === TOKEN_REFRESH_RETRIES) {
+        refreshFailed = true;
+      }
+    }
+  }
+
+  if (refreshFailed) {
+    void keycloak.login();
+    return request;
   }
 
   const token = keycloak.token;
