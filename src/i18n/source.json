@@ -246,7 +246,6 @@
   "quotes.actions.offer.title": "Offer quote",
   "quotes.breadcrumb": "Quotes",
   "quotes.calendar.selectDate": "Select date",
-  "quotes.calendar.selectedDate": "Selected date",
   "quotes.card.error.billInfo": "Error loading bill information",
   "quotes.card.error.description": "Quote {id} is unavailable. {message}",
   "quotes.card.error.title": "Cannot load quote",
