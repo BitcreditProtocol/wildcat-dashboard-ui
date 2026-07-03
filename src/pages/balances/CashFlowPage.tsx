@@ -25,7 +25,7 @@ function CashFlowChart() {
         id: "balances.chart.bitcoin",
         defaultMessage: "Bitcoin",
       }),
-      color: "#2563eb",
+      color: "var(--color-chart-1)",
     },
   } satisfies ChartConfig;
 
