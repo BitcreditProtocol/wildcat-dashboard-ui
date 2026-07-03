@@ -35,7 +35,9 @@ const requiredEnvKeys = ["VITE_API_BASE_URL", "VITE_KEYCLOAK_URL", "VITE_KEYCLOA
 const missingRequiredEnvKeys = requiredEnvKeys.filter((key) => getEnvValue(key) === undefined);
 
 if (missingRequiredEnvKeys.length > 0) {
-  throw new Error(`Missing required environment variable${missingRequiredEnvKeys.length === 1 ? "" : "s"}: ${missingRequiredEnvKeys.join(", ")}`);
+  throw new Error(
+    `Missing required environment variable${missingRequiredEnvKeys.length === 1 ? "" : "s"}: ${missingRequiredEnvKeys.join(", ")}`
+  );
 }
 
 const getRequiredEnvValue = <K extends (typeof requiredEnvKeys)[number]>(key: K): string => {
