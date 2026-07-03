@@ -384,7 +384,12 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
         )}
       </form>
 
-      <FormActions confirmDisabled={confirmDisabled} onConfirmClick={handleConfirmClick} confirmLabel={confirmLabel} cancelLabel={cancelLabel} />
+      <FormActions
+        confirmDisabled={confirmDisabled}
+        onConfirmClick={handleConfirmClick}
+        confirmLabel={confirmLabel}
+        cancelLabel={cancelLabel}
+      />
     </>
   );
 };

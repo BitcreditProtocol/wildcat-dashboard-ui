@@ -2,7 +2,11 @@ import { Button, DrawerClose, DrawerFooter } from "@bitcredit/ui-library";
 import type React from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
-const FIELD_ROW_CLASS = "flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700";
+type InputProps = React.ComponentProps<"input">;
+type RequiredInputHandler<T extends keyof InputProps> = NonNullable<InputProps[T]>;
+
+const FIELD_ROW_CLASS =
+  "flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700";
 const FIELD_LABEL_CLASS = "text-sm font-medium text-gray-900 dark:text-gray-100";
 const INPUT_BASE_CLASS =
   "text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
@@ -39,11 +43,11 @@ interface DaysInputFieldProps {
   label: string;
   error?: React.ReactNode;
   registration: UseFormRegisterReturn<"daysInput">;
-  onBeforeInput: React.FormEventHandler<HTMLInputElement>;
-  onDrop: React.DragEventHandler<HTMLInputElement>;
-  onInput: React.FormEventHandler<HTMLInputElement>;
-  onKeyDown: React.KeyboardEventHandler<HTMLInputElement>;
-  onPaste: React.ClipboardEventHandler<HTMLInputElement>;
+  onBeforeInput: RequiredInputHandler<"onBeforeInput">;
+  onDrop: RequiredInputHandler<"onDrop">;
+  onInput: RequiredInputHandler<"onInput">;
+  onKeyDown: RequiredInputHandler<"onKeyDown">;
+  onPaste: RequiredInputHandler<"onPaste">;
 }
 
 export function DaysInputField({ label, error, registration, onBeforeInput, onDrop, onInput, onKeyDown, onPaste }: DaysInputFieldProps) {
@@ -71,8 +75,8 @@ interface DiscountRateInputFieldProps {
   label: string;
   error?: React.ReactNode;
   registration: UseFormRegisterReturn<"discountRateInput">;
-  onChange: React.ChangeEventHandler<HTMLInputElement>;
-  onKeyDown: React.KeyboardEventHandler<HTMLInputElement>;
+  onChange: RequiredInputHandler<"onChange">;
+  onKeyDown: RequiredInputHandler<"onKeyDown">;
 }
 
 export function DiscountRateInputField({ label, error, registration, onChange, onKeyDown }: DiscountRateInputFieldProps) {
@@ -102,11 +106,11 @@ interface NetInputFieldProps {
   isSat: boolean;
   label: string;
   registration: UseFormRegisterReturn<"netInput">;
-  onBeforeInput?: React.FormEventHandler<HTMLInputElement>;
-  onChange: React.ChangeEventHandler<HTMLInputElement>;
-  onDrop: React.DragEventHandler<HTMLInputElement>;
-  onKeyDown: React.KeyboardEventHandler<HTMLInputElement>;
-  onPaste?: React.ClipboardEventHandler<HTMLInputElement>;
+  onBeforeInput?: InputProps["onBeforeInput"];
+  onChange: RequiredInputHandler<"onChange">;
+  onDrop: RequiredInputHandler<"onDrop">;
+  onKeyDown: RequiredInputHandler<"onKeyDown">;
+  onPaste?: InputProps["onPaste"];
 }
 
 export function NetInputField({

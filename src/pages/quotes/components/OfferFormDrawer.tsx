@@ -1,7 +1,7 @@
 import Big from "big.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BaseDrawer } from "@/components/Drawers";
-import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm";
+import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm/GrossToNetDiscountForm";
 import type { InfoReply } from "@/generated/client/types.gen";
 import type { ReactNode } from "react";
 

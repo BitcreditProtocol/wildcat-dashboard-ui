@@ -81,7 +81,18 @@ export function useDiscountCalculations({
     if (isSat) {
       setNetInputDisplay(formatNetInputDisplayValue(roundedNetValue, gross.currency));
     }
-  }, [gross, days, discountRate, lastEdited, setValue, isSat, netInput, formatNetInputValue, formatNetInputDisplayValue, setNetInputDisplay]);
+  }, [
+    gross,
+    days,
+    discountRate,
+    lastEdited,
+    setValue,
+    isSat,
+    netInput,
+    formatNetInputValue,
+    formatNetInputDisplayValue,
+    setNetInputDisplay,
+  ]);
 
   useEffect(() => {
     if (skipNetToRateRef.current) {
