@@ -17,6 +17,12 @@ const viteConfig = defineViteConfig({
 const vitestConfig = defineVitestConfig({
   test: {
     environment: "jsdom",
+    env: {
+      VITE_API_BASE_URL: "https://api.test.example.com",
+      VITE_KEYCLOAK_URL: "https://keycloak.test.example.com",
+      VITE_KEYCLOAK_REALM: "test-realm",
+      VITE_KEYCLOAK_CLIENT_ID: "test-client",
+    },
     include: ["**/*.test.{ts,tsx}"],
     setupFiles: ["./vitest-setup.ts"],
     coverage: {

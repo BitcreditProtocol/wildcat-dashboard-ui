@@ -20,6 +20,7 @@ import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { EndorseeList } from "./components/EndorseeList";
 import type { InfoReply } from "@/generated/client/types.gen";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 interface LocationState {
   from?: string;
@@ -44,6 +45,7 @@ function Loader() {
 
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
+const QUOTE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
@@ -255,6 +257,7 @@ export default function QuotePage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : undefined;
   const quoteId = id ?? "";
+  const validQuoteId = QUOTE_ID_PATTERN.test(quoteId);
   const location = useLocation();
   const state = getLocationState(location.state);
   const fromPath = state?.from;
@@ -267,6 +270,10 @@ export default function QuotePage() {
     }),
     retry: 1,
     refetchInterval: (query: { state: { data?: InfoReply } }) => {
+      if (!validQuoteId) {
+        return false;
+      }
+
       const status = query.state.data?.status;
       if (!status) {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
@@ -275,7 +282,12 @@ export default function QuotePage() {
       return QUOTE_POLLING_TERMINAL_STATUSES.has(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
+    enabled: validQuoteId,
   });
+
+  if (!validQuoteId) {
+    return <NotFoundPage path={`/quotes/${quoteId}`} />;
+  }
 
   const quoteDataStatus = quoteData?.status;
   const hasKeysetId = quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData;

@@ -50,7 +50,7 @@ export function BitcoinBalanceChart() {
         id: "balances.chart.bitcoin",
         defaultMessage: "Bitcoin",
       }),
-      color: "#2563eb",
+      color: "var(--color-chart-1)",
     },
   } satisfies ChartConfig;
 
@@ -92,21 +92,21 @@ export function OtherBalanceChart() {
         id: "balances.chart.eiou",
         defaultMessage: "e-IOU",
       }),
-      color: "#911198",
+      color: "var(--color-chart-2)",
     },
     credit: {
       label: intl.formatMessage({
         id: "balances.chart.creditToken",
         defaultMessage: "Credit token",
       }),
-      color: "#e9d4ff",
+      color: "var(--color-chart-3)",
     },
     debit: {
       label: intl.formatMessage({
         id: "balances.chart.debitToken",
         defaultMessage: "Debit token",
       }),
-      color: "#c27aff",
+      color: "var(--color-chart-4)",
     },
   } satisfies ChartConfig;
 
@@ -158,13 +158,13 @@ function formatAmountValue(amount?: Amount | number | null) {
 export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
-      <Heading as="h3" variant="page" className="text-[#1b0f00]">
+      <Heading as="h3" variant="page" className="text-text-on-tint">
         {unit === "sat" ? (
           <Currency
             value={Number(amount)}
             sourceCurrency="sat"
             amountClassName="text-current"
-            currencyClassName="text-sm font-medium text-[#6b5a45]"
+            currencyClassName="text-sm font-medium text-text-on-tint-muted"
           />
         ) : (
           `${amount} ${unit}`
@@ -234,9 +234,9 @@ function PageBodyWithDevSection() {
     <>
       <div className="flex flex-col gap-4 my-2">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card className="bg-indigo-100 text-[#1b0f00]">
+          <Card className="bg-indigo-100 text-text-on-tint">
             <CardHeader>
-              <CardTitle className="text-[#1b0f00]">
+              <CardTitle className="text-text-on-tint">
                 <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
               </CardTitle>
             </CardHeader>
@@ -244,9 +244,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-orange-100 text-[#1b0f00]">
+          <Card className="bg-orange-100 text-text-on-tint">
             <CardHeader>
-              <CardTitle className="text-[#1b0f00]">
+              <CardTitle className="text-text-on-tint">
                 <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
               </CardTitle>
             </CardHeader>
@@ -254,9 +254,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-purple-200 text-[#1b0f00]">
+          <Card className="bg-purple-200 text-text-on-tint">
             <CardHeader>
-              <CardTitle className="text-[#1b0f00]">
+              <CardTitle className="text-text-on-tint">
                 <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
               </CardTitle>
             </CardHeader>
@@ -264,9 +264,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-purple-400 text-[#1b0f00]">
+          <Card className="bg-purple-400 text-text-on-tint">
             <CardHeader>
-              <CardTitle className="text-[#1b0f00]">
+              <CardTitle className="text-text-on-tint">
                 <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
               </CardTitle>
             </CardHeader>

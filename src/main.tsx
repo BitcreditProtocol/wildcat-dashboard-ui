@@ -19,6 +19,7 @@ import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import MeltRequestsPage from "@/pages/melts/MeltRequestsPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
 import { PreferencesProvider, Toaster } from "@bitcredit/ui-library";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ function App() {
             <Route path="keysets" element={<KeysetsPage />} />
             <Route path="keysets/:keysetId" element={<KeysetDetailPage />} />
             <Route path="info" element={<InfoPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

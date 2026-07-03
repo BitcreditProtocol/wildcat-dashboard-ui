@@ -61,6 +61,8 @@
   --color-text-300: #1b0f00;
   --color-text-active: #ffffff;
   --color-text-inactive: #f1ede4;
+  --color-text-on-tint: #1b0f00;
+  --color-text-on-tint-muted: #6b5a45;
 
   --color-signal-success: #006f29;
   --color-signal-alert: #ae5f00;
@@ -100,6 +102,8 @@
     --color-text-300: #fff2e2;
     --color-text-active: #000000;
     --color-text-inactive: #3a3a3a;
+    --color-text-on-tint: #1b0f00;
+    --color-text-on-tint-muted: #6b5a45;
 
     --color-signal-success: #4daa4e;
     --color-signal-alert: #e07b00;

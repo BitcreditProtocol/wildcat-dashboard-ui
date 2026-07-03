@@ -41,6 +41,7 @@ export function useKeysetDetail(keysetId: string) {
   });
 
   const keyset = keysets?.data.find((k) => k.id === keysetId);
+  const keysetFinalExpiry = keyset?.final_expiry;
 
   const quoteDetailsQueries = useQueries({
     queries: allQuotes.map((quote) => ({
@@ -58,42 +59,24 @@ export function useKeysetDetail(keysetId: string) {
 
   const quoteDetailsLoading = quoteDetailsQueries.some((q) => q.isLoading);
 
-  const quoteDetailsDepsKey = useMemo(() => {
-    return quoteDetailsQueries
-      .map((query) => {
-        const billId = query.data?.bill?.id ?? "";
-        const maturityDate = query.data?.bill?.maturity_date ?? "";
-        return `${billId}|${maturityDate}`;
-      })
-      .join(",");
-  }, [quoteDetailsQueries]);
+  const quoteBillSummaries = quoteDetailsQueries.map((query) => ({
+    billId: query.data?.bill?.id,
+    maturityDate: query.data?.bill?.maturity_date,
+  }));
 
-  const matchingBillIds = useMemo(() => {
-    const billIds: string[] = [];
+  const matchingBillIds: string[] = [];
 
-    if (!keyset?.final_expiry || quoteDetailsLoading) {
-      return billIds;
-    }
-
-    const keysetFinalExpiry = keyset.final_expiry;
-
-    allQuotes.forEach((_quote, index) => {
-      const quoteDetails = quoteDetailsQueries[index]?.data;
-      const billMaturityDate = quoteDetails?.bill?.maturity_date;
-      const billId = quoteDetails?.bill?.id;
-
-      if (!billMaturityDate || !billId) {
+  if (keysetFinalExpiry && !quoteDetailsLoading) {
+    quoteBillSummaries.forEach(({ billId, maturityDate }) => {
+      if (!maturityDate || !billId) {
         return;
       }
 
-      if (doesBillMatchKeysetMaturity(keysetFinalExpiry, billMaturityDate)) {
-        billIds.push(billId);
+      if (doesBillMatchKeysetMaturity(keysetFinalExpiry, maturityDate)) {
+        matchingBillIds.push(billId);
       }
     });
-
-    return billIds;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyset?.final_expiry, allQuotes, quoteDetailsDepsKey, quoteDetailsLoading]);
+  }
 
   const mintCompleteQueries = useQueries({
     queries: matchingBillIds.map((billId) => ({
