@@ -9,6 +9,9 @@ import { DrawerFooter, DrawerClose } from "@bitcredit/ui-library";
 import { setItem, getItem } from "@/utils/local-storage"; // , removeItem
 import { useIntl } from "react-intl";
 import { useAmountFormatter } from "@/utils/amount-format";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("gross-to-net-discount-form");
 
 interface CurrencyAmount {
   value: Big;
@@ -540,7 +543,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     e.preventDefault();
     e.stopPropagation();
     void handleSubmit(handleFormSubmit)().catch((err) => {
-      console.error("Submit failed:", err);
+      logger.error("Submit failed", err);
     });
   };
 
@@ -550,7 +553,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
         className="flex flex-col gap-6 min-w-[8rem] px-4"
         onSubmit={(e) => {
           handleSubmit(handleFormSubmit)(e).catch((err) => {
-            console.error("Submit failed:", err);
+            logger.error("Submit failed", err);
           });
         }}
       >
