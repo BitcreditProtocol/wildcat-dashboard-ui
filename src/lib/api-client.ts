@@ -24,17 +24,12 @@ heyApiClient.interceptors.request.use(async (request) => {
   for (let attempt = 0; attempt <= TOKEN_REFRESH_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
-        await new Promise<void>((resolve) =>
-          setTimeout(resolve, TOKEN_REFRESH_RETRY_DELAY_MS)
-        );
+        await new Promise<void>((resolve) => setTimeout(resolve, TOKEN_REFRESH_RETRY_DELAY_MS));
       }
       await keycloak.updateToken(30);
       break;
     } catch (error) {
-      console.error(
-        `Token refresh failed (attempt ${attempt + 1}/${TOKEN_REFRESH_RETRIES + 1}):`,
-        error
-      );
+      console.error(`Token refresh failed (attempt ${attempt + 1}/${TOKEN_REFRESH_RETRIES + 1}):`, error);
       if (attempt === TOKEN_REFRESH_RETRIES) {
         refreshFailed = true;
       }
