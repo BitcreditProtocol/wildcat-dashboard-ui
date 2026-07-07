@@ -2,7 +2,10 @@ import { client as heyApiClient } from "@/generated/client/client.gen";
 import * as sdk from "@/generated/client/sdk.gen";
 import { normalizeApiError } from "@/lib/api-error";
 import { env } from "@/lib/env";
+import { createLogger } from "@/lib/logger";
 import keycloak from "../keycloak";
+
+const logger = createLogger("api-client");
 
 heyApiClient.setConfig({
   baseUrl: env.apiBaseUrl,
@@ -20,7 +23,7 @@ heyApiClient.interceptors.request.use(async (request) => {
   try {
     await keycloak.updateToken(30);
   } catch (error) {
-    console.error("Failed to refresh token:", error);
+    logger.error("Failed to refresh token", error);
   }
 
   const token = keycloak.token;
