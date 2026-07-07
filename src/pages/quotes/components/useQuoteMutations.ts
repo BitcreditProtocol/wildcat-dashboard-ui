@@ -11,6 +11,9 @@ import Big from "big.js";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { useRef } from "react";
 import { useIntl } from "react-intl";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("quote-mutations");
 
 export function useQuoteMutations(quoteId: string, billId: string) {
   const intl = useIntl();
@@ -36,7 +39,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
         ),
         variant: "error",
       });
-      console.warn(error);
+      logger.warn("Deny quote failed", error);
     },
     onSuccess: () => {
       toast({
@@ -69,7 +72,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
         ),
         variant: "error",
       });
-      console.warn(error);
+      logger.warn("Offer quote failed", error);
     },
     onSuccess: () => {
       toast({
@@ -111,7 +114,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
         ),
         variant: "error",
       });
-      console.warn(error);
+      logger.warn("Request to pay failed", error);
     },
     onSuccess: () => {
       toast({

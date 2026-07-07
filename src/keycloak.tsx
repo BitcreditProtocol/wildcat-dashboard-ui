@@ -1,5 +1,8 @@
 import Keycloak from "keycloak-js";
 import { env } from "@/lib/env";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("keycloak");
 
 const keycloak = new Keycloak({
   url: env.keycloakUrl,
@@ -9,20 +12,20 @@ const keycloak = new Keycloak({
 
 export const initKeycloak = async (): Promise<boolean> => {
   try {
-    console.log("loading keycloak");
+    logger.info("Loading Keycloak");
     const authenticated = await keycloak.init({
       onLoad: "login-required",
     });
 
     if (authenticated) {
-      console.log("User is authenticated");
+      logger.info("User is authenticated");
     } else {
-      console.log("User is not authenticated");
+      logger.info("User is not authenticated");
     }
 
     return authenticated;
   } catch (error: unknown) {
-    console.error("Failed to initialize adapter:", error instanceof Error ? error : String(error));
+    logger.error("Failed to initialize adapter", error instanceof Error ? error : String(error));
     return false;
   }
 };

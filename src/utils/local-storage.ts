@@ -1,8 +1,12 @@
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("local-storage");
+
 export function setItem(key: string, value: unknown) {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch (err) {
-    console.error(err);
+    logger.error("Failed to set item", { key, err });
   }
 }
 
@@ -11,7 +15,7 @@ export function getItem<T>(key: string): T | undefined {
     const data = window.localStorage.getItem(key);
     return data ? (JSON.parse(data) as T) : undefined;
   } catch (err) {
-    console.error(err);
+    logger.error("Failed to get item", { key, err });
   }
 }
 
@@ -19,6 +23,6 @@ export function removeItem(key: string) {
   try {
     window.localStorage.removeItem(key);
   } catch (err) {
-    console.error(err);
+    logger.error("Failed to remove item", { key, err });
   }
 }

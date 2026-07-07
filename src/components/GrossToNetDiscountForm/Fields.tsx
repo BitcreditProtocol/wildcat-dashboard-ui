@@ -1,4 +1,4 @@
-import { Button, DrawerClose, DrawerFooter } from "@bitcredit/ui-library";
+import { Button, cn, DrawerClose, DrawerFooter } from "@bitcredit/ui-library";
 import type React from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
@@ -58,7 +58,7 @@ export function DaysInputField({ label, error, registration, onBeforeInput, onDr
         step="1"
         type="number"
         inputMode="numeric"
-        className={`${INPUT_BASE_CLASS} text-gray-900 dark:text-gray-100 w-24`}
+        className={cn(INPUT_BASE_CLASS, "text-gray-900 dark:text-gray-100 w-24")}
         onKeyDown={onKeyDown}
         onInput={onInput}
         onBeforeInput={onBeforeInput}
@@ -88,7 +88,7 @@ export function DiscountRateInputField({ label, error, registration, onChange, o
           step="0.0001"
           type="number"
           inputMode="numeric"
-          className={`${INPUT_BASE_CLASS} text-gray-900 dark:text-gray-100 w-20`}
+          className={cn(INPUT_BASE_CLASS, "text-gray-900 dark:text-gray-100 w-20")}
           {...registration}
           onKeyDown={onKeyDown}
           onChange={onChange}
@@ -133,7 +133,7 @@ export function NetInputField({
           id="netInput"
           type="text"
           inputMode={isSat ? "numeric" : "decimal"}
-          className={`${INPUT_BASE_CLASS} text-green-600 dark:text-green-400 min-w-0 flex-1`}
+          className={cn(INPUT_BASE_CLASS, "text-green-600 dark:text-green-400 min-w-0 flex-1")}
           {...registration}
           {...(isSat ? { value: displayValue } : {})}
           onKeyDown={onKeyDown}
@@ -164,7 +164,7 @@ export function AmountSummaryRow({
   rowClassName?: string;
 }) {
   return (
-    <div className={`flex justify-between items-center ${rowClassName}`}>
+    <div className={cn("flex justify-between items-center", rowClassName)}>
       <span className={labelClassName}>{label}</span>
       <div className="flex gap-1 items-center">
         <span className={valueClassName}>{value}</span>
