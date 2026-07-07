@@ -28,9 +28,6 @@ interface MutationResult {
   data: unknown;
 }
 
-const { mockClientGet } = vi.hoisted(() => ({
-  mockClientGet: vi.fn(),
-}));
 const { mockGetEbillAttachment, mockGetEbillFileFromRequestToMint } = vi.hoisted(() => ({
   mockGetEbillAttachment: vi.fn(),
   mockGetEbillFileFromRequestToMint: vi.fn(),
@@ -53,12 +50,6 @@ vi.mock("@bitcredit/ui-library", async () => {
 
 vi.mock("./QuoteActions", () => ({
   QuoteActions: () => <div>QuoteActionsMock</div>,
-}));
-
-vi.mock("@/lib/api-client", () => ({
-  client: {
-    get: mockClientGet,
-  },
 }));
 
 vi.mock("@/generated/client/sdk.gen", () => ({
@@ -159,7 +150,6 @@ beforeEach(() => {
     isError: false,
     data: undefined,
   });
-  mockClientGet.mockReset();
   mockGetEbillAttachment.mockReset();
   mockGetEbillFileFromRequestToMint.mockReset();
   mockGetEbillAttachment.mockResolvedValue(new Blob(["attachment"]));
