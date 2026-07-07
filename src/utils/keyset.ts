@@ -1,4 +1,7 @@
 import type { Id, IdBytes, KeySetVersion } from "@/generated/client/types.gen";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("keyset");
 
 /**
  * Check if a bill's maturity date matches a keyset's final expiry date.
@@ -30,7 +33,7 @@ export function serializeKeysetId(id: Id | string): string {
 
   // Handle the case where the id might be malformed
   if (!id.id) {
-    console.error("Invalid Id object:", id);
+    logger.error("Invalid Id object", id);
     return "";
   }
 
@@ -41,7 +44,7 @@ export function serializeKeysetId(id: Id | string): string {
   } else if ("V2" in id.id) {
     bytes = id.id.V2;
   } else {
-    console.error("Invalid IdBytes structure:", id.id);
+    logger.error("Invalid IdBytes structure", id.id);
     return "";
   }
 

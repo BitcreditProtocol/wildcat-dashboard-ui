@@ -13,7 +13,7 @@ import StatusQuotePage from "./pages/quotes/StatusQuotePage";
 import EarningsPage from "./pages/balances/EarningsPage";
 import CashFlowPage from "./pages/balances/CashFlowPage";
 import { initKeycloak } from "./keycloak";
-import "./lib/api-client";
+import { client as apiClient } from "./lib/api-client";
 import KeysetsPage from "@/pages/keysets/KeysetsPage";
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import MeltRequestsPage from "@/pages/melts/MeltRequestsPage";
@@ -25,6 +25,7 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 const queryClient = new QueryClient();
 
 const prepare = async () => {
+  apiClient.getConfig();
   await initKeycloak();
 };
 

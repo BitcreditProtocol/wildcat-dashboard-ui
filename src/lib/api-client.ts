@@ -2,7 +2,10 @@ import { client as heyApiClient } from "@/generated/client/client.gen";
 import * as sdk from "@/generated/client/sdk.gen";
 import { normalizeApiError } from "@/lib/api-error";
 import { env } from "@/lib/env";
+import { createLogger } from "@/lib/logger";
 import keycloak from "../keycloak";
+
+const logger = createLogger("api-client");
 
 heyApiClient.setConfig({
   baseUrl: env.apiBaseUrl,
@@ -41,7 +44,8 @@ heyApiClient.interceptors.request.use(async (request) => {
       await keycloak.updateToken(30);
       break;
     } catch (error) {
-      console.error(`Token refresh failed (attempt ${attempt + 1}/${TOKEN_REFRESH_MAX_ATTEMPTS}):`, error);
+      logger.error(`Token refresh failed (attempt ${attempt + 1}/${TOKEN_REFRESH_MAX_ATTEMPTS}):`, error);
+
       if (attempt === TOKEN_REFRESH_MAX_ATTEMPTS - 1) {
         refreshFailed = true;
       }
