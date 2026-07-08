@@ -5,6 +5,9 @@ import { useIntl } from "react-intl";
 import { deleteDeniedMeltopMutation, listDeniedMeltopsQueryKey } from "@/generated/client/@tanstack/react-query.gen";
 import type { DeniedMeltOp } from "@/generated/client/types.gen";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("delete-denied-melt-request");
 
 export function useDeleteDeniedMeltRequest() {
   const intl = useIntl();
@@ -39,7 +42,7 @@ export function useDeleteDeniedMeltRequest() {
         ),
         variant: "error",
       });
-      console.warn(mutationError);
+      logger.warn("Delete denied melt request failed", mutationError);
     },
     onSuccess: () => {
       toast({
