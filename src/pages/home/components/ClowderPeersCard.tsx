@@ -2,18 +2,12 @@ import { useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import { Heading, Text } from "@bitcredit/ui-library";
-import { getClowderAlphasOptions, getClowderBetasOptions, getClowderStatusOptions } from "@/generated/client/@tanstack/react-query.gen";
-import type { SimpleAlphaState } from "@/generated/client/types.gen";
+import { getClowderAlphasOptions, getClowderBetasOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
+import type { ConnectedMintResponse, SimpleAlphaState } from "@/generated/client/types.gen";
+import { deriveOwnMintBaseUrl, getClowderForeignStatusQueryOptions } from "@/lib/clowder-foreign-status";
+import { env } from "@/lib/env";
 
-type PeerRole = "alpha" | "beta";
-
-interface Peer {
-  nodeId: string;
-  mint: string;
-  role: PeerRole;
-}
-
-type StatusKind = "online" | "interim" | "offline" | "rabid" | "unknown";
+type StatusKind = "online" | "interim" | "offline" | "rabid" | "confiscatedRabid" | "unknown";
 
 function mintLabel(mint: string): string {
   try {
@@ -23,12 +17,17 @@ function mintLabel(mint: string): string {
   }
 }
 
+function sortByMintLabel(mints: ConnectedMintResponse[]): ConnectedMintResponse[] {
+  return [...mints].sort((a, b) => mintLabel(a.mint).localeCompare(mintLabel(b.mint)));
+}
+
 function statusKind(state?: SimpleAlphaState): StatusKind {
   if (!state) return "unknown";
   if ("Online" in state) return "online";
   if ("Interim" in state) return "interim";
   if ("Offline" in state) return "offline";
-  if ("Rabid" in state || "ConfiscatedRabid" in state) return "rabid";
+  if ("Rabid" in state) return "rabid";
+  if ("ConfiscatedRabid" in state) return "confiscatedRabid";
   return "unknown";
 }
 
@@ -40,17 +39,20 @@ function statusTimestamp(state?: SimpleAlphaState): number | undefined {
   return undefined;
 }
 
+function statusDetail(state?: SimpleAlphaState): string | undefined {
+  if (!state) return undefined;
+  if ("Rabid" in state) return state.Rabid;
+  if ("ConfiscatedRabid" in state) return state.ConfiscatedRabid.map((entry) => JSON.stringify(entry)).join(", ");
+  return undefined;
+}
+
 const statusMessages = defineMessages({
   online: { id: "home.clowderPeers.status.online", defaultMessage: "Online" },
   interim: { id: "home.clowderPeers.status.interim", defaultMessage: "Interim" },
   offline: { id: "home.clowderPeers.status.offline", defaultMessage: "Offline" },
   rabid: { id: "home.clowderPeers.status.rabid", defaultMessage: "Rabid" },
+  confiscatedRabid: { id: "home.clowderPeers.status.confiscatedRabid", defaultMessage: "Confiscated Rabid" },
   unknown: { id: "home.clowderPeers.status.unknown", defaultMessage: "Unknown" },
-});
-
-const roleMessages = defineMessages({
-  alpha: { id: "home.clowderPeers.role.alpha", defaultMessage: "Alpha" },
-  beta: { id: "home.clowderPeers.role.beta", defaultMessage: "Beta" },
 });
 
 const statusDotClass: Record<StatusKind, string> = {
@@ -58,12 +60,89 @@ const statusDotClass: Record<StatusKind, string> = {
   interim: "bg-amber-500",
   offline: "bg-red-500",
   rabid: "bg-purple-500",
+  confiscatedRabid: "bg-rose-700",
   unknown: "bg-muted-foreground",
 };
 
-export function ClowderPeersCard() {
-  const intl = useIntl();
+interface PeerStatusRowProps {
+  mint: string;
+  state?: SimpleAlphaState;
+  isLoading: boolean;
+  isError: boolean;
+}
 
+function PeerStatusRow({ mint, state, isLoading, isError }: PeerStatusRowProps) {
+  const intl = useIntl();
+  const kind = isLoading || isError ? "unknown" : statusKind(state);
+  const timestamp = statusTimestamp(state);
+  const detail = statusDetail(state);
+
+  return (
+    <div className="flex items-center justify-between gap-3 border-t pt-3 first:border-t-0 first:pt-0">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <Text variant="caption" className="truncate">
+          {mintLabel(mint)}
+        </Text>
+        {detail && (
+          <span className="text-xs text-muted-foreground truncate" title={detail}>
+            {detail}
+          </span>
+        )}
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <span className={`h-2 w-2 rounded-full ${statusDotClass[kind]}`} aria-hidden="true" />
+          <Text variant="caption">{intl.formatMessage(statusMessages[kind])}</Text>
+        </div>
+        {timestamp !== undefined && (
+          <span className="text-xs text-muted-foreground">
+            {new Date(timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface PeerStatusSectionProps {
+  title: React.ReactNode;
+  peers: ConnectedMintResponse[];
+  statuses: { data?: SimpleAlphaState; isLoading: boolean; isError: boolean }[];
+  isLoading: boolean;
+  isError: boolean;
+}
+
+function PeerStatusSection({ title, peers, statuses, isLoading, isError }: PeerStatusSectionProps) {
+  return (
+    <div className="flex flex-col gap-3">
+      <Heading as="h4" variant="sub">
+        {title}
+      </Heading>
+      {isLoading ? (
+        <div className="text-center text-muted-foreground">
+          <FormattedMessage id="home.clowderPeers.loading" defaultMessage="Loading peer status..." />
+        </div>
+      ) : isError ? (
+        <div className="text-center text-muted-foreground">
+          <FormattedMessage id="home.clowderPeers.error" defaultMessage="Failed to load peer status" />
+        </div>
+      ) : peers.length === 0 ? (
+        <div className="text-center text-muted-foreground">
+          <FormattedMessage id="home.clowderPeers.none" defaultMessage="No clowder peers found" />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {peers.map((peer, index) => {
+            const status = statuses[index];
+            return <PeerStatusRow key={peer.node_id} mint={peer.mint} state={status?.data} isLoading={status?.isLoading ?? true} isError={status?.isError ?? false} />;
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ClowderPeersCard() {
   const {
     data: alphasData,
     isLoading: alphasLoading,
@@ -82,33 +161,42 @@ export function ClowderPeersCard() {
     staleTime: 30_000,
     refetchInterval: 30_000,
   });
+  const {
+    data: mintInfoData,
+    isLoading: mintInfoLoading,
+    isError: mintInfoError,
+  } = useQuery({
+    ...getMintInfoOptions(),
+    staleTime: 60_000,
+  });
 
-  const peers = useMemo<Peer[]>(() => {
-    const byNodeId = new Map<string, Peer>();
+  const myNodeId = mintInfoData?.clowder_node_id;
+  const ownMintBaseUrl = useMemo(() => deriveOwnMintBaseUrl(env.apiBaseUrl), []);
 
-    for (const mint of alphasData?.mints ?? []) {
-      byNodeId.set(mint.node_id, { nodeId: mint.node_id, mint: mint.mint, role: "alpha" });
-    }
+  const alphas = useMemo(() => sortByMintLabel(alphasData?.mints ?? []), [alphasData]);
+  const betas = useMemo(() => sortByMintLabel(betasData?.mints ?? []), [betasData]);
 
-    for (const mint of betasData?.mints ?? []) {
-      if (!byNodeId.has(mint.node_id)) {
-        byNodeId.set(mint.node_id, { nodeId: mint.node_id, mint: mint.mint, role: "beta" });
-      }
-    }
-
-    return Array.from(byNodeId.values()).sort((a, b) => mintLabel(a.mint).localeCompare(mintLabel(b.mint)));
-  }, [alphasData, betasData]);
-
-  const statusQueries = useQueries({
-    queries: peers.map((peer) => ({
-      ...getClowderStatusOptions({ path: { pk: peer.nodeId } }),
+  // My opinion of each Alpha: asked directly against my own mint's public status endpoint.
+  const myOpinionOfAlphasQueries = useQueries({
+    queries: alphas.map((alpha) => ({
+      ...getClowderForeignStatusQueryOptions({ mintBaseUrl: ownMintBaseUrl, pk: alpha.node_id }),
       staleTime: 30_000,
       refetchInterval: 30_000,
+      retry: 1,
     })),
   });
 
-  const isLoading = alphasLoading || betasLoading;
-  const isError = alphasError || betasError;
+  // Each Beta's opinion of me: asked directly against every Beta's own public status endpoint
+  // (a different mint host per row, not our own admin API).
+  const betasOpinionOfMeQueries = useQueries({
+    queries: betas.map((beta) => ({
+      ...getClowderForeignStatusQueryOptions({ mintBaseUrl: beta.mint, pk: myNodeId ?? "" }),
+      enabled: Boolean(myNodeId),
+      staleTime: 30_000,
+      refetchInterval: 30_000,
+      retry: 1,
+    })),
+  });
 
   return (
     <div className="bg-card text-card-foreground rounded-lg border p-6">
@@ -116,51 +204,22 @@ export function ClowderPeersCard() {
         <FormattedMessage id="home.clowderPeers.title" defaultMessage="Clowder Peers" />
       </Heading>
 
-      {isLoading ? (
-        <div className="text-center text-muted-foreground">
-          <FormattedMessage id="home.clowderPeers.loading" defaultMessage="Loading peer status..." />
-        </div>
-      ) : isError ? (
-        <div className="text-center text-muted-foreground">
-          <FormattedMessage id="home.clowderPeers.error" defaultMessage="Failed to load peer status" />
-        </div>
-      ) : peers.length === 0 ? (
-        <div className="text-center text-muted-foreground">
-          <FormattedMessage id="home.clowderPeers.none" defaultMessage="No clowder peers found" />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {peers.map((peer, index) => {
-            const statusQuery = statusQueries[index];
-            const kind = statusQuery.isLoading ? "unknown" : statusKind(statusQuery.data?.state);
-            const timestamp = statusTimestamp(statusQuery.data?.state);
-
-            return (
-              <div key={peer.nodeId} className="flex items-center justify-between gap-3 border-t pt-3 first:border-t-0 first:pt-0">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <Text variant="caption" className="truncate">
-                    {mintLabel(peer.mint)}
-                  </Text>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                    {intl.formatMessage(roleMessages[peer.role])}
-                  </span>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`h-2 w-2 rounded-full ${statusDotClass[kind]}`} aria-hidden="true" />
-                    <Text variant="caption">{intl.formatMessage(statusMessages[kind])}</Text>
-                  </div>
-                  {timestamp !== undefined && (
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <div className="flex flex-col gap-6">
+        <PeerStatusSection
+          title={<FormattedMessage id="home.clowderPeers.betasOpinionOfMe.title" defaultMessage="What Betas Think About My Mint" />}
+          peers={betas}
+          statuses={betasOpinionOfMeQueries}
+          isLoading={betasLoading || mintInfoLoading}
+          isError={betasError || mintInfoError}
+        />
+        <PeerStatusSection
+          title={<FormattedMessage id="home.clowderPeers.myOpinionOfAlphas.title" defaultMessage="What I Think About Other Mints" />}
+          peers={alphas}
+          statuses={myOpinionOfAlphasQueries}
+          isLoading={alphasLoading}
+          isError={alphasError}
+        />
+      </div>
     </div>
   );
 }
