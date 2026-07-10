@@ -10,6 +10,7 @@
   "packageManager": "npm@11.12.1",
   "scripts": {
     "dev": "vite",
+    "dev:crowdin": "VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING=true vite",
     "build": "tsc -b && vite build",
     "test": "vitest",
     "lint": "eslint .",
