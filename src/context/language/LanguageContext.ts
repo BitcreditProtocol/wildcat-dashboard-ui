@@ -1,15 +1,19 @@
 import { createContext } from "react";
 import meta from "@/constants/meta";
+import { LIVE_TRANSLATIONS_KEY } from "@/constants/storageKeys";
 
 /**
  * Crowdin "pseudo-language" for In-Context tooling
  * See: https://support.crowdin.com/developer/in-context-localization/
  */
-const CROWDIN_PSEUDO_LOCALE = "ach-UG";
+export const CROWDIN_PSEUDO_LOCALE = "zu-ZA";
 
-const DEFAULT_LOCALE_PROD = "en-US";
-const DEFAULT_LOCALE_DEV = meta.crowdinInContextToolingEnabled ? CROWDIN_PSEUDO_LOCALE : DEFAULT_LOCALE_PROD;
-export const DEFAULT_LOCALE = meta.devModeEnabled ? DEFAULT_LOCALE_DEV : DEFAULT_LOCALE_PROD;
+export const isInContextToolAvailable = meta.crowdinInContextToolingEnabled;
+
+const isLiveTranslationsActive = typeof window !== "undefined" && window.localStorage.getItem(LIVE_TRANSLATIONS_KEY) === "enabled";
+
+export const DEFAULT_LOCALE_PROD = "en-US";
+export const DEFAULT_LOCALE = isInContextToolAvailable && isLiveTranslationsActive ? CROWDIN_PSEUDO_LOCALE : DEFAULT_LOCALE_PROD;
 
 export interface LanguageContextType {
   locale: string;

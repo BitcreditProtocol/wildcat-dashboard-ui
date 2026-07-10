@@ -8,6 +8,7 @@ import esAR from "./es-AR/translation.json";
 import esES from "./es-ES/translation.json";
 import itIT from "./it-IT/translation.json";
 import trTR from "./tr-TR/translation.json";
+import zuZA from "./zu-ZA/translation.json";
 
 export const messagesByLocale: Record<string, Record<string, string>> = {
   "en-US": enUS,
@@ -19,6 +20,7 @@ export const messagesByLocale: Record<string, Record<string, string>> = {
   "es-ES": esES,
   "it-IT": itIT,
   "tr-TR": trTR,
+  "zu-ZA": zuZA,
 };
 
 export const supportedLocales = Object.keys(messagesByLocale);
