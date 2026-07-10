@@ -95,9 +95,7 @@ function PeerStatusRow({ mint, state, isLoading, isError }: PeerStatusRowProps) 
           <Text variant="caption">{intl.formatMessage(statusMessages[kind])}</Text>
         </div>
         {timestamp !== undefined && (
-          <span className="text-xs text-muted-foreground">
-            {new Date(timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}
-          </span>
+          <span className="text-xs text-muted-foreground">{new Date(timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
         )}
       </div>
     </div>
@@ -134,7 +132,15 @@ function PeerStatusSection({ title, peers, statuses, isLoading, isError }: PeerS
         <div className="flex flex-col gap-3">
           {peers.map((peer, index) => {
             const status = statuses[index];
-            return <PeerStatusRow key={peer.node_id} mint={peer.mint} state={status?.data} isLoading={status?.isLoading ?? true} isError={status?.isError ?? false} />;
+            return (
+              <PeerStatusRow
+                key={peer.node_id}
+                mint={peer.mint}
+                state={status?.data}
+                isLoading={status?.isLoading ?? true}
+                isError={status?.isError ?? false}
+              />
+            );
           })}
         </div>
       )}
