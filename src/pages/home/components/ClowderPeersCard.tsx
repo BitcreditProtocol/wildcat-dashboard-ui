@@ -141,7 +141,9 @@ export function ClowderPeersCard() {
                   <Text variant="caption" className="truncate">
                     {mintLabel(peer.mint)}
                   </Text>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide">{intl.formatMessage(roleMessages[peer.role])}</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                    {intl.formatMessage(roleMessages[peer.role])}
+                  </span>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-0.5">
                   <div className="flex items-center gap-1.5">
