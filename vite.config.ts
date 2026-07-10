@@ -39,8 +39,7 @@ export default defineViteConfig(({ mode }) => {
             html = html.replace(
               "</head>",
               `<script type="text/javascript">
-                            var inContextToolAllowedHosts = ['localhost', '127.0.0.1', 'dashboard.wildcat0.clowder-dev.minibill.tech', 'wildcat-dashboard.pages.dev'];
-                            if (inContextToolAllowedHosts.indexOf(location.hostname) !== -1 && localStorage.getItem('live_translations') === 'enabled') {
+                            if (localStorage.getItem('live_translations') === 'enabled') {
                               var _jipt = [];
                               _jipt.push(['project', 'wildcat-dashboard']);
                       
