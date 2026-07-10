@@ -11,7 +11,7 @@ type StatusKind = "online" | "interim" | "offline" | "rabid" | "confiscatedRabid
 
 function mintLabel(mint: string): string {
   try {
-    return new URL(mint).hostname;
+    return new URL(mint).host;
   } catch {
     return mint;
   }
