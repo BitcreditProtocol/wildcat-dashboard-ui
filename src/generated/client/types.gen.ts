@@ -295,6 +295,10 @@ export type DeniedMeltOperations = {
     ops: Array<DeniedMeltOp>;
 };
 
+export type EnableMintingResponse = {
+    [key: string]: unknown;
+};
+
 export type Endorsement = {
     pay_to_the_order_of: LightBillParticipant;
     signed: LightSignedBy;
@@ -406,9 +410,15 @@ export type InfoReply = {
     discounted: number;
     fee: Amount;
     status: 'MintingEnabled';
+} | {
+    id: string;
+    bill: BillInfo;
+    keyset_id: Id;
+    discounted: number;
+    status: 'FailedEbillValidation';
 };
 
-export type InfoReplyDiscriminants = 'Pending' | 'Canceled' | 'Offered' | 'OfferExpired' | 'Denied' | 'Accepted' | 'Rejected' | 'MintingEnabled';
+export type InfoReplyDiscriminants = 'Pending' | 'Canceled' | 'Offered' | 'OfferExpired' | 'Denied' | 'Accepted' | 'Rejected' | 'MintingEnabled' | 'FailedEbillValidation';
 
 /**
  * KeySetInfo
@@ -968,6 +978,38 @@ export type GetSharedEbillHistoryResponses = {
 };
 
 export type GetSharedEbillHistoryResponse = GetSharedEbillHistoryResponses[keyof GetSharedEbillHistoryResponses];
+
+export type PatchEnableQuoteMintingData = {
+    body?: never;
+    path: {
+        /**
+         * The quote id
+         */
+        qid: string;
+    };
+    query?: never;
+    url: '/v1/admin/credit/quote/enable_mint/{qid}';
+};
+
+export type PatchEnableQuoteMintingErrors = {
+    /**
+     * invalid quote state
+     */
+    400: unknown;
+    /**
+     * quote id not found
+     */
+    404: unknown;
+};
+
+export type PatchEnableQuoteMintingResponses = {
+    /**
+     * Successful response
+     */
+    200: EnableMintingResponse;
+};
+
+export type PatchEnableQuoteMintingResponse = PatchEnableQuoteMintingResponses[keyof PatchEnableQuoteMintingResponses];
 
 export type GetIdentityData = {
     body?: never;

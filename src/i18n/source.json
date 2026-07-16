@@ -123,6 +123,7 @@
   "home.identity.nodeId": "Node ID",
   "home.identity.none": "No identity found",
   "home.identity.nostrPublicKey": "Nostr Public Key",
+  "home.identity.nostrRelays": "Nostr Relays",
   "home.identity.title": "Identity",
   "home.mint.buildTime": "Build Time",
   "home.mint.clowderChangeAddress": "Clowder Change Address",
