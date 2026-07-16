@@ -72,6 +72,21 @@ export function IdentityCard() {
             </div>
           </div>
 
+          {identityData.nostr_relays.length > 0 && (
+            <div className="border-t pt-4 mt-4">
+              <Heading as="h4" variant="sub" className="mb-4">
+                <FormattedMessage id="home.identity.nostrRelays" defaultMessage="Nostr Relays" />
+              </Heading>
+              <div className="flex flex-col gap-2">
+                {identityData.nostr_relays.map((relay) => (
+                  <span key={relay} className="font-mono text-sm break-all bg-muted p-2 rounded text-muted-foreground">
+                    {relay}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {identityData.postal_address && (
             <div className="border-t pt-4 mt-4">
               <Heading as="h4" variant="sub" className="mb-4">
