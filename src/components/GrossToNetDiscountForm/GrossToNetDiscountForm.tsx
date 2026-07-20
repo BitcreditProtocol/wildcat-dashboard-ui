@@ -206,7 +206,6 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     lastEdited,
     netInput,
     netInputValue,
-    setLastEdited,
     setNetInputDisplay,
     setValue,
   });

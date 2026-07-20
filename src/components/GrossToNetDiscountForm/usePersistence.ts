@@ -47,15 +47,16 @@ export function useFormPersistence({
         netInput?: string;
       }>(localStorageKey);
       if (savedData) {
+        const hasSavedDiscountRate = Boolean(savedData.discountRateInput);
         if (savedData.daysInput) {
           setValue("daysInput", savedData.daysInput, { shouldValidate: true });
         }
-        if (savedData.discountRateInput) {
+        if (hasSavedDiscountRate) {
           setValue("discountRateInput", savedData.discountRateInput, {
             shouldValidate: true,
           });
         }
-        if (savedData.netInput) {
+        if (savedData.netInput && !hasSavedDiscountRate) {
           const savedNetInput = isSat ? parseDigitsToInt(savedData.netInput) : savedData.netInput;
           setValue("netInput", savedNetInput, { shouldValidate: true });
           if (isSat) {

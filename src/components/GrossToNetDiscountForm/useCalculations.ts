@@ -14,7 +14,6 @@ export function useDiscountCalculations({
   lastEdited,
   netInput,
   netInputValue,
-  setLastEdited,
   setNetInputDisplay,
   setValue,
 }: {
@@ -27,13 +26,11 @@ export function useDiscountCalculations({
   lastEdited: LastEditedField;
   netInput?: string;
   netInputValue?: Big;
-  setLastEdited: (value: LastEditedField) => void;
   setNetInputDisplay: (value: string) => void;
   setValue: UseFormSetValue<FormValues>;
 }) {
   const [net, setNet] = useState<CurrencyAmount>();
   const skipNetToRateRef = useRef(false);
-  const prevNetInputRef = useRef<string | undefined>(undefined);
 
   const discount = useMemo<CurrencyAmount | undefined>(() => {
     return net === undefined
@@ -43,19 +40,6 @@ export function useDiscountCalculations({
           currency: net.currency,
         };
   }, [gross, net]);
-
-  useEffect(() => {
-    if (netInput === prevNetInputRef.current) {
-      return;
-    }
-    prevNetInputRef.current = netInput;
-    if (skipNetToRateRef.current) {
-      return;
-    }
-    if (netInput !== undefined) {
-      setLastEdited("net");
-    }
-  }, [netInput, setLastEdited]);
 
   useEffect(() => {
     if (discountRate === undefined || days === undefined) {
@@ -99,6 +83,9 @@ export function useDiscountCalculations({
       skipNetToRateRef.current = false;
       return;
     }
+    if (lastEdited !== "net") {
+      return;
+    }
     if (days === undefined || netInputValue === undefined) {
       setNet(undefined);
       return;
@@ -131,7 +118,7 @@ export function useDiscountCalculations({
     setValue("discountRateInput", ratePercent.toFixed(4), {
       shouldValidate: true,
     });
-  }, [days, netInputValue, gross, setValue, netInput]);
+  }, [days, netInputValue, gross, lastEdited, setValue, netInput]);
 
   return { discount, net };
 }
