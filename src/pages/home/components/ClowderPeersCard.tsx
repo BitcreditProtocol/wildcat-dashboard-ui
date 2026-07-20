@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import { Heading, Text } from "@bitcredit/ui-library";
@@ -212,14 +212,14 @@ export function ClowderPeersCard() {
 
       <div className="flex flex-col gap-6">
         <PeerStatusSection
-          title={<FormattedMessage id="home.clowderPeers.betasOpinionOfMe.title" defaultMessage="What Betas Think About My Mint" />}
+          title={<FormattedMessage id="home.clowderPeers.betasOpinionOfMe.title" defaultMessage="My Betas" />}
           peers={betas}
           statuses={betasOpinionOfMeQueries}
           isLoading={betasLoading || mintInfoLoading}
           isError={betasError || mintInfoError}
         />
         <PeerStatusSection
-          title={<FormattedMessage id="home.clowderPeers.myOpinionOfAlphas.title" defaultMessage="What I Think About Other Mints" />}
+          title={<FormattedMessage id="home.clowderPeers.myOpinionOfAlphas.title" defaultMessage="My Alphas" />}
           peers={alphas}
           statuses={myOpinionOfAlphasQueries}
           isLoading={alphasLoading}
