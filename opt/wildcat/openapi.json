@@ -473,6 +473,43 @@
         }
       }
     },
+    "/v1/admin/credit/quote/enable_mint/{qid}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "patch_enable_quote_minting",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnableMintingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid quote state"
+          },
+          "404": {
+            "description": "quote id not found"
+          }
+        }
+      }
+    },
     "/v1/admin/ebill/identity": {
       "get": {
         "tags": [
@@ -2200,6 +2237,9 @@
           }
         }
       },
+      "EnableMintingResponse": {
+        "type": "object"
+      },
       "Endorsement": {
         "type": "object",
         "required": [
@@ -2674,6 +2714,39 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "bill",
+              "keyset_id",
+              "discounted",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "bill": {
+                "$ref": "#/components/schemas/BillInfo"
+              },
+              "keyset_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "discounted": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "FailedEbillValidation"
+                ]
+              }
+            }
           }
         ],
         "description": "--------------------------- Quote info request"
@@ -2688,7 +2761,8 @@
           "Denied",
           "Accepted",
           "Rejected",
-          "MintingEnabled"
+          "MintingEnabled",
+          "FailedEbillValidation"
         ]
       },
       "KeySetInfo": {
