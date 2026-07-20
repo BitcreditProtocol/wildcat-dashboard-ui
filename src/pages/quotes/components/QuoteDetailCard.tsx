@@ -54,24 +54,24 @@ export function QuoteDetailCard({
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <Text variant="label" className="w-32">
+              <Text variant="label" className="w-32 shrink-0">
                 {intl.formatMessage({
                   id: "quotes.detail.quoteId",
                   defaultMessage: "Quote ID:",
                 })}
               </Text>
-              <Text variant="mono" monoSize="sm">
+              <Text variant="mono" monoSize="sm" className="min-w-0 break-all">
                 {quote.id}
               </Text>
             </div>
             <div className="flex items-center gap-2">
-              <Text variant="label" className="w-32">
+              <Text variant="label" className="w-32 shrink-0">
                 {intl.formatMessage({
                   id: "quotes.detail.billId",
                   defaultMessage: "Bill ID:",
                 })}
               </Text>
-              <Text variant="mono" monoSize="sm">
+              <Text variant="mono" monoSize="sm" className="min-w-0 break-all">
                 {quote.bill.id}
               </Text>
             </div>
