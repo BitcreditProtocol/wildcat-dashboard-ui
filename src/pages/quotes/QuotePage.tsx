@@ -342,7 +342,7 @@ export default function QuotePage() {
             <Link
               to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
               state={{ from: `/quotes/${quoteId}` }}
-              className="inline-flex items-center gap-1 mb-sm-3 leading-none"
+              className="inline-flex items-center gap-1 leading-none"
             >
               <span className="relative top-px leading-none">
                 {intl.formatMessage({
