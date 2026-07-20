@@ -86,8 +86,9 @@ export function DiscountRateInputField({ label, error, registration, onChange, o
         <input
           id="discountRateInput"
           step="0.0001"
-          type="number"
-          inputMode="numeric"
+          type="text"
+          inputMode="decimal"
+          pattern="[0-9]*[.,]?[0-9]*"
           className={cn(INPUT_BASE_CLASS, "text-gray-900 dark:text-gray-100 w-20")}
           {...registration}
           onKeyDown={onKeyDown}
