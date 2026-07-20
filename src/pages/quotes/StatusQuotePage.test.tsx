@@ -467,6 +467,9 @@ describe("StatusQuotePage", () => {
     expect(page.textContent).toContain("Showing 1 of 2 quotes");
     const loadMoreButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "Load more");
     expect(loadMoreButton).not.toBeUndefined();
+    expect(loadMoreButton?.className).toContain("min-h-12");
+    expect(loadMoreButton?.className).toContain("w-full");
+    expect(loadMoreButton?.className).toContain("max-w-sm");
     act(() => {
       loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
