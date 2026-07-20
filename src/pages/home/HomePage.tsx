@@ -2,6 +2,7 @@ import { Heading } from "@bitcredit/ui-library";
 import { FormattedMessage } from "react-intl";
 import { IdentityCard } from "@/pages/home/components/IdentityCard";
 import { ClowderCard } from "@/pages/home/components/ClowderCard";
+import { ClowderPeersCard } from "@/pages/home/components/ClowderPeersCard";
 import { MintInfoCard } from "@/pages/home/components/MintInfoCard";
 
 export default function HomePage() {
@@ -15,6 +16,7 @@ export default function HomePage() {
           <IdentityCard />
           <ClowderCard />
           <MintInfoCard />
+          <ClowderPeersCard />
         </div>
       </div>
     </>
