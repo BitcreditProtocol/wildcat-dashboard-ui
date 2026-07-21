@@ -20,6 +20,7 @@ export class ClowderForeignSubstituteError extends Error {
     readonly status: number
   ) {
     super(message);
+    this.name = "ClowderForeignSubstituteError";
   }
 }
 

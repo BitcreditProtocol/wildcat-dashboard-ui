@@ -32,6 +32,8 @@ function PeerDetailField({ label, value, title }: PeerDetailFieldProps) {
 }
 
 interface PeerDetailPanelProps {
+  id: string;
+  labelledBy: string;
   peer: ConnectedMintResponse;
   state?: SimpleAlphaState;
   isLoading: boolean;
@@ -43,6 +45,8 @@ interface PeerDetailPanelProps {
 }
 
 export function PeerDetailPanel({
+  id,
+  labelledBy,
   peer,
   state,
   isLoading,
@@ -78,7 +82,12 @@ export function PeerDetailPanel({
   }, [intl, substitute, substituteError, substituteIsLoading]);
 
   return (
-    <div role="tabpanel" className="min-w-0 overflow-hidden rounded-sm border bg-background p-3 sm:p-4">
+    <div
+      id={id}
+      role="tabpanel"
+      aria-labelledby={labelledBy}
+      className="min-w-0 overflow-hidden rounded-sm border bg-background p-3 sm:p-4"
+    >
       <div className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-3">
           <Heading as="h5" variant="sub">
@@ -102,7 +111,7 @@ export function PeerDetailPanel({
             <Heading as="h5" variant="sub">
               {intl.formatMessage(peerMessages.substituteInformation)}
             </Heading>
-            <PeerDetailField label={intl.formatMessage(peerMessages.status)} value={substituteDetail} title={substitute?.node_id} />
+            <PeerDetailField label={intl.formatMessage(peerMessages.status)} value={substituteDetail} />
             {substitute && (
               <>
                 <PeerDetailField label={intl.formatMessage(peerMessages.mintUrl)} value={substitute.mint} title={substitute.mint} />

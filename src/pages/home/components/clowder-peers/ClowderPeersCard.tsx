@@ -82,15 +82,9 @@ export function ClowderPeersCard() {
         <FormattedMessage id="home.clowderPeers.title" defaultMessage="Clowder Peers" />
       </Heading>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <PeerStatusSection
           title={<FormattedMessage id="home.clowderPeers.betasOpinionOfMe.title" defaultMessage="My Betas" />}
-          description={
-            <FormattedMessage
-              id="home.clowderPeers.betasOpinionOfMe.description"
-              defaultMessage="GET /v1/admin/clowder/betas returns Beta mints that verify this node."
-            />
-          }
           peers={betas}
           statuses={betasOpinionOfMeQueries}
           isLoading={betasLoading || mintInfoLoading}
@@ -98,15 +92,9 @@ export function ClowderPeersCard() {
         />
         <PeerStatusSection
           title={<FormattedMessage id="home.clowderPeers.myOpinionOfAlphas.title" defaultMessage="My Alphas" />}
-          description={
-            <FormattedMessage
-              id="home.clowderPeers.myOpinionOfAlphas.description"
-              defaultMessage="GET /v1/admin/clowder/alphas returns Alphas this node verifies as a Beta."
-            />
-          }
           peers={alphas}
           statuses={myOpinionOfAlphasQueries}
-          substitutes={alphaSubstituteQueries}
+          substitutes={substituteLookupClowderUrl ? alphaSubstituteQueries : undefined}
           isLoading={alphasLoading}
           isError={alphasError}
         />

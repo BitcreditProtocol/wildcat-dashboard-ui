@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { ReactNode } from "react";
 import { Heading, Text } from "@bitcredit/ui-library";
 import { FormattedMessage } from "react-intl";
@@ -20,15 +20,26 @@ interface SubstituteQueryResult {
 
 interface PeerStatusSectionProps {
   title: ReactNode;
-  description: ReactNode;
+  description?: ReactNode;
   peers: ConnectedMintResponse[];
   statuses: PeerQueryResult[];
   substitutes?: SubstituteQueryResult[];
   isLoading: boolean;
   isError: boolean;
+  renderDetailPanel?: (props: { id: string; labelledBy: string; peer: ConnectedMintResponse; status: PeerQueryResult }) => ReactNode;
 }
 
-export function PeerStatusSection({ title, description, peers, statuses, substitutes, isLoading, isError }: PeerStatusSectionProps) {
+export function PeerStatusSection({
+  title,
+  description,
+  peers,
+  statuses,
+  substitutes,
+  isLoading,
+  isError,
+  renderDetailPanel,
+}: PeerStatusSectionProps) {
+  const sectionId = useId();
   const [selectedPeerId, setSelectedPeerId] = useState<string | undefined>();
   const selectedPeerIndex = Math.max(
     0,
@@ -37,6 +48,9 @@ export function PeerStatusSection({ title, description, peers, statuses, substit
   const selectedPeer = peers[selectedPeerIndex];
   const selectedStatus = statuses[selectedPeerIndex];
   const selectedSubstitute = substitutes?.[selectedPeerIndex];
+  const hasDetailPanel = renderDetailPanel !== undefined || substitutes !== undefined;
+  const selectedTabId = `${sectionId}-tab-${selectedPeerIndex}`;
+  const selectedPanelId = `${sectionId}-panel`;
 
   useEffect(() => {
     if (peers.length === 0) {
@@ -55,9 +69,11 @@ export function PeerStatusSection({ title, description, peers, statuses, substit
         <Heading as="h4" variant="sub">
           {title}
         </Heading>
-        <Text variant="caption" className="text-muted-foreground">
-          {description}
-        </Text>
+        {description && (
+          <Text variant="caption" className="text-muted-foreground">
+            {description}
+          </Text>
+        )}
       </div>
       {isLoading ? (
         <div className="text-center text-muted-foreground">
@@ -72,34 +88,61 @@ export function PeerStatusSection({ title, description, peers, statuses, substit
           <FormattedMessage id="home.clowderPeers.none" defaultMessage="No clowder peers found" />
         </div>
       ) : (
-        <div className="grid min-w-0 gap-3 @min-[42rem]:grid-cols-2 @min-[42rem]:items-start">
-          <div role="tablist" className="flex flex-col gap-2">
+        <div
+          className={`grid min-w-0 gap-3 ${hasDetailPanel ? "@min-[42rem]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] @min-[42rem]:items-start" : ""}`}
+        >
+          <div role={hasDetailPanel ? "tablist" : undefined} className="flex flex-col gap-2">
             {peers.map((peer, index) => {
               const status = statuses[index];
-              return (
+              const rowProps = {
+                peer,
+                state: status?.data,
+                isLoading: status?.isLoading ?? true,
+                isError: status?.isError ?? false,
+              };
+
+              return hasDetailPanel ? (
                 <PeerStatusRow
                   key={peer.node_id}
-                  peer={peer}
-                  state={status?.data}
-                  isLoading={status?.isLoading ?? true}
-                  isError={status?.isError ?? false}
+                  {...rowProps}
+                  id={`${sectionId}-tab-${index}`}
+                  controls={selectedPanelId}
                   isSelected={peer.node_id === selectedPeer?.node_id}
                   onSelect={() => setSelectedPeerId(peer.node_id)}
                 />
+              ) : (
+                <PeerStatusRow key={peer.node_id} {...rowProps} />
               );
             })}
           </div>
-          {selectedPeer && (
-            <PeerDetailPanel
-              peer={selectedPeer}
-              state={selectedStatus?.data}
-              isLoading={selectedStatus?.isLoading ?? true}
-              isError={selectedStatus?.isError ?? false}
-              substitute={selectedSubstitute?.data}
-              substituteIsLoading={selectedSubstitute?.isLoading}
-              substituteError={selectedSubstitute?.error}
-              showsSubstitute={Boolean(substitutes)}
-            />
+          {hasDetailPanel && selectedPeer && (
+            <>
+              {renderDetailPanel ? (
+                renderDetailPanel({
+                  id: selectedPanelId,
+                  labelledBy: selectedTabId,
+                  peer: selectedPeer,
+                  status: {
+                    data: selectedStatus?.data,
+                    isLoading: selectedStatus?.isLoading ?? true,
+                    isError: selectedStatus?.isError ?? false,
+                  },
+                })
+              ) : (
+                <PeerDetailPanel
+                  id={selectedPanelId}
+                  labelledBy={selectedTabId}
+                  peer={selectedPeer}
+                  state={selectedStatus?.data}
+                  isLoading={selectedStatus?.isLoading ?? true}
+                  isError={selectedStatus?.isError ?? false}
+                  substitute={selectedSubstitute?.data}
+                  substituteIsLoading={selectedSubstitute?.isLoading}
+                  substituteError={selectedSubstitute?.error}
+                  showsSubstitute={Boolean(substitutes)}
+                />
+              )}
+            </>
           )}
         </div>
       )}

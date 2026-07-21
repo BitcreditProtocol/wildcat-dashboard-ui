@@ -4,29 +4,26 @@ import type { ConnectedMintResponse, SimpleAlphaState } from "@/generated/client
 import { mintLabel, statusDotClass, statusKind, statusMessages, statusTimestamp } from "./clowder-peer-utils";
 
 interface PeerStatusRowProps {
+  id?: string;
+  controls?: string;
   peer: ConnectedMintResponse;
   state?: SimpleAlphaState;
   isLoading: boolean;
   isError: boolean;
-  isSelected: boolean;
-  onSelect: () => void;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
-export function PeerStatusRow({ peer, state, isLoading, isError, isSelected, onSelect }: PeerStatusRowProps) {
+export function PeerStatusRow({ id, controls, peer, state, isLoading, isError, isSelected = false, onSelect }: PeerStatusRowProps) {
   const intl = useIntl();
   const kind = isLoading || isError ? "unknown" : statusKind(state);
   const timestamp = statusTimestamp(state);
+  const className = `grid w-full min-w-0 grid-cols-1 gap-2 rounded-sm border p-2.5 text-left transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3 sm:p-3 ${
+    isSelected ? "border-primary bg-accent text-accent-foreground" : `border-border ${onSelect ? "hover:bg-accent/50" : ""}`
+  }`;
 
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={isSelected}
-      onClick={onSelect}
-      className={`grid w-full min-w-0 grid-cols-1 gap-2 rounded-sm border p-2.5 text-left transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3 sm:p-3 ${
-        isSelected ? "border-primary bg-accent text-accent-foreground" : "border-border hover:bg-accent/50"
-      }`}
-    >
+  const content = (
+    <>
       <div className="flex min-w-0 flex-col gap-0.5">
         <Text variant="caption" className="truncate">
           {mintLabel(peer.mint)}
@@ -41,6 +38,25 @@ export function PeerStatusRow({ peer, state, isLoading, isError, isSelected, onS
           <span className="text-xs text-muted-foreground">{new Date(timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
         )}
       </div>
+    </>
+  );
+
+  if (!onSelect) {
+    return <div className={className}>{content}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      role="tab"
+      id={id}
+      aria-selected={isSelected}
+      aria-controls={controls}
+      tabIndex={isSelected ? 0 : -1}
+      onClick={onSelect}
+      className={className}
+    >
+      {content}
     </button>
   );
 }
