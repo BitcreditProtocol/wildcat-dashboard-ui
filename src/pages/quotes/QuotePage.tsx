@@ -309,8 +309,8 @@ export default function QuotePage() {
         {quoteId}
       </Breadcrumbs>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Heading as="h1" variant="page" className="mb-6 pt-4">
+      <div className="flex flex-col gap-3 mb-4 sm:mb-0 sm:flex-row sm:items-center sm:justify-between">
+        <Heading as="h1" variant="page" className="mb-2 sm:mb-6 pt-4">
           <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
             <span>
               {intl.formatMessage({

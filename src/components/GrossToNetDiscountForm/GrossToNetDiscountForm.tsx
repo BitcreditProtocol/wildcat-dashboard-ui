@@ -18,6 +18,7 @@ import {
   handleDrop,
   handleIntegerKeyDown,
   parseDigitsToInt,
+  sanitizeDecimalInput,
 } from "./input";
 import { createDiscountFormValidators } from "./validators";
 import { useDiscountCalculations } from "./useCalculations";
@@ -205,7 +206,6 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     lastEdited,
     netInput,
     netInputValue,
-    setLastEdited,
     setNetInputDisplay,
     setValue,
   });
@@ -324,6 +324,10 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
               }
             }}
             onChange={(e) => {
+              const sanitizedValue = sanitizeDecimalInput(e.currentTarget.value);
+              if (e.currentTarget.value !== sanitizedValue) {
+                e.currentTarget.value = sanitizedValue;
+              }
               void discountRateRegister.onChange(e);
               setLastEdited("rate");
             }}

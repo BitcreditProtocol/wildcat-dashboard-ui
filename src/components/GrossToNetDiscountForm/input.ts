@@ -16,6 +16,26 @@ export const blockDecimalInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
   }
 };
 
+export const sanitizeDecimalInput = (value: string) => {
+  const normalized = value.replace(",", ".");
+  let result = "";
+  let hasDecimal = false;
+
+  for (const char of normalized) {
+    if (char >= "0" && char <= "9") {
+      result += char;
+      continue;
+    }
+
+    if (char === "." && !hasDecimal) {
+      result += char;
+      hasDecimal = true;
+    }
+  }
+
+  return result;
+};
+
 export const handleIntegerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
   const allowed = new Set(["Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab", "Home", "End"]);
   if (e.key === "Enter") {

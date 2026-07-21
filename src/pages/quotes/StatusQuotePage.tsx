@@ -206,8 +206,14 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       </div>
 
       {hasNextPage && (
-        <div className="flex justify-center pt-2">
-          <Button type="button" variant="outline" onClick={() => void fetchNextPage()} disabled={isFetchingNextPage}>
+        <div className="flex justify-center px-4 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-12 w-full max-w-sm"
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
             {isFetchingNextPage
               ? intl.formatMessage({
                   id: "quotes.pagination.loadingMore",
