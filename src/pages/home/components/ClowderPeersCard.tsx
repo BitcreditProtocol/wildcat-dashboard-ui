@@ -4,7 +4,12 @@ import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import { Heading, Text } from "@bitcredit/ui-library";
 import { getClowderAlphasOptions, getClowderBetasOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { ConnectedMintResponse, SimpleAlphaState } from "@/generated/client/types.gen";
-import { deriveOwnMintBaseUrl, getClowderForeignStatusQueryOptions } from "@/lib/clowder-foreign-status";
+import {
+  ClowderForeignSubstituteError,
+  deriveOwnMintBaseUrl,
+  getClowderForeignStatusQueryOptions,
+  getClowderForeignSubstituteQueryOptions,
+} from "@/lib/clowder-foreign-status";
 import { env } from "@/lib/env";
 
 type StatusKind = "online" | "interim" | "offline" | "rabid" | "confiscatedRabid" | "unknown";
@@ -55,6 +60,14 @@ const statusMessages = defineMessages({
   unknown: { id: "home.clowderPeers.status.unknown", defaultMessage: "Unknown" },
 });
 
+const substituteMessages = defineMessages({
+  label: { id: "home.clowderPeers.substitute.label", defaultMessage: "Substitute: {mint}" },
+  loading: { id: "home.clowderPeers.substitute.loading", defaultMessage: "Loading substitute..." },
+  noSubstitute: { id: "home.clowderPeers.substitute.noSubstitute", defaultMessage: "No substitute elected" },
+  unknownNode: { id: "home.clowderPeers.substitute.unknownNode", defaultMessage: "Substitute unknown: node is not in topology" },
+  unavailable: { id: "home.clowderPeers.substitute.unavailable", defaultMessage: "Substitute unavailable" },
+});
+
 const statusDotClass: Record<StatusKind, string> = {
   online: "bg-emerald-500",
   interim: "bg-amber-500",
@@ -69,13 +82,36 @@ interface PeerStatusRowProps {
   state?: SimpleAlphaState;
   isLoading: boolean;
   isError: boolean;
+  substitute?: ConnectedMintResponse;
+  substituteIsLoading?: boolean;
+  substituteError?: Error | null;
 }
 
-function PeerStatusRow({ mint, state, isLoading, isError }: PeerStatusRowProps) {
+function PeerStatusRow({ mint, state, isLoading, isError, substitute, substituteIsLoading = false, substituteError }: PeerStatusRowProps) {
   const intl = useIntl();
   const kind = isLoading || isError ? "unknown" : statusKind(state);
   const timestamp = statusTimestamp(state);
   const detail = statusDetail(state);
+  const substituteDetail = useMemo(() => {
+    if (substituteIsLoading) {
+      return intl.formatMessage(substituteMessages.loading);
+    }
+    if (substitute) {
+      return intl.formatMessage(substituteMessages.label, { mint: mintLabel(substitute.mint) });
+    }
+    if (!substituteError) {
+      return undefined;
+    }
+    if (substituteError instanceof ClowderForeignSubstituteError) {
+      if (substituteError.kind === "noSubstitute") {
+        return intl.formatMessage(substituteMessages.noSubstitute);
+      }
+      if (substituteError.kind === "unknownNode") {
+        return intl.formatMessage(substituteMessages.unknownNode);
+      }
+    }
+    return intl.formatMessage(substituteMessages.unavailable);
+  }, [intl, substitute, substituteError, substituteIsLoading]);
 
   return (
     <div className="flex items-center justify-between gap-3 border-t pt-3 first:border-t-0 first:pt-0">
@@ -83,6 +119,11 @@ function PeerStatusRow({ mint, state, isLoading, isError }: PeerStatusRowProps) 
         <Text variant="caption" className="truncate">
           {mintLabel(mint)}
         </Text>
+        {substituteDetail && (
+          <span className="text-xs text-muted-foreground truncate" title={substitute?.node_id}>
+            {substituteDetail}
+          </span>
+        )}
         {detail && (
           <span className="text-xs text-muted-foreground truncate" title={detail}>
             {detail}
@@ -106,11 +147,12 @@ interface PeerStatusSectionProps {
   title: React.ReactNode;
   peers: ConnectedMintResponse[];
   statuses: { data?: SimpleAlphaState; isLoading: boolean; isError: boolean }[];
+  substitutes?: { data?: ConnectedMintResponse; isLoading: boolean; error: Error | null }[];
   isLoading: boolean;
   isError: boolean;
 }
 
-function PeerStatusSection({ title, peers, statuses, isLoading, isError }: PeerStatusSectionProps) {
+function PeerStatusSection({ title, peers, statuses, substitutes, isLoading, isError }: PeerStatusSectionProps) {
   return (
     <div className="flex flex-col gap-3">
       <Heading as="h4" variant="sub">
@@ -132,6 +174,7 @@ function PeerStatusSection({ title, peers, statuses, isLoading, isError }: PeerS
         <div className="flex flex-col gap-3">
           {peers.map((peer, index) => {
             const status = statuses[index];
+            const substitute = substitutes?.[index];
             return (
               <PeerStatusRow
                 key={peer.node_id}
@@ -139,6 +182,9 @@ function PeerStatusSection({ title, peers, statuses, isLoading, isError }: PeerS
                 state={status?.data}
                 isLoading={status?.isLoading ?? true}
                 isError={status?.isError ?? false}
+                substitute={substitute?.data}
+                substituteIsLoading={substitute?.isLoading}
+                substituteError={substitute?.error}
               />
             );
           })}
@@ -181,6 +227,7 @@ export function ClowderPeersCard() {
 
   const alphas = useMemo(() => sortByMintLabel(alphasData?.mints ?? []), [alphasData]);
   const betas = useMemo(() => sortByMintLabel(betasData?.mints ?? []), [betasData]);
+  const substituteLookupClowderUrl = betas[0]?.clowder;
 
   // My opinion of each Alpha: asked directly against my own mint's public status endpoint.
   const myOpinionOfAlphasQueries = useQueries({
@@ -198,6 +245,16 @@ export function ClowderPeersCard() {
     queries: betas.map((beta) => ({
       ...getClowderForeignStatusQueryOptions({ mintBaseUrl: beta.mint, pk: myNodeId ?? "" }),
       enabled: Boolean(myNodeId),
+      staleTime: 30_000,
+      refetchInterval: 30_000,
+      retry: 1,
+    })),
+  });
+
+  const alphaSubstituteQueries = useQueries({
+    queries: alphas.map((alpha) => ({
+      ...getClowderForeignSubstituteQueryOptions({ clowderBaseUrl: substituteLookupClowderUrl ?? "", pk: alpha.node_id }),
+      enabled: Boolean(substituteLookupClowderUrl),
       staleTime: 30_000,
       refetchInterval: 30_000,
       retry: 1,
@@ -222,6 +279,7 @@ export function ClowderPeersCard() {
           title={<FormattedMessage id="home.clowderPeers.myOpinionOfAlphas.title" defaultMessage="My Alphas" />}
           peers={alphas}
           statuses={myOpinionOfAlphasQueries}
+          substitutes={alphaSubstituteQueries}
           isLoading={alphasLoading}
           isError={alphasError}
         />
