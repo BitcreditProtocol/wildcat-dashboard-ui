@@ -45,7 +45,6 @@ export function ClowderPeersCard() {
 
   const alphas = useMemo(() => sortByMintLabel(alphasData?.mints ?? []), [alphasData]);
   const betas = useMemo(() => sortByMintLabel(betasData?.mints ?? []), [betasData]);
-  const substituteLookupClowderUrl = betas[0]?.clowder;
 
   const myOpinionOfAlphasQueries = useQueries({
     queries: alphas.map((alpha) => ({
@@ -68,8 +67,7 @@ export function ClowderPeersCard() {
 
   const alphaSubstituteQueries = useQueries({
     queries: alphas.map((alpha) => ({
-      ...getClowderForeignSubstituteQueryOptions({ clowderBaseUrl: substituteLookupClowderUrl ?? "", pk: alpha.node_id }),
-      enabled: Boolean(substituteLookupClowderUrl),
+      ...getClowderForeignSubstituteQueryOptions({ mintBaseUrl: ownMintBaseUrl, pk: alpha.node_id }),
       staleTime: 30_000,
       refetchInterval: 30_000,
       retry: 1,
@@ -94,7 +92,7 @@ export function ClowderPeersCard() {
           title={<FormattedMessage id="home.clowderPeers.myOpinionOfAlphas.title" defaultMessage="My Alphas" />}
           peers={alphas}
           statuses={myOpinionOfAlphasQueries}
-          substitutes={substituteLookupClowderUrl ? alphaSubstituteQueries : undefined}
+          substitutes={alphaSubstituteQueries}
           isLoading={alphasLoading}
           isError={alphasError}
         />

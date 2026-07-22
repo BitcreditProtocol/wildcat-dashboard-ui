@@ -7,7 +7,7 @@ export interface ClowderForeignStatusQueryOptions {
 }
 
 export interface ClowderForeignSubstituteQueryOptions {
-  clowderBaseUrl: string;
+  mintBaseUrl: string;
   pk: string;
 }
 
@@ -50,11 +50,11 @@ export function getClowderForeignStatusQueryOptions({ mintBaseUrl, pk }: Clowder
  * Queries a Beta clowder for the elected substitute Beta of a foreign Alpha node.
  * This uses the public clowder endpoint directly until the deployment proxy exists.
  */
-export function getClowderForeignSubstituteQueryOptions({ clowderBaseUrl, pk }: ClowderForeignSubstituteQueryOptions) {
+export function getClowderForeignSubstituteQueryOptions({ mintBaseUrl, pk }: ClowderForeignSubstituteQueryOptions) {
   return queryOptions<ConnectedMintResponse>({
-    queryKey: ["clowder-foreign-substitute", clowderBaseUrl, pk],
+    queryKey: ["clowder-foreign-substitute", mintBaseUrl, pk],
     queryFn: async ({ signal }) => {
-      const url = `${clowderBaseUrl.replace(/\/$/, "")}/v1/foreign/substitute/${encodeURIComponent(pk)}`;
+      const url = `${mintBaseUrl.replace(/\/$/, "")}/v1/clowder/foreign/substitute/${encodeURIComponent(pk)}`;
       const response = await fetch(url, { signal });
 
       if (!response.ok) {
