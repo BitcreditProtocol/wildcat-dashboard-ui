@@ -1,9 +1,27 @@
 import { queryOptions } from "@tanstack/react-query";
-import type { AlphaStateResponse, SimpleAlphaState } from "@/generated/client/types.gen";
+import type { AlphaStateResponse, ConnectedMintResponse, SimpleAlphaState } from "@/generated/client/types.gen";
 
 export interface ClowderForeignStatusQueryOptions {
   mintBaseUrl: string;
   pk: string;
+}
+
+export interface ClowderForeignSubstituteQueryOptions {
+  mintBaseUrl: string;
+  pk: string;
+}
+
+export type ClowderForeignSubstituteErrorKind = "noSubstitute" | "unknownNode" | "requestFailed";
+
+export class ClowderForeignSubstituteError extends Error {
+  constructor(
+    message: string,
+    readonly kind: ClowderForeignSubstituteErrorKind,
+    readonly status: number
+  ) {
+    super(message);
+    this.name = "ClowderForeignSubstituteError";
+  }
 }
 
 /**
@@ -24,6 +42,36 @@ export function getClowderForeignStatusQueryOptions({ mintBaseUrl, pk }: Clowder
 
       const data = (await response.json()) as AlphaStateResponse;
       return data.state;
+    },
+  });
+}
+
+/**
+ * Queries a Beta clowder for the elected substitute Beta of a foreign Alpha node.
+ * This uses the public clowder endpoint directly until the deployment proxy exists.
+ */
+export function getClowderForeignSubstituteQueryOptions({ mintBaseUrl, pk }: ClowderForeignSubstituteQueryOptions) {
+  return queryOptions<ConnectedMintResponse>({
+    queryKey: ["clowder-foreign-substitute", mintBaseUrl, pk],
+    queryFn: async ({ signal }) => {
+      const url = `${mintBaseUrl.replace(/\/$/, "")}/v1/clowder/foreign/substitute/${encodeURIComponent(pk)}`;
+      const response = await fetch(url, { signal });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        const kind = errorText.includes("NoSubstitute")
+          ? "noSubstitute"
+          : errorText.includes("UnknownNode")
+            ? "unknownNode"
+            : "requestFailed";
+        throw new ClowderForeignSubstituteError(
+          `Foreign substitute request to ${url} failed with status ${response.status}`,
+          kind,
+          response.status
+        );
+      }
+
+      return (await response.json()) as ConnectedMintResponse;
     },
   });
 }
