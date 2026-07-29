@@ -30,13 +30,27 @@ const getEnvValue = <K extends keyof RuntimeEnv>(key: K): RuntimeEnv[K] | undefi
   return normalizeEnvValue(fallbackEnv[key]);
 };
 
+const requiredEnvKeys = ["VITE_API_BASE_URL", "VITE_KEYCLOAK_URL", "VITE_KEYCLOAK_REALM", "VITE_KEYCLOAK_CLIENT_ID"] as const;
+
+const missingRequiredEnvKeys = requiredEnvKeys.filter((key) => getEnvValue(key) === undefined);
+
+if (missingRequiredEnvKeys.length > 0) {
+  throw new Error(
+    `Missing required environment variable${missingRequiredEnvKeys.length === 1 ? "" : "s"}: ${missingRequiredEnvKeys.join(", ")}`
+  );
+}
+
+const getRequiredEnvValue = <K extends (typeof requiredEnvKeys)[number]>(key: K): string => {
+  return getEnvValue(key) as string;
+};
+
 export const env = {
   devModeEnabled: fallbackEnv.DEV,
-  apiBaseUrl: getEnvValue("VITE_API_BASE_URL")!,
+  apiBaseUrl: getRequiredEnvValue("VITE_API_BASE_URL"),
   apiMocksEnabled: (getEnvValue("VITE_API_MOCKING_ENABLED") ?? "false") === "true",
-  keycloakUrl: getEnvValue("VITE_KEYCLOAK_URL")!,
-  keycloakRealm: getEnvValue("VITE_KEYCLOAK_REALM")!,
-  keycloakClientId: getEnvValue("VITE_KEYCLOAK_CLIENT_ID")!,
+  keycloakUrl: getRequiredEnvValue("VITE_KEYCLOAK_URL"),
+  keycloakRealm: getRequiredEnvValue("VITE_KEYCLOAK_REALM"),
+  keycloakClientId: getRequiredEnvValue("VITE_KEYCLOAK_CLIENT_ID"),
   esploraBaseUrl: getEnvValue("VITE_ESPLORA_BASE_URL") ?? "https://esplora.minibill.tech",
   crowdinInContextToolingEnabled: (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ?? "false") === "true",
 };

@@ -12,6 +12,7 @@ interface QueryKeyEntry {
 }
 interface QueryOptions {
   queryKey: QueryKeyEntry[];
+  enabled?: boolean;
 }
 interface QueryResult {
   data: unknown;
@@ -27,8 +28,9 @@ interface MutationResult {
   data: unknown;
 }
 
-const { mockClientGet } = vi.hoisted(() => ({
-  mockClientGet: vi.fn(),
+const { mockGetEbillAttachment, mockGetEbillFileFromRequestToMint } = vi.hoisted(() => ({
+  mockGetEbillAttachment: vi.fn(),
+  mockGetEbillFileFromRequestToMint: vi.fn(),
 }));
 
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
@@ -50,10 +52,10 @@ vi.mock("./QuoteActions", () => ({
   QuoteActions: () => <div>QuoteActionsMock</div>,
 }));
 
-vi.mock("@/lib/api-client", () => ({
-  client: {
-    get: mockClientGet,
-  },
+vi.mock("@/generated/client/sdk.gen", () => ({
+  getEbillAttachment: mockGetEbillAttachment,
+  getEbillFileFromRequestToMint: mockGetEbillFileFromRequestToMint,
+  syncEbillChain: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock("@/lib/ebill-mint-complete", () => ({
@@ -77,6 +79,7 @@ vi.mock("@tanstack/react-query", async () => {
     ...actual,
     useQuery: (options: QueryOptions) => mockUseQuery(options),
     useMutation: () => mockUseMutation(),
+    useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   };
 });
 
@@ -85,14 +88,23 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
     queryKey: [{ _id: "getQuote", path }],
   }),
   listEbillsOptions: () => ({ queryKey: [{ _id: "listEbills" }] }),
-  getEbillEndorsementsOptions: ({ path }: { path: { bid: string } }) => ({
-    queryKey: [{ _id: "getEbillEndorsements", path }],
+  getEbillHistoryOptions: ({ path }: { path: { bid: string } }) => ({
+    queryKey: [{ _id: "getEbillHistory", path }],
   }),
-  postTokenStatusMutation: () => ({ mutationFn: vi.fn() }),
+  getSharedEbillHistoryOptions: ({ path }: { path: { qid: string } }) => ({
+    queryKey: [{ _id: "getSharedEbillHistory", path }],
+  }),
+  getMintInfoOptions: () => ({ queryKey: [{ _id: "getMintInfo" }] }),
+  getEbillOptions: ({ path }: { path: { bid: string } }) => ({
+    queryKey: [{ _id: "getEbill", path }],
+  }),
 }));
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
+const quoteId = "97e45adf-fc86-4b30-9322-afae434c3287";
+const secondQuoteId = "87e45adf-fc86-4b30-9322-afae434c3288";
+const errorQuoteId = "77e45adf-fc86-4b30-9322-afae434c3289";
 
 function renderIntoDom(element: ReactElement): HTMLDivElement {
   const mount = document.createElement("div");
@@ -138,14 +150,23 @@ beforeEach(() => {
     isError: false,
     data: undefined,
   });
-  mockClientGet.mockReset();
+  mockGetEbillAttachment.mockReset();
+  mockGetEbillFileFromRequestToMint.mockReset();
+  mockGetEbillAttachment.mockResolvedValue(new Blob(["attachment"]));
+  mockGetEbillFileFromRequestToMint.mockResolvedValue(new Blob(["request-to-mint"]));
+  vi.stubGlobal(
+    "open",
+    vi.fn(() => ({ closed: false }) as Window)
+  );
+  globalThis.URL.createObjectURL = vi.fn(() => "blob:test-url");
+  globalThis.URL.revokeObjectURL = vi.fn();
 
   mockUseQuery.mockImplementation((opts: QueryOptions) => {
     const id = opts.queryKey[0]._id;
     if (id === "getQuote") {
       return {
         data: {
-          id: opts.queryKey[0].path?.qid ?? "quote-1",
+          id: opts.queryKey[0].path?.qid ?? quoteId,
           status: "Accepted",
           keyset_id: "keyset-from-quote",
           bill: {
@@ -208,7 +229,7 @@ beforeEach(() => {
 describe("QuotePage", () => {
   it("shows back-to-keyset action when navigated from a keyset page", () => {
     const page = renderPage({
-      pathname: "/quotes/quote-1",
+      pathname: `/quotes/${quoteId}`,
       state: { from: "/keysets/keyset-1234" },
     });
     const link = page.querySelector('a[href="/keysets/keyset-1234"]');
@@ -216,7 +237,7 @@ describe("QuotePage", () => {
   });
 
   it("shows go-to-keyset action from quote data when no navigation state is provided", () => {
-    const page = renderPage("/quotes/quote-1");
+    const page = renderPage(`/quotes/${quoteId}`);
     const link = page.querySelector('a[href="/keysets/keyset-from-quote"]');
     expect(link?.textContent).toContain("Go to keyset");
   });
@@ -239,7 +260,7 @@ describe("QuotePage", () => {
       };
     });
 
-    const page = renderPage("/quotes/quote-error");
+    const page = renderPage(`/quotes/${errorQuoteId}`);
     expect(page.textContent).toContain("Failed to load quote");
     expect(page.textContent).toContain("boom");
   });
@@ -248,7 +269,7 @@ describe("QuotePage", () => {
     mockUseQuery.mockImplementation((opts: QueryOptions) => {
       if (opts.queryKey[0]._id === "getQuote") {
         return {
-          data: { id: "quote-1", status: "Pending" },
+          data: { id: quoteId, status: "Pending" },
           isLoading: false,
           isFetching: false,
           error: null,
@@ -262,7 +283,7 @@ describe("QuotePage", () => {
       };
     });
 
-    const page = renderPage("/quotes/quote-1");
+    const page = renderPage(`/quotes/${quoteId}`);
     expect(page.textContent).toContain("No quote data available");
   });
 
@@ -271,7 +292,7 @@ describe("QuotePage", () => {
       if (opts.queryKey[0]._id === "getQuote") {
         return {
           data: {
-            id: opts.queryKey[0].path?.qid ?? "quote-2",
+            id: opts.queryKey[0].path?.qid ?? secondQuoteId,
             status: "Pending",
             bill: {
               id: "bill-2",
@@ -296,15 +317,126 @@ describe("QuotePage", () => {
       };
     });
 
-    const page = renderPage("/quotes/quote-2");
+    const page = renderPage(`/quotes/${secondQuoteId}`);
     const keysetLink = page.querySelector('a[href^="/keysets/"]');
     expect(keysetLink).toBeNull();
   });
 
   it("shows a collapsible documents section", () => {
-    const page = renderPage("/quotes/quote-1");
+    const page = renderPage(`/quotes/${quoteId}`);
     expect(page.textContent).toContain("Documents");
     expect(page.textContent).toContain("Show documents");
     expect(page.textContent).not.toContain("invoice.pdf");
+  });
+
+  it("opens minted bill documents with the attachment endpoint", async () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+
+    act(() => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const buttons = Array.from(page.querySelectorAll("button"));
+    const viewButton = buttons.find((button) => button.textContent === "View");
+
+    await act(async () => {
+      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mockGetEbillAttachment).toHaveBeenCalledWith({
+      path: {
+        bid: "bill-1",
+        fname: "invoice.pdf",
+      },
+      responseStyle: "data",
+      parseAs: "blob",
+    });
+    expect(mockGetEbillFileFromRequestToMint).not.toHaveBeenCalled();
+  });
+
+  it("opens request-to-mint documents with the file-url endpoint before minting", async () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      const id = opts.queryKey[0]._id;
+      if (id === "getQuote") {
+        return {
+          data: {
+            id: opts.queryKey[0].path?.qid ?? quoteId,
+            status: "Pending",
+            bill: {
+              id: "bill-1",
+              sum: 100,
+              maturity_date: "2026-03-01",
+              drawee: {},
+              drawer: {},
+              payee: {},
+              endorsees: [],
+              file_urls: ["https://files.example.com/invoices/invoice-preview.pdf"],
+            },
+          },
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        };
+      }
+
+      if (id === "listEbills") {
+        return {
+          data: [],
+          isLoading: false,
+          error: null,
+        };
+      }
+
+      if (id === "getEbillEndorsements") {
+        return { data: [], isLoading: false, error: null };
+      }
+
+      if (id === "getEbillMintComplete") {
+        return { data: { complete: false }, isLoading: false, error: null };
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        error: null,
+      };
+    });
+
+    const page = renderPage(`/quotes/${quoteId}`);
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+
+    act(() => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(page.textContent).toContain("invoice-preview.pdf");
+
+    const buttons = Array.from(page.querySelectorAll("button"));
+    const viewButton = buttons.find((button) => button.textContent === "View");
+
+    await act(async () => {
+      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mockGetEbillFileFromRequestToMint).toHaveBeenCalledWith({
+      query: {
+        file_url: "https://files.example.com/invoices/invoice-preview.pdf",
+      },
+      responseStyle: "data",
+      parseAs: "blob",
+    });
+    expect(mockGetEbillAttachment).not.toHaveBeenCalled();
+  });
+
+  it("shows not found for malformed quote ids", () => {
+    const page = renderPage("/quotes/97e45");
+
+    expect(page.textContent).toContain("Page not found");
+    expect(page.textContent).toContain("No page exists for /quotes/97e45.");
+    expect(mockUseQuery).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }));
   });
 });

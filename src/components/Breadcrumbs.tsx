@@ -39,7 +39,7 @@ export function Breadcrumbs({ parents, children }: PropsWithChildren<{ parents?:
             ))}
           </>
         )}
-        <BreadcrumbItem>
+        <BreadcrumbItem className="min-w-0 flex-1">
           <BreadcrumbPage>{children}</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>

@@ -13,15 +13,19 @@ import StatusQuotePage from "./pages/quotes/StatusQuotePage";
 import EarningsPage from "./pages/balances/EarningsPage";
 import CashFlowPage from "./pages/balances/CashFlowPage";
 import { initKeycloak } from "./keycloak";
-import "./lib/api-client";
+import { client as apiClient } from "./lib/api-client";
 import KeysetsPage from "@/pages/keysets/KeysetsPage";
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
+import MeltRequestsPage from "@/pages/melts/MeltRequestsPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
 import { PreferencesProvider, Toaster } from "@bitcredit/ui-library";
+import NotFoundPage from "@/pages/NotFoundPage";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 
 const queryClient = new QueryClient();
 
 const prepare = async () => {
+  apiClient.getConfig();
   await initKeycloak();
 };
 
@@ -35,6 +39,7 @@ function App() {
             <Route path="balances" element={<BalancesPage />} />
             <Route path="earnings" element={<EarningsPage />} />
             <Route path="earnings/cashflow" element={<CashFlowPage />} />
+            <Route path="melt-requests" element={<MeltRequestsPage />} />
             <Route path="quotes" element={<StatusQuotePage />} />
             <Route path="quotes/pending" element={<StatusQuotePage status="Pending" />} />
             <Route path="quotes/accepted" element={<StatusQuotePage status="Accepted" />} />
@@ -47,6 +52,7 @@ function App() {
             <Route path="keysets" element={<KeysetsPage />} />
             <Route path="keysets/:keysetId" element={<KeysetDetailPage />} />
             <Route path="info" element={<InfoPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
@@ -58,10 +64,12 @@ void prepare().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <LanguageProvider>
-        <PreferencesProvider>
-          <App />
-          <Toaster />
-        </PreferencesProvider>
+        <GlobalErrorBoundary>
+          <PreferencesProvider>
+            <App />
+            <Toaster />
+          </PreferencesProvider>
+        </GlobalErrorBoundary>
       </LanguageProvider>
     </StrictMode>
   );

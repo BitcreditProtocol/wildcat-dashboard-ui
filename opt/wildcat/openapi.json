@@ -128,7 +128,7 @@
         }
       }
     },
-    "/v1/admin/treasury/credit/mint_op_status/{qid}": {
+    "/v1/admin/treasury/ebill/mint_op_status/{qid}": {
       "get": {
         "tags": [
           "admin"
@@ -163,7 +163,7 @@
         }
       }
     },
-    "/v1/admin/treasury/credit/mint_ops/{kid}": {
+    "/v1/admin/treasury/ebill/mint_ops/{kid}": {
       "get": {
         "tags": [
           "admin"
@@ -197,69 +197,6 @@
           },
           "404": {
             "description": "keyset id not found"
-          }
-        }
-      }
-    },
-    "/v1/admin/credit/enable_redemption": {
-      "post": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "post_enable_redemption",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeactivateKeysetRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeactivateKeysetResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "keyset id not found"
-          }
-        }
-      }
-    },
-    "/v1/admin/credit/token_status": {
-      "post": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "post_token_status",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TokenStateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenStateResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -498,6 +435,81 @@
         }
       }
     },
+    "/v1/admin/credit/quote/{qid}/ebill/history": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_shared_ebill_history",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "the qid of the quote to get the bill history from",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BillHistoryBlock"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "resource id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/quote/enable_mint/{qid}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "patch_enable_quote_minting",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnableMintingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid quote state"
+          },
+          "404": {
+            "description": "quote id not found"
+          }
+        }
+      }
+    },
     "/v1/admin/ebill/identity": {
       "get": {
         "tags": [
@@ -709,6 +721,109 @@
         }
       }
     },
+    "/v1/admin/ebill/payment_actions/{bid}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_ebill_paymentactions",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BillCallerPaymentAction"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/history/{bid}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_ebill_history",
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "path",
+            "description": "the ebill id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BillHistoryBlock"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/sync_bill_chain": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "sync_ebill_chain",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResyncBillPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
+          }
+        }
+      }
+    },
     "/v1/admin/clowder/info": {
       "get": {
         "tags": [
@@ -911,6 +1026,77 @@
           }
         }
       }
+    },
+    "/v1/admin/treasury/onchain/meltops/denied": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "list_denied_meltops",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeniedMeltOperations"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/treasury/onchain/meltops/denied/{qid}": {
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "delete_denied_meltop",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "the uid of the denied melt operation to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "404": {
+            "description": "denied melt operation id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/fees/token": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "collect_fees_token",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeesTokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -927,10 +1113,22 @@
         }
       },
       "Amount": {
-        "type": "integer",
-        "format": "int64",
-        "description": "Amount can be any unit",
-        "minimum": 0
+        "type": "object",
+        "description": "Amount can be any unit\n\nNote: `PartialOrd` is implemented manually for `Amount<CurrencyUnit>` to return `None`\nwhen comparing amounts with different units. `Ord` is only implemented for `Amount<()>`.",
+        "required": [
+          "value",
+          "unit"
+        ],
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "unit": {
+            "$ref": "#/components/schemas/TupleUnit"
+          }
+        }
       },
       "BillAcceptanceStatus": {
         "type": "object",
@@ -986,6 +1184,174 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "BillCallerPayment": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Sell"
+            ],
+            "properties": {
+              "Sell": {
+                "type": "object",
+                "required": [
+                  "buyer",
+                  "seller",
+                  "state"
+                ],
+                "properties": {
+                  "buyer": {
+                    "$ref": "#/components/schemas/BillParticipant"
+                  },
+                  "seller": {
+                    "$ref": "#/components/schemas/BillParticipant"
+                  },
+                  "state": {
+                    "$ref": "#/components/schemas/BillCallerPaymentState"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Payment"
+            ],
+            "properties": {
+              "Payment": {
+                "type": "object",
+                "required": [
+                  "payer",
+                  "payee",
+                  "state"
+                ],
+                "properties": {
+                  "payer": {
+                    "$ref": "#/components/schemas/BillIdentParticipant"
+                  },
+                  "payee": {
+                    "$ref": "#/components/schemas/BillParticipant"
+                  },
+                  "state": {
+                    "$ref": "#/components/schemas/BillCallerPaymentState"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Recourse"
+            ],
+            "properties": {
+              "Recourse": {
+                "type": "object",
+                "required": [
+                  "recourser",
+                  "recoursee",
+                  "state"
+                ],
+                "properties": {
+                  "recourser": {
+                    "$ref": "#/components/schemas/BillParticipant"
+                  },
+                  "recoursee": {
+                    "$ref": "#/components/schemas/BillIdentParticipant"
+                  },
+                  "state": {
+                    "$ref": "#/components/schemas/BillCallerPaymentState"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BillCallerPaymentAction": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Pay"
+            ],
+            "properties": {
+              "Pay": {
+                "$ref": "#/components/schemas/BillCallerPayment"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "CheckPayment"
+            ],
+            "properties": {
+              "CheckPayment": {
+                "$ref": "#/components/schemas/BillCallerPayment"
+              }
+            }
+          }
+        ]
+      },
+      "BillCallerPaymentState": {
+        "type": "object",
+        "required": [
+          "time_of_request",
+          "sum",
+          "currency",
+          "address_to_pay",
+          "status",
+          "payment_deadline",
+          "in_mempool",
+          "confirmations"
+        ],
+        "properties": {
+          "time_of_request": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "sum": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "address_to_pay": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "payment_deadline": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "tx_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "in_mempool": {
+            "type": "boolean"
+          },
+          "confirmations": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "private_descriptor_to_spend": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -1093,6 +1459,90 @@
                 "$ref": "#/components/schemas/Notification"
               }
             ]
+          }
+        }
+      },
+      "BillHistoryBlock": {
+        "type": "object",
+        "required": [
+          "block_id",
+          "block_type",
+          "signed",
+          "signing_timestamp"
+        ],
+        "properties": {
+          "block_id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "block_type": {
+            "type": "string"
+          },
+          "pay_to_the_order_of": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillParticipant"
+              }
+            ]
+          },
+          "payment_data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillHistoryBlockPaymentData"
+              }
+            ]
+          },
+          "request_deadline": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "signed": {
+            "$ref": "#/components/schemas/SignedBy"
+          },
+          "signing_timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "signing_address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PostalAddress"
+              }
+            ]
+          }
+        }
+      },
+      "BillHistoryBlockPaymentData": {
+        "type": "object",
+        "required": [
+          "sum",
+          "currency",
+          "payment_address"
+        ],
+        "properties": {
+          "sum": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "payment_address": {
+            "type": "string"
           }
         }
       },
@@ -1386,6 +1836,23 @@
           }
         }
       },
+      "BillSignatory": {
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "BillStatus": {
         "type": "object",
         "required": [
@@ -1611,7 +2078,8 @@
         ],
         "properties": {
           "mint": {
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           },
           "clowder": {
             "type": "string",
@@ -1731,56 +2199,46 @@
         ],
         "description": "Currency Unit"
       },
-      "DeactivateKeysetRequest": {
+      "DeniedMeltOp": {
         "type": "object",
-        "description": "--------------------------- Deactivate keyset",
+        "description": "--------------------------- denied melt operations",
         "required": [
-          "kid"
-        ],
-        "properties": {
-          "kid": {
-            "$ref": "#/components/schemas/Id"
-          }
-        }
-      },
-      "DeactivateKeysetResponse": {
-        "type": "object",
-        "required": [
-          "kid"
-        ],
-        "properties": {
-          "kid": {
-            "$ref": "#/components/schemas/Id"
-          }
-        }
-      },
-      "ECashBalance": {
-        "type": "object",
-        "description": "--------------------------- eCash wallet balance",
-        "required": [
+          "id",
           "amount",
-          "unit"
+          "created"
         ],
         "properties": {
-          "amount": {
-            "$ref": "#/components/schemas/Amount"
+          "id": {
+            "type": "string",
+            "format": "uuid"
           },
-          "unit": {
-            "$ref": "#/components/schemas/CurrencyUnit"
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
-      "EbillPaymentComplete": {
+      "DeniedMeltOperations": {
         "type": "object",
-        "description": "--------------------------- ebill minting completed",
         "required": [
-          "complete"
+          "ops"
         ],
         "properties": {
-          "complete": {
-            "type": "boolean"
+          "ops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeniedMeltOp"
+            }
           }
         }
+      },
+      "EnableMintingResponse": {
+        "type": "object"
       },
       "Endorsement": {
         "type": "object",
@@ -1810,6 +2268,21 @@
                 "$ref": "#/components/schemas/PostalAddress"
               }
             ]
+          }
+        }
+      },
+      "FeesTokenResponse": {
+        "type": "object",
+        "required": [
+          "token",
+          "total"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/Amount"
           }
         }
       },
@@ -2232,12 +2705,45 @@
                 "minimum": 0
               },
               "fee": {
-                "type": "string"
+                "$ref": "#/components/schemas/Amount"
               },
               "status": {
                 "type": "string",
                 "enum": [
                   "MintingEnabled"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "bill",
+              "keyset_id",
+              "discounted",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "bill": {
+                "$ref": "#/components/schemas/BillInfo"
+              },
+              "keyset_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "discounted": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "FailedEbillValidation"
                 ]
               }
             }
@@ -2255,7 +2761,8 @@
           "Denied",
           "Accepted",
           "Rejected",
-          "MintingEnabled"
+          "MintingEnabled",
+          "FailedEbillValidation"
         ]
       },
       "KeySetInfo": {
@@ -2642,6 +3149,62 @@
           }
         }
       },
+      "PaymentStatus": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Requested"
+            ],
+            "properties": {
+              "Requested": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Paid"
+            ],
+            "properties": {
+              "Paid": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Rejected"
+            ],
+            "properties": {
+              "Rejected": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Expired"
+            ],
+            "properties": {
+              "Expired": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
       "PerceivedState": {
         "type": "object",
         "description": "Reflects what the majority of Beta mints think about the current Alpha mint",
@@ -2657,6 +3220,15 @@
           },
           "alpha_state": {
             "$ref": "#/components/schemas/MintState"
+          },
+          "offline_since": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.",
+            "minimum": 0
           }
         }
       },
@@ -2722,6 +3294,44 @@
       },
       "RequestToPayFromEBillResponse": {
         "type": "object"
+      },
+      "ResyncBillPayload": {
+        "type": "object",
+        "required": [
+          "bill_id"
+        ],
+        "properties": {
+          "bill_id": {
+            "type": "string"
+          },
+          "from_nostr": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "SignedBy": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BillParticipant"
+          },
+          "signatory": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillSignatory"
+              }
+            ]
+          }
+        }
       },
       "SimpleAlphaState": {
         "oneOf": [
@@ -2825,34 +3435,8 @@
           }
         }
       },
-      "TokenState": {
-        "type": "string",
-        "enum": [
-          "Unspent",
-          "Spent"
-        ]
-      },
-      "TokenStateRequest": {
-        "type": "object",
-        "required": [
-          "token"
-        ],
-        "properties": {
-          "token": {
-            "type": "string"
-          }
-        }
-      },
-      "TokenStateResponse": {
-        "type": "object",
-        "required": [
-          "state"
-        ],
-        "properties": {
-          "state": {
-            "$ref": "#/components/schemas/TokenState"
-          }
-        }
+      "TupleUnit": {
+        "default": null
       },
       "UpdateQuoteRequest": {
         "oneOf": [

@@ -3,17 +3,19 @@ import { Badge } from "@/components/ui/badge";
 import { Currency } from "@/components/Currency";
 import { ArrowRight } from "lucide-react";
 import { AppIcon } from "@bitcredit/ui-library";
-import type { BitcreditBill, EbillPaymentComplete, InfoReply, LightInfo } from "@/generated/client/types.gen";
+import type { BitcreditBill, InfoReply, LightInfo } from "@/generated/client/types.gen";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { truncateString, formatStatusLabel } from "@/utils/strings";
+import type { EbillMintComplete } from "@/lib/ebill-mint-complete";
+import { truncateString } from "@/utils/strings";
 import { getEffectiveQuoteStatus, getQuoteStatusVariant } from "@/utils/quote-status";
 import { FormattedMessage, useIntl } from "react-intl";
+import { getQuoteStatusMessage } from "@/i18n/descriptors";
 
 interface KeysetQuoteTableRowProps {
   quote: LightInfo;
   quoteDetails: InfoReply | undefined;
   ebill: BitcreditBill | null | undefined;
-  mintCompleteQuery: UseQueryResult<EbillPaymentComplete> | null;
+  mintCompleteQuery: UseQueryResult<EbillMintComplete> | null;
   keysetId: string;
 }
 
@@ -47,10 +49,7 @@ export function KeysetQuoteTableRow({ quote, quoteDetails, ebill, mintCompleteQu
       </td>
       <td className="p-2 transition-colors">
         <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
-          {intl.formatMessage({
-            id: `quote.status.${effectiveQuoteStatus}`,
-            defaultMessage: formatStatusLabel(effectiveQuoteStatus),
-          })}
+          {intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
         </Badge>
       </td>
       <td className="p-2 transition-colors">

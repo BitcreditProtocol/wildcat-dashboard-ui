@@ -10,8 +10,14 @@ export type AlphaStateResponse = {
 
 /**
  * Amount can be any unit
+ *
+ * Note: `PartialOrd` is implemented manually for `Amount<CurrencyUnit>` to return `None`
+ * when comparing amounts with different units. `Ord` is only implemented for `Amount<()>`.
  */
-export type Amount = number;
+export type Amount = {
+    value: number;
+    unit: TupleUnit;
+};
 
 export type BillAcceptanceStatus = {
     time_of_request_to_accept?: number | null;
@@ -25,6 +31,45 @@ export type BillAcceptanceStatus = {
 export type BillAnonParticipant = {
     node_id: string;
     nostr_relays: Array<string>;
+};
+
+export type BillCallerPayment = {
+    Sell: {
+        buyer: BillParticipant;
+        seller: BillParticipant;
+        state: BillCallerPaymentState;
+    };
+} | {
+    Payment: {
+        payer: BillIdentParticipant;
+        payee: BillParticipant;
+        state: BillCallerPaymentState;
+    };
+} | {
+    Recourse: {
+        recourser: BillParticipant;
+        recoursee: BillIdentParticipant;
+        state: BillCallerPaymentState;
+    };
+};
+
+export type BillCallerPaymentAction = {
+    Pay: BillCallerPayment;
+} | {
+    CheckPayment: BillCallerPayment;
+};
+
+export type BillCallerPaymentState = {
+    time_of_request: number;
+    sum: string;
+    currency: string;
+    address_to_pay: string;
+    status: PaymentStatus;
+    payment_deadline: number;
+    tx_id?: string | null;
+    in_mempool: boolean;
+    confirmations: number;
+    private_descriptor_to_spend?: string | null;
 };
 
 export type BillCurrentWaitingState = {
@@ -48,6 +93,23 @@ export type BillData = {
     sum: string;
     files: Array<File>;
     active_notification?: null | Notification;
+};
+
+export type BillHistoryBlock = {
+    block_id: number;
+    block_type: string;
+    pay_to_the_order_of?: null | BillParticipant;
+    payment_data?: null | BillHistoryBlockPaymentData;
+    request_deadline?: number | null;
+    signed: SignedBy;
+    signing_timestamp: number;
+    signing_address?: null | PostalAddress;
+};
+
+export type BillHistoryBlockPaymentData = {
+    sum: string;
+    currency: string;
+    payment_address: string;
 };
 
 export type BillIdentParticipant = PostalAddress & {
@@ -114,6 +176,11 @@ export type BillSellStatus = {
     offer_to_sell_timed_out: boolean;
     rejected_offer_to_sell: boolean;
     buying_deadline_timestamp?: number | null;
+};
+
+export type BillSignatory = {
+    node_id: string;
+    name?: string | null;
 };
 
 export type BillStatus = {
@@ -216,29 +283,20 @@ export type CurrencyUnit = 'Sat' | 'Msat' | 'Usd' | 'Eur' | 'Auth' | {
 };
 
 /**
- * --------------------------- Deactivate keyset
+ * --------------------------- denied melt operations
  */
-export type DeactivateKeysetRequest = {
-    kid: Id;
+export type DeniedMeltOp = {
+    id: string;
+    amount: number;
+    created: string;
 };
 
-export type DeactivateKeysetResponse = {
-    kid: Id;
+export type DeniedMeltOperations = {
+    ops: Array<DeniedMeltOp>;
 };
 
-/**
- * --------------------------- eCash wallet balance
- */
-export type ECashBalance = {
-    amount: Amount;
-    unit: CurrencyUnit;
-};
-
-/**
- * --------------------------- ebill minting completed
- */
-export type EbillPaymentComplete = {
-    complete: boolean;
+export type EnableMintingResponse = {
+    [key: string]: unknown;
 };
 
 export type Endorsement = {
@@ -246,6 +304,11 @@ export type Endorsement = {
     signed: LightSignedBy;
     signing_timestamp: number;
     signing_address?: null | PostalAddress;
+};
+
+export type FeesTokenResponse = {
+    token: string;
+    total: Amount;
 };
 
 export type File = {
@@ -345,11 +408,17 @@ export type InfoReply = {
     bill: BillInfo;
     keyset_id: Id;
     discounted: number;
-    fee: string;
+    fee: Amount;
     status: 'MintingEnabled';
+} | {
+    id: string;
+    bill: BillInfo;
+    keyset_id: Id;
+    discounted: number;
+    status: 'FailedEbillValidation';
 };
 
-export type InfoReplyDiscriminants = 'Pending' | 'Canceled' | 'Offered' | 'OfferExpired' | 'Denied' | 'Accepted' | 'Rejected' | 'MintingEnabled';
+export type InfoReplyDiscriminants = 'Pending' | 'Canceled' | 'Offered' | 'OfferExpired' | 'Denied' | 'Accepted' | 'Rejected' | 'MintingEnabled' | 'FailedEbillValidation';
 
 /**
  * KeySetInfo
@@ -488,12 +557,26 @@ export type PaginatedResponseLightInfo = {
     total: number;
 };
 
+export type PaymentStatus = {
+    Requested: number;
+} | {
+    Paid: number;
+} | {
+    Rejected: number;
+} | {
+    Expired: number;
+};
+
 /**
  * Reflects what the majority of Beta mints think about the current Alpha mint
  */
 export type PerceivedState = {
     substitute_beta?: string | null;
     alpha_state: MintState;
+    /**
+     * Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.
+     */
+    offline_since?: number | null;
 };
 
 export type PostalAddress = {
@@ -521,6 +604,16 @@ export type RequestToPayFromEBillRequest = {
 
 export type RequestToPayFromEBillResponse = {
     [key: string]: unknown;
+};
+
+export type ResyncBillPayload = {
+    bill_id: string;
+    from_nostr?: boolean | null;
+};
+
+export type SignedBy = {
+    data: BillParticipant;
+    signatory?: null | BillSignatory;
 };
 
 /**
@@ -568,15 +661,7 @@ export type SimplifiedBillPaymentStatus = {
     payment_details?: null | BillWaitingForPaymentState;
 };
 
-export type TokenState = 'Unspent' | 'Spent';
-
-export type TokenStateRequest = {
-    token: string;
-};
-
-export type TokenStateResponse = {
-    state: TokenState;
-};
+export type TupleUnit = unknown;
 
 /**
  * --------------------------- Update quote status request
@@ -735,7 +820,7 @@ export type GetMintopStatusData = {
         qid: string;
     };
     query?: never;
-    url: '/v1/admin/treasury/credit/mint_op_status/{qid}';
+    url: '/v1/admin/treasury/ebill/mint_op_status/{qid}';
 };
 
 export type GetMintopStatusErrors = {
@@ -763,7 +848,7 @@ export type ListMintopsData = {
         kid: Id;
     };
     query?: never;
-    url: '/v1/admin/treasury/credit/mint_ops/{kid}';
+    url: '/v1/admin/treasury/ebill/mint_ops/{kid}';
 };
 
 export type ListMintopsErrors = {
@@ -781,45 +866,6 @@ export type ListMintopsResponses = {
 };
 
 export type ListMintopsResponse = ListMintopsResponses[keyof ListMintopsResponses];
-
-export type PostEnableRedemptionData = {
-    body: DeactivateKeysetRequest;
-    path?: never;
-    query?: never;
-    url: '/v1/admin/credit/enable_redemption';
-};
-
-export type PostEnableRedemptionErrors = {
-    /**
-     * keyset id not found
-     */
-    404: unknown;
-};
-
-export type PostEnableRedemptionResponses = {
-    /**
-     * Successful response
-     */
-    200: DeactivateKeysetResponse;
-};
-
-export type PostEnableRedemptionResponse = PostEnableRedemptionResponses[keyof PostEnableRedemptionResponses];
-
-export type PostTokenStatusData = {
-    body: TokenStateRequest;
-    path?: never;
-    query?: never;
-    url: '/v1/admin/credit/token_status';
-};
-
-export type PostTokenStatusResponses = {
-    /**
-     * Successful response
-     */
-    200: TokenStateResponse;
-};
-
-export type PostTokenStatusResponse = PostTokenStatusResponses[keyof PostTokenStatusResponses];
 
 export type GetQuoteData = {
     body?: never;
@@ -904,6 +950,66 @@ export type ListQuotesResponses = {
 };
 
 export type ListQuotesResponse = ListQuotesResponses[keyof ListQuotesResponses];
+
+export type GetSharedEbillHistoryData = {
+    body?: never;
+    path: {
+        /**
+         * the qid of the quote to get the bill history from
+         */
+        qid: string;
+    };
+    query?: never;
+    url: '/v1/admin/credit/quote/{qid}/ebill/history';
+};
+
+export type GetSharedEbillHistoryErrors = {
+    /**
+     * resource id not found
+     */
+    404: unknown;
+};
+
+export type GetSharedEbillHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: Array<BillHistoryBlock>;
+};
+
+export type GetSharedEbillHistoryResponse = GetSharedEbillHistoryResponses[keyof GetSharedEbillHistoryResponses];
+
+export type PatchEnableQuoteMintingData = {
+    body?: never;
+    path: {
+        /**
+         * The quote id
+         */
+        qid: string;
+    };
+    query?: never;
+    url: '/v1/admin/credit/quote/enable_mint/{qid}';
+};
+
+export type PatchEnableQuoteMintingErrors = {
+    /**
+     * invalid quote state
+     */
+    400: unknown;
+    /**
+     * quote id not found
+     */
+    404: unknown;
+};
+
+export type PatchEnableQuoteMintingResponses = {
+    /**
+     * Successful response
+     */
+    200: EnableMintingResponse;
+};
+
+export type PatchEnableQuoteMintingResponse = PatchEnableQuoteMintingResponses[keyof PatchEnableQuoteMintingResponses];
 
 export type GetIdentityData = {
     body?: never;
@@ -1074,6 +1180,83 @@ export type GetEbillFileFromRequestToMintResponses = {
     200: unknown;
 };
 
+export type GetEbillPaymentactionsData = {
+    body?: never;
+    path: {
+        /**
+         * the ebill id
+         */
+        bid: string;
+    };
+    query?: never;
+    url: '/v1/admin/ebill/payment_actions/{bid}';
+};
+
+export type GetEbillPaymentactionsErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type GetEbillPaymentactionsResponses = {
+    /**
+     * Successful response
+     */
+    200: Array<BillCallerPaymentAction>;
+};
+
+export type GetEbillPaymentactionsResponse = GetEbillPaymentactionsResponses[keyof GetEbillPaymentactionsResponses];
+
+export type GetEbillHistoryData = {
+    body?: never;
+    path: {
+        /**
+         * the ebill id
+         */
+        bid: string;
+    };
+    query?: never;
+    url: '/v1/admin/ebill/history/{bid}';
+};
+
+export type GetEbillHistoryErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type GetEbillHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: Array<BillHistoryBlock>;
+};
+
+export type GetEbillHistoryResponse = GetEbillHistoryResponses[keyof GetEbillHistoryResponses];
+
+export type SyncEbillChainData = {
+    body: ResyncBillPayload;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/ebill/sync_bill_chain';
+};
+
+export type SyncEbillChainErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type SyncEbillChainResponses = {
+    /**
+     * Successful response
+     */
+    200: unknown;
+};
+
 export type GetClowderInfoData = {
     body?: never;
     path?: never;
@@ -1232,3 +1415,61 @@ export type PostEbillReqtopayResponses = {
 };
 
 export type PostEbillReqtopayResponse = PostEbillReqtopayResponses[keyof PostEbillReqtopayResponses];
+
+export type ListDeniedMeltopsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/treasury/onchain/meltops/denied';
+};
+
+export type ListDeniedMeltopsResponses = {
+    /**
+     * Successful response
+     */
+    200: DeniedMeltOperations;
+};
+
+export type ListDeniedMeltopsResponse = ListDeniedMeltopsResponses[keyof ListDeniedMeltopsResponses];
+
+export type DeleteDeniedMeltopData = {
+    body?: never;
+    path: {
+        /**
+         * the uid of the denied melt operation to delete
+         */
+        qid: string;
+    };
+    query?: never;
+    url: '/v1/admin/treasury/onchain/meltops/denied/{qid}';
+};
+
+export type DeleteDeniedMeltopErrors = {
+    /**
+     * denied melt operation id not found
+     */
+    404: unknown;
+};
+
+export type DeleteDeniedMeltopResponses = {
+    /**
+     * Successful response
+     */
+    200: unknown;
+};
+
+export type CollectFeesTokenData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/fees/token';
+};
+
+export type CollectFeesTokenResponses = {
+    /**
+     * Successful response
+     */
+    200: FeesTokenResponse;
+};
+
+export type CollectFeesTokenResponse = CollectFeesTokenResponses[keyof CollectFeesTokenResponses];

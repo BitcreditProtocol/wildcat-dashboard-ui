@@ -11,8 +11,8 @@ import {
 } from "./currency";
 
 const rates: Rates = {
-  usdPerBtc: 100_000,
-  eurPerUsd: 0.9,
+  usd: 100_000,
+  eur: 90_000,
 };
 
 describe("currency conversions", () => {

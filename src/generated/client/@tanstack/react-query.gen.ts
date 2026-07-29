@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, postEbillReqtopay, postEnableRedemption, postTokenStatus, updateQuote } from '../sdk.gen';
-import type { GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, PostEnableRedemptionData, PostEnableRedemptionResponse, PostTokenStatusData, PostTokenStatusResponse, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
+import { collectFeesToken, deleteDeniedMeltop, getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillHistory, getEbillPaymentactions, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, getSharedEbillHistory, listDeniedMeltops, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, patchEnableQuoteMinting, postEbillReqtopay, syncEbillChain, updateQuote } from '../sdk.gen';
+import type { CollectFeesTokenData, CollectFeesTokenResponse, DeleteDeniedMeltopData, GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillHistoryData, GetEbillHistoryResponse, GetEbillPaymentactionsData, GetEbillPaymentactionsResponse, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, GetSharedEbillHistoryData, GetSharedEbillHistoryResponse, ListDeniedMeltopsData, ListDeniedMeltopsResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PatchEnableQuoteMintingData, PatchEnableQuoteMintingResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, SyncEbillChainData, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -130,27 +130,30 @@ const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'hea
 
 export const listKeysetInfosInfiniteQueryKey = (options?: Options<ListKeysetInfosData>): QueryKey<Options<ListKeysetInfosData>> => createQueryKey('listKeysetInfos', options, true);
 
-export const listKeysetInfosInfiniteOptions = (options?: Options<ListKeysetInfosData>) => infiniteQueryOptions<ListKeysetInfosResponse, DefaultError, InfiniteData<ListKeysetInfosResponse>, QueryKey<Options<ListKeysetInfosData>>, number | null | Pick<QueryKey<Options<ListKeysetInfosData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-// @ts-ignore
-{
-    queryFn: async ({ pageParam, queryKey, signal }) => {
-        // @ts-ignore
-        const page: Pick<QueryKey<Options<ListKeysetInfosData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
-            query: {
-                offset: pageParam
-            }
-        };
-        const params = createInfiniteParams(queryKey, page);
-        const { data } = await listKeysetInfos({
-            ...options,
-            ...params,
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: listKeysetInfosInfiniteQueryKey(options)
-});
+export const listKeysetInfosInfiniteOptions = (options?: Options<ListKeysetInfosData>) => {
+    const opts = infiniteQueryOptions<ListKeysetInfosResponse, DefaultError, InfiniteData<ListKeysetInfosResponse>, QueryKey<Options<ListKeysetInfosData>>, number | null | Pick<QueryKey<Options<ListKeysetInfosData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListKeysetInfosData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listKeysetInfos({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listKeysetInfosInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
 
 export const getMintopStatusQueryKey = (options: Options<GetMintopStatusData>) => createQueryKey('getMintopStatus', options);
 
@@ -181,34 +184,6 @@ export const listMintopsOptions = (options: Options<ListMintopsData>) => queryOp
     },
     queryKey: listMintopsQueryKey(options)
 });
-
-export const postEnableRedemptionMutation = (options?: Partial<Options<PostEnableRedemptionData>>): UseMutationOptions<PostEnableRedemptionResponse, DefaultError, Options<PostEnableRedemptionData>> => {
-    const mutationOptions: UseMutationOptions<PostEnableRedemptionResponse, DefaultError, Options<PostEnableRedemptionData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await postEnableRedemption({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-export const postTokenStatusMutation = (options?: Partial<Options<PostTokenStatusData>>): UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> => {
-    const mutationOptions: UseMutationOptions<PostTokenStatusResponse, DefaultError, Options<PostTokenStatusData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await postTokenStatus({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
 
 export const getQuoteQueryKey = (options: Options<GetQuoteData>) => createQueryKey('getQuote', options);
 
@@ -256,27 +231,59 @@ export const listQuotesOptions = (options?: Options<ListQuotesData>) => queryOpt
 
 export const listQuotesInfiniteQueryKey = (options?: Options<ListQuotesData>): QueryKey<Options<ListQuotesData>> => createQueryKey('listQuotes', options, true);
 
-export const listQuotesInfiniteOptions = (options?: Options<ListQuotesData>) => infiniteQueryOptions<ListQuotesResponse, DefaultError, InfiniteData<ListQuotesResponse>, QueryKey<Options<ListQuotesData>>, number | null | Pick<QueryKey<Options<ListQuotesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-// @ts-ignore
-{
-    queryFn: async ({ pageParam, queryKey, signal }) => {
-        // @ts-ignore
-        const page: Pick<QueryKey<Options<ListQuotesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
-            query: {
-                offset: pageParam
-            }
-        };
-        const params = createInfiniteParams(queryKey, page);
-        const { data } = await listQuotes({
+export const listQuotesInfiniteOptions = (options?: Options<ListQuotesData>) => {
+    const opts = infiniteQueryOptions<ListQuotesResponse, DefaultError, InfiniteData<ListQuotesResponse>, QueryKey<Options<ListQuotesData>>, number | null | Pick<QueryKey<Options<ListQuotesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListQuotesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listQuotes({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listQuotesInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getSharedEbillHistoryQueryKey = (options: Options<GetSharedEbillHistoryData>) => createQueryKey('getSharedEbillHistory', options);
+
+export const getSharedEbillHistoryOptions = (options: Options<GetSharedEbillHistoryData>) => queryOptions<GetSharedEbillHistoryResponse, DefaultError, GetSharedEbillHistoryResponse, ReturnType<typeof getSharedEbillHistoryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getSharedEbillHistory({
             ...options,
-            ...params,
+            ...queryKey[0],
             signal,
             throwOnError: true
         });
         return data;
     },
-    queryKey: listQuotesInfiniteQueryKey(options)
+    queryKey: getSharedEbillHistoryQueryKey(options)
 });
+
+export const patchEnableQuoteMintingMutation = (options?: Partial<Options<PatchEnableQuoteMintingData>>): UseMutationOptions<PatchEnableQuoteMintingResponse, DefaultError, Options<PatchEnableQuoteMintingData>> => {
+    const mutationOptions: UseMutationOptions<PatchEnableQuoteMintingResponse, DefaultError, Options<PatchEnableQuoteMintingData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await patchEnableQuoteMinting({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const getIdentityQueryKey = (options?: Options<GetIdentityData>) => createQueryKey('getIdentity', options);
 
@@ -382,6 +389,50 @@ export const getEbillFileFromRequestToMintOptions = (options: Options<GetEbillFi
     },
     queryKey: getEbillFileFromRequestToMintQueryKey(options)
 });
+
+export const getEbillPaymentactionsQueryKey = (options: Options<GetEbillPaymentactionsData>) => createQueryKey('getEbillPaymentactions', options);
+
+export const getEbillPaymentactionsOptions = (options: Options<GetEbillPaymentactionsData>) => queryOptions<GetEbillPaymentactionsResponse, DefaultError, GetEbillPaymentactionsResponse, ReturnType<typeof getEbillPaymentactionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getEbillPaymentactions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getEbillPaymentactionsQueryKey(options)
+});
+
+export const getEbillHistoryQueryKey = (options: Options<GetEbillHistoryData>) => createQueryKey('getEbillHistory', options);
+
+export const getEbillHistoryOptions = (options: Options<GetEbillHistoryData>) => queryOptions<GetEbillHistoryResponse, DefaultError, GetEbillHistoryResponse, ReturnType<typeof getEbillHistoryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getEbillHistory({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getEbillHistoryQueryKey(options)
+});
+
+export const syncEbillChainMutation = (options?: Partial<Options<SyncEbillChainData>>): UseMutationOptions<unknown, DefaultError, Options<SyncEbillChainData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<SyncEbillChainData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await syncEbillChain({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const getClowderInfoQueryKey = (options?: Options<GetClowderInfoData>) => createQueryKey('getClowderInfo', options);
 
@@ -507,3 +558,47 @@ export const postEbillReqtopayMutation = (options?: Partial<Options<PostEbillReq
     };
     return mutationOptions;
 };
+
+export const listDeniedMeltopsQueryKey = (options?: Options<ListDeniedMeltopsData>) => createQueryKey('listDeniedMeltops', options);
+
+export const listDeniedMeltopsOptions = (options?: Options<ListDeniedMeltopsData>) => queryOptions<ListDeniedMeltopsResponse, DefaultError, ListDeniedMeltopsResponse, ReturnType<typeof listDeniedMeltopsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listDeniedMeltops({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listDeniedMeltopsQueryKey(options)
+});
+
+export const deleteDeniedMeltopMutation = (options?: Partial<Options<DeleteDeniedMeltopData>>): UseMutationOptions<unknown, DefaultError, Options<DeleteDeniedMeltopData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<DeleteDeniedMeltopData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteDeniedMeltop({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const collectFeesTokenQueryKey = (options?: Options<CollectFeesTokenData>) => createQueryKey('collectFeesToken', options);
+
+export const collectFeesTokenOptions = (options?: Options<CollectFeesTokenData>) => queryOptions<CollectFeesTokenResponse, DefaultError, CollectFeesTokenResponse, ReturnType<typeof collectFeesTokenQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await collectFeesToken({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: collectFeesTokenQueryKey(options)
+});

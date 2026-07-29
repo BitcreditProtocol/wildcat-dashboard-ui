@@ -2,12 +2,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, Text } from "@bitcredit/ui-library";
 import { ParticipantsOverviewCard, ParticipantDetail } from "@/components/ParticipantsOverview";
 import { Currency } from "@/components/Currency";
-import { TruncatedTextPopover } from "@bitcredit/ui-library";
-import { FeeTokenQRCodeModal } from "@/components/QRCodeWithErrorBoundary";
-import { formatStatusLabel } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
+import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
-import type { InfoReply, TokenStateResponse } from "@/generated/client/types.gen";
+import type { InfoReply } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
 
 interface QuoteDetailCardProps {
@@ -20,11 +18,13 @@ interface QuoteDetailCardProps {
   rejectedToPay: boolean;
   isInMempool: boolean | null | undefined;
   requestedToPay: boolean;
-  feeToken: string | null;
-  isFeeTokenStatusPending: boolean;
-  feeTokenStatusData: TokenStateResponse | undefined;
-  isFeeTokenStatusError: boolean;
 }
+
+const formatLocalDateTime = (date: Date): string => {
+  const pad = (value: number) => value.toString().padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
 
 export function QuoteDetailCard({
   quote,
@@ -36,10 +36,6 @@ export function QuoteDetailCard({
   rejectedToPay,
   isInMempool,
   requestedToPay,
-  feeToken,
-  isFeeTokenStatusPending,
-  feeTokenStatusData,
-  isFeeTokenStatusError,
 }: QuoteDetailCardProps) {
   const intl = useIntl();
   const bill = quote.bill;
@@ -58,24 +54,24 @@ export function QuoteDetailCard({
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <Text variant="label" className="w-32">
+              <Text variant="label" className="w-32 shrink-0">
                 {intl.formatMessage({
                   id: "quotes.detail.quoteId",
                   defaultMessage: "Quote ID:",
                 })}
               </Text>
-              <Text variant="mono" monoSize="sm">
+              <Text variant="mono" monoSize="sm" className="min-w-0 break-all">
                 {quote.id}
               </Text>
             </div>
             <div className="flex items-center gap-2">
-              <Text variant="label" className="w-32">
+              <Text variant="label" className="w-32 shrink-0">
                 {intl.formatMessage({
                   id: "quotes.detail.billId",
                   defaultMessage: "Bill ID:",
                 })}
               </Text>
-              <Text variant="mono" monoSize="sm">
+              <Text variant="mono" monoSize="sm" className="min-w-0 break-all">
                 {quote.bill.id}
               </Text>
             </div>
@@ -87,10 +83,7 @@ export function QuoteDetailCard({
                 })}
               </Text>
               <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
-                {intl.formatMessage({
-                  id: `quote.status.${effectiveQuoteStatus}`,
-                  defaultMessage: formatStatusLabel(effectiveQuoteStatus),
-                })}
+                {intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
               </Badge>
             </div>
             {ebillPaid && (
@@ -132,7 +125,7 @@ export function QuoteDetailCard({
                     defaultMessage: "Deadline:",
                   })}
                 </Text>
-                <Text variant="caption">{new Date(quote.ttl).toISOString().split("T")[0]}</Text>
+                <Text variant="caption">{formatLocalDateTime(new Date(quote.ttl))}</Text>
               </div>
             )}
             {showPayment && (
@@ -228,54 +221,6 @@ export function QuoteDetailCard({
                 </Text>
               </div>
             </>
-          )}
-          {quote.status === "MintingEnabled" && feeToken && (
-            <div className="flex items-center gap-2">
-              <Text variant="label" className="w-32">
-                {intl.formatMessage({
-                  id: "quotes.detail.feeToken",
-                  defaultMessage: "Fee token:",
-                })}
-              </Text>
-              <TruncatedTextPopover text={feeToken} maxLength={64} showCopyButton={true} className="font-mono text-sm cursor-pointer" />
-              <FeeTokenQRCodeModal feeToken={feeToken} />
-              {isFeeTokenStatusPending ? (
-                <Badge variant="loading">
-                  {intl.formatMessage({
-                    id: "quotes.feeToken.badge.checking",
-                    defaultMessage: "Checking...",
-                  })}
-                </Badge>
-              ) : feeTokenStatusData?.state === "Spent" ? (
-                <Badge variant="destructive">
-                  {intl.formatMessage({
-                    id: "quotes.feeToken.badge.spent",
-                    defaultMessage: "Spent",
-                  })}
-                </Badge>
-              ) : feeTokenStatusData?.state === "Unspent" ? (
-                <Badge variant="success">
-                  {intl.formatMessage({
-                    id: "quotes.feeToken.badge.active",
-                    defaultMessage: "Active",
-                  })}
-                </Badge>
-              ) : isFeeTokenStatusError ? (
-                <Badge variant="destructive">
-                  {intl.formatMessage({
-                    id: "quotes.feeToken.badge.error",
-                    defaultMessage: "Error",
-                  })}
-                </Badge>
-              ) : feeTokenStatusData?.state ? (
-                <Badge variant="neutral">
-                  {intl.formatMessage({
-                    id: "quotes.feeToken.badge.unknown",
-                    defaultMessage: "Unknown",
-                  })}
-                </Badge>
-              ) : null}
-            </div>
           )}
           <div className="flex items-center gap-2">
             <Text variant="label" className="w-32">

@@ -1,4 +1,3 @@
-import { PageTitle } from "@/components/PageTitle";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useParams, Link, useLocation } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Heading, Skeleton, TruncatedTextPopover } from "@bitcredit/ui-library";
@@ -8,7 +7,6 @@ import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { truncateString } from "@/utils/strings";
 import { FormattedMessage, useIntl } from "react-intl";
 import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
-import { KeysetRedemptionButton } from "@/pages/keysets/components/KeysetRedemptionButton";
 import { KeysetQuoteTableRow } from "@/pages/keysets/components/KeysetQuoteTableRow";
 import { useKeysetDetail } from "@/hooks/use-keyset-detail";
 
@@ -16,21 +14,23 @@ interface LocationState {
   from?: string;
 }
 
+function getLocationState(value: unknown): LocationState | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const { from } = value as { from?: unknown };
+  return typeof from === "string" ? { from } : {};
+}
+
 function PageBody({ keysetId }: { keysetId: string }) {
   const intl = useIntl();
   const {
     keyset,
-    parsedKeysetId,
-    redemptionMutation,
     allQuotes,
     quoteDetailsQueries,
     matchingBillIds,
     mintCompleteQueries,
-    allBillsPaid,
-    allMintComplete,
-    canEnableRedemption,
-    anyMintCompleteLoading,
-    hasNoMatchingBills,
     matchingQuotes,
     billIdToEbillMap,
     keysetsLoading,
@@ -101,20 +101,6 @@ function PageBody({ keysetId }: { keysetId: string }) {
               </Badge>
             </div>
           </div>
-          {keyset.active && (
-            <div className="w-full my-4">
-              <KeysetRedemptionButton
-                onRedeem={() => redemptionMutation.mutate({ body: { kid: parsedKeysetId! } })}
-                isPending={redemptionMutation.isPending}
-                parsedKeysetId={parsedKeysetId}
-                canEnableRedemption={canEnableRedemption}
-                anyMintCompleteLoading={anyMintCompleteLoading}
-                hasNoMatchingBills={hasNoMatchingBills}
-                allBillsPaid={allBillsPaid}
-                allMintComplete={allMintComplete}
-              />
-            </div>
-          )}
         </CardHeader>
         <CardContent>
           {quotesLoading ? (
@@ -190,9 +176,10 @@ function PageBody({ keysetId }: { keysetId: string }) {
 }
 
 export default function KeysetDetailPage() {
-  const { keysetId } = useParams<{ keysetId: string }>();
+  const params = useParams();
+  const keysetId = typeof params.keysetId === "string" ? params.keysetId : undefined;
   const location = useLocation();
-  const state = location.state as LocationState | null;
+  const state = getLocationState(location.state);
   const fromPath = state?.from;
   const fromQuote = fromPath?.startsWith("/quotes/");
   const quoteId = fromQuote && fromPath ? fromPath.split("/quotes/")[1] : null;
@@ -225,14 +212,14 @@ export default function KeysetDetailPage() {
         {keysetId}
       </Breadcrumbs>
       <div className="flex items-center justify-between">
-        <PageTitle>
+        <Heading as="h1" variant="page" className="mb-6 pt-4">
           <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
             <span>
               <FormattedMessage id="keyset.detail.title" defaultMessage="Keyset" />
             </span>
             <TruncatedTextPopover text={keysetId} maxLength={16} className="inline font-mono" as="span" />
           </span>
-        </PageTitle>
+        </Heading>
         {fromQuote && quoteId && (
           <Button variant="outline" size="sm" asChild>
             <Link to={`/quotes/${quoteId}`} state={{ from: `/keysets/${keysetId}` }} className="inline-flex items-center gap-1">

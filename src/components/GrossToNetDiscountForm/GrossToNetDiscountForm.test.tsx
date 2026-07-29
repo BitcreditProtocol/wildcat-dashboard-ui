@@ -169,4 +169,55 @@ describe("GrossToNetDiscountForm", () => {
     expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("9.805.555.555.555");
     expect(page.textContent).toContain("194.444.444.445");
   });
+
+  it("keeps a restored fee rate authoritative over the rounded sat net value", async () => {
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "point", currency: "sat" });
+    storageData["offer-form-quote-5"] = JSON.stringify({
+      daysInput: "30",
+      discountRateInput: "4",
+      netInput: "996",
+    });
+
+    const page = renderWithProviders(
+      <GrossToNetDiscountForm
+        endDate={new Date("2026-03-01")}
+        gross={{ value: new Big("1000"), currency: "sat" }}
+        quoteId="quote-5"
+        onSubmit={() => undefined}
+      />
+    );
+
+    await flush();
+
+    expect(page.querySelector<HTMLInputElement>("#discountRateInput")?.value).toBe("4");
+    expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("996");
+  });
+
+  it("uses a decimal text input for fee rate and normalizes comma input", async () => {
+    const page = renderWithProviders(
+      <GrossToNetDiscountForm
+        endDate={new Date("2026-03-01")}
+        gross={{ value: new Big("1000"), currency: "sat" }}
+        quoteId="quote-6"
+        onSubmit={() => undefined}
+      />
+    );
+
+    await flush();
+
+    const feeRateInput = page.querySelector<HTMLInputElement>("#discountRateInput");
+    expect(feeRateInput).not.toBeNull();
+    expect(feeRateInput?.type).toBe("text");
+    expect(feeRateInput?.inputMode).toBe("decimal");
+
+    act(() => {
+      if (!feeRateInput) {
+        return;
+      }
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(feeRateInput, "12,5");
+      feeRateInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(feeRateInput?.value).toBe("12.5");
+  });
 });

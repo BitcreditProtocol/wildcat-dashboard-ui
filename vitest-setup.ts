@@ -115,7 +115,7 @@ const normalizeStorage = () => {
 
 normalizeStorage();
 
-const originalGetComputedStyle = window.getComputedStyle;
+const originalGetComputedStyle = window.getComputedStyle.bind(window);
 window.getComputedStyle = (elt: Element, pseudoElt?: string | null) => {
   const style = originalGetComputedStyle(elt, pseudoElt);
   if (!style.transform) {
