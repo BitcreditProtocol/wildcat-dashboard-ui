@@ -1,13 +1,14 @@
 import { PropsWithChildren, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
 import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton } from "@bitcredit/ui-library";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
+import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Currency } from "@/components/Currency";
+import { CollectFeesCard } from "./CollectFeesCard";
 
 function Loader() {
   return (
@@ -49,7 +50,7 @@ export function BitcoinBalanceChart() {
         id: "balances.chart.bitcoin",
         defaultMessage: "Bitcoin",
       }),
-      color: "#2563eb",
+      color: "var(--color-chart-1)",
     },
   } satisfies ChartConfig;
 
@@ -91,21 +92,21 @@ export function OtherBalanceChart() {
         id: "balances.chart.eiou",
         defaultMessage: "e-IOU",
       }),
-      color: "#911198",
+      color: "var(--color-chart-2)",
     },
     credit: {
       label: intl.formatMessage({
         id: "balances.chart.creditToken",
         defaultMessage: "Credit token",
       }),
-      color: "#e9d4ff",
+      color: "var(--color-chart-3)",
     },
     debit: {
       label: intl.formatMessage({
         id: "balances.chart.debitToken",
         defaultMessage: "Debit token",
       }),
-      color: "#c27aff",
+      color: "var(--color-chart-4)",
     },
   } satisfies ChartConfig;
 
@@ -146,16 +147,24 @@ interface BalanceDisplay {
   unit: string;
 }
 
+function formatAmountValue(amount?: Amount | number | null) {
+  if (typeof amount === "number") {
+    return String(amount);
+  }
+
+  return amount ? String(amount.value) : "0";
+}
+
 export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
-      <Heading as="h3" variant="page" className="text-[#1b0f00]">
+      <Heading as="h3" variant="page" className="text-text-on-tint">
         {unit === "sat" ? (
           <Currency
             value={Number(amount)}
             sourceCurrency="sat"
             amountClassName="text-current"
-            currencyClassName="text-sm font-medium text-[#6b5a45]"
+            currencyClassName="text-sm font-medium text-text-on-tint-muted"
           />
         ) : (
           `${amount} ${unit}`
@@ -185,16 +194,20 @@ function useBalances() {
       amount: coverage?.onchain_collateral?.toString() ?? "0",
       unit: "sat",
     },
+    ebillCollateral: {
+      amount: coverage?.ebill_collateral?.toString() ?? "0",
+      unit: "sat",
+    },
     eiou: {
       amount: coverage?.eiou_collateral?.toString() ?? "0",
       unit: "e-IOU",
     },
     credit: {
-      amount: coverage?.credit_circulating_supply?.toString() ?? "0",
+      amount: formatAmountValue(coverage?.credit_circulating_supply),
       unit: "crsat",
     },
     debit: {
-      amount: coverage?.debit_circulating_supply?.toString() ?? "0",
+      amount: formatAmountValue(coverage?.debit_circulating_supply),
       unit: "sat",
     },
   };
@@ -224,10 +237,10 @@ function PageBodyWithDevSection() {
   return (
     <>
       <div className="flex flex-col gap-4 my-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card className="bg-indigo-100 text-[#1b0f00]">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+          <Card className="bg-indigo-100 text-text-on-tint">
             <CardHeader>
-              <CardTitle className="text-[#1b0f00]">
+              <CardTitle className="text-text-on-tint">
                 <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
               </CardTitle>
             </CardHeader>
@@ -235,9 +248,19 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-orange-100 text-[#1b0f00]">
+          <Card className="bg-teal-200 text-text-on-tint">
             <CardHeader>
-              <CardTitle className="text-[#1b0f00]">
+              <CardTitle className="text-text-on-tint">
+                <FormattedMessage id="balances.ebillCollateral" defaultMessage="eBill collateral balance" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.ebillCollateral.amount} unit={balances.ebillCollateral.unit} />
+            </CardContent>
+          </Card>
+          <Card className="bg-orange-100 text-text-on-tint">
+            <CardHeader>
+              <CardTitle className="text-text-on-tint">
                 <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
               </CardTitle>
             </CardHeader>
@@ -245,9 +268,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-purple-200 text-[#1b0f00]">
+          <Card className="bg-purple-200 text-text-on-tint">
             <CardHeader>
-              <CardTitle className="text-[#1b0f00]">
+              <CardTitle className="text-text-on-tint">
                 <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
               </CardTitle>
             </CardHeader>
@@ -255,9 +278,9 @@ function PageBodyWithDevSection() {
               <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
             </CardContent>
           </Card>
-          <Card className="bg-purple-400 text-[#1b0f00]">
+          <Card className="bg-purple-400 text-text-on-tint">
             <CardHeader>
-              <CardTitle className="text-[#1b0f00]">
+              <CardTitle className="text-text-on-tint">
                 <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
               </CardTitle>
             </CardHeader>
@@ -266,6 +289,8 @@ function PageBodyWithDevSection() {
             </CardContent>
           </Card>
         </div>
+
+        <CollectFeesCard />
 
         {/*
           TODO Charts display mock data - will be updated when historical data endpoint is available
@@ -291,9 +316,9 @@ export default function BalancesPage() {
       <Breadcrumbs>
         <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
       </Breadcrumbs>
-      <PageTitle>
+      <Heading as="h1" variant="page" className="mb-6 pt-4">
         <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
-      </PageTitle>
+      </Heading>
 
       <Suspense fallback={<Loader />}>
         <PageBodyWithDevSection />

@@ -43,9 +43,9 @@ export function KeysetCard({ keyset, searchQuery, noExpiryText }: KeysetCardProp
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Link to={`/keysets/${keyset.id}`} className="block">
-              <CardTitle className="font-mono text-sm">
+              <CardTitle className="font-mono text-sm break-all">
                 <HighlightText text={keyset.id} highlight={searchQuery} />
               </CardTitle>
             </Link>

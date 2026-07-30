@@ -50,7 +50,7 @@ export function NavUser({
               tooltip={tooltipLabel}
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm bg-[#f59e0b]">
+                <div className="w-full h-full flex items-center justify-center text-text-active font-semibold text-sm bg-brand-200">
                   {initials || initialsFallback}
                 </div>
               </Avatar>

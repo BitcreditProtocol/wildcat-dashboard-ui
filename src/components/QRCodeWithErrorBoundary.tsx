@@ -20,6 +20,9 @@ import {
 } from "@bitcredit/ui-library";
 import { canGenerateQRCode, canGenerateQRCodeAsync, QR_CODE_MAX_LENGTH } from "@/utils/qrCodeUtils";
 import { useIntl } from "react-intl";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("qr-code");
 
 /**
  * Generic QR Code Components
@@ -60,7 +63,7 @@ class QRCodeErrorBoundary extends Component<QRCodeErrorBoundaryProps, QRCodeErro
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("QR Code Error:", error, errorInfo);
+    logger.error("QR code render failed", { error, errorInfo });
   }
 
   render() {
@@ -238,7 +241,7 @@ export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string
           <AppIcon icon={QrCode} size="sm" />
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="max-w-full max-w-sm-[430px] max-h-none rounded-none border-0 bg-elevation-50 px-6 pb-8 text-text-300 dark:bg-elevation-50 [&>div:first-child]:hidden">
+      <DrawerContent className="max-w-full max-w-sm-[430px] max-h-none rounded-none border-0 bg-elevation-50 px-6 pb-8 text-text-300 dark:bg-elevation-50">
         <DrawerHeader className="px-0 pb-5 pt-20 text-center sm:text-center">
           <DrawerTitle className="text-xl font-semibold text-text-300">{resolvedTitle}</DrawerTitle>
           <DrawerDescription className="text-sm text-text-200">{resolvedLabel}</DrawerDescription>

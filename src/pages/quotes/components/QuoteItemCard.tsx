@@ -6,8 +6,9 @@ import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { truncateString, formatStatusLabel } from "@/utils/strings";
+import { truncateString } from "@/utils/strings";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
+import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import type { LightInfo } from "@/generated/client/types.gen";
 import { ParticipantsOverviewCard } from "@/components/ParticipantsOverview";
 import * as React from "react";
@@ -69,10 +70,10 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
 
   return (
     <Card className="text-sm">
-      <div className="flex justify-between items-center gap-4 px-4 pt-4">
-        <CardTitle className="text-xl">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 px-4 pt-4">
+        <CardTitle className="text-xl min-w-0">
           <div className="items-center flex gap-1">
-            <span className="font-mono pt-2">
+            <span className="font-mono pt-2 break-all">
               <Link to={`/quotes/${quote.id}`} onClick={handleQuoteClick}>
                 <HighlightText text={quote.id} highlight={searchQuery} />
               </Link>
@@ -80,7 +81,7 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
             <span></span>
           </div>
         </CardTitle>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="leading-none font-semibold tracking-tight text-3xl">
             <Currency
               value={quote.sum}
@@ -92,17 +93,11 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
             />
           </div>
           <Badge variant={getQuoteStatusVariant(effectiveStatus)}>
-            <HighlightText
-              text={intl.formatMessage({
-                id: `quote.status.${effectiveStatus}`,
-                defaultMessage: formatStatusLabel(effectiveStatus),
-              })}
-              highlight={searchQuery}
-            />
+            <HighlightText text={intl.formatMessage(getQuoteStatusMessage(effectiveStatus))} highlight={searchQuery} />
           </Badge>
         </div>
       </div>
-      <div className="flex justify-between items-center gap-4 px-4 py-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 px-4 py-2">
         <div>
           <Button size="sm" className="max-w-sm px-12" onClick={handleQuoteClick}>
             {intl.formatMessage({

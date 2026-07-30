@@ -1,13 +1,17 @@
 import { queryOptions } from "@tanstack/react-query";
 import { getEbillPaymentstatus } from "@/generated/client/sdk.gen";
-import type { EbillPaymentComplete, GetEbillPaymentstatusErrors } from "@/generated/client/types.gen";
+import type { GetEbillPaymentstatusErrors } from "@/generated/client/types.gen";
 
 export interface EbillMintCompleteQueryOptions {
   billId: string;
 }
 
+export interface EbillMintComplete {
+  complete: boolean;
+}
+
 export function getEbillMintCompleteQueryOptions({ billId }: EbillMintCompleteQueryOptions) {
-  return queryOptions<EbillPaymentComplete, GetEbillPaymentstatusErrors[keyof GetEbillPaymentstatusErrors], EbillPaymentComplete>({
+  return queryOptions<EbillMintComplete, GetEbillPaymentstatusErrors[keyof GetEbillPaymentstatusErrors], EbillMintComplete>({
     queryKey: ["ebill-mint-complete", billId],
     queryFn: async ({ signal }) => {
       const { data } = await getEbillPaymentstatus<true>({

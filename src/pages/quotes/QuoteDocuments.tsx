@@ -4,19 +4,15 @@ import { useIntl } from "react-intl";
 import { AppIcon, Button } from "@bitcredit/ui-library";
 import { Card, CardContent, CardHeader, CardTitle } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
-
-interface QuoteDocument {
-  name: string;
-  hash: string;
-}
+import type { QuoteDocument } from "@/hooks/use-quote-detail";
 
 interface QuoteDocumentsProps {
   documents: QuoteDocument[];
-  openingDocumentName: string | null;
-  onOpenDocument: (fileName: string) => void | Promise<void>;
+  openingDocumentHash: string | null;
+  onOpenDocument: (document: QuoteDocument) => void | Promise<void>;
 }
 
-export function QuoteDocuments({ documents, openingDocumentName, onOpenDocument }: QuoteDocumentsProps) {
+export function QuoteDocuments({ documents, openingDocumentHash, onOpenDocument }: QuoteDocumentsProps) {
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -67,21 +63,21 @@ export function QuoteDocuments({ documents, openingDocumentName, onOpenDocument 
         <CardContent className="space-y-3">
           {documents.length > 0 ? (
             documents.map((file, index) => {
-              const isOpening = openingDocumentName === file.name;
+              const isOpening = openingDocumentHash === file.hash;
 
               return (
                 <div key={`${file.hash}-${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border p-3">
                   <div className="min-w-0">
-                    <TruncatedTextPopover text={file.name} maxLength={35} className="text-sm font-medium" />
+                    <TruncatedTextPopover text={file.name} className="text-sm font-medium" />
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={(event) => {
                       event.stopPropagation();
-                      void onOpenDocument(file.name);
+                      void onOpenDocument(file);
                     }}
-                    disabled={openingDocumentName !== null}
+                    disabled={openingDocumentHash !== null}
                   >
                     {isOpening
                       ? intl.formatMessage({

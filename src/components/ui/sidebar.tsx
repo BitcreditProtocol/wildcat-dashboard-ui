@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
-import { PanelLeftIcon } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useIntl } from "react-intl";
 
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -175,7 +175,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-elevation-200 text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="bg-elevation-200 text-sidebar-foreground w-(--sidebar-width) p-0"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -236,7 +236,8 @@ function Sidebar({
 
 function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
   const intl = useIntl();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, isMobile, open, openMobile } = useSidebar();
+  const isOpen = isMobile ? openMobile : open;
   const toggleLabel = intl.formatMessage({
     id: "ui.sidebar.toggle",
     defaultMessage: "Toggle Sidebar",
@@ -246,15 +247,15 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
     <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
-      variant="ghost"
-      className={cn("h-7 w-7", className)}
+      variant="secondary"
+      className={cn("w-10 h-10 px-2", className)}
       onClick={(event) => {
         onClick?.(event);
         toggleSidebar();
       }}
       {...props}
     >
-      <AppIcon icon={PanelLeftIcon} />
+      <AppIcon icon={isOpen ? X : Menu} strokeWidth={2} />
       <span className="sr-only">{toggleLabel}</span>
     </Button>
   );

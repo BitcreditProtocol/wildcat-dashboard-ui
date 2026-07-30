@@ -1,6 +1,7 @@
 import Big from "big.js";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BaseDrawer } from "@/components/Drawers";
-import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm";
+import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm/GrossToNetDiscountForm";
 import type { InfoReply } from "@/generated/client/types.gen";
 import type { ReactNode } from "react";
 
@@ -32,7 +33,7 @@ interface OfferFormDrawerProps {
   children: ReactNode;
 }
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 export function OfferFormDrawer({ title, description, value, open, onOpenChange, onSubmit, children }: OfferFormDrawerProps) {
   const handleFormSubmit = (values: {
@@ -41,7 +42,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     net: { value: Big; currency: string };
     gross: { value: Big; currency: string };
   }) => {
-    const ttl = value.status === "Pending" ? new Date(value.suggested_expiration) : new Date(Date.now() + THIRTY_DAYS_MS);
+    const ttl = new Date(Date.now() + ONE_HOUR_MS);
 
     const result: OfferFormResult = {
       discount: values,
@@ -51,18 +52,31 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     onSubmit(result);
   };
 
-  const startDate = new Date();
-  const endDate = value.bill.maturity_date ? new Date(value.bill.maturity_date) : new Date();
+  const [formKey, setFormKey] = useState(0);
+  const prevOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setFormKey((k) => k + 1);
+    }
+    prevOpenRef.current = open;
+  }, [open]);
+
+  const startDate = useMemo(() => new Date(), []);
+  const openedFormInstance = formKey;
+  const endDate = useMemo(() => {
+    void openedFormInstance;
+    return value.bill.maturity_date ? new Date(value.bill.maturity_date) : new Date();
+  }, [openedFormInstance, value.bill.maturity_date]);
+  const gross = useMemo(() => ({ value: new Big(value.bill.sum), currency: "sat" as const }), [value.bill.sum]);
 
   return (
     <BaseDrawer title={title} description={description} open={open} onOpenChange={onOpenChange} trigger={children}>
       <GrossToNetDiscountForm
+        key={formKey}
         startDate={startDate}
         endDate={endDate}
-        gross={{
-          value: new Big(value.bill.sum),
-          currency: "sat",
-        }}
+        gross={gross}
         onSubmit={handleFormSubmit}
         quoteId={value.id}
       />

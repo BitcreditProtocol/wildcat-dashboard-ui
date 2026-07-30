@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import type { KeySetInfo } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
 
@@ -75,61 +75,56 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
     return keysetId.includes(query) || currencyUnit.includes(query) || finalExpiryDate.includes(query) || status.includes(query);
   });
 
-  const sortedKeysets = useMemo(
-    () =>
-      [...filteredKeysets].sort((a, b) => {
-        let comparison = 0;
+  const sortedKeysets = [...filteredKeysets].sort((a, b) => {
+    let comparison = 0;
 
-        switch (sortBy) {
-          case "maturity-asc":
-          case "maturity-desc": {
-            const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null;
-            const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null;
+    switch (sortBy) {
+      case "maturity-asc":
+      case "maturity-desc": {
+        const aExpiry = a.final_expiry ? new Date(a.final_expiry * 1000) : null;
+        const bExpiry = b.final_expiry ? new Date(b.final_expiry * 1000) : null;
 
-            if (!aExpiry && !bExpiry) {
-              comparison = 0;
-            } else if (!aExpiry) {
-              comparison = 1;
-            } else if (!bExpiry) {
-              comparison = -1;
-            } else {
-              const aIsExpired = aExpiry < now;
-              const bIsExpired = bExpiry < now;
+        if (!aExpiry && !bExpiry) {
+          comparison = 0;
+        } else if (!aExpiry) {
+          comparison = 1;
+        } else if (!bExpiry) {
+          comparison = -1;
+        } else {
+          const aIsExpired = aExpiry < now;
+          const bIsExpired = bExpiry < now;
 
-              if (aIsExpired && !bIsExpired) {
-                comparison = -1;
-              } else if (!aIsExpired && bIsExpired) {
-                comparison = 1;
-              } else {
-                comparison = aExpiry.getTime() - bExpiry.getTime();
-              }
-            }
-            if (sortBy === "maturity-desc") comparison = -comparison;
-            break;
-          }
-          case "status-asc":
-          case "status-desc": {
-            const aStatus = a.active ? 1 : 0;
-            const bStatus = b.active ? 1 : 0;
-            comparison = bStatus - aStatus;
-            if (sortBy === "status-desc") comparison = -comparison;
-            break;
-          }
-          case "currency-asc":
-          case "currency-desc": {
-            const aCurrency = typeof a.unit === "string" ? a.unit : a.unit.Custom;
-            const bCurrency = typeof b.unit === "string" ? b.unit : b.unit.Custom;
-            comparison = aCurrency.localeCompare(bCurrency);
-            if (sortBy === "currency-desc") comparison = -comparison;
-            break;
+          if (aIsExpired && !bIsExpired) {
+            comparison = -1;
+          } else if (!aIsExpired && bIsExpired) {
+            comparison = 1;
+          } else {
+            comparison = aExpiry.getTime() - bExpiry.getTime();
           }
         }
+        if (sortBy === "maturity-desc") comparison = -comparison;
+        break;
+      }
+      case "status-asc":
+      case "status-desc": {
+        const aStatus = a.active ? 1 : 0;
+        const bStatus = b.active ? 1 : 0;
+        comparison = bStatus - aStatus;
+        if (sortBy === "status-desc") comparison = -comparison;
+        break;
+      }
+      case "currency-asc":
+      case "currency-desc": {
+        const aCurrency = typeof a.unit === "string" ? a.unit : a.unit.Custom;
+        const bCurrency = typeof b.unit === "string" ? b.unit : b.unit.Custom;
+        comparison = aCurrency.localeCompare(bCurrency);
+        if (sortBy === "currency-desc") comparison = -comparison;
+        break;
+      }
+    }
 
-        return comparison;
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filteredKeysets, sortBy]
-  );
+    return comparison;
+  });
 
   const toggleSort = (field: SortField) => {
     if (sortBy.startsWith(field)) {

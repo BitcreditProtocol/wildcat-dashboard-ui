@@ -91,4 +91,39 @@ describe("env runtime resolution", () => {
     expect(env.keycloakClientId).toBe("fallback-client");
     expect(env.esploraBaseUrl).toBe("https://esplora.minibill.tech");
   });
+
+  it("throws a clear error when required env values are missing", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "");
+    vi.stubEnv("VITE_KEYCLOAK_URL", "");
+    vi.stubEnv("VITE_KEYCLOAK_REALM", "");
+    vi.stubEnv("VITE_KEYCLOAK_CLIENT_ID", "");
+    vi.stubGlobal("window", { __ENV__: {} });
+
+    await expect(loadEnv()).rejects.toThrow(
+      "Missing required environment variables: VITE_API_BASE_URL, VITE_KEYCLOAK_URL, VITE_KEYCLOAK_REALM, VITE_KEYCLOAK_CLIENT_ID"
+    );
+  });
+
+  it("accepts runtime required env values when build-time values are missing", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "");
+    vi.stubEnv("VITE_KEYCLOAK_URL", "");
+    vi.stubEnv("VITE_KEYCLOAK_REALM", "");
+    vi.stubEnv("VITE_KEYCLOAK_CLIENT_ID", "");
+
+    vi.stubGlobal("window", {
+      __ENV__: {
+        VITE_API_BASE_URL: "https://runtime.example.com",
+        VITE_KEYCLOAK_URL: "https://runtime-keycloak.example.com",
+        VITE_KEYCLOAK_REALM: "runtime-realm",
+        VITE_KEYCLOAK_CLIENT_ID: "runtime-client",
+      },
+    });
+
+    const env = await loadEnv();
+
+    expect(env.apiBaseUrl).toBe("https://runtime.example.com");
+    expect(env.keycloakUrl).toBe("https://runtime-keycloak.example.com");
+    expect(env.keycloakRealm).toBe("runtime-realm");
+    expect(env.keycloakClientId).toBe("runtime-client");
+  });
 });

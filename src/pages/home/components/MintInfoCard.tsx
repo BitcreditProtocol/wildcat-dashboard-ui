@@ -56,6 +56,17 @@ export function MintInfoCard() {
             })}
             mono
           />
+          {mintData.clowder_eiou_address && (
+            <InfoField
+              label={<FormattedMessage id="home.mint.clowderEiouAddress" defaultMessage="Clowder eIOU Address" />}
+              value={mintData.clowder_eiou_address}
+              copyLabel={intl.formatMessage({
+                id: "home.mint.clowderEiouAddress",
+                defaultMessage: "Clowder eIOU Address",
+              })}
+              mono
+            />
+          )}
 
           <div className="border-t pt-4 mt-4">
             <Heading as="h4" variant="sub" className="mb-4">

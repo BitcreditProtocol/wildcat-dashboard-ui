@@ -1,11 +1,10 @@
-import { toast } from "@bitcredit/ui-library";
+import { toast, Heading } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PageTitle } from "@/components/PageTitle";
 import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
-import { getEbillAttachment } from "@/generated/client/sdk.gen";
+import { getEbillAttachment, getEbillFileFromRequestToMint } from "@/generated/client/sdk.gen";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
@@ -17,11 +16,23 @@ import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { QuoteDocuments } from "./QuoteDocuments";
-import { useQuoteDetail } from "@/hooks/use-quote-detail";
+import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
+import { EndorseeList } from "./components/EndorseeList";
+import type { InfoReply } from "@/generated/client/types.gen";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 interface LocationState {
   from?: string;
+}
+
+function getLocationState(value: unknown): LocationState | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const { from } = value as { from?: unknown };
+  return typeof from === "string" ? { from } : {};
 }
 
 function Loader() {
@@ -34,10 +45,11 @@ function Loader() {
 
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
+const QUOTE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
-  const [openingDocumentName, setOpeningDocumentName] = useState<string | null>(null);
+  const [openingDocumentHash, setOpeningDocumentHash] = useState<string | null>(null);
 
   const blobUrlTimerRef = useRef<number | null>(null);
 
@@ -54,15 +66,11 @@ function PageBody({ id }: { id: string }) {
     isFetching,
     error,
     isLoading,
-    ebill,
-    endorsementsQuery,
+    historyBlocks,
+    isHistoryLoading,
     effectiveQuoteStatus,
     isMintComplete,
     isMintCompleteLoading,
-    feeToken,
-    feeTokenStatusData,
-    isFeeTokenStatusPending,
-    isFeeTokenStatusError,
     ebillPaid,
     requestedToPay,
     rejectedToPay,
@@ -108,24 +116,56 @@ function PageBody({ id }: { id: string }) {
   const quote = quoteData!;
   const bill = quote?.bill;
 
-  const handleOpenDocument = async (fileName: string) => {
-    if (!billId || !fileName || openingDocumentName) {
+  const handleOpenDocument = async (documentFile: QuoteDocument) => {
+    if (!documentFile.name || openingDocumentHash) {
       return;
     }
 
-    setOpeningDocumentName(fileName);
+    setOpeningDocumentHash(documentFile.hash);
 
     try {
-      const attachment = await getEbillAttachment({
-        path: {
-          bid: billId,
-          fname: fileName,
-        },
-        responseStyle: "data",
-        parseAs: "blob",
-      });
+      let resolvedAttachment: unknown;
 
-      if (!(attachment instanceof Blob)) {
+      if (documentFile.source === "billAttachment") {
+        if (!billId) {
+          throw new Error(
+            intl.formatMessage({
+              id: "quotes.documents.invalidResponse",
+              defaultMessage: "Document attachment could not be opened.",
+            })
+          );
+        }
+
+        const resolvedBillId: string = billId;
+        resolvedAttachment = await getEbillAttachment({
+          path: {
+            bid: resolvedBillId,
+            fname: documentFile.name,
+          },
+          responseStyle: "data",
+          parseAs: "blob",
+        });
+      } else {
+        const resolvedFileUrl = documentFile.fileUrl;
+        if (!resolvedFileUrl) {
+          throw new Error(
+            intl.formatMessage({
+              id: "quotes.documents.invalidResponse",
+              defaultMessage: "Document attachment could not be opened.",
+            })
+          );
+        }
+
+        resolvedAttachment = await getEbillFileFromRequestToMint({
+          query: {
+            file_url: resolvedFileUrl,
+          },
+          responseStyle: "data",
+          parseAs: "blob",
+        });
+      }
+
+      if (!(resolvedAttachment instanceof Blob)) {
         throw new Error(
           intl.formatMessage({
             id: "quotes.documents.invalidResponse",
@@ -134,7 +174,7 @@ function PageBody({ id }: { id: string }) {
         );
       }
 
-      const blobUrl = window.URL.createObjectURL(attachment);
+      const blobUrl = window.URL.createObjectURL(resolvedAttachment);
       const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
 
       if (!openedWindow) {
@@ -162,7 +202,7 @@ function PageBody({ id }: { id: string }) {
         variant: "error",
       });
     } finally {
-      setOpeningDocumentName(null);
+      setOpeningDocumentHash(null);
     }
   };
 
@@ -177,8 +217,6 @@ function PageBody({ id }: { id: string }) {
     );
   }
 
-  const quoteStatusValue = quote.status as string;
-
   return (
     <div className="flex flex-col gap-4">
       <QuoteDetailCard
@@ -191,10 +229,6 @@ function PageBody({ id }: { id: string }) {
         rejectedToPay={rejectedToPay}
         isInMempool={isInMempool}
         requestedToPay={requestedToPay}
-        feeToken={feeToken}
-        isFeeTokenStatusPending={isFeeTokenStatusPending}
-        feeTokenStatusData={feeTokenStatusData}
-        isFeeTokenStatusError={isFeeTokenStatusError}
       />
 
       <QuoteActions
@@ -208,30 +242,11 @@ function PageBody({ id }: { id: string }) {
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-        <QuoteDocuments documents={documentFiles} openingDocumentName={openingDocumentName} onOpenDocument={handleOpenDocument} />
+        <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
 
-        <EndorsementChain
-          endorsements={endorsementsQuery.data}
-          isLoading={endorsementsQuery.isLoading}
-          issueDate={ebill?.data?.issue_date}
-          maturityDate={bill.maturity_date}
-          requestToPayTimestamp={ebill?.status?.payment?.time_of_request_to_pay ?? undefined}
-          rejectedToPayTimestamp={ebill?.status?.payment?.rejected_to_pay ? (ebill?.status?.last_block_time ?? undefined) : undefined}
-          paymentTimestamp={ebill?.status?.payment?.paid ? (ebill?.status?.last_block_time ?? undefined) : undefined}
-          acceptanceTimestamp={
-            ebill?.status?.acceptance?.accepted ? (ebill?.status?.acceptance?.time_of_request_to_accept ?? undefined) : undefined
-          }
-          rejectionTimestamp={ebill?.status?.acceptance?.rejected_to_accept ? (ebill?.status?.last_block_time ?? undefined) : undefined}
-          mintingEnabled={quoteStatusValue === "MintingEnabled"}
-          quoteOffered={quoteStatusValue === "Offered" || effectiveQuoteStatus === "Accepted" || quoteStatusValue === "MintingEnabled"}
-          offeredTimestamp={
-            "submitted" in quote
-              ? Math.floor(new Date(quote.submitted).getTime() / 1000)
-              : "tstamp" in quote
-                ? Math.floor(new Date(quote.tstamp).getTime() / 1000)
-                : undefined
-          }
-        />
+        <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
+
+        <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
       </div>
     </div>
   );
@@ -239,10 +254,12 @@ function PageBody({ id }: { id: string }) {
 
 export default function QuotePage() {
   const intl = useIntl();
-  const { id } = useParams();
+  const params = useParams();
+  const id = typeof params.id === "string" ? params.id : undefined;
   const quoteId = id ?? "";
+  const validQuoteId = QUOTE_ID_PATTERN.test(quoteId);
   const location = useLocation();
-  const state = location.state as LocationState | null;
+  const state = getLocationState(location.state);
   const fromPath = state?.from;
   const fromKeyset = fromPath?.startsWith("/keysets/");
   const keysetIdFromState = fromKeyset && fromPath ? fromPath.split("/keysets/")[1] : null;
@@ -252,8 +269,12 @@ export default function QuotePage() {
       path: { qid: quoteId },
     }),
     retry: 1,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status as string | undefined;
+    refetchInterval: (query: { state: { data?: InfoReply } }) => {
+      if (!validQuoteId) {
+        return false;
+      }
+
+      const status = query.state.data?.status;
       if (!status) {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
       }
@@ -261,9 +282,14 @@ export default function QuotePage() {
       return QUOTE_POLLING_TERMINAL_STATUSES.has(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
+    enabled: validQuoteId,
   });
 
-  const quoteDataStatus = quoteData?.status as string | undefined;
+  if (!validQuoteId) {
+    return <NotFoundPage path={`/quotes/${quoteId}`} />;
+  }
+
+  const quoteDataStatus = quoteData?.status;
   const hasKeysetId = quoteData && (quoteDataStatus === "Accepted" || quoteDataStatus === "MintingEnabled") && "keyset_id" in quoteData;
 
   return (
@@ -283,8 +309,8 @@ export default function QuotePage() {
         {quoteId}
       </Breadcrumbs>
 
-      <div className="flex items-center justify-between">
-        <PageTitle>
+      <div className="flex flex-col gap-3 mb-4 sm:mb-0 sm:flex-row sm:items-center sm:justify-between">
+        <Heading as="h1" variant="page" className="mb-2 sm:mb-6 pt-4">
           <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
             <span>
               {intl.formatMessage({
@@ -294,7 +320,7 @@ export default function QuotePage() {
             </span>
             <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
           </span>
-        </PageTitle>
+        </Heading>
         {fromKeyset && keysetIdFromState ? (
           <Button variant="outline" size="sm" asChild>
             <Link

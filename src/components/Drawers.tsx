@@ -11,6 +11,7 @@ import {
 } from "@bitcredit/ui-library";
 import { VariantProps } from "class-variance-authority";
 import { useIntl } from "react-intl";
+import React from "react";
 
 type DrawerProps = Parameters<typeof Drawer>[0];
 type BaseDrawerProps = DrawerProps & {
@@ -23,8 +24,8 @@ export function BaseDrawer({ title, description = "", trigger, children, ...draw
   return (
     <Drawer {...drawerProps}>
       {trigger && <DrawerTrigger asChild>{trigger}</DrawerTrigger>}
-      <DrawerContent>
-        <div className="mx-auto w-full max-w-sm">
+      <DrawerContent className="max-h-[calc(100dvh-1rem)] max-w-full overflow-y-auto overscroll-contain border-x-0">
+        <div className="mx-auto w-full max-w-sm pb-[env(safe-area-inset-bottom)]">
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
             {description && <DrawerDescription>{description}</DrawerDescription>}

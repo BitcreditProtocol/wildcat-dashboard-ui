@@ -2,7 +2,10 @@ import { client as heyApiClient } from "@/generated/client/client.gen";
 import * as sdk from "@/generated/client/sdk.gen";
 import { normalizeApiError } from "@/lib/api-error";
 import { env } from "@/lib/env";
+import { createLogger } from "@/lib/logger";
 import keycloak from "../keycloak";
+
+const logger = createLogger("api-client");
 
 heyApiClient.setConfig({
   baseUrl: env.apiBaseUrl,
@@ -15,12 +18,44 @@ heyApiClient.interceptors.error.use((error, response) =>
   })
 );
 
-// Add the auth token interceptor
+const TOKEN_REFRESH_MAX_ATTEMPTS = 4;
+const TOKEN_REFRESH_RETRY_DELAY_MS = 1000;
+
+let isRedirectingToLogin = false;
+
+const abortedRequest = (request: Request): Request => {
+  const controller = new AbortController();
+  controller.abort();
+  return new Request(request, { signal: controller.signal });
+};
+
 heyApiClient.interceptors.request.use(async (request) => {
-  try {
-    await keycloak.updateToken(30);
-  } catch (error) {
-    console.error("Failed to refresh token:", error);
+  if (isRedirectingToLogin) {
+    return abortedRequest(request);
+  }
+
+  let refreshFailed = false;
+
+  for (let attempt = 0; attempt < TOKEN_REFRESH_MAX_ATTEMPTS; attempt++) {
+    try {
+      if (attempt > 0) {
+        await new Promise<void>((resolve) => setTimeout(resolve, TOKEN_REFRESH_RETRY_DELAY_MS));
+      }
+      await keycloak.updateToken(30);
+      break;
+    } catch (error) {
+      logger.error(`Token refresh failed (attempt ${attempt + 1}/${TOKEN_REFRESH_MAX_ATTEMPTS}):`, error);
+
+      if (attempt === TOKEN_REFRESH_MAX_ATTEMPTS - 1) {
+        refreshFailed = true;
+      }
+    }
+  }
+
+  if (refreshFailed) {
+    isRedirectingToLogin = true;
+    void keycloak.login();
+    return abortedRequest(request);
   }
 
   const token = keycloak.token;

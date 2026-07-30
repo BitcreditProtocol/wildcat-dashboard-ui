@@ -1,18 +1,14 @@
-import { toast } from "@bitcredit/ui-library";
 import { useMemo } from "react";
-import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, type UseQueryResult } from "@tanstack/react-query";
 import {
   listKeysetInfosOptions,
-  listKeysetInfosQueryKey,
   listQuotesOptions,
   getQuoteOptions,
   listEbillsOptions,
-  postEnableRedemptionMutation,
 } from "@/generated/client/@tanstack/react-query.gen";
-import type { BitcreditBill } from "@/generated/client/types.gen";
-import { useIntl } from "react-intl";
-import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
-import { deserializeKeysetId, doesBillMatchKeysetMaturity } from "@/utils/keyset";
+import type { BitcreditBill, InfoReply } from "@/generated/client/types.gen";
+import { getEbillMintCompleteQueryOptions, type EbillMintComplete } from "@/lib/ebill-mint-complete";
+import { doesBillMatchKeysetMaturity } from "@/utils/keyset";
 
 const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
 const MINT_COMPLETE_POLL_INTERVAL_MS = 60_000;
@@ -20,11 +16,10 @@ const MINT_COMPLETE_RETRY_COUNT = 3;
 const MINT_COMPLETE_RETRY_DELAY_MS = 30_000;
 
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
+type QuoteDetailQueryResult = UseQueryResult<InfoReply>;
+type MintCompleteQueryResult = UseQueryResult<EbillMintComplete>;
 
 export function useKeysetDetail(keysetId: string) {
-  const intl = useIntl();
-  const queryClient = useQueryClient();
-
   const { data: keysets, isLoading: keysetsLoading } = useQuery({
     ...listKeysetInfosOptions(),
     refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
@@ -46,37 +41,7 @@ export function useKeysetDetail(keysetId: string) {
   });
 
   const keyset = keysets?.data.find((k) => k.id === keysetId);
-  const parsedKeysetId = keyset ? deserializeKeysetId(keyset.id) : null;
-
-  const redemptionMutation = useMutation({
-    ...postEnableRedemptionMutation(),
-    onSuccess: () => {
-      toast({
-        title: intl.formatMessage({
-          id: "keyset.detail.redeem.success",
-          defaultMessage: "Redemption enabled successfully",
-        }),
-        variant: "success",
-      });
-      void queryClient.invalidateQueries({
-        queryKey: listKeysetInfosQueryKey(),
-        exact: false,
-      });
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      toast({
-        title: intl.formatMessage(
-          {
-            id: "keyset.detail.redeem.error",
-            defaultMessage: "Failed to enable redemption: {error}",
-          },
-          { error: message }
-        ),
-        variant: "error",
-      });
-    },
-  });
+  const keysetFinalExpiry = keyset?.final_expiry;
 
   const quoteDetailsQueries = useQueries({
     queries: allQuotes.map((quote) => ({
@@ -89,46 +54,29 @@ export function useKeysetDetail(keysetId: string) {
       },
       refetchIntervalInBackground: true,
     })),
+    combine: (results) => results as QuoteDetailQueryResult[],
   });
 
   const quoteDetailsLoading = quoteDetailsQueries.some((q) => q.isLoading);
 
-  const quoteDetailsDepsKey = useMemo(() => {
-    return quoteDetailsQueries
-      .map((query) => {
-        const billId = query.data?.bill?.id ?? "";
-        const maturityDate = query.data?.bill?.maturity_date ?? "";
-        return `${billId}|${maturityDate}`;
-      })
-      .join(",");
-  }, [quoteDetailsQueries]);
+  const quoteBillSummaries = quoteDetailsQueries.map((query) => ({
+    billId: query.data?.bill?.id,
+    maturityDate: query.data?.bill?.maturity_date,
+  }));
 
-  const matchingBillIds = useMemo(() => {
-    const billIds: string[] = [];
+  const matchingBillIds: string[] = [];
 
-    if (!keyset?.final_expiry || quoteDetailsLoading) {
-      return billIds;
-    }
-
-    const keysetFinalExpiry = keyset.final_expiry;
-
-    allQuotes.forEach((_quote, index) => {
-      const quoteDetails = quoteDetailsQueries[index]?.data;
-      const billMaturityDate = quoteDetails?.bill?.maturity_date;
-      const billId = quoteDetails?.bill?.id;
-
-      if (!billMaturityDate || !billId) {
+  if (keysetFinalExpiry && !quoteDetailsLoading) {
+    quoteBillSummaries.forEach(({ billId, maturityDate }) => {
+      if (!maturityDate || !billId) {
         return;
       }
 
-      if (doesBillMatchKeysetMaturity(keysetFinalExpiry, billMaturityDate)) {
-        billIds.push(billId);
+      if (doesBillMatchKeysetMaturity(keysetFinalExpiry, maturityDate)) {
+        matchingBillIds.push(billId);
       }
     });
-
-    return billIds;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyset?.final_expiry, allQuotes, quoteDetailsDepsKey, quoteDetailsLoading]);
+  }
 
   const mintCompleteQueries = useQueries({
     queries: matchingBillIds.map((billId) => ({
@@ -141,20 +89,8 @@ export function useKeysetDetail(keysetId: string) {
       retryDelay: MINT_COMPLETE_RETRY_DELAY_MS,
       refetchOnWindowFocus: false,
     })),
+    combine: (results) => results as MintCompleteQueryResult[],
   });
-
-  const allBillsPaid =
-    matchingBillIds.length > 0 &&
-    matchingBillIds.every((billId) => {
-      const ebill = ebills?.find((e) => e.id === billId);
-      return ebill?.status?.payment?.paid === true;
-    });
-
-  const allMintComplete = matchingBillIds.length > 0 && mintCompleteQueries.every((query) => query.data?.complete === true);
-
-  const canEnableRedemption = allBillsPaid && allMintComplete;
-  const anyMintCompleteLoading = mintCompleteQueries.some((q) => q.isLoading);
-  const hasNoMatchingBills = matchingBillIds.length === 0;
 
   const billIdToEbillMap = useMemo(() => {
     const map = new Map<string, BitcreditBill>();
@@ -179,19 +115,11 @@ export function useKeysetDetail(keysetId: string) {
 
   return {
     keyset,
-    parsedKeysetId,
-    redemptionMutation,
     allQuotes,
     quoteDetailsQueries,
     matchingBillIds,
     mintCompleteQueries,
-    allBillsPaid,
-    allMintComplete,
-    canEnableRedemption,
-    anyMintCompleteLoading,
-    hasNoMatchingBills,
     matchingQuotes,
-    ebills,
     billIdToEbillMap,
     keysetsLoading,
     quotesLoading,
