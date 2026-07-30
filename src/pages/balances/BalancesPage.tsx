@@ -194,6 +194,10 @@ function useBalances() {
       amount: coverage?.onchain_collateral?.toString() ?? "0",
       unit: "sat",
     },
+    ebillCollateral: {
+      amount: coverage?.ebill_collateral?.toString() ?? "0",
+      unit: "sat",
+    },
     eiou: {
       amount: coverage?.eiou_collateral?.toString() ?? "0",
       unit: "e-IOU",
@@ -233,7 +237,7 @@ function PageBodyWithDevSection() {
   return (
     <>
       <div className="flex flex-col gap-4 my-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           <Card className="bg-indigo-100 text-text-on-tint">
             <CardHeader>
               <CardTitle className="text-text-on-tint">
@@ -242,6 +246,16 @@ function PageBodyWithDevSection() {
             </CardHeader>
             <CardContent>
               <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
+            </CardContent>
+          </Card>
+          <Card className="bg-teal-200 text-text-on-tint">
+            <CardHeader>
+              <CardTitle className="text-text-on-tint">
+                <FormattedMessage id="balances.ebillCollateral" defaultMessage="eBill collateral balance" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BalanceText amount={balances.ebillCollateral.amount} unit={balances.ebillCollateral.unit} />
             </CardContent>
           </Card>
           <Card className="bg-orange-100 text-text-on-tint">

@@ -237,6 +237,10 @@ export type BitcreditBill = {
 export type ClowderNodeInfo = {
     change_address: string;
     /**
+     * Address dedicated to receiving brc-20 eIOU tokens
+     */
+    eiou_address?: string | null;
+    /**
      * FROST aggregated public key
      */
     multisig_agg_xonly: string;
@@ -732,6 +736,10 @@ export type WildcatInfo = {
      * Clowder change address
      */
     clowder_change_address: string;
+    /**
+     * Clowder eIOU deposit address
+     */
+    clowder_eiou_address?: string | null;
 };
 
 export type GetHealthData = {
