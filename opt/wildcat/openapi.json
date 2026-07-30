@@ -2048,6 +2048,13 @@
           "change_address": {
             "type": "string"
           },
+          "eiou_address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Address dedicated to receiving brc-20 eIOU tokens"
+          },
           "multisig_agg_xonly": {
             "type": "string",
             "description": "FROST aggregated public key"
@@ -3592,6 +3599,13 @@
           "clowder_change_address": {
             "type": "string",
             "description": "Clowder change address"
+          },
+          "clowder_eiou_address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Clowder eIOU deposit address"
           }
         }
       }

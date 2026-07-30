@@ -10,6 +10,7 @@ import BalancesPage from "./BalancesPage";
 interface MockCoverage {
   data?: {
     onchain_collateral: number;
+    ebill_collateral: number;
     eiou_collateral: number;
     credit_circulating_supply: number;
     debit_circulating_supply: number;
@@ -174,6 +175,7 @@ describe("BalancesPage", () => {
     mockUseCoverageQuery.mockReturnValue({
       data: {
         onchain_collateral: 100_000_000,
+        ebill_collateral: 42_000,
         eiou_collateral: 555,
         credit_circulating_supply: 777,
         debit_circulating_supply: 50_000_000,
@@ -191,6 +193,7 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("45,000.00");
     expect(page.textContent).toContain("555 e-IOU");
     expect(page.textContent).toContain("777 crsat");
+    expect(page.textContent).toContain("42,000");
   });
 
   it("shows only original sat amounts when fiat rates are unavailable", async () => {
@@ -207,6 +210,7 @@ describe("BalancesPage", () => {
     mockUseCoverageQuery.mockReturnValue({
       data: {
         onchain_collateral: 12_345,
+        ebill_collateral: 0,
         eiou_collateral: 0,
         credit_circulating_supply: 0,
         debit_circulating_supply: 67_890,
