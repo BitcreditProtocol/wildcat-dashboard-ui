@@ -313,9 +313,11 @@ describe("StatusQuotePage", () => {
 
     clickButtonByText(page, "Last status change");
     expect(lastQuotesQuery()?.sort).toBeUndefined();
-    expect(Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.trim() === "Status")?.getAttribute("class")).toContain(
-      "outline"
-    );
+    expect(
+      Array.from(page.querySelectorAll("button"))
+        .find((button) => button.textContent?.trim() === "Status")
+        ?.getAttribute("class")
+    ).toContain("outline");
 
     clickButtonByText(page, "Last status change");
     expect(lastQuotesQuery()?.sort).toBeUndefined();
