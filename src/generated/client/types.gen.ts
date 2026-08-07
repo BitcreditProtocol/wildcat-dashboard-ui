@@ -488,7 +488,7 @@ export type LightSignedBy = {
     signatory?: null | LightBillSignatory;
 };
 
-export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc';
+export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc' | 'submitted_desc' | 'submitted_asc';
 
 /**
  * --------------------------- Mint operation status
