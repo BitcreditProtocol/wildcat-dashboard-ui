@@ -39,6 +39,19 @@ interface InfiniteQueryResult {
   fetchNextPage: () => Promise<unknown>;
   error: Error | null;
 }
+interface ListQuotesInfiniteOptions {
+  query?: {
+    limit?: number;
+    sort?: string;
+    status?: string;
+  };
+}
+interface InfiniteQueryOptions {
+  queryKey?: {
+    _id: string;
+    query?: ListQuotesInfiniteOptions["query"];
+  }[];
+}
 interface UseQueriesArgs {
   queries: { queryKey?: unknown[] }[];
 }
@@ -48,7 +61,7 @@ interface UseQueriesResultItem {
 }
 
 const mockUseQuery = vi.fn<(options: GetQuoteQueryOptions | ListEbillsQueryOptions) => GetQuoteQueryResult>();
-const mockUseInfiniteQuery = vi.fn<() => InfiniteQueryResult>();
+const mockUseInfiniteQuery = vi.fn<(options: InfiniteQueryOptions) => InfiniteQueryResult>();
 const mockUseQueries = vi.fn<(args: UseQueriesArgs) => UseQueriesResultItem[]>();
 const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
 
@@ -96,13 +109,15 @@ vi.mock("@tanstack/react-query", async () => {
   return {
     ...actual,
     useQuery: (options: GetQuoteQueryOptions) => mockUseQuery(options),
-    useInfiniteQuery: () => mockUseInfiniteQuery(),
+    useInfiniteQuery: (options: InfiniteQueryOptions) => mockUseInfiniteQuery(options),
     useQueries: (args: UseQueriesArgs) => mockUseQueries(args),
   };
 });
 
 vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
-  listQuotesInfiniteOptions: () => ({ queryKey: [{ _id: "listQuotes" }] }),
+  listQuotesInfiniteOptions: (options: ListQuotesInfiniteOptions) => ({
+    queryKey: [{ _id: "listQuotes", query: options.query }],
+  }),
   listEbillsOptions: () => ({ queryKey: [{ _id: "listEbills" }] }),
   getQuoteOptions: ({ path }: { path: { qid: string } }) => ({
     queryKey: [{ _id: "getQuote", path }],
@@ -157,6 +172,18 @@ function clickSelectItem(page: HTMLDivElement, value: string) {
   act(() => {
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
+}
+
+function clickButtonByText(page: HTMLDivElement, text: string) {
+  const button = Array.from(page.querySelectorAll("button")).find((item) => item.textContent?.trim() === text);
+  expect(button).not.toBeUndefined();
+  act(() => {
+    button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
+
+function lastQuotesQuery() {
+  return mockUseInfiniteQuery.mock.calls[mockUseInfiniteQuery.mock.calls.length - 1]?.[0]?.queryKey?.[0]?.query;
 }
 
 beforeEach(() => {
@@ -275,6 +302,23 @@ describe("StatusQuotePage", () => {
     expect(page.textContent).toContain("All quotes");
     expect(page.textContent).toContain("Items per page");
     expect(page.textContent).toContain("All");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_asc" });
+  });
+
+  it("passes backend quote sort order for maturity and keeps last status change local", () => {
+    const page = renderPage();
+
+    clickButtonByText(page, "Maturity");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_desc" });
+
+    clickButtonByText(page, "Last status change");
+    expect(lastQuotesQuery()?.sort).toBeUndefined();
+    expect(Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.trim() === "Status")?.getAttribute("class")).toContain(
+      "outline"
+    );
+
+    clickButtonByText(page, "Last status change");
+    expect(lastQuotesQuery()?.sort).toBeUndefined();
   });
 
   it("filters cards by status", () => {

@@ -2945,7 +2945,9 @@
         "type": "string",
         "enum": [
           "bill_maturity_date_desc",
-          "bill_maturity_date_asc"
+          "bill_maturity_date_asc",
+          "submitted_desc",
+          "submitted_asc"
         ]
       },
       "MintOperationStatus": {
