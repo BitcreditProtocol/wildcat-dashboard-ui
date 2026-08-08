@@ -17,6 +17,7 @@ import { useIntl } from "react-intl";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { Currency } from "@/components/Currency";
 import { humanReadableDurationDays } from "@/utils/dates";
+import { CreditAssessmentBadge } from "@/pages/credit/CreditAssessmentBadge";
 
 const RETRY_COUNT = 2;
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
@@ -133,9 +134,12 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
               secondaryClassName="text-base"
             />
           </div>
-          <Badge variant={getQuoteStatusVariant(effectiveStatus)}>
-            <HighlightText text={intl.formatMessage(getQuoteStatusMessage(effectiveStatus))} highlight={searchQuery} />
-          </Badge>
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <Badge variant={getQuoteStatusVariant(effectiveStatus)}>
+              <HighlightText text={intl.formatMessage(getQuoteStatusMessage(effectiveStatus))} highlight={searchQuery} />
+            </Badge>
+            <CreditAssessmentBadge billId={bill?.id} />
+          </div>
         </div>
       </div>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 px-4 py-2">
