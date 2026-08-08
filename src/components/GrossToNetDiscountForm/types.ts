@@ -20,6 +20,11 @@ export interface FormValues {
 
 export interface GrossToNetProps {
   startDate?: Date;
+  /**
+   * Net amount to open the form with, in the gross currency's smallest unit. Used only when the
+   * operator has no draft saved for this quote: a draft they were editing outranks a suggestion.
+   */
+  suggestedNet?: string;
   endDate: Date;
   gross: CurrencyAmount;
   submitButtonText?: string;

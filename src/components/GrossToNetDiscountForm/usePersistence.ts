@@ -20,6 +20,7 @@ export function useFormPersistence({
   setNetInputDisplay,
   setValue,
   startDate,
+  suggestedNet,
 }: {
   daysInput?: string;
   discountRateInput?: string;
@@ -34,6 +35,7 @@ export function useFormPersistence({
   setNetInputDisplay: (value: string) => void;
   setValue: UseFormSetValue<FormValues>;
   startDate?: Date;
+  suggestedNet?: string;
 }) {
   useEffect(() => {
     if (hasSetInitialDays) {
@@ -77,6 +79,16 @@ export function useFormPersistence({
       });
     }
 
+    // No saved draft: open on the suggested amount so confirming is approving it, and editing it
+    // is customising it. The rate follows from the net, as it does when the operator types one.
+    if (suggestedNet !== undefined) {
+      setValue("netInput", isSat ? parseDigitsToInt(suggestedNet) : suggestedNet, { shouldValidate: true, shouldDirty: true });
+      if (isSat) {
+        setNetInputDisplay(formatGroupedSats(suggestedNet));
+      }
+      setLastEdited("net");
+    }
+
     setHasSetInitialDays(true);
   }, [
     endDate,
@@ -89,6 +101,7 @@ export function useFormPersistence({
     setNetInputDisplay,
     setValue,
     startDate,
+    suggestedNet,
   ]);
 
   useEffect(() => {
