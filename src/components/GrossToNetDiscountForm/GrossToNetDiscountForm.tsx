@@ -26,7 +26,7 @@ import { useFormPersistence } from "./usePersistence";
 
 type GrossToNetFormValues = FormValues;
 
-const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitButtonText, quoteId }: GrossToNetProps) => {
+const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitButtonText, quoteId, suggestedNet }: GrossToNetProps) => {
   const intl = useIntl();
   const { formatAmount: formatAmountByPreference, formatGroupedSats, parseAmount: parseAmountByPreference } = useAmountFormatter();
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false);
@@ -194,6 +194,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     setNetInputDisplay,
     setValue,
     startDate,
+    suggestedNet,
   });
 
   const { discount, net } = useDiscountCalculations({

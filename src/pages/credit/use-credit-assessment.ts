@@ -1,0 +1,36 @@
+import { useQuery } from "@tanstack/react-query";
+import type { DecisionCase } from "./decision-types";
+
+/**
+ * Evaluated AI Credit decisions from the local adapter (`127.0.0.1:8787` via the dev proxy).
+ * Read-only and synthetic: the adapter re-evaluates fixture snapshots through the deterministic
+ * core, and no model is invoked. A quote whose bill has no decision simply has none — the hook
+ * returns undefined and the calling view renders nothing.
+ */
+export function useCreditAssessments() {
+  return useQuery({
+    queryKey: ["ai-credit", "decisions"],
+    queryFn: async (): Promise<{ cases: DecisionCase[] }> => {
+      const response = await fetch("/api/ai-credit/workbench-decisions");
+      if (!response.ok) throw new Error(`Credit adapter responded ${response.status}`);
+      return response.json() as Promise<{ cases: DecisionCase[] }>;
+    },
+    staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+export function useCreditAssessmentForBill(billId: string | undefined): {
+  decisionCase: DecisionCase | undefined;
+  isLoading: boolean;
+  /** True when the adapter answered but holds no decision for this bill. */
+  isAbsent: boolean;
+} {
+  const { data, isLoading, error } = useCreditAssessments();
+  const decisionCase = billId === undefined ? undefined : data?.cases.find((one) => one.snapshot.bill?.billId === billId);
+  return {
+    decisionCase,
+    isLoading,
+    isAbsent: error === null && data !== undefined && decisionCase === undefined,
+  };
+}
