@@ -12,6 +12,7 @@ import QuotePage from "./pages/quotes/QuotePage";
 import StatusQuotePage from "./pages/quotes/StatusQuotePage";
 import { QUOTE_STATUS_ROUTES } from "./pages/quotes/quote-status-routes";
 import CashFlowPage from "./pages/balances/CashFlowPage";
+import { env } from "@/lib/env";
 import { initKeycloak } from "./keycloak";
 import { client as apiClient } from "./lib/api-client";
 import BillsPage from "@/pages/bills/BillsPage";
@@ -31,6 +32,11 @@ const queryClient = new QueryClient();
 const prepare = async () => {
   await initSentry();
   apiClient.getConfig();
+  // Local-only (VITE_API_MOCKING_ENABLED=true): skip the login-required redirect entirely. Auth in
+  // this stack is an Envoy concern — the admin aggregator behind it has no auth code — so talking
+  // to the aggregator directly needs no session, and initKeycloak would otherwise bounce the whole
+  // app to a login page before the first request. Off by default, never true in a deployed build.
+  if (env.apiMocksEnabled) return;
   await initKeycloak();
 };
 
