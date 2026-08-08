@@ -30,6 +30,14 @@ const abortedRequest = (request: Request): Request => {
 };
 
 heyApiClient.interceptors.request.use(async (request) => {
+  // Local-only escape hatch (VITE_API_MOCKING_ENABLED=true, previously a dead flag): send the
+  // request unauthenticated instead of aborting it and redirecting to a login. Without this every
+  // /v1/admin call dies inside this interceptor before it reaches the network, so no local stub or
+  // MSW handler can ever answer one. Off by default, and never true in a deployed build.
+  if (env.apiMocksEnabled) {
+    return request;
+  }
+
   if (isRedirectingToLogin) {
     return abortedRequest(request);
   }

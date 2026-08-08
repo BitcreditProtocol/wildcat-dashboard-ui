@@ -21,6 +21,7 @@ import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { EndorseeList } from "./components/EndorseeList";
 import type { InfoReply } from "@/generated/client/types.gen";
 import NotFoundPage from "@/pages/NotFoundPage";
+import { QuoteCreditAssessment } from "@/pages/credit/QuoteCreditAssessment";
 
 interface LocationState {
   from?: string;
@@ -230,6 +231,8 @@ function PageBody({ id }: { id: string }) {
         isInMempool={isInMempool}
         requestedToPay={requestedToPay}
       />
+
+      <QuoteCreditAssessment billId={bill.id} />
 
       <QuoteActions
         value={quote}
