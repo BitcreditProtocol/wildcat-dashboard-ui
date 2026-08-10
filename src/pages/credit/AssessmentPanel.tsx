@@ -27,11 +27,6 @@ const messages = defineMessages({
   observed: { id: "credit.assessment.observed", defaultMessage: "observed", description: "Prefix for observed trace values" },
   policy: { id: "credit.assessment.policy", defaultMessage: "policy", description: "Prefix for policy trace values" },
   inputs: { id: "credit.assessment.inputs", defaultMessage: "inputs", description: "Prefix for calculation inputs" },
-  provenance: {
-    id: "credit.assessment.provenance",
-    defaultMessage: "{policyPack} · {calculation} · result {digest}",
-    description: "Versioning line for the decision result",
-  },
   riskEvidence: {
     id: "credit.assessment.riskEvidence",
     defaultMessage: "Acceptor PD {pd} · LGD {lgd} · {evidenceState}, valid through {validThrough}",
@@ -58,7 +53,7 @@ export interface AssessmentPanelProps {
 /** The six axis findings, with the per-rule and pricing traces one level deeper. */
 export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProps) {
   const intl = useIntl();
-  const { snapshot, policyPack, result } = decisionCase;
+  const { snapshot, result } = decisionCase;
   const { acceptor } = snapshot;
 
   return (
@@ -149,14 +144,6 @@ export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProp
           </div>
         </details>
       )}
-
-      <p className="mt-2 break-all font-mono text-[10px] text-muted-foreground">
-        {intl.formatMessage(messages.provenance, {
-          policyPack: policyPack.policyPackVersion,
-          calculation: policyPack.calculationVersion,
-          digest: decisionCase.resultDigest,
-        })}
-      </p>
     </details>
   );
 }
