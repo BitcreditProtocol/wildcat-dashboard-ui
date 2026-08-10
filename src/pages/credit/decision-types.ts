@@ -122,6 +122,7 @@ export interface DecisionCase {
     asOfDate: string;
     product: string;
     country: string;
+    industry: string;
     isSynthetic: boolean;
     confirmedClaims: ConfirmedClaims;
     contradictions: { code: string; state: string; evidenceState: string }[];
@@ -138,7 +139,11 @@ export interface DecisionCase {
   };
   policyPack: {
     policyPackVersion: string;
+    policyPackDigest: string;
     calculationVersion: string;
+    product: string;
+    country: string;
+    industry: string;
     /** The holder guardrails, so a rate can be read against the limit it was measured against. */
     maximumEffectiveAnnualBps: number;
     maximumFeeRatioBps: number;
