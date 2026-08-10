@@ -44,6 +44,7 @@ const caseFixture = (overrides: {
     asOfDate: "2026-08-10",
     product: "seasonal_coffee_accepted_ebill_discount",
     country: "GT",
+    industry: "coffee_production",
     isSynthetic: true,
     confirmedClaims: {
       useOfFunds: "Fertilizante y mano de obra",
@@ -76,7 +77,11 @@ const caseFixture = (overrides: {
   },
   policyPack: {
     policyPackVersion: "synthetic-guatemala-coffee-v7",
+    policyPackDigest: "sha256:policy-pack",
     calculationVersion: "deterministic-credit-core-v7",
+    product: "seasonal_coffee_accepted_ebill_discount",
+    country: "GT",
+    industry: "coffee_production",
     maximumEffectiveAnnualBps: 1_500,
     maximumFeeRatioBps: 3_000,
   },
@@ -178,6 +183,17 @@ describe("CreditAssessmentCard", () => {
     // The real rail is the mint's own.
     expect(container.textContent).toContain("Offering and denying happen in the quote actions below");
     expect(container.textContent).not.toContain("advance");
+  });
+
+  it("identifies the immutable policy scope that produced the result", () => {
+    render(<CreditAssessmentCard decisionCase={offerCase} />);
+
+    expect(container.textContent).toContain(
+      "Policy scope: GT · Coffee production · Seasonal coffee accepted ebill discount — synthetic-guatemala-coffee-v7 / deterministic-credit-core-v7"
+    );
+    expect(container.textContent).toContain("policy sha256:policy-pack… · result sha256:result…");
+    expect(container.querySelector('[title="sha256:policy-pack"]')).not.toBeNull();
+    expect(container.querySelector('[title="sha256:result"]')).not.toBeNull();
   });
 
   it("does not repeat what the quote detail above it already states", () => {
