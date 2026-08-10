@@ -20,15 +20,16 @@ interface SortButtonsProps<T extends string> {
 
 export function SortButtons<T extends string>({ sortBy, onSortChange, options }: SortButtonsProps<T>) {
   const intl = useIntl();
+  const isActiveSort = (field: T) => sortBy.startsWith(`${field}-`);
   const getSortIcon = (field: T) => {
-    if (!sortBy.startsWith(field)) {
+    if (!isActiveSort(field)) {
       return null;
     }
     return sortBy.endsWith("asc") ? <AppIcon icon={ArrowUp} size="sm" /> : <AppIcon icon={ArrowDown} size="sm" />;
   };
 
   const getTitle = (field: T, label: string) => {
-    if (sortBy.startsWith(field)) {
+    if (isActiveSort(field)) {
       return sortBy.endsWith("asc")
         ? intl.formatMessage(
             {
@@ -66,7 +67,7 @@ export function SortButtons<T extends string>({ sortBy, onSortChange, options }:
         <Button
           key={option.field}
           size="sm"
-          variant={sortBy.startsWith(option.field) ? "default" : "outline"}
+          variant={isActiveSort(option.field) ? "default" : "outline"}
           onClick={() => onSortChange(option.field)}
           title={getTitle(option.field, option.label)}
           className="flex items-center gap-1 max-w-sm"

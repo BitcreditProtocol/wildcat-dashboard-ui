@@ -365,6 +365,7 @@
   "quotes.sort.amount": "Amount",
   "quotes.sort.maturity": "Maturity",
   "quotes.sort.status": "Status",
+  "quotes.sort.statusChange": "Last status change",
   "quotes.statusPage.title": "{status} quotes",
   "quotes.statusPage.titleAll": "All quotes",
   "quotes.toast.deny.error": "Error while denying quote: {error}",

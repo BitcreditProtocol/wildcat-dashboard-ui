@@ -1,6 +1,6 @@
 import { listQuotesInfiniteOptions, getQuoteOptions, listEbillsOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
-import type { BitcreditBill, BillInfo, InfoReply, LightInfo } from "@/generated/client/types.gen";
+import type { BitcreditBill, BillInfo, InfoReply, LightInfo, ListSort } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { isBeforeUtcStartOfDate } from "@/utils/dates";
 import * as React from "react";
@@ -9,7 +9,7 @@ import { useIntl } from "react-intl";
 
 export type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "MintingEnabled";
 
-type SortField = "status" | "sum" | "maturity";
+type SortField = "status" | "sum" | "maturity" | "statusChange";
 type SortDirection = "asc" | "desc";
 export type SortBy = `${SortField}-${SortDirection}`;
 
@@ -118,6 +118,41 @@ function shouldFetchEbillsForStatusPage(status?: QuoteStatus): boolean {
   return status === undefined || status === "Pending" || status === "Offered";
 }
 
+function getApiSort(sortBy: SortBy): ListSort | undefined {
+  switch (sortBy) {
+    case "maturity-asc":
+      return "bill_maturity_date_asc";
+    case "maturity-desc":
+      return "bill_maturity_date_desc";
+    default:
+      return undefined;
+  }
+}
+
+function getQuoteStatusTimestamp(quoteDetails: InfoReply | undefined): string | undefined {
+  if (!quoteDetails) {
+    return undefined;
+  }
+
+  if ("submitted" in quoteDetails) {
+    return quoteDetails.submitted;
+  }
+
+  if ("tstamp" in quoteDetails) {
+    return quoteDetails.tstamp;
+  }
+
+  return undefined;
+}
+
+function compareOptionalDates(left: string | undefined, right: string | undefined): number {
+  if (!left && !right) return 0;
+  if (!left) return 1;
+  if (!right) return -1;
+
+  return new Date(left).getTime() - new Date(right).getTime();
+}
+
 export function useQuoteList(status?: QuoteStatus) {
   const intl = useIntl();
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,6 +160,7 @@ export function useQuoteList(status?: QuoteStatus) {
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [itemsPerPage, setItemsPerPage] = useState<ItemsPerPageValue>(PAGE_SIZE);
   const limit = itemsPerPage === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_LIMIT : itemsPerPage;
+  const apiSort = getApiSort(sortBy);
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const todayIsoDate = new Date().toISOString().split("T")[0];
   const paymentSearchRequested = matchesRequestToPaySearch(normalizedSearchQuery);
@@ -133,6 +169,7 @@ export function useQuoteList(status?: QuoteStatus) {
     ...listQuotesInfiniteOptions({
       query: {
         limit,
+        sort: apiSort,
         status,
       },
     }),
@@ -289,13 +326,23 @@ export function useQuoteList(status?: QuoteStatus) {
         if (!bBill?.maturity_date) return -1;
         return new Date(bBill.maturity_date).getTime() - new Date(aBill.maturity_date).getTime();
       }
+      case "statusChange-asc":
+        return compareOptionalDates(
+          getQuoteStatusTimestamp(aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data : undefined),
+          getQuoteStatusTimestamp(bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data : undefined)
+        );
+      case "statusChange-desc":
+        return compareOptionalDates(
+          getQuoteStatusTimestamp(bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data : undefined),
+          getQuoteStatusTimestamp(aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data : undefined)
+        );
       default:
         return 0;
     }
   });
 
   const toggleSort = (field: SortField) => {
-    if (sortBy.startsWith(field)) {
+    if (sortBy.startsWith(`${field}-`)) {
       const nextDirection: SortDirection = sortBy.endsWith("asc") ? "desc" : "asc";
       setSortBy(`${field}-${nextDirection}`);
       return;
@@ -324,6 +371,13 @@ export function useQuoteList(status?: QuoteStatus) {
       label: intl.formatMessage({
         id: "quotes.sort.status",
         defaultMessage: "Status",
+      }),
+    },
+    {
+      field: "statusChange" as const,
+      label: intl.formatMessage({
+        id: "quotes.sort.statusChange",
+        defaultMessage: "Last status change",
       }),
     },
   ];
