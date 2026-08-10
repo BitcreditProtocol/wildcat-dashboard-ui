@@ -5,7 +5,7 @@ import { defineMessages, useIntl } from "react-intl";
 import { AssessmentPanel } from "./AssessmentPanel";
 import { ApplicantClaims, InvoiceEvidence } from "./CaseEvidence";
 import { SubmittedDocuments } from "./SubmittedDocuments";
-import { percentFromBps, words, type DecisionCase } from "./decision-types";
+import { percentFromBps, shortDigest, words, type DecisionCase } from "./decision-types";
 
 /**
  * The AI Credit assessment for one bill, rendered inside the mint's own quote view. It informs
@@ -18,6 +18,12 @@ const messages = defineMessages({
   heading: { id: "credit.card.heading", defaultMessage: "AI Credit assessment", description: "Heading of the credit assessment card" },
   synthetic: { id: "credit.synthetic", defaultMessage: "Synthetic", description: "Badge marking synthetic fixture data" },
   asOf: { id: "credit.asOf", defaultMessage: "As of {date}", description: "Snapshot date of a case" },
+  policyScope: {
+    id: "credit.card.policyScope",
+    defaultMessage:
+      "Policy scope: {country} · {industry} · {product} — {policyVersion} / {calculationVersion} · policy {policyDigest} · result {resultDigest}",
+    description: "Read-only country, industry, product and version provenance for the deterministic credit decision",
+  },
   offerHeading: { id: "credit.quote.heading", defaultMessage: "Governed offer", description: "Heading of the offer figures" },
   discounted: {
     id: "credit.quote.discounted",
@@ -161,6 +167,20 @@ export function CreditAssessmentCard({ decisionCase, hideActionNote = false }: C
           {snapshot.caseId} · {intl.formatMessage(messages.asOf, { date: snapshot.asOfDate })}
         </span>
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        {intl.formatMessage(messages.policyScope, {
+          country: decisionCase.policyPack.country,
+          industry: words(decisionCase.policyPack.industry),
+          product: words(decisionCase.policyPack.product),
+          policyVersion: decisionCase.policyPack.policyPackVersion,
+          calculationVersion: decisionCase.policyPack.calculationVersion,
+          policyDigest: (
+            <span title={decisionCase.policyPack.policyPackDigest}>{shortDigest(decisionCase.policyPack.policyPackDigest)}</span>
+          ),
+          resultDigest: <span title={decisionCase.resultDigest}>{shortDigest(decisionCase.resultDigest)}</span>,
+        })}
+      </p>
 
       {/* Reading order is the operator's: what to offer, then what backs it, then detail on demand.
           Bill and party facts are not repeated here — the quote detail above this card carries them. */}
