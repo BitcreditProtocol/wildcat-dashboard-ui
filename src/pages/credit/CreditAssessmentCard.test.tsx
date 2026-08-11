@@ -184,10 +184,9 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("7,734,000 sat");
     expect(container.textContent).toContain("Valid until");
     expect(container.textContent).toContain("2026-08-12");
-    // A rate is only readable against the limit it was measured against.
     expect(container.textContent).toContain("6.88%");
-    expect(container.textContent).toContain("15.00% policy limit");
-    expect(container.textContent).toContain("266,000 sat total fee · 3.33% of bill (30.00% limit) · 180-day tenor");
+    expect(container.textContent).not.toContain("tomorrow");
+    expect(container.textContent).toContain("266,000 sat total fee · 3.33% of bill · 180-day tenor");
     // The acceptor owes the sum; the holder is only liable on dishonour.
     expect(container.textContent).toContain("Acceptor pays at maturity");
     // The real action rail is directly below, so the card no longer explains its own placement.
@@ -207,6 +206,8 @@ describe("CreditAssessmentCard", () => {
     expect(disclosures.every((details) => !details.open)).toBe(true);
     expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
     expect(container.textContent).toContain("Calculation versiondeterministic-credit-core-v7");
+    expect(container.textContent).toContain("Maximum effective annual cost15.00%");
+    expect(container.textContent).toContain("Maximum fee ratio30.00%");
     expect(container.querySelector('[title="sha256:policy-pack"]')).not.toBeNull();
     expect(container.querySelector('[title="sha256:result"]')).not.toBeNull();
   });
