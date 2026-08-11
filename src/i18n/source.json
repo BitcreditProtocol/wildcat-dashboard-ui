@@ -141,7 +141,6 @@
   "credit.quoteCard.absent": "No AI Credit assessment for this bill.",
   "credit.quoteCard.loading": "Loading governed credit assessment…",
   "credit.quoteCard.unavailable": "Governed credit assessment unavailable. Do not offer from this panel until it can be loaded.",
-  "credit.said.acceptor": "Named {acceptor} as the acceptor",
   "credit.said.attribution": "Applicant {applicantRef} · {evidenceState}",
   "credit.said.caption": "No chat transcript is stored. These are the claims the applicant confirmed during onboarding — quoted verbatim where the applicant wrote them.",
   "credit.said.heading": "What the applicant said",

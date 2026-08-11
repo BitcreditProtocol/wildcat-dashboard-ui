@@ -33,15 +33,17 @@ export interface OperatorDecisionInput {
 
 type OperatorRole = "reviewer" | "approver";
 
-function authenticatedOperator(action: OperatorDecisionAction): { operatorId: string; operatorRole: OperatorRole; token?: string } | null {
+function authenticatedOperator(action: OperatorDecisionAction): { operatorId: string; operatorRole: OperatorRole } | null {
   // The mock stack has no Keycloak by design. This identity is synthetic test attribution only;
   // deployed builds must derive attribution from authenticated claims below.
   if (env.apiMocksEnabled) return { operatorId: "synthetic-dashboard-operator", operatorRole: "approver" };
+  // A live token is still required as evidence of an authenticated session — it is simply never
+  // sent onward, because the prototype adapter has no way to verify it and no need for it.
   if (!keycloak.authenticated || keycloak.subject === undefined || keycloak.token === undefined) return null;
   const roles = keycloak.realmAccess?.roles ?? [];
   const operatorRole = roles.includes("approver") ? "approver" : roles.includes("reviewer") ? "reviewer" : undefined;
   if (operatorRole === undefined || (action !== "return_for_information" && operatorRole !== "approver")) return null;
-  return { operatorId: keycloak.subject, operatorRole, token: keycloak.token };
+  return { operatorId: keycloak.subject, operatorRole };
 }
 
 export async function recordOperatorDecision(input: OperatorDecisionInput): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -57,10 +59,11 @@ export async function recordOperatorDecision(input: OperatorDecisionInput): Prom
         operatorRole: operator.operatorRole,
         requiredItems: input.requiredItems ?? [],
       }),
-      headers: {
-        ...(operator.token === undefined ? {} : { authorization: `Bearer ${operator.token}` }),
-        "content-type": "application/json",
-      },
+      // No bearer token: the prototype adapter neither verifies one nor needs one, and a live
+      // Keycloak JWT sent to an unauthenticated local process is a credential given away for
+      // nothing. The gate above still decides whether this call happens at all. When the adapter
+      // grows real authentication, the token travels with that — not ahead of it.
+      headers: { "content-type": "application/json" },
       method: "POST",
     });
     if (!response.ok) {
