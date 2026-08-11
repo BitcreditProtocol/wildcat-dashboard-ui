@@ -168,9 +168,7 @@ export function CreditAssessmentCard({ decisionCase, hideActionNote = false }: C
 
       <InvoiceEvidence invoice={snapshot.invoice} />
 
-      {snapshot.bill !== null && (
-        <SubmittedDocuments billId={snapshot.bill.billId} submittedEvidence={decisionCase.submittedEvidence ?? []} />
-      )}
+      <SubmittedDocuments submittedEvidence={decisionCase.submittedEvidence ?? []} evidencePackets={decisionCase.evidencePackets ?? []} />
 
       <ApplicantClaims claims={snapshot.confirmedClaims} applicantRef={snapshot.applicantRef} />
 

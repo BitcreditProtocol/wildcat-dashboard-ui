@@ -119,14 +119,45 @@ const withDocuments: DecisionCase = {
     {
       reference: "goods-invoice_0f4d1c22-8b3a-4a1e-9c7e-2f5b6d8a1234.pdf",
       label: "goods-invoice_0f4d1c22-8b3a-4a1e-9c7e-2f5b6d8a1234.pdf",
-      contentDigest: "sha256-base58:2NEpo7TZRhna7vSvL9CPpKrxjuUnLmVzHnjPUuFEqZaP",
-      origin: "bill_attachment",
+      contentDigest: `sha256:${"a".repeat(64)}`,
+      origin: "client_asserted_bill_attachment",
     },
     {
       reference: "b1946ac92492d2347c6235b4d2611184",
       label: "delivery-photo.jpg",
       contentDigest: "sha256:b1946ac92492d2347c6235b4d2611184b1946ac92492d2347c6235b4d2611184",
       origin: "applicant_upload",
+    },
+  ],
+  evidencePackets: [
+    {
+      evidence: {
+        reference: "goods-invoice_0f4d1c22-8b3a-4a1e-9c7e-2f5b6d8a1234.pdf",
+        label: "goods-invoice_0f4d1c22-8b3a-4a1e-9c7e-2f5b6d8a1234.pdf",
+        contentDigest: `sha256:${"a".repeat(64)}`,
+        origin: "client_asserted_bill_attachment",
+      },
+      status: "quarantined",
+      byteLength: 12_345,
+      extraction: {
+        schemaVersion: "invoice-extraction-proposal-v1",
+        derivativeDigest: `sha256:${"d".repeat(64)}`,
+        parserVersion: "poppler-text-v1+22.12.0",
+        promptVersion: "invoice-extraction-v1",
+        modelId: "gpt-5.5",
+        extractedAt: "2026-08-11T10:00:00.000Z",
+        proposal: {
+          invoiceNumber: { value: "INV-42", citation: { page: 1, exactSnippet: "Invoice number INV-42" } },
+          seller: null,
+          buyer: null,
+          issueDate: null,
+          goodsDescription: null,
+          transactionReference: null,
+          currency: null,
+          totalSat: null,
+          lineItems: [],
+        },
+      },
     },
   ],
 };
@@ -196,19 +227,29 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).not.toContain("crsat");
   });
 
-  it("offers the applicant's chosen bill documents as real files, and says when there is no file", () => {
+  it("shows a provenance packet and never opens the raw document", () => {
     render(<CreditAssessmentCard decisionCase={withDocuments} />);
 
-    expect(container.textContent).toContain("Submitted with the application");
-    // The uuid core appends to a stored file name is not shown to the operator.
+    expect(container.textContent).toContain("Evidence packet");
+    expect(container.textContent).toContain("Synthetic/testnet only");
     expect(container.textContent).toContain("goods-invoice.pdf");
     expect(container.textContent).not.toContain("0f4d1c22");
-    expect(container.textContent).toContain("On the bill");
-    expect(container.querySelector("button")?.textContent).toContain("Open");
-    // A file the applicant uploaded while applying never reached this side, so it is not offered.
+    expect(container.textContent).toContain("Browser-asserted bill attachment");
+    expect(container.textContent).toContain("did not establish a signed bill or revision binding");
+    expect(container.textContent).toContain(`sha256:${"a".repeat(64)}`);
+    expect(container.textContent).toContain("Quarantined · 12,345 bytes");
+    expect(container.textContent).toContain("invoice-extraction-proposal-v1");
+    expect(container.textContent).toContain("poppler-text-v1+22.12.0");
+    expect(container.textContent).toContain("invoice-extraction-v1");
+    expect(container.textContent).toContain("gpt-5.5");
+    expect(container.textContent).toContain(`sha256:${"d".repeat(64)}`);
+    expect(container.textContent).toContain("Page 1: “Invoice number INV-42”");
     expect(container.textContent).toContain("delivery-photo.jpg");
-    expect(container.textContent).toContain("Added when applying");
-    expect(container.textContent).toContain("Not stored on this side");
+    expect(container.textContent).toContain("Applicant upload");
+    expect(container.textContent).toContain("No current server receipt");
+    expect(container.textContent).toContain("Submitted digest (no server receipt)");
+    expect(container.textContent).toContain("absence is not an adverse finding");
+    expect(container.querySelector("[data-testid='evidence-packet'] button")).toBeNull();
   });
 
   it("tells the operator not to offer while verification is outstanding", () => {
