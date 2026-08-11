@@ -31,11 +31,6 @@ const messages = defineMessages({
     defaultMessage: "Assessment unavailable",
     description: "Primary title for a payload this build cannot safely understand",
   },
-  offerSummary: {
-    id: "credit.outcome.offerSummary",
-    defaultMessage: "Deterministic terms for the full bill.",
-    description: "Concise summary under an available governed offer",
-  },
   verificationSummary: {
     id: "credit.outcome.verificationSummary",
     defaultMessage: "No quote can be issued until the requested evidence is verified.",
@@ -113,12 +108,12 @@ const messages = defineMessages({
   },
   feeHint: {
     id: "credit.details.feeHint",
-    defaultMessage: "{bill} − {discount} − {cost} = {offer}",
-    description: "Compact calculation from bill sum to governed offer amount",
+    defaultMessage: "{fee} total",
+    description: "Compact total fee under the fee-calculation disclosure",
   },
   appliedDiscount: {
     id: "credit.fee.appliedDiscount",
-    defaultMessage: "Applied discount",
+    defaultMessage: "Discount",
     description: "Applied discount component of the whole-bill fee",
   },
   operatingCost: {
@@ -126,9 +121,12 @@ const messages = defineMessages({
     defaultMessage: "Operating cost",
     description: "Fixed operating cost component of the whole-bill fee",
   },
-  totalFee: { id: "credit.fee.total", defaultMessage: "Total fee", description: "Whole-bill effective fee" },
-  netOffer: { id: "credit.fee.netOffer", defaultMessage: "Offer amount", description: "Net amount offered after the whole-bill fee" },
   product: { id: "credit.audit.product", defaultMessage: "Product", description: "Policy product label" },
+  policyFile: {
+    id: "credit.audit.policyFile",
+    defaultMessage: "Policy file",
+    description: "Exact policy JSON file used for the calculation",
+  },
   policyVersion: { id: "credit.audit.policyVersion", defaultMessage: "Policy version", description: "Policy version label" },
   calculationVersion: {
     id: "credit.audit.calculationVersion",
@@ -175,7 +173,7 @@ function useDecisionOutcome(decisionCase: DecisionCase) {
   if (result.recommendation === "offer_available") {
     return {
       title: intl.formatMessage(messages.outcomeOffer),
-      summary: intl.formatMessage(messages.offerSummary),
+      summary: undefined,
       badge: <Badge variant="success">{intl.formatMessage(messages.withinPolicy)}</Badge>,
     };
   }
@@ -299,7 +297,7 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
               <CardTitle className="text-xl">{outcome.title}</CardTitle>
               {outcome.badge}
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{outcome.summary}</p>
+            {outcome.summary !== undefined && <p className="mt-1 text-sm text-muted-foreground">{outcome.summary}</p>}
           </div>
           {snapshot.isSynthetic && <Badge variant="outline">{intl.formatMessage(messages.synthetic)}</Badge>}
         </div>
@@ -311,18 +309,13 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
         <Disclosure
           title={intl.formatMessage(messages.feeDetails)}
           hint={intl.formatMessage(messages.feeHint, {
-            bill: formatSat(offerTerms.billSumSat),
-            discount: formatSat(offerTerms.appliedDiscountSat),
-            cost: formatSat(offerTerms.operatingCostSat),
-            offer: formatSat(offerTerms.discountedSat),
+            fee: formatSat(offerTerms.effectiveFeeSat),
           })}
         >
-          <dl className="grid gap-3 sm:grid-cols-4">
+          <dl className="grid gap-3 sm:grid-cols-2">
             {[
               [intl.formatMessage(messages.appliedDiscount), offerTerms.appliedDiscountSat],
               [intl.formatMessage(messages.operatingCost), offerTerms.operatingCostSat],
-              [intl.formatMessage(messages.totalFee), offerTerms.effectiveFeeSat],
-              [intl.formatMessage(messages.netOffer), offerTerms.discountedSat],
             ].map(([label, value]) => (
               <div key={label}>
                 <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -330,7 +323,6 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
               </div>
             ))}
           </dl>
-          <PricingTrace steps={decisionCase.result.calculationTrace} />
         </Disclosure>
       )}
 
@@ -349,9 +341,10 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
 
       <Disclosure
         title={intl.formatMessage(messages.policyDetails)}
-        hint={`${policyPack.country} · ${words(policyPack.industry)} · ${policyPack.policyPackVersion}`}
+        hint={`${policyPack.country} · ${words(policyPack.industry)} · ${decisionCase.policyFileName}`}
       >
         <dl className="flex flex-col gap-2">
+          <AuditRow label={intl.formatMessage(messages.policyFile)}>{decisionCase.policyFileName}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.product)}>{words(policyPack.product)}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.policyVersion)}>{policyPack.policyPackVersion}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.calculationVersion)}>{policyPack.calculationVersion}</AuditRow>
@@ -366,6 +359,7 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
             <span title={decisionCase.resultDigest}>{decisionCase.resultDigest}</span>
           </AuditRow>
         </dl>
+        <PricingTrace steps={decisionCase.result.calculationTrace} />
       </Disclosure>
     </Card>
   );
