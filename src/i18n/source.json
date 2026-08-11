@@ -121,6 +121,7 @@
   "credit.quote.expires": "Valid until",
   "credit.quote.noFitReasons": "Policy reasons: {reasons}",
   "credit.quote.repayment": "Acceptor pays at maturity. Holder recourse applies only on dishonour; its legal form remains under review.",
+  "credit.quote.repaymentHeading": "Repayment & recourse",
   "credit.quoteCard.absent": "No AI Credit assessment for this bill.",
   "credit.said.acceptor": "Named {acceptor} as the acceptor",
   "credit.said.attribution": "Applicant {applicantRef} · {evidenceState}",
