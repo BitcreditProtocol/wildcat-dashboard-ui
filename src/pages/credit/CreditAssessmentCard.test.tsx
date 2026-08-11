@@ -216,6 +216,7 @@ describe("CreditAssessmentCard", () => {
     expect(disclosures.every((details) => !details.open)).toBe(true);
     expect(disclosures[0]?.textContent).toContain("Repayment & recourse");
     expect(disclosures[0]?.textContent).toContain("Acceptor pays at maturity");
+    expect(container.textContent).not.toContain("Independently verified");
     expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
     expect(container.textContent).toContain("Calculation versiondeterministic-credit-core-v7");
     expect(container.textContent).toContain("Maximum effective annual cost15.00%");
