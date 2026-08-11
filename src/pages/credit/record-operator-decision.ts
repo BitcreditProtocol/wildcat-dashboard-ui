@@ -6,8 +6,12 @@
  * why, pinned by the adapter to the exact snapshot and engine result they were shown. Without it
  * the button press is the only trace, and a button press is not a reason.
  *
- * Best-effort by design: an operator's offer must not fail because the local adapter is not
- * running. The caller surfaces the failure; the Mint action proceeds either way.
+ * Fail-closed by design. Where an AI Credit assessment exists, this record is the only trace of the
+ * human judgement behind the offer, so the caller holds the Mint's offer until it succeeds and shows
+ * the operator a retryable error if it does not. It was best-effort, which meant a quiet console
+ * warning could be the whole difference between a governed decision and an unexplained offer.
+ * Recording is replay-tolerant on the adapter side, so retrying the same judgement is safe; a bill
+ * with no assessment never reaches here and the Mint flow is unchanged for it.
  */
 export type OperatorDecisionAction = "confirm_proposed_quote" | "propose_adjustment_and_requote" | "return_for_information";
 
@@ -30,6 +34,7 @@ export async function recordOperatorDecision(input: OperatorDecisionInput): Prom
       }),
       headers: { "content-type": "application/json" },
       method: "POST",
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) {
       const body = (await response.json().catch(() => ({}))) as { error?: string };
