@@ -3,7 +3,7 @@ import { Card, CardTitle } from "@bitcredit/ui-library";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
-import { AssessmentPanel } from "./AssessmentPanel";
+import { AssessmentPanel, PricingTrace } from "./AssessmentPanel";
 import { ApplicantClaims, InvoiceEvidence } from "./CaseEvidence";
 import { SubmittedDocuments } from "./SubmittedDocuments";
 import { percentFromBps, words, type DecisionCase } from "./decision-types";
@@ -66,11 +66,6 @@ const messages = defineMessages({
     defaultMessage: "Effective annual cost",
     description: "Effective annual cost label",
   },
-  feeLine: {
-    id: "credit.quote.feeLine",
-    defaultMessage: "{fee} total fee · {feeRatio} of bill · {tenor}-day tenor",
-    description: "Compact whole-bill fee summary",
-  },
   repayment: {
     id: "credit.quote.repayment",
     defaultMessage: "Acceptor pays at maturity. Holder recourse applies only on dishonour; its legal form remains under review.",
@@ -98,7 +93,7 @@ const messages = defineMessages({
   },
   reviewHint: {
     id: "credit.details.reviewHint",
-    defaultMessage: "Invoice, applicant claims, six checks and calculations",
+    defaultMessage: "Invoice, applicant claims and six policy checks",
     description: "Caption for the evidence and rationale disclosure",
   },
   policyDetails: {
@@ -106,6 +101,28 @@ const messages = defineMessages({
     defaultMessage: "Policy & audit trail",
     description: "Expandable section containing policy provenance and immutable identifiers",
   },
+  feeDetails: {
+    id: "credit.details.fee",
+    defaultMessage: "Fee calculation",
+    description: "Expandable section containing the whole-bill fee calculation",
+  },
+  feeHint: {
+    id: "credit.details.feeHint",
+    defaultMessage: "{bill} − {discount} − {cost} = {offer}",
+    description: "Compact calculation from bill sum to governed offer amount",
+  },
+  appliedDiscount: {
+    id: "credit.fee.appliedDiscount",
+    defaultMessage: "Applied discount",
+    description: "Applied discount component of the whole-bill fee",
+  },
+  operatingCost: {
+    id: "credit.fee.operatingCost",
+    defaultMessage: "Operating cost",
+    description: "Fixed operating cost component of the whole-bill fee",
+  },
+  totalFee: { id: "credit.fee.total", defaultMessage: "Total fee", description: "Whole-bill effective fee" },
+  netOffer: { id: "credit.fee.netOffer", defaultMessage: "Offer amount", description: "Net amount offered after the whole-bill fee" },
   product: { id: "credit.audit.product", defaultMessage: "Product", description: "Policy product label" },
   policyVersion: { id: "credit.audit.policyVersion", defaultMessage: "Policy version", description: "Policy version label" },
   calculationVersion: {
@@ -229,16 +246,7 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
         <Badge variant="outline">{words(snapshot.acceptor.evidenceState)}</Badge>
       </div>
 
-      <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 sm:gap-4">
-        <span>
-          {intl.formatMessage(messages.feeLine, {
-            fee: formatSat(terms.effectiveFeeSat),
-            feeRatio: percentFromBps(terms.feeRatioBps),
-            tenor: terms.tenorDays,
-          })}
-        </span>
-        <span>{intl.formatMessage(messages.repayment)}</span>
-      </div>
+      <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</p>
     </div>
   );
 }
@@ -271,6 +279,10 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
   const intl = useIntl();
   const formatSat = (value: string) => `${intl.formatNumber(Number(value))} sat`;
   const { snapshot, policyPack } = decisionCase;
+  const offerTerms =
+    decisionCase.result.assessmentStatus === "ready_for_decision" && decisionCase.result.recommendation === "offer_available"
+      ? decisionCase.result.terms
+      : null;
   const outcome = useDecisionOutcome(decisionCase);
 
   return (
@@ -292,6 +304,33 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
 
         <GovernedTerms decisionCase={decisionCase} formatSat={formatSat} />
       </div>
+
+      {offerTerms !== null && (
+        <Disclosure
+          title={intl.formatMessage(messages.feeDetails)}
+          hint={intl.formatMessage(messages.feeHint, {
+            bill: formatSat(offerTerms.billSumSat),
+            discount: formatSat(offerTerms.appliedDiscountSat),
+            cost: formatSat(offerTerms.operatingCostSat),
+            offer: formatSat(offerTerms.discountedSat),
+          })}
+        >
+          <dl className="grid gap-3 sm:grid-cols-4">
+            {[
+              [intl.formatMessage(messages.appliedDiscount), offerTerms.appliedDiscountSat],
+              [intl.formatMessage(messages.operatingCost), offerTerms.operatingCostSat],
+              [intl.formatMessage(messages.totalFee), offerTerms.effectiveFeeSat],
+              [intl.formatMessage(messages.netOffer), offerTerms.discountedSat],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-xs text-muted-foreground">{label}</dt>
+                <dd className="mt-0.5 font-semibold tabular-nums">{formatSat(value)}</dd>
+              </div>
+            ))}
+          </dl>
+          <PricingTrace steps={decisionCase.result.calculationTrace} />
+        </Disclosure>
+      )}
 
       <Disclosure title={intl.formatMessage(messages.reviewDetails)} hint={intl.formatMessage(messages.reviewHint)}>
         <InvoiceEvidence invoice={snapshot.invoice} />

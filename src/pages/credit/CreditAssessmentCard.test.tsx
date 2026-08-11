@@ -186,12 +186,24 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("2026-08-12");
     expect(container.textContent).toContain("6.88%");
     expect(container.textContent).not.toContain("tomorrow");
-    expect(container.textContent).toContain("266,000 sat total fee · 3.33% of bill · 180-day tenor");
     // The acceptor owes the sum; the holder is only liable on dishonour.
     expect(container.textContent).toContain("Acceptor pays at maturity");
     // The real action rail is directly below, so the card no longer explains its own placement.
     expect(container.textContent).not.toContain("Offering and denying happen");
     expect(container.textContent).not.toContain("advance");
+  });
+
+  it("puts the whole fee calculation one disclosure away", () => {
+    render(<CreditAssessmentCard decisionCase={offerCase} />);
+
+    const feeDisclosure = Array.from(container.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("Fee calculation")
+    );
+    expect(feeDisclosure?.open).toBe(false);
+    expect(feeDisclosure?.querySelector("summary")?.textContent).toContain("8,000,000 sat − 216,000 sat − 50,000 sat = 7,734,000 sat");
+    expect(feeDisclosure?.textContent).toContain("Applied discount216,000 sat");
+    expect(feeDisclosure?.textContent).toContain("Operating cost50,000 sat");
+    expect(feeDisclosure?.textContent).toContain("Total fee266,000 sat");
   });
 
   it("keeps evidence and immutable policy provenance collapsed by default", () => {
