@@ -88,6 +88,7 @@
   "credit.invoice.number": "Invoice",
   "credit.invoice.plausibility": "Plausibility",
   "credit.invoice.reviewedBy": "{assessor} · {methodology} · valid through {validThrough}",
+  "credit.offer.governanceRequired": "A governed offer is unavailable. Resolve or retry its assessment before offering terms.",
   "credit.outcome.noFit": "No current product fit",
   "credit.outcome.offer": "Offer available at governed terms",
   "credit.outcome.unknown": "Unrecognised outcome — check the adapter build",
