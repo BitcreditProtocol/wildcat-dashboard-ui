@@ -5,13 +5,13 @@ import { axisBadgeVariant, axisLabels, traceLine, words, type DecisionCase } fro
 const messages = defineMessages({
   heading: {
     id: "credit.assessment.heading",
-    defaultMessage: "Assessment — six findings",
-    description: "Summary label of the collapsible assessment panel",
+    defaultMessage: "Six policy checks",
+    description: "Heading above the deterministic assessment axes",
   },
   hint: {
     id: "credit.assessment.hint",
-    defaultMessage: "Open before offering: these are the findings behind the figure.",
-    description: "Hint next to the collapsed assessment panel",
+    defaultMessage: "The separate findings behind this decision",
+    description: "Caption beside the deterministic assessment axes",
   },
   noReasons: { id: "credit.assessment.noReasons", defaultMessage: "Not assessed — earlier axes are blocked", description: "Empty axis" },
   ruleTrace: {
@@ -57,11 +57,11 @@ export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProp
   const { acceptor } = snapshot;
 
   return (
-    <details className="rounded-md border border-border px-3 py-2">
-      <summary className="flex cursor-pointer select-none flex-wrap items-center gap-2 text-xs font-medium">
+    <section className="rounded-md border border-border px-3 py-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
         <span>{intl.formatMessage(messages.heading)}</span>
         <span className="font-normal text-muted-foreground">{intl.formatMessage(messages.hint)}</span>
-      </summary>
+      </div>
 
       <ul className="mt-2 flex flex-col gap-1.5">
         {result.axes.map((finding) => (
@@ -144,6 +144,6 @@ export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProp
           </div>
         </details>
       )}
-    </details>
+    </section>
   );
 }
