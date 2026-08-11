@@ -116,6 +116,7 @@ export interface VerificationRequest {
 }
 
 export interface DecisionCase {
+  policyFileName: string;
   snapshot: {
     caseId: string;
     applicantRef: string;
