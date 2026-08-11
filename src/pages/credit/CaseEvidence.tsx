@@ -85,7 +85,6 @@ export function InvoiceEvidence({ invoice }: { invoice: DecisionInvoice | null }
         <Badge variant={invoice.billAndClaimsConsistency === "match" ? "success" : "destructive"}>
           {intl.formatMessage(messages.consistency)}: {words(invoice.billAndClaimsConsistency)}
         </Badge>
-        <Badge variant="outline">{words(invoice.evidenceState)}</Badge>
       </div>
       <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
         <Row label={intl.formatMessage(messages.goods)}>{invoice.goodsDescription}</Row>
