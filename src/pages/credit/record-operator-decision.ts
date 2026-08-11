@@ -6,8 +6,8 @@
  * why, pinned by the adapter to the exact snapshot and engine result they were shown. Without it
  * the button press is the only trace, and a button press is not a reason.
  *
- * Best-effort by design: an operator's offer must not fail because the local adapter is not
- * running. The caller surfaces the failure; the Mint action proceeds either way.
+ * The caller must await success before sending the corresponding Mint action. Otherwise a
+ * rejected governed requote would still become an offer through the ordinary quote endpoint.
  */
 export type OperatorDecisionAction = "confirm_proposed_quote" | "propose_adjustment_and_requote" | "return_for_information";
 

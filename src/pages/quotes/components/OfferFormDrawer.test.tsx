@@ -8,8 +8,8 @@ import type { DecisionCase } from "@/pages/credit/decision-types";
 
 /**
  * The operator's offer form is the Mint's own; AI Credit only opens it on the governed amount.
- * These tests hold that contract: the suggestion reaches the form, and a quote with no assessment
- * (or an assessment that produced no offer) leaves the form exactly as it was before.
+ * These tests hold that contract: the suggestion reaches the form, while missing or rejected
+ * governance cannot reach the Mint submission callback.
  */
 
 interface QueryResult {
@@ -21,6 +21,8 @@ interface QueryResult {
 const mockUseQuery = vi.fn<() => QueryResult>();
 /** What the drawer asked the adapter to record, captured without cross-module types. */
 const recordedDecisions: { billId: string; action: string; discountedSat?: string; reasonCode: string }[] = [];
+let recordResult: { ok: true } | { ok: false; error: string } = { ok: true };
+const mintSubmit = vi.fn();
 /** The form's submit handler, so a submission can be driven without a real form. */
 let submitForm:
   | ((values: { days: number; discountRate: Big; net: { value: Big; currency: string }; gross: { value: Big; currency: string } }) => void)
@@ -40,7 +42,7 @@ vi.mock("@/components/Drawers", () => ({
 vi.mock("@/pages/credit/record-operator-decision", () => ({
   recordOperatorDecision: (input: { billId: string; action: string; discountedSat?: string; reasonCode: string }) => {
     recordedDecisions.push(input);
-    return Promise.resolve({ ok: true });
+    return Promise.resolve(recordResult);
   },
 }));
 
@@ -111,7 +113,7 @@ const renderDrawer = () => {
       value={quote}
       open={true}
       onOpenChange={() => undefined}
-      onSubmit={() => undefined}
+      onSubmit={mintSubmit}
     >
       <button type="button">Offer</button>
     </OfferFormDrawer>
@@ -125,6 +127,8 @@ describe("OfferFormDrawer", () => {
     root = createRoot(container);
     mockUseQuery.mockReset();
     suggestedNets.length = 0;
+    submitForm = undefined;
+    mintSubmit.mockReset();
   });
 
   it("opens the form on the governed amount, so confirming approves it", () => {
@@ -139,12 +143,13 @@ describe("OfferFormDrawer", () => {
     expect(container.textContent).toContain("Offering less than this raises both figures");
   });
 
-  it("leaves the form untouched when no assessment exists for the bill", () => {
+  it("blocks the form when no assessment exists for the bill", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [] }, isLoading: false, error: null });
     renderDrawer();
 
-    expect(suggestedNets[suggestedNets.length - 1]).toBeUndefined();
+    expect(suggestedNets).toHaveLength(0);
     expect(container.textContent).not.toContain("Governed offer");
+    expect(container.textContent).toContain("A governed offer is unavailable");
   });
 
   it("suggests nothing when the assessment produced no offer", () => {
@@ -152,7 +157,7 @@ describe("OfferFormDrawer", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [noFit] }, isLoading: false, error: null });
     renderDrawer();
 
-    expect(suggestedNets[suggestedNets.length - 1]).toBeUndefined();
+    expect(suggestedNets).toHaveLength(0);
     expect(container.textContent).not.toContain("Governed offer");
   });
 });
@@ -170,9 +175,12 @@ describe("OfferFormDrawer records the operator's decision", () => {
     mockUseQuery.mockReset();
     suggestedNets.length = 0;
     recordedDecisions.length = 0;
+    submitForm = undefined;
+    recordResult = { ok: true };
+    mintSubmit.mockReset();
   });
 
-  const submitWith = (net: string) => {
+  const submitWith = async (net: string) => {
     mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
     renderDrawer();
     act(() => {
@@ -183,10 +191,13 @@ describe("OfferFormDrawer records the operator's decision", () => {
         gross: { value: new Big("8000000"), currency: "sat" },
       });
     });
+    await act(async () => {
+      await Promise.resolve();
+    });
   };
 
-  it("confirms when the operator offers the governed amount", () => {
-    submitWith("7734000");
+  it("confirms when the operator offers the governed amount", async () => {
+    await submitWith("7734000");
 
     expect(recordedDecisions).toHaveLength(1);
     expect(recordedDecisions[0]).toMatchObject({
@@ -195,10 +206,11 @@ describe("OfferFormDrawer records the operator's decision", () => {
       reasonCode: "operator_confirmed_governed_terms",
     });
     expect(recordedDecisions[0]?.discountedSat).toBeUndefined();
+    expect(mintSubmit).toHaveBeenCalledOnce();
   });
 
-  it("adjusts, and names the amount, when the operator edits it", () => {
-    submitWith("7800000");
+  it("adjusts, and names the amount, when the operator edits it", async () => {
+    await submitWith("7800000");
 
     expect(recordedDecisions[0]).toMatchObject({
       action: "propose_adjustment_and_requote",
@@ -207,7 +219,7 @@ describe("OfferFormDrawer records the operator's decision", () => {
     });
   });
 
-  it("records nothing when the bill has no assessment", () => {
+  it("records and submits nothing when the bill has no assessment", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [] }, isLoading: false, error: null });
     renderDrawer();
     act(() => {
@@ -220,5 +232,15 @@ describe("OfferFormDrawer records the operator's decision", () => {
     });
 
     expect(recordedDecisions).toHaveLength(0);
+    expect(mintSubmit).not.toHaveBeenCalled();
+  });
+
+  it("does not submit the Mint offer when governed recording fails", async () => {
+    recordResult = { ok: false, error: "Adjustment outside policy bounds" };
+    await submitWith("7000000");
+
+    expect(recordedDecisions).toHaveLength(1);
+    expect(mintSubmit).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("Adjustment outside policy bounds");
   });
 });

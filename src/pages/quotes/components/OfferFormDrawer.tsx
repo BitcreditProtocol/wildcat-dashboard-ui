@@ -7,6 +7,7 @@ import { GovernedOfferGuidance } from "@/pages/credit/GovernedOfferGuidance";
 import { recordOperatorDecision } from "@/pages/credit/record-operator-decision";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import type { ReactNode } from "react";
+import { FormattedMessage } from "react-intl";
 
 export interface OfferFormResult {
   discount: {
@@ -40,12 +41,13 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 
 export function OfferFormDrawer({ title, description, value, open, onOpenChange, onSubmit, children }: OfferFormDrawerProps) {
   // The AI Credit assessment for this bill, from the same cached query the quote page already runs.
-  // Its terms open the form; the operator confirms them or edits them. Absent — no application, or
-  // the local adapter is not running — and the form behaves exactly as it did before.
+  // Its terms open the form; the operator confirms them or edits them. The Mint action is blocked
+  // unless the same governed case accepts that review first.
   const { decisionCase } = useCreditAssessmentForBill(value.bill.id);
   const governedTerms = decisionCase?.result.recommendation === "offer_available" ? decisionCase.result.terms : null;
+  const [governanceError, setGovernanceError] = useState<string | null>(null);
 
-  const handleFormSubmit = (values: {
+  const handleFormSubmit = async (values: {
     days: number;
     discountRate: Big;
     net: { value: Big; currency: string };
@@ -53,28 +55,30 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   }) => {
     const ttl = new Date(Date.now() + ONE_HOUR_MS);
 
+    if (governedTerms === null) {
+      setGovernanceError("A governed offer is required before the Mint can submit terms.");
+      return;
+    }
+    setGovernanceError(null);
     const result: OfferFormResult = {
       discount: values,
       ttl: { ttl },
     };
 
-    // The governed record of the judgement behind this offer: confirming the computed amount, or
-    // adjusting it. Deliberately not awaited — the Mint's offer is the operator's action and must
-    // not wait on, or fail with, the local adapter.
-    if (governedTerms !== null) {
-      const offered = values.net.value.toFixed(0);
-      const isGovernedAmount = offered === governedTerms.discountedSat;
-      void recordOperatorDecision({
-        billId: value.bill.id,
-        action: isGovernedAmount ? "confirm_proposed_quote" : "propose_adjustment_and_requote",
-        ...(isGovernedAmount ? {} : { discountedSat: offered }),
-        reasonCode: isGovernedAmount ? "operator_confirmed_governed_terms" : "operator_adjusted_price_within_bounds",
-        writtenBasis: isGovernedAmount
-          ? "Offered the governed amount from the dashboard quote actions."
-          : `Adjusted the governed amount to ${offered} sat from the dashboard quote actions.`,
-      }).then((recorded) => {
-        if (!recorded.ok) console.warn("AI Credit operator decision not recorded:", recorded.error);
-      });
+    const offered = values.net.value.toFixed(0);
+    const isGovernedAmount = offered === governedTerms.discountedSat;
+    const recorded = await recordOperatorDecision({
+      billId: value.bill.id,
+      action: isGovernedAmount ? "confirm_proposed_quote" : "propose_adjustment_and_requote",
+      ...(isGovernedAmount ? {} : { discountedSat: offered }),
+      reasonCode: isGovernedAmount ? "operator_confirmed_governed_terms" : "operator_adjusted_price_within_bounds",
+      writtenBasis: isGovernedAmount
+        ? "Offered the governed amount from the dashboard quote actions."
+        : `Adjusted the governed amount to ${offered} sat from the dashboard quote actions.`,
+    });
+    if (!recorded.ok) {
+      setGovernanceError(recorded.error);
+      return;
     }
 
     onSubmit(result);
@@ -103,18 +107,31 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   // the local adapter is not running — and the form behaves exactly as it did before.
   return (
     <BaseDrawer title={title} description={description} open={open} onOpenChange={onOpenChange} trigger={children}>
-      {decisionCase !== undefined && governedTerms !== null && (
-        <GovernedOfferGuidance policyPack={decisionCase.policyPack} terms={governedTerms} />
+      {decisionCase === undefined || governedTerms === null ? (
+        <p role="alert">
+          <FormattedMessage
+            id="credit.offer.governanceRequired"
+            defaultMessage="A governed offer is unavailable. Resolve or retry its assessment before offering terms."
+            description="Blocks a Mint offer until AI Credit has a valid governed offer for the bill"
+          />
+        </p>
+      ) : (
+        <>
+          <GovernedOfferGuidance policyPack={decisionCase.policyPack} terms={governedTerms} />
+          <GrossToNetDiscountForm
+            key={formKey}
+            startDate={startDate}
+            endDate={endDate}
+            gross={gross}
+            onSubmit={(values) => {
+              void handleFormSubmit(values);
+            }}
+            quoteId={value.id}
+            suggestedNet={governedTerms.discountedSat}
+          />
+        </>
       )}
-      <GrossToNetDiscountForm
-        key={formKey}
-        startDate={startDate}
-        endDate={endDate}
-        gross={gross}
-        onSubmit={handleFormSubmit}
-        quoteId={value.id}
-        suggestedNet={governedTerms?.discountedSat}
-      />
+      {governanceError === null ? null : <p role="alert">{governanceError}</p>}
     </BaseDrawer>
   );
 }
