@@ -4,6 +4,8 @@ import { useIntl } from "react-intl";
 
 interface DenyConfirmDrawerProps {
   title: string;
+  mode?: "deny" | "return_for_information";
+  requiredItems?: readonly string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isPending?: boolean;
@@ -11,17 +13,36 @@ interface DenyConfirmDrawerProps {
   children: ReactNode;
 }
 
-export function DenyConfirmDrawer({ title, open, onOpenChange, isPending = false, onSubmit, children }: DenyConfirmDrawerProps) {
+export function DenyConfirmDrawer({
+  title,
+  mode = "deny",
+  requiredItems = [],
+  open,
+  onOpenChange,
+  isPending = false,
+  onSubmit,
+  children,
+}: DenyConfirmDrawerProps) {
   const intl = useIntl();
   const [writtenBasis, setWrittenBasis] = useState("");
   const trimmedBasis = writtenBasis.trim();
+  const isReturn = mode === "return_for_information";
+  const fieldId = `${mode}-written-basis`;
   return (
     <ConfirmDrawer
       title={title}
-      description={intl.formatMessage({
-        id: "quotes.deny.description",
-        defaultMessage: "Are you sure you want to deny this quote? This action cannot be undone.",
-      })}
+      description={
+        isReturn
+          ? intl.formatMessage({
+              id: "quotes.returnForInformation.description",
+              defaultMessage: "Return this case with the verification items listed in the governed assessment.",
+              description: "Confirmation description when an operator returns a credit case for more information",
+            })
+          : intl.formatMessage({
+              id: "quotes.deny.description",
+              defaultMessage: "Are you sure you want to deny this quote? This action cannot be undone.",
+            })
+      }
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) setWrittenBasis("");
@@ -29,15 +50,39 @@ export function DenyConfirmDrawer({ title, open, onOpenChange, isPending = false
       }}
       onSubmit={() => onSubmit(trimmedBasis)}
       submitButtonDisabled={isPending || trimmedBasis.length < 20}
-      submitButtonText={intl.formatMessage({
-        id: "quotes.deny.confirmButton",
-        defaultMessage: "Yes, deny quote",
-      })}
-      submitButtonVariant="destructive"
+      submitButtonText={
+        isReturn
+          ? intl.formatMessage({
+              id: "quotes.returnForInformation.confirmButton",
+              defaultMessage: "Return for information",
+              description: "Confirmation button that returns a credit case for more information",
+            })
+          : intl.formatMessage({
+              id: "quotes.deny.confirmButton",
+              defaultMessage: "Yes, deny quote",
+            })
+      }
+      submitButtonVariant={isReturn ? "default" : "destructive"}
       trigger={children}
     >
       <div className="px-4">
-        <label className="mb-2 block text-sm font-medium" htmlFor="deny-written-basis">
+        {isReturn && requiredItems.length > 0 && (
+          <div className="mb-4 rounded-md border border-input p-3">
+            <p className="mb-2 text-sm font-medium">
+              {intl.formatMessage({
+                id: "quotes.returnForInformation.requiredItems",
+                defaultMessage: "Required information",
+                description: "Heading above verification items sent back with a returned credit case",
+              })}
+            </p>
+            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              {requiredItems.map((item, index) => (
+                <li key={`${String(index)}:${item}`}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <label className="mb-2 block text-sm font-medium" htmlFor={fieldId}>
           {intl.formatMessage({
             id: "quotes.deny.writtenBasis.label",
             defaultMessage: "Decision basis",
@@ -45,7 +90,7 @@ export function DenyConfirmDrawer({ title, open, onOpenChange, isPending = false
           })}
         </label>
         <textarea
-          id="deny-written-basis"
+          id={fieldId}
           className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           maxLength={2_000}
           onChange={(event) => setWrittenBasis(event.target.value)}

@@ -20,6 +20,7 @@ interface MockQueryResult {
 
 const seenQueryOptions: MockQueryOptions[] = [];
 const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
+const mockInvalidateQueries = vi.fn();
 const mockRecordOperatorDecision = vi.fn<(input: unknown) => Promise<{ ok: true } | { ok: false; error: string }>>();
 const mockHandleDenyQuote = vi.fn();
 const mockHandleOfferQuote = vi.fn();
@@ -30,6 +31,9 @@ let offerConfirmationSubmit: ((data: OfferFormResult) => void) | undefined;
 let offerConfirmationOpen = false;
 let offerConfirmationOpenChange: ((open: boolean) => void) | undefined;
 let denySubmit: ((writtenBasis: string) => void) | undefined;
+let returnInfoSubmit: ((writtenBasis: string) => void) | undefined;
+let returnInfoOpen = false;
+let returnInfoOpenChange: ((open: boolean) => void) | undefined;
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -39,6 +43,7 @@ vi.mock("@tanstack/react-query", async () => {
       seenQueryOptions.push(options);
       return mockUseQuery(options);
     },
+    useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
   };
 });
 
@@ -59,8 +64,26 @@ vi.mock("./components/OfferFormDrawer", () => ({
 }));
 
 vi.mock("./components/DenyConfirmDrawer", () => ({
-  DenyConfirmDrawer: ({ children, onSubmit }: { children: ReactNode; onSubmit: (writtenBasis: string) => void }) => {
-    denySubmit = onSubmit;
+  DenyConfirmDrawer: ({
+    children,
+    mode,
+    onSubmit,
+    onOpenChange,
+    open,
+  }: {
+    children: ReactNode;
+    mode?: "deny" | "return_for_information";
+    onSubmit: (writtenBasis: string) => void;
+    onOpenChange: (open: boolean) => void;
+    open: boolean;
+  }) => {
+    if (mode === "return_for_information") {
+      returnInfoSubmit = onSubmit;
+      returnInfoOpenChange = onOpenChange;
+      returnInfoOpen = open;
+    } else {
+      denySubmit = onSubmit;
+    }
     return children;
   },
 }));
@@ -87,6 +110,12 @@ vi.mock("./components/RequestToPayConfirmation", () => ({
 }));
 
 vi.mock("./components/useQuoteMutations", () => ({
+  governedOfferTtl: (result: OfferFormResult) => {
+    const governedExpiry = result.governedOfferExpiresAt;
+    return governedExpiry !== undefined && result.ttl.ttl.getTime() > Date.now() && result.ttl.ttl.getTime() <= governedExpiry.getTime()
+      ? result.ttl.ttl.toISOString()
+      : null;
+  },
   useQuoteMutations: () => ({
     denyQuote: { isPending: false },
     offerQuote: { isPending: false },
@@ -144,7 +173,16 @@ const governedNoFit = {
 
 const governedVerification = {
   ...governedOffer,
-  result: { ...governedOffer.result, assessmentStatus: "blocked_pending_verification", recommendation: null, terms: null },
+  result: {
+    ...governedOffer.result,
+    assessmentStatus: "blocked_pending_verification",
+    recommendation: null,
+    terms: null,
+    verificationRequests: [
+      { code: "invoice_delivery", axis: "transaction_integrity", requiredItem: "Signed delivery receipt" },
+      { code: "acceptor_financials", axis: "acceptor_repayment_risk", requiredItem: "Current acceptor financials" },
+    ],
+  },
 } as unknown as DecisionCase;
 
 const offerData = {
@@ -162,7 +200,8 @@ const offerData = {
     net: { value: new Big(95), currency: "sat" },
     gross: { value: new Big(100), currency: "sat" },
   },
-  ttl: { ttl: new Date("2026-09-01T12:00:00.000Z") },
+  ttl: { ttl: new Date("2099-09-01T12:00:00.000Z") },
+  governedOfferExpiresAt: new Date("2099-09-02T23:59:59.999Z"),
 } satisfies OfferFormResult;
 
 function renderComponent(value = acceptedQuote) {
@@ -192,6 +231,9 @@ beforeEach(() => {
   offerConfirmationOpen = false;
   offerConfirmationOpenChange = undefined;
   denySubmit = undefined;
+  returnInfoSubmit = undefined;
+  returnInfoOpen = false;
+  returnInfoOpenChange = undefined;
   mockRecordOperatorDecision.mockResolvedValue({ ok: true });
   vi.stubGlobal("matchMedia", () => ({
     matches: false,
@@ -299,6 +341,26 @@ describe("QuoteActions", () => {
     expect(offerConfirmationOpen).toBe(false);
   });
 
+  it("does not record governance or reach the Mint when the governed offer has expired", async () => {
+    decisionCase = governedOffer;
+    renderComponent(pendingQuote);
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+
+    await act(async () => {
+      offerConfirmationSubmit?.({
+        ...offerData,
+        ttl: { ttl: new Date("2026-01-01T00:00:00.000Z") },
+        governedOfferExpiresAt: new Date("2026-01-01T00:00:00.000Z"),
+      });
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+    expect(offerConfirmationOpen).toBe(true);
+  });
+
   it("does not reach the Mint when governance unexpectedly rejects", async () => {
     decisionCase = governedOffer;
     mockRecordOperatorDecision.mockRejectedValue(new Error("network failure"));
@@ -386,13 +448,42 @@ describe("QuoteActions", () => {
     expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
   });
 
-  it("shows but disables Deny while evidence is unresolved", () => {
+  it("shows fail-closed Deny and governs Return for information with the named verification items", async () => {
     decisionCase = governedVerification;
+    mockRecordOperatorDecision.mockResolvedValueOnce({ ok: false, error: "adapter unavailable" }).mockResolvedValueOnce({ ok: true });
     const page = renderComponent(pendingQuote);
     const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
 
     expect(denyButton?.disabled).toBe(true);
     expect(denyButton?.title).toBe("Deny is unavailable until the governed assessment is ready.");
     expect(page.textContent).not.toContain("Offer");
+    expect(page.textContent).toContain("Return for information");
+
+    act(() => {
+      returnInfoOpenChange?.(true);
+    });
+    await act(async () => {
+      returnInfoSubmit?.("The named verification items must be supplied before a decision.");
+      await Promise.resolve();
+    });
+    expect(returnInfoOpen).toBe(true);
+
+    await act(async () => {
+      returnInfoSubmit?.("The named verification items must be supplied before a decision.");
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenLastCalledWith({
+      billId: "bill-1",
+      caseId: "case-offer",
+      decisionResultDigest: `sha256:${"a".repeat(64)}`,
+      action: "return_for_information",
+      reasonCode: "operator_returned_for_information",
+      writtenBasis: "The named verification items must be supplied before a decision.",
+      requiredItems: ["Signed delivery receipt", "Current acceptor financials"],
+    });
+    expect(mockHandleDenyQuote).not.toHaveBeenCalled();
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+    expect(returnInfoOpen).toBe(false);
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["ai-credit", "decisions"] });
   });
 });

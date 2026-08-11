@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { AppIcon, Button, toast } from "@bitcredit/ui-library";
 import { getEbillOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
@@ -10,7 +10,7 @@ import { removeItem } from "@/utils/local-storage";
 import { PaymentRequestCard } from "./components/PaymentRequestCard";
 import { OfferConfirmation } from "./components/OfferConfirmation";
 import { RequestToPayConfirmation } from "./components/RequestToPayConfirmation";
-import { useQuoteMutations } from "./components/useQuoteMutations";
+import { governedOfferTtl, useQuoteMutations } from "./components/useQuoteMutations";
 import { useIntl } from "react-intl";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { buildMempoolTransactionUrl } from "@/utils/mempool";
@@ -37,6 +37,7 @@ export function QuoteActions({
   timeOfRequestToPay,
 }: QuoteActionsProps) {
   const intl = useIntl();
+  const queryClient = useQueryClient();
   const billId = value.bill.id;
   const { decisionCase } = useCreditAssessmentForBill(billId);
   const EBILL_DETAIL_POLL_INTERVAL_MS = 10_000;
@@ -85,6 +86,7 @@ export function QuoteActions({
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false);
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false);
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false);
+  const [returnInfoDrawerOpen, setReturnInfoDrawerOpen] = useState(false);
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
   const governanceInFlight = useRef(false);
   const [isGovernancePending, setIsGovernancePending] = useState(false);
@@ -111,6 +113,8 @@ export function QuoteActions({
   });
   const showPendingActions = effectiveQuoteStatus === "Pending";
   const showGovernedOffer = showPendingActions && decisionCase?.result.recommendation === "offer_available";
+  const showGovernedReturn = showPendingActions && decisionCase?.result.assessmentStatus === "blocked_pending_verification";
+  const requiredVerificationItems = decisionCase?.result.verificationRequests?.map((request) => request.requiredItem) ?? [];
   const denyGovernanceAvailable =
     decisionCase?.result.assessmentStatus === "ready_for_decision" &&
     (decisionCase.result.recommendation === "offer_available" || decisionCase.result.recommendation === "no_current_product_fit");
@@ -173,11 +177,37 @@ export function QuoteActions({
     setDenyConfirmDrawerOpen(false);
   };
   const submitGovernedOffer = async (finalData: OfferFormResult) => {
+    if (governedOfferTtl(finalData) === null) {
+      toast({
+        title: intl.formatMessage({
+          id: "quotes.toast.offer.invalidExpiry",
+          defaultMessage: "The offer expiry is outside the governed validity period. Review it before offering the quote.",
+          description: "Error shown when a Mint offer would outlive its governed credit decision",
+        }),
+        variant: "error",
+      });
+      return;
+    }
     const recorded = await recordGovernance(finalData.governance);
     if (!recorded) return;
     removeItem(`offer-form-${value.id}`);
     handleOfferQuote(finalData);
     setOfferConfirmDrawerOpen(false);
+  };
+  const submitGovernedReturn = async (writtenBasis: string) => {
+    if (decisionCase?.result.assessmentStatus !== "blocked_pending_verification" || requiredVerificationItems.length === 0) return;
+    const recorded = await recordGovernance({
+      billId,
+      caseId: decisionCase.snapshot.caseId,
+      decisionResultDigest: decisionCase.resultDigest,
+      action: "return_for_information",
+      reasonCode: "operator_returned_for_information",
+      writtenBasis,
+      requiredItems: requiredVerificationItems,
+    });
+    if (!recorded) return;
+    setReturnInfoDrawerOpen(false);
+    void queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
   };
 
   return (
@@ -222,6 +252,36 @@ export function QuoteActions({
                 {offerButtonLabel} {offerQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
               </Button>
             </OfferFormDrawer>
+          )}
+
+          {showGovernedReturn && (
+            <DenyConfirmDrawer
+              title={intl.formatMessage({
+                id: "quotes.actions.returnForInformation.title",
+                defaultMessage: "Return for information",
+                description: "Confirmation title for returning a credit case for required verification information",
+              })}
+              mode="return_for_information"
+              requiredItems={requiredVerificationItems}
+              open={returnInfoDrawerOpen}
+              onOpenChange={setReturnInfoDrawerOpen}
+              isPending={isGovernancePending}
+              onSubmit={(writtenBasis) => {
+                void submitGovernedReturn(writtenBasis);
+              }}
+            >
+              <Button
+                className="flex-1 max-w-sm"
+                disabled={isFetching || isGovernancePending || requiredVerificationItems.length === 0}
+                variant="outline"
+              >
+                {intl.formatMessage({
+                  id: "quotes.actions.returnForInformation.button",
+                  defaultMessage: "Return for information",
+                  description: "Action that returns a credit case for required verification information",
+                })}
+              </Button>
+            </DenyConfirmDrawer>
           )}
 
           <OfferConfirmation
