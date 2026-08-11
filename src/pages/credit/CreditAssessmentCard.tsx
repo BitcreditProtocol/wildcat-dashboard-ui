@@ -1,202 +1,322 @@
 import { Badge } from "@/components/ui/badge";
 import { humanReadableDurationDays } from "@/utils/dates";
 import { Card, CardTitle } from "@bitcredit/ui-library";
+import { ChevronDown } from "lucide-react";
+import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { AssessmentPanel } from "./AssessmentPanel";
 import { ApplicantClaims, InvoiceEvidence } from "./CaseEvidence";
 import { SubmittedDocuments } from "./SubmittedDocuments";
-import { percentFromBps, shortDigest, words, type DecisionCase } from "./decision-types";
-
-/**
- * The AI Credit assessment for one bill, rendered inside the mint's own quote view. It informs
- * the operator's existing Offer/Deny decision; it does not replace it. The figure shown is what
- * governed code says the mint may offer for the whole bill — the `discounted` amount the quote
- * API expects — and the applicant's claims and the six findings sit behind it.
- */
+import { percentFromBps, words, type DecisionCase } from "./decision-types";
 
 const messages = defineMessages({
-  heading: { id: "credit.card.heading", defaultMessage: "AI Credit assessment", description: "Heading of the credit assessment card" },
+  eyebrow: {
+    id: "credit.card.eyebrow",
+    defaultMessage: "Governed credit decision",
+    description: "Eyebrow above the deterministic credit decision",
+  },
   synthetic: { id: "credit.synthetic", defaultMessage: "Synthetic", description: "Badge marking synthetic fixture data" },
-  asOf: { id: "credit.asOf", defaultMessage: "As of {date}", description: "Snapshot date of a case" },
-  policyScope: {
-    id: "credit.card.policyScope",
-    defaultMessage:
-      "Policy scope: {country} · {industry} · {product} — {policyVersion} / {calculationVersion} · policy {policyDigest} · result {resultDigest}",
-    description: "Read-only country, industry, product and version provenance for the deterministic credit decision",
+  outcomeVerification: {
+    id: "credit.outcome.verification",
+    defaultMessage: "Verification required",
+    description: "Primary title when evidence is incomplete",
   },
-  offerHeading: { id: "credit.quote.heading", defaultMessage: "Governed offer", description: "Heading of the offer figures" },
-  discounted: {
-    id: "credit.quote.discounted",
-    defaultMessage: "Offer this amount",
-    description: "Label for the discounted amount — what the operator enters in the quote's offer action",
+  outcomeOffer: { id: "credit.outcome.offer", defaultMessage: "Offer ready", description: "Primary title when governed terms exist" },
+  outcomeNoFit: {
+    id: "credit.outcome.noFit",
+    defaultMessage: "No current product fit",
+    description: "Primary title when policy permits no offer",
   },
-  expires: {
-    id: "credit.quote.expires",
-    defaultMessage: "Offer expires",
-    description: "Label for the offer expiry — the ttl the quote's offer action takes",
-  },
-  effective: { id: "credit.quote.effective", defaultMessage: "Effective annual", description: "Effective annual cost label" },
-  ceiling: { id: "credit.quote.ceiling", defaultMessage: "ceiling {ceiling}", description: "Caption naming the policy ceiling for a rate" },
-  feeLine: {
-    id: "credit.quote.feeLine",
-    defaultMessage: "Fee {fee} over {tenor} days — {feeRatio} of the bill sum, against a {feeCeiling} ceiling.",
-    description: "The mint's whole fee, measured against the holder guardrail",
-  },
-  endorsement: {
-    id: "credit.quote.endorsement",
-    defaultMessage:
-      "The acceptor is the principal obligor. The holder carries the whole bill sum by endorsement only if the bill is dishonoured — the legal form of that liability is still under review.",
-    description: "Honest statement of who owes what",
-  },
-  noOffer: { id: "credit.quote.none", defaultMessage: "No offer — {reasons}.", description: "Shown when policy produced no terms" },
-  verification: {
-    id: "credit.verification",
-    defaultMessage: "Do not offer yet — verification is outstanding:",
-    description: "Shown while the assessment is blocked",
-  },
-  outcomeVerification: { id: "credit.outcome.verification", defaultMessage: "Verification required", description: "Outcome badge" },
-  outcomeOffer: { id: "credit.outcome.offer", defaultMessage: "Offer available at governed terms", description: "Outcome badge" },
-  outcomeNoFit: { id: "credit.outcome.noFit", defaultMessage: "No current product fit", description: "Outcome badge" },
   outcomeUnknown: {
     id: "credit.outcome.unknown",
-    defaultMessage: "Unrecognised outcome — check the adapter build",
-    description: "Outcome badge for a payload this build does not understand",
+    defaultMessage: "Assessment unavailable",
+    description: "Primary title for a payload this build cannot safely understand",
   },
-  actionNote: {
-    id: "credit.card.actionNote",
-    defaultMessage: "Offering and denying happen in the quote actions below. This assessment records no decision of its own.",
-    description: "Points the operator at the real action rail",
+  offerSummary: {
+    id: "credit.outcome.offerSummary",
+    defaultMessage: "Deterministic terms for the full bill.",
+    description: "Concise summary under an available governed offer",
+  },
+  verificationSummary: {
+    id: "credit.outcome.verificationSummary",
+    defaultMessage: "No quote can be issued until the requested evidence is verified.",
+    description: "Concise summary under a verification-required outcome",
+  },
+  noFitSummary: {
+    id: "credit.outcome.noFitSummary",
+    defaultMessage: "No offer is available under the active policy.",
+    description: "Concise summary under a no-current-product-fit outcome",
+  },
+  unknownSummary: {
+    id: "credit.outcome.unknownSummary",
+    defaultMessage: "This adapter cannot safely interpret the governed result. No action is available.",
+    description: "Fail-closed summary for an unreadable governed result",
+  },
+  withinPolicy: { id: "credit.outcome.withinPolicy", defaultMessage: "Within policy", description: "Offer outcome badge" },
+  blocked: { id: "credit.outcome.blocked", defaultMessage: "Blocked", description: "Verification outcome badge" },
+  noOffer: { id: "credit.outcome.noOffer", defaultMessage: "No offer", description: "No-fit outcome badge" },
+  unreadable: { id: "credit.outcome.unreadable", defaultMessage: "Unreadable", description: "Unreadable outcome badge" },
+  discounted: {
+    id: "credit.quote.discounted",
+    defaultMessage: "Offer amount",
+    description: "Label for the whole-bill discounted amount the operator may offer",
+  },
+  expires: { id: "credit.quote.expires", defaultMessage: "Valid until", description: "Label for the governed offer expiry" },
+  effective: {
+    id: "credit.quote.effective",
+    defaultMessage: "Effective annual cost",
+    description: "Effective annual cost label",
+  },
+  ceiling: { id: "credit.quote.ceiling", defaultMessage: "{ceiling} policy limit", description: "Caption naming the rate limit" },
+  feeLine: {
+    id: "credit.quote.feeLine",
+    defaultMessage: "{fee} total fee · {feeRatio} of bill ({feeCeiling} limit) · {tenor}-day tenor",
+    description: "Compact whole-bill fee summary",
+  },
+  repayment: {
+    id: "credit.quote.repayment",
+    defaultMessage: "Acceptor pays at maturity. Holder recourse applies only on dishonour; its legal form remains under review.",
+    description: "Compact repayment and contingent-recourse disclosure",
+  },
+  checksPassed: {
+    id: "credit.signals.checksPassed",
+    defaultMessage: "{passed}/{total} checks passed",
+    description: "Compact count of passing deterministic axes",
+  },
+  invoiceMatch: {
+    id: "credit.signals.invoiceMatch",
+    defaultMessage: "Invoice matches bill",
+    description: "Compact positive invoice consistency signal",
+  },
+  invoiceReview: {
+    id: "credit.signals.invoiceReview",
+    defaultMessage: "Invoice needs review",
+    description: "Compact non-positive invoice consistency signal",
+  },
+  reviewDetails: {
+    id: "credit.details.review",
+    defaultMessage: "Evidence & decision rationale",
+    description: "Expandable section containing evidence and deterministic findings",
+  },
+  reviewHint: {
+    id: "credit.details.reviewHint",
+    defaultMessage: "Invoice, applicant claims, six checks and calculations",
+    description: "Caption for the evidence and rationale disclosure",
+  },
+  policyDetails: {
+    id: "credit.details.policy",
+    defaultMessage: "Policy & audit trail",
+    description: "Expandable section containing policy provenance and immutable identifiers",
+  },
+  product: { id: "credit.audit.product", defaultMessage: "Product", description: "Policy product label" },
+  policyVersion: { id: "credit.audit.policyVersion", defaultMessage: "Policy version", description: "Policy version label" },
+  calculationVersion: {
+    id: "credit.audit.calculationVersion",
+    defaultMessage: "Calculation version",
+    description: "Calculation version label",
+  },
+  caseId: { id: "credit.audit.caseId", defaultMessage: "Case", description: "Immutable case identifier label" },
+  snapshotDate: { id: "credit.audit.snapshotDate", defaultMessage: "Snapshot date", description: "Decision snapshot date label" },
+  policyDigest: { id: "credit.audit.policyDigest", defaultMessage: "Policy digest", description: "Policy digest label" },
+  resultDigest: { id: "credit.audit.resultDigest", defaultMessage: "Result digest", description: "Decision result digest label" },
+  verification: {
+    id: "credit.verification",
+    defaultMessage: "Required before a quote can be considered:",
+    description: "Heading above outstanding verification requests",
+  },
+  noFitReasons: {
+    id: "credit.quote.noFitReasons",
+    defaultMessage: "Policy reasons: {reasons}",
+    description: "Reason summary for a no-current-product-fit outcome",
   },
 });
 
-function OutcomeBadge({ result }: { result: DecisionCase["result"] }) {
+function useDecisionOutcome(decisionCase: DecisionCase) {
   const intl = useIntl();
+  const { result } = decisionCase;
+
   if (result.assessmentStatus === "blocked_pending_verification") {
-    return <Badge variant="pending">{intl.formatMessage(messages.outcomeVerification)}</Badge>;
+    return {
+      title: intl.formatMessage(messages.outcomeVerification),
+      summary: intl.formatMessage(messages.verificationSummary),
+      badge: <Badge variant="pending">{intl.formatMessage(messages.blocked)}</Badge>,
+    };
   }
   if (result.recommendation === "offer_available") {
-    return <Badge variant="success">{intl.formatMessage(messages.outcomeOffer)}</Badge>;
+    return {
+      title: intl.formatMessage(messages.outcomeOffer),
+      summary: intl.formatMessage(messages.offerSummary),
+      badge: <Badge variant="success">{intl.formatMessage(messages.withinPolicy)}</Badge>,
+    };
   }
-  // Never let an outcome this build cannot read fall through to a refusal: a stale adapter would
-  // then show every case as declined, which is both wrong and the most dangerous way to be wrong.
-  if (result.recommendation !== "no_current_product_fit") {
-    return <Badge variant="destructive">{intl.formatMessage(messages.outcomeUnknown)}</Badge>;
+  if (result.recommendation === "no_current_product_fit") {
+    return {
+      title: intl.formatMessage(messages.outcomeNoFit),
+      summary: intl.formatMessage(messages.noFitSummary),
+      badge: <Badge variant="secondary">{intl.formatMessage(messages.noOffer)}</Badge>,
+    };
   }
-  return <Badge variant="secondary">{intl.formatMessage(messages.outcomeNoFit)}</Badge>;
+  return {
+    title: intl.formatMessage(messages.outcomeUnknown),
+    summary: intl.formatMessage(messages.unknownSummary),
+    badge: <Badge variant="destructive">{intl.formatMessage(messages.unreadable)}</Badge>,
+  };
 }
 
-function GovernedOffer({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
+function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
   const intl = useIntl();
-  const { policyPack, result } = decisionCase;
+  const { policyPack, result, snapshot } = decisionCase;
   const terms = result.terms;
+  const passed = result.axes.filter((finding) => finding.status === "pass").length;
+  const mayShowOffer = result.assessmentStatus === "ready_for_decision" && result.recommendation === "offer_available";
 
-  if (terms === null) {
+  if (!mayShowOffer || terms === null) {
     return (
-      <div className="flex flex-col gap-2 rounded-lg border border-border p-4">
-        <p className="text-sm font-medium text-signal-alert">
-          {result.assessmentStatus === "blocked_pending_verification"
-            ? intl.formatMessage(messages.verification)
-            : intl.formatMessage(messages.noOffer, { reasons: result.reasonCodes.map(words).join("; ") })}
-        </p>
-        {result.verificationRequests.length > 0 && (
-          <ul className="list-disc space-y-0.5 pl-4 text-xs">
-            {result.verificationRequests.map((request) => (
-              <li key={request.code}>{request.requiredItem}</li>
-            ))}
-          </ul>
+      <div className="rounded-lg border border-border bg-elevation-100 p-4">
+        {result.assessmentStatus === "blocked_pending_verification" ? (
+          <>
+            <p className="font-medium text-signal-alert">{intl.formatMessage(messages.verification)}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+              {result.verificationRequests.map((request) => (
+                <li key={request.code}>{request.requiredItem}</li>
+              ))}
+            </ul>
+          </>
+        ) : result.recommendation === "no_current_product_fit" ? (
+          <p className="text-sm text-muted-foreground">
+            {intl.formatMessage(messages.noFitReasons, { reasons: result.reasonCodes.map(words).join("; ") })}
+          </p>
+        ) : (
+          <p className="font-medium text-signal-alert">{intl.formatMessage(messages.unknownSummary)}</p>
         )}
       </div>
     );
   }
 
+  const invoiceMatches = snapshot.invoice?.billAndClaimsConsistency === "match" && snapshot.invoice.plausibility === "plausible";
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-elevation-100 p-4">
-      <div className="text-[11px] uppercase tracking-widest text-muted-foreground">{intl.formatMessage(messages.offerHeading)}</div>
-      {/* The three figures the offer action needs: the amount, its ttl, and the price it implies. */}
-      <div className="grid gap-3 sm:grid-cols-3">
+    <div className="flex flex-col gap-3">
+      <div className="grid gap-4 rounded-lg border border-border bg-elevation-100 p-4 sm:grid-cols-3">
         <div>
-          <div className="text-xs text-muted-foreground">{intl.formatMessage(messages.discounted)}</div>
-          <div className="text-xl font-semibold tabular-nums">{formatSat(terms.discountedSat)}</div>
+          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.discounted)}</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{formatSat(terms.discountedSat)}</div>
         </div>
         <div>
-          <div className="text-xs text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
-          <div className="text-xl font-semibold tabular-nums">{terms.offerExpiresOn}</div>
-          {/* Same relative phrasing the quote's own maturity row uses. */}
-          <div className="text-[11px] text-muted-foreground">{humanReadableDurationDays(intl.locale, new Date(terms.offerExpiresOn))}</div>
+          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
+          <div className="text-xs text-muted-foreground">{humanReadableDurationDays(intl.locale, new Date(terms.offerExpiresOn))}</div>
         </div>
         <div>
-          <div className="text-xs text-muted-foreground">{intl.formatMessage(messages.effective)}</div>
-          <div className="text-xl font-semibold tabular-nums">{percentFromBps(terms.effectiveAnnualBps)}</div>
-          {/* A rate without its limit tells an operator nothing about how much headroom is left. */}
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.effective)}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums">{percentFromBps(terms.effectiveAnnualBps)}</div>
+          <div className="text-xs text-muted-foreground">
             {intl.formatMessage(messages.ceiling, { ceiling: percentFromBps(policyPack.maximumEffectiveAnnualBps) })}
           </div>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        {intl.formatMessage(messages.feeLine, {
-          fee: formatSat(terms.effectiveFeeSat),
-          feeRatio: percentFromBps(terms.feeRatioBps),
-          feeCeiling: percentFromBps(policyPack.maximumFeeRatioBps),
-          tenor: terms.tenorDays,
-        })}
-      </p>
-      <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.endorsement)}</p>
+
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="outline">{intl.formatMessage(messages.checksPassed, { passed, total: result.axes.length })}</Badge>
+        {snapshot.invoice !== null && (
+          <Badge variant={invoiceMatches ? "success" : "pending"}>
+            {intl.formatMessage(invoiceMatches ? messages.invoiceMatch : messages.invoiceReview)}
+          </Badge>
+        )}
+        <Badge variant="outline">{words(snapshot.acceptor.evidenceState)}</Badge>
+      </div>
+
+      <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 sm:gap-4">
+        <span>
+          {intl.formatMessage(messages.feeLine, {
+            fee: formatSat(terms.effectiveFeeSat),
+            feeRatio: percentFromBps(terms.feeRatioBps),
+            feeCeiling: percentFromBps(policyPack.maximumFeeRatioBps),
+            tenor: terms.tenorDays,
+          })}
+        </span>
+        <span>{intl.formatMessage(messages.repayment)}</span>
+      </div>
     </div>
   );
 }
 
-export interface CreditAssessmentCardProps {
-  decisionCase: DecisionCase;
-  /** Set on the standalone synthetic view, where no real quote actions exist above the card. */
-  hideActionNote?: boolean;
+function Disclosure({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+  return (
+    <details className="group border-t border-border">
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 hover:bg-elevation-100 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium">{title}</span>
+          <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+        </span>
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="flex flex-col gap-5 border-t border-border px-5 py-4">{children}</div>
+    </details>
+  );
 }
 
-export function CreditAssessmentCard({ decisionCase, hideActionNote = false }: CreditAssessmentCardProps) {
+function AuditRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-3">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-all text-xs font-medium">{children}</dd>
+    </div>
+  );
+}
+
+export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionCase }) {
   const intl = useIntl();
   const formatSat = (value: string) => `${intl.formatNumber(Number(value))} sat`;
-  const { snapshot } = decisionCase;
+  const { snapshot, policyPack } = decisionCase;
+  const outcome = useDecisionOutcome(decisionCase);
 
   return (
-    <Card className="flex flex-col gap-4 p-4 text-sm">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <CardTitle className="text-base">{intl.formatMessage(messages.heading)}</CardTitle>
-        <OutcomeBadge result={decisionCase.result} />
-        {snapshot.isSynthetic && <Badge variant="outline">{intl.formatMessage(messages.synthetic)}</Badge>}
-        <span className="ml-auto font-mono text-xs text-muted-foreground">
-          {snapshot.caseId} · {intl.formatMessage(messages.asOf, { date: snapshot.asOfDate })}
-        </span>
+    <Card className="gap-0 overflow-hidden p-0 text-sm">
+      <div className="flex flex-col gap-4 p-5">
+        <div className="flex items-start gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+              {intl.formatMessage(messages.eyebrow)}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <CardTitle className="text-xl">{outcome.title}</CardTitle>
+              {outcome.badge}
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">{outcome.summary}</p>
+          </div>
+          {snapshot.isSynthetic && <Badge variant="outline">{intl.formatMessage(messages.synthetic)}</Badge>}
+        </div>
+
+        <GovernedTerms decisionCase={decisionCase} formatSat={formatSat} />
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {intl.formatMessage(messages.policyScope, {
-          country: decisionCase.policyPack.country,
-          industry: words(decisionCase.policyPack.industry),
-          product: words(decisionCase.policyPack.product),
-          policyVersion: decisionCase.policyPack.policyPackVersion,
-          calculationVersion: decisionCase.policyPack.calculationVersion,
-          policyDigest: (
-            <span title={decisionCase.policyPack.policyPackDigest}>{shortDigest(decisionCase.policyPack.policyPackDigest)}</span>
-          ),
-          resultDigest: <span title={decisionCase.resultDigest}>{shortDigest(decisionCase.resultDigest)}</span>,
-        })}
-      </p>
+      <Disclosure title={intl.formatMessage(messages.reviewDetails)} hint={intl.formatMessage(messages.reviewHint)}>
+        <InvoiceEvidence invoice={snapshot.invoice} />
+        {snapshot.bill !== null && (
+          <SubmittedDocuments billId={snapshot.bill.billId} submittedEvidence={decisionCase.submittedEvidence ?? []} />
+        )}
+        <ApplicantClaims claims={snapshot.confirmedClaims} applicantRef={snapshot.applicantRef} />
+        <AssessmentPanel decisionCase={decisionCase} formatSat={formatSat} />
+      </Disclosure>
 
-      {/* Reading order is the operator's: what to offer, then what backs it, then detail on demand.
-          Bill and party facts are not repeated here — the quote detail above this card carries them. */}
-      <GovernedOffer decisionCase={decisionCase} formatSat={formatSat} />
-
-      <InvoiceEvidence invoice={snapshot.invoice} />
-
-      {snapshot.bill !== null && (
-        <SubmittedDocuments billId={snapshot.bill.billId} submittedEvidence={decisionCase.submittedEvidence ?? []} />
-      )}
-
-      <ApplicantClaims claims={snapshot.confirmedClaims} applicantRef={snapshot.applicantRef} />
-
-      <AssessmentPanel decisionCase={decisionCase} formatSat={formatSat} />
-
-      {!hideActionNote && <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.actionNote)}</p>}
+      <Disclosure
+        title={intl.formatMessage(messages.policyDetails)}
+        hint={`${policyPack.country} · ${words(policyPack.industry)} · ${policyPack.policyPackVersion}`}
+      >
+        <dl className="flex flex-col gap-2">
+          <AuditRow label={intl.formatMessage(messages.product)}>{words(policyPack.product)}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.policyVersion)}>{policyPack.policyPackVersion}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.calculationVersion)}>{policyPack.calculationVersion}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.caseId)}>{snapshot.caseId}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.snapshotDate)}>{snapshot.asOfDate}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.policyDigest)}>
+            <span title={policyPack.policyPackDigest}>{policyPack.policyPackDigest}</span>
+          </AuditRow>
+          <AuditRow label={intl.formatMessage(messages.resultDigest)}>
+            <span title={decisionCase.resultDigest}>{decisionCase.resultDigest}</span>
+          </AuditRow>
+        </dl>
+      </Disclosure>
     </Card>
   );
 }

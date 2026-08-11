@@ -37,6 +37,7 @@ const caseFixture = (overrides: {
   terms: DecisionCase["result"]["terms"];
   verificationRequests?: DecisionCase["result"]["verificationRequests"];
   axes?: DecisionCase["result"]["axes"];
+  reasonCodes?: string[];
 }): DecisionCase => ({
   snapshot: {
     caseId: overrides.caseId,
@@ -91,7 +92,7 @@ const caseFixture = (overrides: {
     axes: overrides.axes ?? passingAxes,
     terms: overrides.terms,
     verificationRequests: overrides.verificationRequests ?? [],
-    reasonCodes: ["governed_terms_available"],
+    reasonCodes: overrides.reasonCodes ?? ["governed_terms_available"],
     assessmentTrace: [],
     calculationTrace: [],
   },
@@ -145,6 +146,15 @@ const blockedCase = caseFixture({
   axes: passingAxes.map((finding) => ({ ...finding, status: "blocked" as const })),
 });
 
+const noFitCase = caseFixture({
+  caseId: "synthetic-case-d",
+  assessmentStatus: "ready_for_decision",
+  recommendation: "no_current_product_fit",
+  terms: null,
+  reasonCodes: ["bill_already_financed"],
+  axes: passingAxes.map((finding, index) => (index === 0 ? { ...finding, status: "fail" as const } : finding)),
+});
+
 let container: HTMLElement;
 let root: Root;
 
@@ -170,28 +180,33 @@ describe("CreditAssessmentCard", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
     // The amount to offer and its ttl — never "advance".
-    expect(container.textContent).toContain("Offer this amount");
+    expect(container.textContent).toContain("Offer amount");
     expect(container.textContent).toContain("7,734,000 sat");
-    expect(container.textContent).toContain("Offer expires");
+    expect(container.textContent).toContain("Valid until");
     expect(container.textContent).toContain("2026-08-12");
     // A rate is only readable against the limit it was measured against.
     expect(container.textContent).toContain("6.88%");
-    expect(container.textContent).toContain("ceiling 15.00%");
-    expect(container.textContent).toContain("Fee 266,000 sat over 180 days — 3.33% of the bill sum, against a 30.00% ceiling.");
+    expect(container.textContent).toContain("15.00% policy limit");
+    expect(container.textContent).toContain("266,000 sat total fee · 3.33% of bill (30.00% limit) · 180-day tenor");
     // The acceptor owes the sum; the holder is only liable on dishonour.
-    expect(container.textContent).toContain("The acceptor is the principal obligor");
-    // The real rail is the mint's own.
-    expect(container.textContent).toContain("Offering and denying happen in the quote actions below");
+    expect(container.textContent).toContain("Acceptor pays at maturity");
+    // The real action rail is directly below, so the card no longer explains its own placement.
+    expect(container.textContent).not.toContain("Offering and denying happen");
     expect(container.textContent).not.toContain("advance");
   });
 
-  it("identifies the immutable policy scope that produced the result", () => {
+  it("keeps evidence and immutable policy provenance collapsed by default", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
-    expect(container.textContent).toContain(
-      "Policy scope: GT · Coffee production · Seasonal coffee accepted ebill discount — synthetic-guatemala-coffee-v7 / deterministic-credit-core-v7"
+    const disclosures = Array.from(container.querySelectorAll("details")).filter((details) =>
+      ["Evidence & decision rationale", "Policy & audit trail"].some((label) =>
+        details.querySelector("summary")?.textContent?.includes(label)
+      )
     );
-    expect(container.textContent).toContain("policy sha256:policy-pack… · result sha256:result…");
+    expect(disclosures).toHaveLength(2);
+    expect(disclosures.every((details) => !details.open)).toBe(true);
+    expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
+    expect(container.textContent).toContain("Calculation versiondeterministic-credit-core-v7");
     expect(container.querySelector('[title="sha256:policy-pack"]')).not.toBeNull();
     expect(container.querySelector('[title="sha256:result"]')).not.toBeNull();
   });
@@ -230,9 +245,26 @@ describe("CreditAssessmentCard", () => {
   it("tells the operator not to offer while verification is outstanding", () => {
     render(<CreditAssessmentCard decisionCase={blockedCase} />);
 
-    expect(container.textContent).toContain("Do not offer yet");
+    expect(container.textContent).toContain("Verification required");
+    expect(container.textContent).toContain("No quote can be issued until the requested evidence is verified.");
     expect(container.textContent).toContain("Current governed acceptor PD and LGD");
-    expect(container.textContent).not.toContain("Offer this amount");
+    expect(container.textContent).not.toContain("Offer amount");
+  });
+
+  it("shows no terms when policy finds no current product fit", () => {
+    render(<CreditAssessmentCard decisionCase={noFitCase} />);
+
+    expect(container.textContent).toContain("No current product fit");
+    expect(container.textContent).toContain("No offer is available under the active policy.");
+    expect(container.textContent).not.toContain("Offer amount");
+  });
+
+  it("fails closed when a future recommendation is unreadable", () => {
+    const unreadable = { ...offerCase, result: { ...offerCase.result, recommendation: "future_outcome" as never } };
+    render(<CreditAssessmentCard decisionCase={unreadable} />);
+
+    expect(container.textContent).toContain("Assessment unavailable");
+    expect(container.textContent).not.toContain("Offer amount");
   });
 });
 
@@ -248,7 +280,7 @@ describe("QuoteCreditAssessment", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" />);
 
-    expect(container.textContent).toContain("AI Credit assessment");
+    expect(container.textContent).toContain("Governed credit decision");
     expect(container.textContent).toContain("7,734,000 sat");
   });
 
