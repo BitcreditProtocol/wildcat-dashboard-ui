@@ -297,10 +297,6 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
           </Badge>
         )}
       </div>
-      <div className="rounded-md border border-border p-3">
-        <div className="text-xs font-medium">{intl.formatMessage(messages.repaymentHeading)}</div>
-        <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</p>
-      </div>
     </div>
   );
 }
@@ -486,6 +482,11 @@ function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCas
           </dd>
         </div>
       </dl>
+
+      <div className="border-t border-border pt-3">
+        <div className="text-xs font-medium">{intl.formatMessage(messages.repaymentHeading)}</div>
+        <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</p>
+      </div>
     </div>
   );
 }
