@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DecisionCase } from "@/pages/credit/decision-types";
+import type { OfferFormResult } from "./OfferFormDrawer";
 
 /**
  * The operator's offer form is the Mint's own; AI Credit only opens it on the governed amount.
@@ -19,10 +20,7 @@ interface QueryResult {
 }
 
 const mockUseQuery = vi.fn<() => QueryResult>();
-/** What the drawer asked the adapter to record, captured without cross-module types. */
-const recordedDecisions: { billId: string; action: string; discountedSat?: string; reasonCode: string }[] = [];
-let recordResult: { ok: true } | { ok: false; error: string } = { ok: true };
-const mintSubmit = vi.fn();
+const mintSubmit = vi.fn<(result: OfferFormResult) => void>();
 /** The form's submit handler, so a submission can be driven without a real form. */
 let submitForm:
   | ((values: { days: number; discountRate: Big; net: { value: Big; currency: string }; gross: { value: Big; currency: string } }) => void)
@@ -37,13 +35,6 @@ vi.mock("@tanstack/react-query", async () => {
 
 vi.mock("@/components/Drawers", () => ({
   BaseDrawer: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
-}));
-
-vi.mock("@/pages/credit/record-operator-decision", () => ({
-  recordOperatorDecision: (input: { billId: string; action: string; discountedSat?: string; reasonCode: string }) => {
-    recordedDecisions.push(input);
-    return Promise.resolve(recordResult);
-  },
 }));
 
 vi.mock("@/components/GrossToNetDiscountForm/GrossToNetDiscountForm", () => ({
@@ -71,7 +62,7 @@ const quote = {
 } as unknown as InfoReply;
 
 const decisionCase = {
-  snapshot: { bill: { billId: "synthetic-bill-a" } },
+  snapshot: { caseId: "case-a", bill: { billId: "synthetic-bill-a" } },
   policyPack: {
     policyPackVersion: "synthetic-guatemala-coffee-v7",
     calculationVersion: "deterministic-credit-core-v7",
@@ -90,6 +81,7 @@ const decisionCase = {
       feeRatioBps: 333,
     },
   },
+  resultDigest: `sha256:${"a".repeat(64)}`,
 } as unknown as DecisionCase;
 
 let container: HTMLElement;
@@ -163,24 +155,21 @@ describe("OfferFormDrawer", () => {
 });
 
 /**
- * Offering from the dashboard also records the judgement behind it. The Mint's offer is the
- * operator's action and must not wait on the local adapter, so this is best-effort — but it must
- * carry the right action: confirming the computed amount, or adjusting it.
+ * The form prepares the exact governed command beside the Mint form values. It does not record it:
+ * that happens only after the operator confirms in the second drawer.
  */
-describe("OfferFormDrawer records the operator's decision", () => {
+describe("OfferFormDrawer prepares the operator's decision", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
     mockUseQuery.mockReset();
     suggestedNets.length = 0;
-    recordedDecisions.length = 0;
     submitForm = undefined;
-    recordResult = { ok: true };
     mintSubmit.mockReset();
   });
 
-  const submitWith = async (net: string) => {
+  const submitWith = (net: string) => {
     mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
     renderDrawer();
     act(() => {
@@ -191,35 +180,37 @@ describe("OfferFormDrawer records the operator's decision", () => {
         gross: { value: new Big("8000000"), currency: "sat" },
       });
     });
-    await act(async () => {
-      await Promise.resolve();
-    });
   };
 
-  it("confirms when the operator offers the governed amount", async () => {
-    await submitWith("7734000");
+  it("prepares a confirmation when the operator offers the governed amount", () => {
+    submitWith("7734000");
 
-    expect(recordedDecisions).toHaveLength(1);
-    expect(recordedDecisions[0]).toMatchObject({
-      billId: "synthetic-bill-a",
-      action: "confirm_proposed_quote",
-      reasonCode: "operator_confirmed_governed_terms",
-    });
-    expect(recordedDecisions[0]?.discountedSat).toBeUndefined();
     expect(mintSubmit).toHaveBeenCalledOnce();
+    expect(mintSubmit.mock.calls[0]?.[0]).toMatchObject({
+      governance: {
+        billId: "synthetic-bill-a",
+        caseId: "case-a",
+        decisionResultDigest: `sha256:${"a".repeat(64)}`,
+        action: "confirm_proposed_quote",
+        reasonCode: "operator_confirmed_governed_terms",
+      },
+    });
+    expect(mintSubmit.mock.calls[0]?.[0].governance.discountedSat).toBeUndefined();
   });
 
-  it("adjusts, and names the amount, when the operator edits it", async () => {
-    await submitWith("7800000");
+  it("prepares an adjustment, and names the amount, when the operator edits it", () => {
+    submitWith("7800000");
 
-    expect(recordedDecisions[0]).toMatchObject({
-      action: "propose_adjustment_and_requote",
-      discountedSat: "7800000",
-      reasonCode: "operator_adjusted_price_within_bounds",
+    expect(mintSubmit.mock.calls[0]?.[0]).toMatchObject({
+      governance: {
+        action: "propose_adjustment_and_requote",
+        discountedSat: "7800000",
+        reasonCode: "operator_adjusted_price_within_bounds",
+      },
     });
   });
 
-  it("records and submits nothing when the bill has no assessment", () => {
+  it("submits nothing when the bill has no assessment", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [] }, isLoading: false, error: null });
     renderDrawer();
     act(() => {
@@ -231,16 +222,6 @@ describe("OfferFormDrawer records the operator's decision", () => {
       });
     });
 
-    expect(recordedDecisions).toHaveLength(0);
     expect(mintSubmit).not.toHaveBeenCalled();
-  });
-
-  it("does not submit the Mint offer when governed recording fails", async () => {
-    recordResult = { ok: false, error: "Adjustment outside policy bounds" };
-    await submitWith("7000000");
-
-    expect(recordedDecisions).toHaveLength(1);
-    expect(mintSubmit).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("Adjustment outside policy bounds");
   });
 });

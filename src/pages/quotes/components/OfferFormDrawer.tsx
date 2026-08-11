@@ -4,12 +4,13 @@ import { BaseDrawer } from "@/components/Drawers";
 import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm/GrossToNetDiscountForm";
 import type { InfoReply } from "@/generated/client/types.gen";
 import { GovernedOfferGuidance } from "@/pages/credit/GovernedOfferGuidance";
-import { recordOperatorDecision } from "@/pages/credit/record-operator-decision";
+import type { OperatorDecisionInput } from "@/pages/credit/record-operator-decision";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import type { ReactNode } from "react";
 import { FormattedMessage } from "react-intl";
 
 export interface OfferFormResult {
+  governance: OperatorDecisionInput;
   discount: {
     days: number;
     discountRate: Big;
@@ -45,9 +46,8 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   // unless the same governed case accepts that review first.
   const { decisionCase } = useCreditAssessmentForBill(value.bill.id);
   const governedTerms = decisionCase?.result.recommendation === "offer_available" ? decisionCase.result.terms : null;
-  const [governanceError, setGovernanceError] = useState<string | null>(null);
 
-  const handleFormSubmit = async (values: {
+  const handleFormSubmit = (values: {
     days: number;
     discountRate: Big;
     net: { value: Big; currency: string };
@@ -55,31 +55,26 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   }) => {
     const ttl = new Date(Date.now() + ONE_HOUR_MS);
 
-    if (governedTerms === null) {
-      setGovernanceError("A governed offer is required before the Mint can submit terms.");
+    if (governedTerms === null || decisionCase === undefined) {
       return;
     }
-    setGovernanceError(null);
+    const offered = values.net.value.toFixed(0);
+    const isGovernedAmount = offered === governedTerms.discountedSat;
     const result: OfferFormResult = {
+      governance: {
+        billId: value.bill.id,
+        caseId: decisionCase.snapshot.caseId,
+        decisionResultDigest: decisionCase.resultDigest,
+        action: isGovernedAmount ? "confirm_proposed_quote" : "propose_adjustment_and_requote",
+        ...(isGovernedAmount ? {} : { discountedSat: offered }),
+        reasonCode: isGovernedAmount ? "operator_confirmed_governed_terms" : "operator_adjusted_price_within_bounds",
+        writtenBasis: isGovernedAmount
+          ? "Offered the governed amount from the dashboard quote actions."
+          : `Adjusted the governed amount to ${offered} sat from the dashboard quote actions.`,
+      },
       discount: values,
       ttl: { ttl },
     };
-
-    const offered = values.net.value.toFixed(0);
-    const isGovernedAmount = offered === governedTerms.discountedSat;
-    const recorded = await recordOperatorDecision({
-      billId: value.bill.id,
-      action: isGovernedAmount ? "confirm_proposed_quote" : "propose_adjustment_and_requote",
-      ...(isGovernedAmount ? {} : { discountedSat: offered }),
-      reasonCode: isGovernedAmount ? "operator_confirmed_governed_terms" : "operator_adjusted_price_within_bounds",
-      writtenBasis: isGovernedAmount
-        ? "Offered the governed amount from the dashboard quote actions."
-        : `Adjusted the governed amount to ${offered} sat from the dashboard quote actions.`,
-    });
-    if (!recorded.ok) {
-      setGovernanceError(recorded.error);
-      return;
-    }
 
     onSubmit(result);
   };
@@ -123,15 +118,12 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
             startDate={startDate}
             endDate={endDate}
             gross={gross}
-            onSubmit={(values) => {
-              void handleFormSubmit(values);
-            }}
+            onSubmit={handleFormSubmit}
             quoteId={value.id}
             suggestedNet={governedTerms.discountedSat}
           />
         </>
       )}
-      {governanceError === null ? null : <p role="alert">{governanceError}</p>}
     </BaseDrawer>
   );
 }
