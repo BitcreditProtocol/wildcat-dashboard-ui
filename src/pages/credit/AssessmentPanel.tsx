@@ -21,7 +21,7 @@ const messages = defineMessages({
   },
   pricing: {
     id: "credit.assessment.pricing",
-    defaultMessage: "Pricing calculation",
+    defaultMessage: "Deterministic pricing trace",
     description: "Summary label of the deterministic pricing trace",
   },
   observed: { id: "credit.assessment.observed", defaultMessage: "observed", description: "Prefix for observed trace values" },
@@ -50,7 +50,32 @@ export interface AssessmentPanelProps {
   formatSat: (value: string) => string;
 }
 
-/** The six axis findings, with the per-rule and pricing traces one level deeper. */
+export function PricingTrace({ steps }: { steps: DecisionCase["result"]["calculationTrace"] }) {
+  const intl = useIntl();
+  if (steps.length === 0) return null;
+
+  return (
+    <details>
+      <summary className="cursor-pointer select-none text-xs text-muted-foreground hover:text-foreground">
+        {intl.formatMessage(messages.pricing)}
+      </summary>
+      <div className="mt-1.5 flex flex-col gap-1.5">
+        {steps.map((step) => (
+          <div key={step.step} className="border-l-2 border-divider-100 pl-3 text-xs">
+            <span className="font-medium">{words(step.step)}</span>
+            <span className="font-mono text-muted-foreground"> = {step.result}</span>
+            <div className="break-words font-mono text-[11px] text-muted-foreground">{step.formula}</div>
+            <div className="break-words font-mono text-[11px] text-muted-foreground">
+              {intl.formatMessage(messages.inputs)} {traceLine(step.inputs)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+/** The six axis findings, with the per-rule trace one level deeper. */
 export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProps) {
   const intl = useIntl();
   const { snapshot, result } = decisionCase;
@@ -124,26 +149,6 @@ export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProp
           ))}
         </div>
       </details>
-
-      {result.calculationTrace.length > 0 && (
-        <details className="mt-1">
-          <summary className="cursor-pointer select-none text-xs text-muted-foreground hover:text-foreground">
-            {intl.formatMessage(messages.pricing)}
-          </summary>
-          <div className="mt-1.5 flex flex-col gap-1.5">
-            {result.calculationTrace.map((step) => (
-              <div key={step.step} className="border-l-2 border-divider-100 pl-3 text-xs">
-                <span className="font-medium">{words(step.step)}</span>
-                <span className="font-mono text-muted-foreground"> = {step.result}</span>
-                <div className="break-words font-mono text-[11px] text-muted-foreground">{step.formula}</div>
-                <div className="break-words font-mono text-[11px] text-muted-foreground">
-                  {intl.formatMessage(messages.inputs)} {traceLine(step.inputs)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
     </section>
   );
 }
