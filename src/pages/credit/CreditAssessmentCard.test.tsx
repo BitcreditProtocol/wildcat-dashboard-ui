@@ -342,6 +342,32 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).not.toContain("crsat");
   });
 
+  it("does not put the bill's acceptor in the applicant's mouth", () => {
+    // `confirmedClaims.acceptorRef` is copied from the authoritative bill when the snapshot is
+    // assembled — the applicant never wrote it — so it must not appear under "what the applicant
+    // said". A sentinel distinct from the bill's own acceptor keeps this from passing by accident.
+    const claimed: DecisionCase = {
+      ...offerCase,
+      snapshot: {
+        ...offerCase.snapshot,
+        confirmedClaims: { ...offerCase.snapshot.confirmedClaims, acceptorRef: "synthetic-acceptor-the-applicant-never-named" },
+      },
+    };
+    render(<CreditAssessmentCard decisionCase={claimed} />);
+
+    const said = Array.from(container.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("What the applicant said")
+    );
+    // The disclosure is there and quoting the applicant's own words, so the absence below is the
+    // acceptor being left out rather than the whole panel being missing.
+    expect(said?.textContent).toContain("Fertilizante y mano de obra");
+    expect(said?.textContent).toContain("Pago de la cooperativa");
+    expect(said?.textContent).toContain("Acknowledged liability for the whole bill sum");
+    expect(said?.textContent).not.toContain("synthetic-acceptor-the-applicant-never-named");
+    // And no other part of the card restates it as a claim either.
+    expect(container.textContent).not.toContain("synthetic-acceptor-the-applicant-never-named");
+  });
+
   it("offers the applicant's chosen bill documents as real files, and says when there is no file", () => {
     render(<CreditAssessmentCard decisionCase={withDocuments} />);
 

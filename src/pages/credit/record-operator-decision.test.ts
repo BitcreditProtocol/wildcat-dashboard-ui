@@ -42,7 +42,7 @@ describe("recordOperatorDecision", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("derives the operator identity and role from the authenticated Keycloak token", async () => {
+  it("derives the operator identity and role from the authenticated session without sending its token", async () => {
     keycloak.authenticated = true;
     keycloak.realmAccess = { roles: ["reviewer", "approver"] };
     keycloak.subject = "operator-123";
@@ -51,13 +51,14 @@ describe("recordOperatorDecision", () => {
     vi.stubGlobal("fetch", fetch);
 
     await expect(recordOperatorDecision(command)).resolves.toEqual({ ok: true });
+    // The adapter is an unauthenticated local prototype: it never verifies this token, so sending
+    // it only widens where a live credential ends up.
     expect(fetch).toHaveBeenCalledWith(
       "/api/ai-credit/operator-decisions",
-      expect.objectContaining({
-        headers: { authorization: "Bearer signed-token", "content-type": "application/json" },
-      })
+      expect.objectContaining({ headers: { "content-type": "application/json" } })
     );
     const request = fetch.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.stringify(request)).not.toContain("signed-token");
     if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
     const requestBody: unknown = JSON.parse(request.body);
     expect(requestBody).toMatchObject({ operatorId: "operator-123", operatorRole: "approver" });
