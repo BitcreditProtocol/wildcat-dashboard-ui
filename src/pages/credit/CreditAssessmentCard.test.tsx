@@ -279,6 +279,7 @@ describe("CreditAssessmentCard", () => {
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat × 5.40% × 180 / 360 = 216,000 sat");
     expect(feeDisclosure?.textContent).toContain("216,000 sat + 50,000 sat operating cost = 266,000 sat");
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat − 266,000 sat = 7,734,000 sat");
+    expect(feeDisclosure?.textContent).toContain("Repayment & recourse");
     expect(feeDisclosure?.textContent).not.toContain("Deterministic pricing trace");
   });
 
