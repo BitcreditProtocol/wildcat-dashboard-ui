@@ -9,10 +9,16 @@
  * The caller must await success before sending the corresponding Mint action. Otherwise a
  * rejected governed requote would still become an offer through the ordinary quote endpoint.
  */
-export type OperatorDecisionAction = "confirm_proposed_quote" | "propose_adjustment_and_requote" | "return_for_information";
+export type OperatorDecisionAction =
+  | "confirm_proposed_quote"
+  | "confirm_no_current_product_fit"
+  | "propose_adjustment_and_requote"
+  | "return_for_information";
 
 export interface OperatorDecisionInput {
   billId: string;
+  caseId: string;
+  decisionResultDigest: string;
   action: OperatorDecisionAction;
   /** Required for an adjustment: what the operator is offering for the whole bill, in satoshis. */
   discountedSat?: string;

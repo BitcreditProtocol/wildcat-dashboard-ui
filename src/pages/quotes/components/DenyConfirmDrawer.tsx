@@ -6,11 +6,12 @@ interface DenyConfirmDrawerProps {
   title: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isPending?: boolean;
   onSubmit: () => void;
   children: ReactNode;
 }
 
-export function DenyConfirmDrawer({ title, open, onOpenChange, onSubmit, children }: DenyConfirmDrawerProps) {
+export function DenyConfirmDrawer({ title, open, onOpenChange, isPending = false, onSubmit, children }: DenyConfirmDrawerProps) {
   const intl = useIntl();
   return (
     <ConfirmDrawer
@@ -22,6 +23,7 @@ export function DenyConfirmDrawer({ title, open, onOpenChange, onSubmit, childre
       open={open}
       onOpenChange={onOpenChange}
       onSubmit={onSubmit}
+      submitButtonDisabled={isPending}
       submitButtonText={intl.formatMessage({
         id: "quotes.deny.confirmButton",
         defaultMessage: "Yes, deny quote",

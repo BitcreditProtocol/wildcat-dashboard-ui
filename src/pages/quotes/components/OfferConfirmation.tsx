@@ -12,11 +12,12 @@ interface OfferConfirmationProps {
   offerFormData?: OfferFormResult;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isPending?: boolean;
   onSubmit: (data: OfferFormResult) => void;
   quoteId?: string;
 }
 
-export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit, quoteId }: OfferConfirmationProps) {
+export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending = false, onSubmit, quoteId }: OfferConfirmationProps) {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
   const [validUntilDateTime, setValidUntilDateTime] = useState<Date | undefined>(undefined);
@@ -52,7 +53,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
       })}
       open={open}
       onOpenChange={onOpenChange}
-      submitButtonDisabled={!validUntilDateTime}
+      submitButtonDisabled={!validUntilDateTime || isPending}
       onSubmit={() => {
         if (!offerFormData || !validUntilDateTime) {
           return;

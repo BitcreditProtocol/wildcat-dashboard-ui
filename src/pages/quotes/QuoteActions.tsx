@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
-import { AppIcon, Button } from "@bitcredit/ui-library";
+import { AppIcon, Button, toast } from "@bitcredit/ui-library";
 import { getEbillOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen";
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer";
@@ -14,6 +14,8 @@ import { useQuoteMutations } from "./components/useQuoteMutations";
 import { useIntl } from "react-intl";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { buildMempoolTransactionUrl } from "@/utils/mempool";
+import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
+import { recordOperatorDecision } from "@/pages/credit/record-operator-decision";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -36,6 +38,7 @@ export function QuoteActions({
 }: QuoteActionsProps) {
   const intl = useIntl();
   const billId = value.bill.id;
+  const { decisionCase } = useCreditAssessmentForBill(billId);
   const EBILL_DETAIL_POLL_INTERVAL_MS = 10_000;
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
@@ -83,6 +86,8 @@ export function QuoteActions({
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false);
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false);
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
+  const governanceInFlight = useRef(false);
+  const [isGovernancePending, setIsGovernancePending] = useState(false);
 
   const denyTitle = intl.formatMessage({
     id: "quotes.actions.deny.title",
@@ -105,6 +110,8 @@ export function QuoteActions({
     defaultMessage: "Offer",
   });
   const showPendingActions = effectiveQuoteStatus === "Pending";
+  const showGovernedOffer = showPendingActions && decisionCase?.result.recommendation === "offer_available";
+  const showGovernedNoFit = showPendingActions && decisionCase?.result.recommendation === "no_current_product_fit";
   const showRequestToPayAction =
     (effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
     "keyset_id" in value &&
@@ -115,19 +122,66 @@ export function QuoteActions({
     value.id,
     billId
   );
+  const governanceFailed = () => {
+    toast({
+      title: intl.formatMessage({
+        id: "quotes.toast.governance.error",
+        defaultMessage: "The governed decision could not be recorded. Nothing was sent to the Mint; please retry.",
+        description: "Error shown when AI Credit rejects or cannot record an operator action",
+      }),
+      variant: "error",
+    });
+  };
+  const recordGovernance = async (input: OfferFormResult["governance"]): Promise<boolean> => {
+    if (governanceInFlight.current) return false;
+    governanceInFlight.current = true;
+    setIsGovernancePending(true);
+    try {
+      const recorded = await recordOperatorDecision(input);
+      if (!recorded.ok) governanceFailed();
+      return recorded.ok;
+    } catch {
+      governanceFailed();
+      return false;
+    } finally {
+      governanceInFlight.current = false;
+      setIsGovernancePending(false);
+    }
+  };
+  const submitGovernedNoFit = async () => {
+    if (decisionCase?.result.recommendation !== "no_current_product_fit") return;
+    const recorded = await recordGovernance({
+      billId,
+      caseId: decisionCase.snapshot.caseId,
+      decisionResultDigest: decisionCase.resultDigest,
+      action: "confirm_no_current_product_fit",
+      reasonCode: "operator_confirmed_no_current_product_fit",
+      writtenBasis: "Confirmed the deterministic no-current-product-fit result shown for this bill.",
+    });
+    if (!recorded) return;
+    handleDenyQuote();
+    setDenyConfirmDrawerOpen(false);
+  };
+  const submitGovernedOffer = async (finalData: OfferFormResult) => {
+    const recorded = await recordGovernance(finalData.governance);
+    if (!recorded) return;
+    removeItem(`offer-form-${value.id}`);
+    handleOfferQuote(finalData);
+    setOfferConfirmDrawerOpen(false);
+  };
 
   return (
     <>
       {showPendingActions || showRequestToPayAction ? (
         <div className="flex items-center gap-2">
-          {showPendingActions && (
+          {showGovernedNoFit && (
             <DenyConfirmDrawer
               title={denyTitle}
               open={denyConfirmDrawerOpen}
               onOpenChange={setDenyConfirmDrawerOpen}
+              isPending={isGovernancePending}
               onSubmit={() => {
-                handleDenyQuote();
-                setDenyConfirmDrawerOpen(false);
+                void submitGovernedNoFit();
               }}
             >
               <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
@@ -136,7 +190,7 @@ export function QuoteActions({
             </DenyConfirmDrawer>
           )}
 
-          {showPendingActions && (
+          {showGovernedOffer && (
             <OfferFormDrawer
               title={offerTitle}
               description={offerDescription}
@@ -159,10 +213,9 @@ export function QuoteActions({
             offerFormData={offerFormData}
             open={offerConfirmDrawerOpen}
             onOpenChange={setOfferConfirmDrawerOpen}
+            isPending={isGovernancePending}
             onSubmit={(finalData) => {
-              removeItem(`offer-form-${value.id}`);
-              handleOfferQuote(finalData);
-              setOfferConfirmDrawerOpen(false);
+              void submitGovernedOffer(finalData);
             }}
             quoteId={value.id}
           />
