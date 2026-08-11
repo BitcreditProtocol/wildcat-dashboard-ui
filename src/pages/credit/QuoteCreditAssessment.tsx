@@ -10,6 +10,16 @@ import { useCreditAssessmentForBill } from "./use-credit-assessment";
  */
 
 const messages = defineMessages({
+  loading: {
+    id: "credit.quoteCard.loading",
+    defaultMessage: "Loading governed credit assessment…",
+    description: "Visible status while the deterministic assessment is loading",
+  },
+  unavailable: {
+    id: "credit.quoteCard.unavailable",
+    defaultMessage: "Governed credit assessment unavailable. Do not offer from this panel until it can be loaded.",
+    description: "Fail-closed error when the deterministic assessment cannot be loaded",
+  },
   absent: {
     id: "credit.quoteCard.absent",
     defaultMessage: "No AI Credit assessment for this bill.",
@@ -19,10 +29,21 @@ const messages = defineMessages({
 
 export function QuoteCreditAssessment({ billId }: { billId: string | undefined }) {
   const intl = useIntl();
-  const { decisionCase, isLoading, isAbsent } = useCreditAssessmentForBill(billId);
+  const { decisionCase, isLoading, isAbsent, error } = useCreditAssessmentForBill(billId);
 
-  if (isLoading) return <Skeleton className="h-24 rounded-lg" />;
-  if (decisionCase !== undefined) return <CreditAssessmentCard decisionCase={decisionCase} />;
-  if (isAbsent) return <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.absent)}</p>;
-  return null;
+  if (isLoading) {
+    return (
+      <div role="status" className="flex flex-col gap-2 text-xs text-muted-foreground">
+        <Skeleton className="h-24 rounded-lg" />
+        <span>{intl.formatMessage(messages.loading)}</span>
+      </div>
+    );
+  }
+  if (error === null && decisionCase !== undefined) return <CreditAssessmentCard decisionCase={decisionCase} />;
+  if (error === null && isAbsent) return <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.absent)}</p>;
+  return (
+    <p role="alert" className="rounded-lg border border-signal-alert/40 p-3 text-xs text-signal-alert">
+      {intl.formatMessage(messages.unavailable)}
+    </p>
+  );
 }

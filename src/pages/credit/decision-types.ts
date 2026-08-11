@@ -118,8 +118,10 @@ export interface VerificationRequest {
 export interface DecisionCase {
   policyFileName: string;
   snapshot: {
+    snapshotDigest: string;
     caseId: string;
     applicantRef: string;
+    mintId: string;
     asOfDate: string;
     product: string;
     country: string;
@@ -135,8 +137,8 @@ export interface DecisionCase {
       evidenceState: string;
       validThrough: string;
     };
-    duplicateCheck: { result: string; evidenceState: string };
-    mintCapacity: { existingExposureSat: string; exposureLimitSat: string; evidenceState: string };
+    duplicateCheck: { result: string; evidenceState: string; validThrough: string };
+    mintCapacity: { existingExposureSat: string; exposureLimitSat: string; evidenceState: string; validThrough: string };
   };
   policyPack: {
     policyPackVersion: string;
