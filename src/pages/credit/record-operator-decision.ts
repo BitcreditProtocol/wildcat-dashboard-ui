@@ -21,16 +21,11 @@ export interface OperatorDecisionInput {
   requiredItems?: string[];
 }
 
-/** Until the dashboard has a signed-in operator identity to read, the decision is attributed here. */
-const OPERATOR_ID = "wildcat-dashboard-operator";
-
 export async function recordOperatorDecision(input: OperatorDecisionInput): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const response = await fetch("/api/ai-credit/operator-decisions", {
       body: JSON.stringify({
         ...input,
-        operatorId: OPERATOR_ID,
-        operatorRole: "approver",
         requiredItems: input.requiredItems ?? [],
       }),
       headers: { "content-type": "application/json" },
