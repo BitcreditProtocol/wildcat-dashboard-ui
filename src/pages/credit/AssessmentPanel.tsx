@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { defineMessages, useIntl } from "react-intl";
-import { axisBadgeVariant, axisLabels, traceLine, words, type DecisionCase } from "./decision-types";
+import { axisBadgeVariant, axisLabels, percentFromBps, traceLine, words, type DecisionCase } from "./decision-types";
 
 const messages = defineMessages({
   heading: {
@@ -16,12 +16,12 @@ const messages = defineMessages({
   noReasons: { id: "credit.assessment.noReasons", defaultMessage: "Not assessed — earlier axes are blocked", description: "Empty axis" },
   ruleTrace: {
     id: "credit.assessment.ruleTrace",
-    defaultMessage: "Rule trace — observed vs policy",
+    defaultMessage: "Technical rule trace — raw observed vs policy",
     description: "Summary label of the per-rule trace",
   },
   pricing: {
     id: "credit.assessment.pricing",
-    defaultMessage: "Deterministic pricing trace",
+    defaultMessage: "Technical pricing trace — raw calculation inputs",
     description: "Summary label of the deterministic pricing trace",
   },
   observed: { id: "credit.assessment.observed", defaultMessage: "observed", description: "Prefix for observed trace values" },
@@ -34,8 +34,13 @@ const messages = defineMessages({
   },
   capacity: {
     id: "credit.assessment.capacity",
-    defaultMessage: "Mint exposure {existing} of {limit} · duplicate check {duplicate}",
-    description: "Mint capacity and duplicate check line",
+    defaultMessage: "Resulting Mint exposure {resulting} of {limit}, including {proposed} proposed · duplicate check {duplicate}",
+    description: "Mint capacity after including the proposed whole-bill exposure",
+  },
+  capacityUnavailable: {
+    id: "credit.assessment.capacityUnavailable",
+    defaultMessage: "Resulting Mint exposure not yet verified · duplicate check {duplicate}",
+    description: "Fail-closed Mint capacity line when no governed capacity trace exists",
   },
   contradiction: {
     id: "credit.assessment.contradiction",
@@ -80,6 +85,14 @@ export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProp
   const intl = useIntl();
   const { snapshot, result } = decisionCase;
   const { acceptor } = snapshot;
+  const capacityTrace = result.assessmentTrace.find(
+    (step) => step.ruleId === "mint_capacity_available" || step.reasonCode === "no_mint_capacity"
+  );
+  const resultingExposure = capacityTrace?.observed.resultingExposureSat;
+  const proposedExposure = capacityTrace?.observed.proposedExposureSat;
+  const exposureLimit = capacityTrace?.policy.exposureLimitSat;
+  const hasCapacityMath =
+    typeof resultingExposure === "string" && typeof proposedExposure === "string" && typeof exposureLimit === "string";
 
   return (
     <section className="rounded-md border border-border px-3 py-3">
@@ -106,17 +119,23 @@ export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProp
             pd:
               acceptor.probabilityOfDefaultBps === null
                 ? intl.formatMessage(messages.unavailable)
-                : `${acceptor.probabilityOfDefaultBps} bps`,
-            lgd: acceptor.lossGivenDefaultBps === null ? intl.formatMessage(messages.unavailable) : `${acceptor.lossGivenDefaultBps} bps`,
+                : percentFromBps(acceptor.probabilityOfDefaultBps),
+            lgd:
+              acceptor.lossGivenDefaultBps === null
+                ? intl.formatMessage(messages.unavailable)
+                : percentFromBps(acceptor.lossGivenDefaultBps),
             validThrough: acceptor.validThrough,
           })}
         </span>
         <span>
-          {intl.formatMessage(messages.capacity, {
-            existing: formatSat(snapshot.mintCapacity.existingExposureSat),
-            limit: formatSat(snapshot.mintCapacity.exposureLimitSat),
-            duplicate: words(snapshot.duplicateCheck.result),
-          })}
+          {hasCapacityMath
+            ? intl.formatMessage(messages.capacity, {
+                resulting: formatSat(resultingExposure),
+                proposed: formatSat(proposedExposure),
+                limit: formatSat(exposureLimit),
+                duplicate: words(snapshot.duplicateCheck.result),
+              })
+            : intl.formatMessage(messages.capacityUnavailable, { duplicate: words(snapshot.duplicateCheck.result) })}
         </span>
         {snapshot.contradictions.map((contradiction) => (
           <span key={contradiction.code}>

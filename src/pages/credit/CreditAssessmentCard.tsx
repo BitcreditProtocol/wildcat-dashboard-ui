@@ -180,6 +180,32 @@ const messages = defineMessages({
     defaultMessage: "Policy reasons: {reasons}",
     description: "Reason summary for a no-current-product-fit outcome",
   },
+  noFitAnnualMath: {
+    id: "credit.quote.noFitAnnualMath",
+    defaultMessage: "Effective annual cost {observed} − {limit} maximum = {over} over policy.",
+    description: "Exact observed-versus-limit calculation for an annual-cost no-fit decision",
+  },
+  noFitFeeMath: {
+    id: "credit.quote.noFitFeeMath",
+    defaultMessage: "Fee ratio {observed} − {limit} maximum = {over} over policy.",
+    description: "Exact observed-versus-limit calculation for a fee-ratio no-fit decision",
+  },
+  noFitFixedCost: {
+    id: "credit.quote.noFitFixedCost",
+    defaultMessage: "{cost} fixed operating cost on a {bill} bill contributes to the {fee} total fee.",
+    description: "Exact fixed-cost driver from the deterministic no-fit calculation trace",
+  },
+  assessed: {
+    id: "credit.audit.freshness",
+    defaultMessage: "Assessed {asOf} · evidence valid through {validThrough}",
+    description: "Visible freshness of the deterministic assessment and its earliest evidence expiry",
+  },
+  mintId: { id: "credit.audit.mintId", defaultMessage: "Mint", description: "Mint that produced the governed decision" },
+  snapshotDigest: {
+    id: "credit.audit.snapshotDigest",
+    defaultMessage: "Snapshot digest",
+    description: "Immutable digest of the exact decision input snapshot",
+  },
 });
 
 function useDecisionOutcome(decisionCase: DecisionCase) {
@@ -234,9 +260,10 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
             </ul>
           </>
         ) : result.recommendation === "no_current_product_fit" ? (
-          <p className="text-sm text-muted-foreground">
-            {intl.formatMessage(messages.noFitReasons, { reasons: result.reasonCodes.map(words).join("; ") })}
-          </p>
+          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+            <NoFitMath decisionCase={decisionCase} formatSat={formatSat} />
+            <p>{intl.formatMessage(messages.noFitReasons, { reasons: result.reasonCodes.map(words).join("; ") })}</p>
+          </div>
         ) : (
           <p className="font-medium text-signal-alert">{intl.formatMessage(messages.unknownSummary)}</p>
         )}
@@ -270,8 +297,85 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
           </Badge>
         )}
       </div>
+      <div className="rounded-md border border-border p-3">
+        <div className="text-xs font-medium">{intl.formatMessage(messages.repaymentHeading)}</div>
+        <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</p>
+      </div>
     </div>
   );
+}
+
+function NoFitMath({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
+  const intl = useIntl();
+  const failure = decisionCase.result.assessmentTrace.find((step) => step.outcome === "fail");
+  const bps = (value: unknown): number | undefined => {
+    const parsed = typeof value === "number" ? value : typeof value === "string" && /^\d+$/.test(value) ? Number(value) : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : undefined;
+  };
+  const feeStep = decisionCase.result.calculationTrace.find((step) => step.step === "effective_fee_sat");
+  const offerStep = decisionCase.result.calculationTrace.find((step) => step.step === "discounted_sat");
+  const operatingCost = feeStep?.inputs.operatingCostSat;
+  const billSum = offerStep?.inputs.billSumSat;
+  const effectiveFee = failure?.observed.effectiveFeeSat;
+  const fixedCost =
+    typeof operatingCost === "string" &&
+    /^\d+$/.test(operatingCost) &&
+    typeof billSum === "string" &&
+    /^\d+$/.test(billSum) &&
+    typeof effectiveFee === "string" &&
+    /^\d+$/.test(effectiveFee) &&
+    feeStep?.result === effectiveFee ? (
+      <p>
+        {intl.formatMessage(messages.noFitFixedCost, {
+          cost: formatSat(operatingCost),
+          bill: formatSat(billSum),
+          fee: formatSat(effectiveFee),
+        })}
+      </p>
+    ) : null;
+  const observedAnnual = bps(failure?.observed.effectiveAnnualBps);
+  const annualLimit = bps(failure?.policy.maximumEffectiveAnnualBps);
+  if (
+    failure?.reasonCode === "cost_above_policy_ceiling" &&
+    observedAnnual !== undefined &&
+    annualLimit !== undefined &&
+    observedAnnual > annualLimit
+  ) {
+    return (
+      <div className="flex flex-col gap-1">
+        <p className="font-medium text-signal-alert">
+          {intl.formatMessage(messages.noFitAnnualMath, {
+            observed: percentFromBps(observedAnnual),
+            limit: percentFromBps(annualLimit),
+            over: percentFromBps(observedAnnual - annualLimit),
+          })}
+        </p>
+        {fixedCost}
+      </div>
+    );
+  }
+  const observedFee = bps(failure?.observed.feeRatioBps);
+  const feeLimit = bps(failure?.policy.maximumFeeRatioBps);
+  if (
+    failure?.reasonCode === "fee_ratio_above_policy_ceiling" &&
+    observedFee !== undefined &&
+    feeLimit !== undefined &&
+    observedFee > feeLimit
+  ) {
+    return (
+      <div className="flex flex-col gap-1">
+        <p className="font-medium text-signal-alert">
+          {intl.formatMessage(messages.noFitFeeMath, {
+            observed: percentFromBps(observedFee),
+            limit: percentFromBps(feeLimit),
+            over: percentFromBps(observedFee - feeLimit),
+          })}
+        </p>
+        {fixedCost}
+      </div>
+    );
+  }
+  return null;
 }
 
 function Disclosure({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
@@ -395,6 +499,9 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
       ? decisionCase.result.terms
       : null;
   const outcome = useDecisionOutcome(decisionCase);
+  const validThrough = [snapshot.duplicateCheck.validThrough, snapshot.mintCapacity.validThrough]
+    .concat(snapshot.invoice === null ? [] : snapshot.invoice.validThrough)
+    .reduce((earliest, date) => (date < earliest ? date : earliest), snapshot.acceptor.validThrough);
 
   return (
     <Card className="gap-0 overflow-hidden p-0 text-sm">
@@ -409,6 +516,9 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
               {outcome.badge}
             </div>
             {outcome.summary !== undefined && <p className="mt-1 text-sm text-muted-foreground">{outcome.summary}</p>}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {intl.formatMessage(messages.assessed, { asOf: snapshot.asOfDate, validThrough })}
+            </p>
           </div>
           {snapshot.isSynthetic && <Badge variant="outline">{intl.formatMessage(messages.synthetic)}</Badge>}
         </div>
@@ -428,10 +538,6 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
       )}
 
       <Disclosure title={intl.formatMessage(messages.reviewDetails)} hint={intl.formatMessage(messages.reviewHint)}>
-        <div className="rounded-md border border-border p-3">
-          <div className="text-xs font-medium">{intl.formatMessage(messages.repaymentHeading)}</div>
-          <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</p>
-        </div>
         <InvoiceEvidence invoice={snapshot.invoice} />
         {snapshot.bill !== null && (
           <SubmittedDocuments billId={snapshot.bill.billId} submittedEvidence={decisionCase.submittedEvidence ?? []} />
@@ -451,8 +557,12 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
           <AuditRow label={intl.formatMessage(messages.calculationVersion)}>{policyPack.calculationVersion}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.annualLimit)}>{percentFromBps(policyPack.maximumEffectiveAnnualBps)}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.feeLimit)}>{percentFromBps(policyPack.maximumFeeRatioBps)}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.mintId)}>{snapshot.mintId}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.caseId)}>{snapshot.caseId}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.snapshotDate)}>{snapshot.asOfDate}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.snapshotDigest)}>
+            <span title={snapshot.snapshotDigest}>{snapshot.snapshotDigest}</span>
+          </AuditRow>
           <AuditRow label={intl.formatMessage(messages.policyDigest)}>
             <span title={policyPack.policyPackDigest}>{policyPack.policyPackDigest}</span>
           </AuditRow>

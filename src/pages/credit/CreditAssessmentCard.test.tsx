@@ -38,12 +38,15 @@ const caseFixture = (overrides: {
   verificationRequests?: DecisionCase["result"]["verificationRequests"];
   axes?: DecisionCase["result"]["axes"];
   reasonCodes?: string[];
+  assessmentTrace?: DecisionCase["result"]["assessmentTrace"];
   calculationTrace?: DecisionCase["result"]["calculationTrace"];
 }): DecisionCase => ({
   policyFileName: "synthetic-guatemala-v7.json",
   snapshot: {
+    snapshotDigest: "sha256:snapshot",
     caseId: overrides.caseId,
     applicantRef: "synthetic-applicant-a",
+    mintId: "synthetic-mint-guatemala",
     asOfDate: "2026-08-10",
     product: "seasonal_coffee_accepted_ebill_discount",
     country: "GT",
@@ -75,8 +78,13 @@ const caseFixture = (overrides: {
       evidenceState: "independently_verified",
       validThrough: "2026-11-08",
     },
-    duplicateCheck: { result: "clear", evidenceState: "independently_verified" },
-    mintCapacity: { existingExposureSat: "8000000", exposureLimitSat: "40000000", evidenceState: "independently_verified" },
+    duplicateCheck: { result: "clear", evidenceState: "independently_verified", validThrough: "2026-11-09" },
+    mintCapacity: {
+      existingExposureSat: "8000000",
+      exposureLimitSat: "40000000",
+      evidenceState: "independently_verified",
+      validThrough: "2026-11-10",
+    },
   },
   policyPack: {
     policyPackVersion: "synthetic-guatemala-coffee-v7",
@@ -95,7 +103,29 @@ const caseFixture = (overrides: {
     terms: overrides.terms,
     verificationRequests: overrides.verificationRequests ?? [],
     reasonCodes: overrides.reasonCodes ?? ["governed_terms_available"],
-    assessmentTrace: [],
+    assessmentTrace: overrides.assessmentTrace ?? [
+      {
+        ruleId: "acceptor_loss_parameters_verified",
+        subject: "acceptor_repayment_risk",
+        outcome: "pass",
+        reasonCode: "acceptor_loss_parameters_verified",
+        observed: { probabilityOfDefaultBps: 600, lossGivenDefaultBps: 4000, evidenceState: "independently_verified" },
+        policy: { exposureAtDefaultSat: "8000000" },
+      },
+      {
+        ruleId: "mint_capacity_available",
+        subject: "mint_exposure_capacity",
+        outcome: "pass",
+        reasonCode: "mint_capacity_available",
+        observed: {
+          existingExposureSat: "8000000",
+          proposedExposureSat: "8000000",
+          resultingExposureSat: "16000000",
+          evidenceState: "independently_verified",
+        },
+        policy: { exposureLimitSat: "40000000" },
+      },
+    ],
     calculationTrace: overrides.calculationTrace ?? [],
   },
   resultDigest: "sha256:result",
@@ -160,6 +190,7 @@ const blockedCase = caseFixture({
   terms: null,
   verificationRequests: [{ code: "acceptor", axis: "acceptor_repayment_risk", requiredItem: "Current governed acceptor PD and LGD" }],
   axes: passingAxes.map((finding) => ({ ...finding, status: "blocked" as const })),
+  assessmentTrace: [],
 });
 
 const noFitCase = caseFixture({
@@ -167,8 +198,32 @@ const noFitCase = caseFixture({
   assessmentStatus: "ready_for_decision",
   recommendation: "no_current_product_fit",
   terms: null,
-  reasonCodes: ["bill_already_financed"],
+  reasonCodes: ["cost_above_policy_ceiling"],
   axes: passingAxes.map((finding, index) => (index === 0 ? { ...finding, status: "fail" as const } : finding)),
+  assessmentTrace: [
+    {
+      ruleId: "maximum_effective_annual_cost",
+      subject: "product_fit",
+      outcome: "fail",
+      reasonCode: "cost_above_policy_ceiling",
+      observed: { effectiveAnnualBps: "6042", effectiveFeeSat: "58000" },
+      policy: { maximumEffectiveAnnualBps: 1500, costMarginBps: "-4542" },
+    },
+  ],
+  calculationTrace: [
+    {
+      step: "effective_fee_sat",
+      formula: "appliedDiscountSat + operatingCostSat",
+      inputs: { appliedDiscountSat: "8000", operatingCostSat: "50000" },
+      result: "58000",
+    },
+    {
+      step: "discounted_sat",
+      formula: "billSumSat - effectiveFeeSat",
+      inputs: { billSumSat: "250000", effectiveFeeSat: "58000" },
+      result: "192000",
+    },
+  ],
 });
 
 let container: HTMLElement;
@@ -201,6 +256,9 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("Valid until");
     expect(container.textContent).toContain("2026-08-12");
     expect(container.textContent).toContain("6.88%");
+    expect(container.textContent).toContain("Repayment & recourse");
+    expect(container.textContent).toContain("Acceptor pays at maturity");
+    expect(container.textContent).toContain("Assessed 2026-08-10 · evidence valid through 2026-11-08");
     expect(container.textContent).not.toContain("tomorrow");
     // The real action rail is directly below, so the card no longer explains its own placement.
     expect(container.textContent).not.toContain("Offering and denying happen");
@@ -244,9 +302,7 @@ describe("CreditAssessmentCard", () => {
     );
     expect(disclosures).toHaveLength(2);
     expect(disclosures.every((details) => !details.open)).toBe(true);
-    expect(disclosures[0]?.textContent).toContain("Repayment & recourse");
-    expect(disclosures[0]?.textContent).toContain("Acceptor pays at maturity");
-    expect(container.textContent).not.toContain("Independently verified");
+    expect(disclosures[0]?.textContent).not.toContain("Repayment & recourse");
     expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
     expect(container.textContent).toContain("Policy filesynthetic-guatemala-v7.json");
     expect(container.textContent).toContain("Calculation versiondeterministic-credit-core-v7");
@@ -254,6 +310,19 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("Maximum fee ratio30.00%");
     expect(container.querySelector('[title="sha256:policy-pack"]')).not.toBeNull();
     expect(container.querySelector('[title="sha256:result"]')).not.toBeNull();
+    expect(container.textContent).toContain("Mintsynthetic-mint-guatemala");
+    expect(container.querySelector('[title="sha256:snapshot"]')).not.toBeNull();
+  });
+
+  it("shows curated risk percentages and resulting exposure while retaining honest raw audit data", () => {
+    render(<CreditAssessmentCard decisionCase={offerCase} />);
+
+    expect(container.textContent).toContain("Acceptor PD 6.00% · LGD 40.00%");
+    expect(container.textContent).toContain("Resulting Mint exposure 16,000,000 sat of 40,000,000 sat, including 8,000,000 sat proposed");
+    const technical = Array.from(container.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("Technical rule trace")
+    );
+    expect(technical?.textContent).toContain("independently_verified");
   });
 
   it("does not repeat what the quote detail above it already states", () => {
@@ -301,6 +370,10 @@ describe("CreditAssessmentCard", () => {
 
     expect(container.textContent).toContain("No current product fit");
     expect(container.textContent).toContain("No offer is available under the active policy.");
+    expect(container.textContent).toContain("Effective annual cost 60.42% − 15.00% maximum = 45.42% over policy.");
+    expect(container.textContent).toContain(
+      "50,000 sat fixed operating cost on a 250,000 sat bill contributes to the 58,000 sat total fee."
+    );
     expect(container.textContent).not.toContain("Offer amount");
   });
 
@@ -340,7 +413,24 @@ describe("QuoteCreditAssessment", () => {
     mockUseQuery.mockReturnValue({ data: undefined, isLoading: false, error: new Error("offline") });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" />);
 
-    expect(container.textContent).toBe("");
+    expect(container.textContent).toContain("Governed credit assessment unavailable");
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it("fails closed instead of showing stale terms when a refresh fails", () => {
+    mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: new Error("offline") });
+    render(<QuoteCreditAssessment billId="synthetic-bill-a" />);
+
+    expect(container.textContent).toContain("Governed credit assessment unavailable");
+    expect(container.textContent).not.toContain("7,734,000 sat");
+  });
+
+  it("names the governed assessment while it is loading", () => {
+    mockUseQuery.mockReturnValue({ data: undefined, isLoading: true, error: null });
+    render(<QuoteCreditAssessment billId="synthetic-bill-a" />);
+
+    expect(container.textContent).toContain("Loading governed credit assessment");
+    expect(container.querySelector('[role="status"]')).not.toBeNull();
   });
 });
 
