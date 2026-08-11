@@ -71,6 +71,11 @@ const messages = defineMessages({
     defaultMessage: "Acceptor pays at maturity. Holder recourse applies only on dishonour; its legal form remains under review.",
     description: "Compact repayment and contingent-recourse disclosure",
   },
+  repaymentHeading: {
+    id: "credit.quote.repaymentHeading",
+    defaultMessage: "Repayment & recourse",
+    description: "Heading above the repayment and contingent-recourse disclosure",
+  },
   checksPassed: {
     id: "credit.signals.checksPassed",
     defaultMessage: "{passed}/{total} checks passed",
@@ -243,10 +248,7 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
             {intl.formatMessage(invoiceMatches ? messages.invoiceMatch : messages.invoiceReview)}
           </Badge>
         )}
-        <Badge variant="outline">{words(snapshot.acceptor.evidenceState)}</Badge>
       </div>
-
-      <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</p>
     </div>
   );
 }
@@ -333,6 +335,10 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
       )}
 
       <Disclosure title={intl.formatMessage(messages.reviewDetails)} hint={intl.formatMessage(messages.reviewHint)}>
+        <div className="rounded-md border border-border p-3">
+          <div className="text-xs font-medium">{intl.formatMessage(messages.repaymentHeading)}</div>
+          <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</p>
+        </div>
         <InvoiceEvidence invoice={snapshot.invoice} />
         {snapshot.bill !== null && (
           <SubmittedDocuments billId={snapshot.bill.billId} submittedEvidence={decisionCase.submittedEvidence ?? []} />
