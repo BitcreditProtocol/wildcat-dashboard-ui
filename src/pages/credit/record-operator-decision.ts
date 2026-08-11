@@ -1,3 +1,6 @@
+import keycloak from "@/keycloak";
+import { env } from "@/lib/env";
+
 /**
  * Records the operator's judgement with the AI Credit adapter when they act on a quote.
  *
@@ -28,19 +31,36 @@ export interface OperatorDecisionInput {
   requiredItems?: string[];
 }
 
-/** Until the dashboard has a signed-in operator identity to read, the decision is attributed here. */
-const OPERATOR_ID = "wildcat-dashboard-operator";
+type OperatorRole = "reviewer" | "approver";
+
+function authenticatedOperator(action: OperatorDecisionAction): { operatorId: string; operatorRole: OperatorRole; token?: string } | null {
+  // The mock stack has no Keycloak by design. This identity is synthetic test attribution only;
+  // deployed builds must derive attribution from authenticated claims below.
+  if (env.apiMocksEnabled) return { operatorId: "synthetic-dashboard-operator", operatorRole: "approver" };
+  if (!keycloak.authenticated || keycloak.subject === undefined || keycloak.token === undefined) return null;
+  const roles = keycloak.realmAccess?.roles ?? [];
+  const operatorRole = roles.includes("approver") ? "approver" : roles.includes("reviewer") ? "reviewer" : undefined;
+  if (operatorRole === undefined || (action !== "return_for_information" && operatorRole !== "approver")) return null;
+  return { operatorId: keycloak.subject, operatorRole, token: keycloak.token };
+}
 
 export async function recordOperatorDecision(input: OperatorDecisionInput): Promise<{ ok: true } | { ok: false; error: string }> {
+  const operator = authenticatedOperator(input.action);
+  if (operator === null) {
+    return { ok: false, error: "An authenticated AI Credit operator role is required" };
+  }
   try {
     const response = await fetch("/api/ai-credit/operator-decisions", {
       body: JSON.stringify({
         ...input,
-        operatorId: OPERATOR_ID,
-        operatorRole: "approver",
+        operatorId: operator.operatorId,
+        operatorRole: operator.operatorRole,
         requiredItems: input.requiredItems ?? [],
       }),
-      headers: { "content-type": "application/json" },
+      headers: {
+        ...(operator.token === undefined ? {} : { authorization: `Bearer ${operator.token}` }),
+        "content-type": "application/json",
+      },
       method: "POST",
     });
     if (!response.ok) {
