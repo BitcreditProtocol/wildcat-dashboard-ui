@@ -1,139 +1,243 @@
 import { Badge } from "@/components/ui/badge";
-import { getEbillAttachment } from "@/generated/client/sdk.gen";
-import { Button, TruncatedTextPopover } from "@bitcredit/ui-library";
-import { FileText, LoaderIcon } from "lucide-react";
-import { useState } from "react";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
+import { FileText } from "lucide-react";
 import { defineMessages, useIntl } from "react-intl";
-import type { SubmittedEvidence } from "./decision-types";
-
-/**
- * The documents the applicant chose to submit with this application, opened as the real files the
- * Mint holds — the same bytes the eBill application shows, fetched through the Mint's own
- * attachment endpoint. Nothing here is a rendering of a document: an operator deciding on an
- * instrument must see the instrument, not a reconstruction of it.
- *
- * A file the applicant uploaded during onboarding has no stored bytes on this side — the host
- * hashed it locally and only the reference travelled — so it is listed with its digest and marked
- * as unavailable rather than offered as something openable.
- */
+import type { EvidencePacket, ProposedEvidenceField, SubmittedEvidence } from "./decision-types";
 
 const messages = defineMessages({
   heading: {
-    id: "credit.documents.heading",
-    defaultMessage: "Submitted with the application",
-    description: "Heading of the applicant's submitted document list",
+    id: "credit.evidencePacket.heading",
+    defaultMessage: "Evidence packet",
+    description: "Heading of the operator's evidence provenance packet",
   },
-  caption: {
-    id: "credit.documents.caption",
+  warning: {
+    id: "credit.evidencePacket.warning",
     defaultMessage:
-      "Chosen by the applicant out of the documents on the bill. The Documents panel below lists everything the bill carries.",
-    description: "Caption distinguishing submitted documents from all bill documents",
+      "Synthetic/testnet only. A server digest identifies the received bytes; it does not prove who issued them, whether their contents are true, or legal enforceability.",
+    description: "Warning about the limits of evidence digests in the prototype",
   },
-  open: { id: "credit.documents.open", defaultMessage: "Open", description: "Button that opens a submitted document" },
-  billAttachment: {
-    id: "credit.documents.billAttachment",
-    defaultMessage: "On the bill",
-    description: "Badge for a document carried by the signed bill",
+  origin: { id: "credit.evidencePacket.origin", defaultMessage: "Origin", description: "Label for evidence origin" },
+  originBill: {
+    id: "credit.evidencePacket.origin.bill",
+    defaultMessage: "Bill attachment lineage",
+    description: "Evidence origin reserved for governed or explicitly synthetic bill attachments",
   },
-  applicantUpload: {
-    id: "credit.documents.applicantUpload",
-    defaultMessage: "Added when applying",
-    description: "Badge for a document the applicant uploaded during onboarding",
+  originClientBill: {
+    id: "credit.evidencePacket.origin.clientBill",
+    defaultMessage: "Browser-asserted bill attachment",
+    description: "Evidence origin supplied by the browser without server proof of bill binding",
   },
-  unavailable: {
-    id: "credit.documents.unavailable",
-    defaultMessage: "Not stored on this side — reference and digest only",
-    description: "Explains why an applicant upload cannot be opened here",
+  originUpload: {
+    id: "credit.evidencePacket.origin.upload",
+    defaultMessage: "Applicant upload",
+    description: "Evidence origin for an applicant-uploaded file",
   },
-  failed: {
-    id: "credit.documents.failed",
-    defaultMessage:
-      "The Mint cannot serve this file by name yet — that starts once it holds the bill chain. The Documents panel below opens the copy that arrived with the request to mint.",
-    description: "Shown when opening a document fails, pointing at the copy that is available",
+  clientBillWarning: {
+    id: "credit.evidencePacket.clientBillWarning",
+    defaultMessage: "The server matched these bytes to a browser-supplied digest; it did not establish a signed bill or revision binding.",
+    description: "Warning about browser-asserted bill attachment provenance",
   },
+  digest: { id: "credit.evidencePacket.digest", defaultMessage: "Server digest", description: "Label for server-computed evidence digest" },
+  submittedDigest: {
+    id: "credit.evidencePacket.submittedDigest",
+    defaultMessage: "Submitted digest (no server receipt)",
+    description: "Label for a digest that has no current evidence-service receipt",
+  },
+  status: { id: "credit.evidencePacket.status", defaultMessage: "Ingress", description: "Label for evidence ingress status" },
+  quarantined: {
+    id: "credit.evidencePacket.quarantined",
+    defaultMessage: "Quarantined · {bytes} bytes",
+    description: "Evidence ingress status and received byte count",
+  },
+  receiptUnavailable: {
+    id: "credit.evidencePacket.receiptUnavailable",
+    defaultMessage: "No current server receipt",
+    description: "Shown when the local evidence service has no receipt for a submitted reference",
+  },
+  extractionHeading: {
+    id: "credit.evidencePacket.extractionHeading",
+    defaultMessage: "Automated extraction proposal",
+    description: "Heading for model-proposed invoice fields and their citations",
+  },
+  extractionWarning: {
+    id: "credit.evidencePacket.extractionWarning",
+    defaultMessage: "Proposed text only. It is not a verification, risk finding, price, or authorization.",
+    description: "Warning that automated extraction has no decision authority",
+  },
+  extractionUnavailable: {
+    id: "credit.evidencePacket.extractionUnavailable",
+    defaultMessage: "No extraction proposal. Human review is required; absence is not an adverse finding.",
+    description: "Non-adverse fallback when no automated extraction exists",
+  },
+  parser: { id: "credit.evidencePacket.parser", defaultMessage: "Parser", description: "Label for evidence parser version" },
+  extraction: {
+    id: "credit.evidencePacket.extraction",
+    defaultMessage: "Extraction",
+    description: "Label for the extraction proposal schema version",
+  },
+  model: { id: "credit.evidencePacket.model", defaultMessage: "Model route", description: "Label for model identifier" },
+  prompt: { id: "credit.evidencePacket.prompt", defaultMessage: "Prompt", description: "Label for prompt version" },
+  derivative: {
+    id: "credit.evidencePacket.derivative",
+    defaultMessage: "Text derivative",
+    description: "Label for the parsed text derivative digest",
+  },
+  pageCitation: {
+    id: "credit.evidencePacket.pageCitation",
+    defaultMessage: "Page {page}: “{snippet}”",
+    description: "Exact document snippet supporting a proposed field",
+  },
+  invoiceNumber: { id: "credit.evidencePacket.field.invoiceNumber", defaultMessage: "Invoice", description: "Invoice-number field label" },
+  seller: { id: "credit.evidencePacket.field.seller", defaultMessage: "Seller", description: "Invoice seller field label" },
+  buyer: { id: "credit.evidencePacket.field.buyer", defaultMessage: "Buyer", description: "Invoice buyer field label" },
+  issueDate: { id: "credit.evidencePacket.field.issueDate", defaultMessage: "Issue date", description: "Invoice issue-date field label" },
+  goods: { id: "credit.evidencePacket.field.goods", defaultMessage: "Goods", description: "Invoice goods field label" },
+  transaction: {
+    id: "credit.evidencePacket.field.transaction",
+    defaultMessage: "Transaction reference",
+    description: "Invoice transaction-reference field label",
+  },
+  currency: { id: "credit.evidencePacket.field.currency", defaultMessage: "Currency", description: "Invoice currency field label" },
+  total: { id: "credit.evidencePacket.field.total", defaultMessage: "Total", description: "Invoice total field label" },
+  lineItem: { id: "credit.evidencePacket.field.lineItem", defaultMessage: "Line item", description: "Invoice line-item field label" },
 });
 
-/** Core suffixes stored files with a uuid; the eBill app strips it for display the same way. */
 const STORED_FILE_SUFFIX = /_[a-f0-9-]{36}(?=\.\w+$)/;
 
-export function SubmittedDocuments({ billId, submittedEvidence }: { billId: string; submittedEvidence: readonly SubmittedEvidence[] }) {
-  const intl = useIntl();
-  const [openingReference, setOpeningReference] = useState<string | null>(null);
-  const [failedReference, setFailedReference] = useState<string | null>(null);
+function originMessage(origin: SubmittedEvidence["origin"]) {
+  if (origin === "bill_attachment") return messages.originBill;
+  if (origin === "client_asserted_bill_attachment") return messages.originClientBill;
+  return messages.originUpload;
+}
 
+function proposedFields(
+  extraction: NonNullable<EvidencePacket["extraction"]>
+): { label: keyof typeof messages; value: string; citation: ProposedEvidenceField["citation"] }[] {
+  const { proposal } = extraction;
+  const fields = [
+    ["invoiceNumber", proposal.invoiceNumber],
+    ["seller", proposal.seller],
+    ["buyer", proposal.buyer],
+    ["issueDate", proposal.issueDate],
+    ["goods", proposal.goodsDescription],
+    ["transaction", proposal.transactionReference],
+    ["currency", proposal.currency],
+    ["total", proposal.totalSat],
+  ] as const;
+  return [
+    ...fields.flatMap(([label, field]) => (field === null ? [] : [{ label, value: field.value, citation: field.citation }])),
+    ...proposal.lineItems.map((line) => ({
+      label: "lineItem" as const,
+      value: `${line.description} · ${line.amountSat} sat`,
+      citation: line.citation,
+    })),
+  ];
+}
+
+export function SubmittedDocuments({
+  submittedEvidence,
+  evidencePackets,
+}: {
+  submittedEvidence: readonly SubmittedEvidence[];
+  evidencePackets: readonly EvidencePacket[];
+}) {
+  const intl = useIntl();
   if (submittedEvidence.length === 0) return null;
 
-  const open = async (reference: string) => {
-    setOpeningReference(reference);
-    setFailedReference(null);
-    try {
-      // `reference` is the stored file name, which is what this endpoint keys on.
-      const attachment: unknown = await getEbillAttachment({
-        path: { bid: billId, fname: reference },
-        responseStyle: "data",
-        parseAs: "blob",
-      });
-      if (!(attachment instanceof Blob)) throw new Error("Attachment response was not a file");
-      const blobUrl = window.URL.createObjectURL(attachment);
-      // Popups are blocked in some embedded browsers, so fall back to a synthetic click.
-      if (window.open(blobUrl, "_blank", "noopener,noreferrer") === null) {
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.click();
-      }
-      window.setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl);
-      }, 60_000);
-    } catch {
-      setFailedReference(reference);
-    } finally {
-      setOpeningReference(null);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-1.5 text-xs">
-      <div className="flex flex-wrap items-baseline gap-x-2">
-        <span className="font-medium">{intl.formatMessage(messages.heading)}</span>
-        <span className="text-muted-foreground">{intl.formatMessage(messages.caption)}</span>
+    <section className="flex flex-col gap-2 text-xs" data-testid="evidence-packet">
+      <div>
+        <h3 className="font-medium">{intl.formatMessage(messages.heading)}</h3>
+        <p className="text-muted-foreground">{intl.formatMessage(messages.warning)}</p>
       </div>
-      <ul className="flex flex-col gap-1">
-        {submittedEvidence.map((evidence) => {
-          const isOnBill = evidence.origin === "bill_attachment";
-          return (
-            <li key={evidence.reference} className="flex flex-wrap items-center gap-2 rounded-md border border-divider-200 px-2 py-1">
+      {submittedEvidence.map((evidence) => {
+        const packet = evidencePackets.find(
+          (candidate) =>
+            candidate.evidence.reference === evidence.reference &&
+            candidate.evidence.contentDigest === evidence.contentDigest &&
+            candidate.evidence.origin === evidence.origin
+        );
+        const extraction = packet?.extraction;
+        return (
+          <article key={`${evidence.reference}:${evidence.origin}`} className="space-y-2 rounded-md border border-divider-200 p-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <FileText className="size-3.5 shrink-0 text-muted-foreground" />
               <TruncatedTextPopover text={evidence.label.replace(STORED_FILE_SUFFIX, "")} className="min-w-0 font-medium" />
-              <Badge variant={isOnBill ? "outline" : "secondary"}>
-                {intl.formatMessage(isOnBill ? messages.billAttachment : messages.applicantUpload)}
-              </Badge>
-              {isOnBill ? (
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="ml-auto"
-                  disabled={openingReference !== null}
-                  onClick={() => {
-                    void open(evidence.reference);
-                  }}
-                >
-                  {intl.formatMessage(messages.open)}
-                  {openingReference === evidence.reference && <LoaderIcon className="ml-1 size-3 animate-spin" />}
-                </Button>
-              ) : (
-                <span className="ml-auto text-muted-foreground" title={evidence.contentDigest}>
-                  {intl.formatMessage(messages.unavailable)}
-                </span>
-              )}
-              {failedReference === evidence.reference && (
-                <span className="w-full text-signal-alert">{intl.formatMessage(messages.failed)}</span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+              <Badge variant="outline">{intl.formatMessage(originMessage(evidence.origin))}</Badge>
+            </div>
+            <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+              <div>
+                <dt className="text-muted-foreground">{intl.formatMessage(messages.origin)}</dt>
+                <dd>{intl.formatMessage(originMessage(evidence.origin))}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">{intl.formatMessage(messages.status)}</dt>
+                <dd>
+                  {packet === undefined
+                    ? intl.formatMessage(messages.receiptUnavailable)
+                    : intl.formatMessage(messages.quarantined, { bytes: intl.formatNumber(packet.byteLength) })}
+                </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">
+                  {intl.formatMessage(packet === undefined ? messages.submittedDigest : messages.digest)}
+                </dt>
+                <dd className="break-all font-mono">{evidence.contentDigest}</dd>
+              </div>
+            </dl>
+            {evidence.origin === "client_asserted_bill_attachment" && (
+              <p className="text-signal-alert">{intl.formatMessage(messages.clientBillWarning)}</p>
+            )}
+            {extraction === undefined ? (
+              <p className="text-muted-foreground">{intl.formatMessage(messages.extractionUnavailable)}</p>
+            ) : (
+              <div className="space-y-2 rounded-md bg-elevation-100 p-3">
+                <div>
+                  <h4 className="font-medium">{intl.formatMessage(messages.extractionHeading)}</h4>
+                  <p className="text-muted-foreground">{intl.formatMessage(messages.extractionWarning)}</p>
+                </div>
+                <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-muted-foreground">{intl.formatMessage(messages.extraction)}</dt>
+                    <dd className="font-mono">{extraction.schemaVersion}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{intl.formatMessage(messages.parser)}</dt>
+                    <dd className="font-mono">{extraction.parserVersion}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{intl.formatMessage(messages.model)}</dt>
+                    <dd className="font-mono">{extraction.modelId}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{intl.formatMessage(messages.prompt)}</dt>
+                    <dd className="font-mono">{extraction.promptVersion}</dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-muted-foreground">{intl.formatMessage(messages.derivative)}</dt>
+                    <dd className="break-all font-mono">{extraction.derivativeDigest}</dd>
+                  </div>
+                </dl>
+                <ul className="space-y-2">
+                  {proposedFields(extraction).map((field, index) => (
+                    <li key={`${field.label}:${String(index)}`}>
+                      <span className="font-medium">
+                        {intl.formatMessage(messages[field.label])}: {field.value}
+                      </span>
+                      <p className="whitespace-pre-wrap text-muted-foreground">
+                        {intl.formatMessage(messages.pageCitation, {
+                          page: field.citation.page,
+                          snippet: field.citation.exactSnippet,
+                        })}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </article>
+        );
+      })}
+    </section>
   );
 }
