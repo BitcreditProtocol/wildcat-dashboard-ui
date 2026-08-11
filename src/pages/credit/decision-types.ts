@@ -71,7 +71,42 @@ export interface SubmittedEvidence {
   reference: string;
   label: string;
   contentDigest: string;
-  origin: "bill_attachment" | "applicant_upload";
+  origin: "bill_attachment" | "client_asserted_bill_attachment" | "applicant_upload";
+}
+
+export interface EvidenceCitation {
+  page: number;
+  exactSnippet: string;
+}
+
+export interface ProposedEvidenceField {
+  value: string;
+  citation: EvidenceCitation;
+}
+
+export interface EvidencePacket {
+  evidence: SubmittedEvidence;
+  status: "quarantined";
+  byteLength: number;
+  extraction?: {
+    schemaVersion: "invoice-extraction-proposal-v1";
+    derivativeDigest: string;
+    parserVersion: string;
+    promptVersion: string;
+    modelId: string;
+    extractedAt: string;
+    proposal: {
+      invoiceNumber: ProposedEvidenceField | null;
+      seller: ProposedEvidenceField | null;
+      buyer: ProposedEvidenceField | null;
+      issueDate: ProposedEvidenceField | null;
+      goodsDescription: ProposedEvidenceField | null;
+      transactionReference: ProposedEvidenceField | null;
+      currency: ProposedEvidenceField | null;
+      totalSat: ProposedEvidenceField | null;
+      lineItems: { description: string; amountSat: string; citation: EvidenceCitation }[];
+    };
+  };
 }
 
 export interface VerificationRequest {
@@ -120,6 +155,7 @@ export interface DecisionCase {
   };
   resultDigest: string;
   submittedEvidence?: SubmittedEvidence[];
+  evidencePackets?: EvidencePacket[];
 }
 
 /** Domain codes are rendered as humanized English, matching the rest of this synthetic view. */
