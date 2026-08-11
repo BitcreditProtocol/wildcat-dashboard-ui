@@ -7,6 +7,7 @@ import { useIntl } from "react-intl";
 import { DatePicker, Text } from "@bitcredit/ui-library";
 import type { DateRange } from "@bitcredit/ui-library";
 import { useAmountFormatter } from "@/utils/amount-format";
+import { governedOfferTtl } from "./useQuoteMutations";
 
 interface OfferConfirmationProps {
   offerFormData?: OfferFormResult;
@@ -22,7 +23,11 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
   const { formatAmount } = useAmountFormatter();
   const [validUntilDateTime, setValidUntilDateTime] = useState<Date | undefined>(undefined);
 
-  const maxDate = useMemo(() => addYears(new Date(), 1), []);
+  const maxDate = useMemo(() => {
+    const oneYearFromNow = addYears(new Date(), 1);
+    const governedExpiry = offerFormData?.governedOfferExpiresAt;
+    return governedExpiry !== undefined && governedExpiry < oneYearFromNow ? governedExpiry : oneYearFromNow;
+  }, [offerFormData?.governedOfferExpiresAt]);
 
   useEffect(() => {
     if (!open) {
@@ -40,6 +45,8 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
     offerFormData && !offerFormData.discount.gross.value.eq(0)
       ? new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
       : undefined;
+  const selectedOffer = offerFormData && validUntilDateTime ? { ...offerFormData, ttl: { ttl: validUntilDateTime } } : undefined;
+  const validTtl = selectedOffer === undefined ? null : governedOfferTtl(selectedOffer);
 
   return (
     <ConfirmDrawer
@@ -53,12 +60,12 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
       })}
       open={open}
       onOpenChange={onOpenChange}
-      submitButtonDisabled={!validUntilDateTime || isPending}
+      submitButtonDisabled={validTtl === null || isPending}
       onSubmit={() => {
-        if (!offerFormData || !validUntilDateTime) {
+        if (selectedOffer === undefined || validTtl === null) {
           return;
         }
-        onSubmit({ ...offerFormData, ttl: { ttl: validUntilDateTime } });
+        onSubmit(selectedOffer);
       }}
     >
       <div className="flex flex-col gap-4 px-4 py-4">
