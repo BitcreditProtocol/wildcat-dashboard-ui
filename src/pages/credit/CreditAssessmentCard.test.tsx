@@ -186,8 +186,6 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("2026-08-12");
     expect(container.textContent).toContain("6.88%");
     expect(container.textContent).not.toContain("tomorrow");
-    // The acceptor owes the sum; the holder is only liable on dishonour.
-    expect(container.textContent).toContain("Acceptor pays at maturity");
     // The real action rail is directly below, so the card no longer explains its own placement.
     expect(container.textContent).not.toContain("Offering and denying happen");
     expect(container.textContent).not.toContain("advance");
@@ -216,6 +214,8 @@ describe("CreditAssessmentCard", () => {
     );
     expect(disclosures).toHaveLength(2);
     expect(disclosures.every((details) => !details.open)).toBe(true);
+    expect(disclosures[0]?.textContent).toContain("Repayment & recourse");
+    expect(disclosures[0]?.textContent).toContain("Acceptor pays at maturity");
     expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
     expect(container.textContent).toContain("Calculation versiondeterministic-credit-core-v7");
     expect(container.textContent).toContain("Maximum effective annual cost15.00%");
