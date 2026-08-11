@@ -433,6 +433,7 @@
   "quotes.toast.deny.error": "Error while denying quote: {error}",
   "quotes.toast.deny.pending": "Denying quote...",
   "quotes.toast.deny.success": "Quote has been denied.",
+  "quotes.toast.governance.error": "The governed decision could not be recorded. Nothing was sent to the Mint; please retry.",
   "quotes.toast.offer.error": "Error while offering quote: {error}",
   "quotes.toast.offer.pending": "Offering quote...",
   "quotes.toast.offer.success": "Quote has been offered.",
