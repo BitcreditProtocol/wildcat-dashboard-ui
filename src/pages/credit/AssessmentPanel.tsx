@@ -29,7 +29,7 @@ const messages = defineMessages({
   inputs: { id: "credit.assessment.inputs", defaultMessage: "inputs", description: "Prefix for calculation inputs" },
   riskEvidence: {
     id: "credit.assessment.riskEvidence",
-    defaultMessage: "Acceptor PD {pd} · LGD {lgd} · {evidenceState}, valid through {validThrough}",
+    defaultMessage: "Acceptor PD {pd} · LGD {lgd} · valid through {validThrough}",
     description: "Governed acceptor loss parameters",
   },
   capacity: {
@@ -39,7 +39,7 @@ const messages = defineMessages({
   },
   contradiction: {
     id: "credit.assessment.contradiction",
-    defaultMessage: "Contradiction {code}: {state} ({evidenceState})",
+    defaultMessage: "Contradiction {code}: {state}",
     description: "Contradiction line",
   },
   unavailable: { id: "credit.assessment.unavailable", defaultMessage: "not available", description: "Value for a missing risk parameter" },
@@ -108,7 +108,6 @@ export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProp
                 ? intl.formatMessage(messages.unavailable)
                 : `${acceptor.probabilityOfDefaultBps} bps`,
             lgd: acceptor.lossGivenDefaultBps === null ? intl.formatMessage(messages.unavailable) : `${acceptor.lossGivenDefaultBps} bps`,
-            evidenceState: words(acceptor.evidenceState),
             validThrough: acceptor.validThrough,
           })}
         </span>
@@ -124,7 +123,6 @@ export function AssessmentPanel({ decisionCase, formatSat }: AssessmentPanelProp
             {intl.formatMessage(messages.contradiction, {
               code: contradiction.code,
               state: words(contradiction.state),
-              evidenceState: words(contradiction.evidenceState),
             })}
           </span>
         ))}
