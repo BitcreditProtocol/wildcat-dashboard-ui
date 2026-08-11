@@ -65,7 +65,8 @@ export default defineViteConfig(({ mode }) => {
     server: {
       proxy: {
         // Local AI Credit adapter: read-only evaluated decisions for the quotes credit view.
-        "/api/ai-credit": "http://127.0.0.1:8787",
+        // Configurable because another worktree may already own the default port.
+        "/api/ai-credit": env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
         // Whatever is serving the admin API locally, same-origin so no CORS is involved:
         // :4242 the BFF Envoy (real Keycloak token required), :4243 the admin aggregator directly
         // (no auth — Envoy is where auth lives), or the mint stub on :4242. Default is the BFF.
