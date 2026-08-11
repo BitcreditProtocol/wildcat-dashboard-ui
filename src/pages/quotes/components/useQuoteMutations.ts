@@ -15,6 +15,21 @@ import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("quote-mutations");
 
+export function governedOfferTtl(result: OfferFormResult, now = Date.now()): string | null {
+  const governedExpiry = result.governedOfferExpiresAt;
+  const selectedExpiry = result.ttl.ttl;
+  if (
+    governedExpiry === undefined ||
+    Number.isNaN(governedExpiry.getTime()) ||
+    Number.isNaN(selectedExpiry.getTime()) ||
+    selectedExpiry.getTime() <= now ||
+    selectedExpiry.getTime() > governedExpiry.getTime()
+  ) {
+    return null;
+  }
+  return selectedExpiry.toISOString();
+}
+
 export function useQuoteMutations(quoteId: string, billId: string) {
   const intl = useIntl();
   const queryClient = useQueryClient();
@@ -147,6 +162,18 @@ export function useQuoteMutations(quoteId: string, billId: string) {
 
   const handleOfferQuote = (result: OfferFormResult) => {
     offerToastRef.current?.dismiss();
+    const ttl = governedOfferTtl(result);
+    if (ttl === null) {
+      toast({
+        title: intl.formatMessage({
+          id: "quotes.toast.offer.invalidExpiry",
+          defaultMessage: "The offer expiry is outside the governed validity period. Review it before offering the quote.",
+          description: "Error shown when a Mint offer would outlive its governed credit decision",
+        }),
+        variant: "error",
+      });
+      return;
+    }
     offerToastRef.current = toast({
       title: intl.formatMessage({
         id: "quotes.toast.offer.pending",
@@ -161,7 +188,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       body: {
         action: "Offer",
         discounted: net_amount,
-        ttl: result.ttl.ttl.toISOString(),
+        ttl,
       },
     });
   };
