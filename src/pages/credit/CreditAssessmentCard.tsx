@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { humanReadableDurationDays } from "@/utils/dates";
 import { Card, CardTitle } from "@bitcredit/ui-library";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
@@ -67,10 +66,9 @@ const messages = defineMessages({
     defaultMessage: "Effective annual cost",
     description: "Effective annual cost label",
   },
-  ceiling: { id: "credit.quote.ceiling", defaultMessage: "{ceiling} policy limit", description: "Caption naming the rate limit" },
   feeLine: {
     id: "credit.quote.feeLine",
-    defaultMessage: "{fee} total fee · {feeRatio} of bill ({feeCeiling} limit) · {tenor}-day tenor",
+    defaultMessage: "{fee} total fee · {feeRatio} of bill · {tenor}-day tenor",
     description: "Compact whole-bill fee summary",
   },
   repayment: {
@@ -119,6 +117,16 @@ const messages = defineMessages({
   snapshotDate: { id: "credit.audit.snapshotDate", defaultMessage: "Snapshot date", description: "Decision snapshot date label" },
   policyDigest: { id: "credit.audit.policyDigest", defaultMessage: "Policy digest", description: "Policy digest label" },
   resultDigest: { id: "credit.audit.resultDigest", defaultMessage: "Result digest", description: "Decision result digest label" },
+  annualLimit: {
+    id: "credit.audit.annualLimit",
+    defaultMessage: "Maximum effective annual cost",
+    description: "Policy limit for effective annual cost",
+  },
+  feeLimit: {
+    id: "credit.audit.feeLimit",
+    defaultMessage: "Maximum fee ratio",
+    description: "Policy limit for the whole-bill fee ratio",
+  },
   verification: {
     id: "credit.verification",
     defaultMessage: "Required before a quote can be considered:",
@@ -165,7 +173,7 @@ function useDecisionOutcome(decisionCase: DecisionCase) {
 
 function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
   const intl = useIntl();
-  const { policyPack, result, snapshot } = decisionCase;
+  const { result, snapshot } = decisionCase;
   const terms = result.terms;
   const passed = result.axes.filter((finding) => finding.status === "pass").length;
   const mayShowOffer = result.assessmentStatus === "ready_for_decision" && result.recommendation === "offer_available";
@@ -204,14 +212,10 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
         <div>
           <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
           <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
-          <div className="text-xs text-muted-foreground">{humanReadableDurationDays(intl.locale, new Date(terms.offerExpiresOn))}</div>
         </div>
         <div>
           <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.effective)}</div>
           <div className="mt-1 text-lg font-semibold tabular-nums">{percentFromBps(terms.effectiveAnnualBps)}</div>
-          <div className="text-xs text-muted-foreground">
-            {intl.formatMessage(messages.ceiling, { ceiling: percentFromBps(policyPack.maximumEffectiveAnnualBps) })}
-          </div>
         </div>
       </div>
 
@@ -230,7 +234,6 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
           {intl.formatMessage(messages.feeLine, {
             fee: formatSat(terms.effectiveFeeSat),
             feeRatio: percentFromBps(terms.feeRatioBps),
-            feeCeiling: percentFromBps(policyPack.maximumFeeRatioBps),
             tenor: terms.tenorDays,
           })}
         </span>
@@ -307,6 +310,8 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
           <AuditRow label={intl.formatMessage(messages.product)}>{words(policyPack.product)}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.policyVersion)}>{policyPack.policyPackVersion}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.calculationVersion)}>{policyPack.calculationVersion}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.annualLimit)}>{percentFromBps(policyPack.maximumEffectiveAnnualBps)}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.feeLimit)}>{percentFromBps(policyPack.maximumFeeRatioBps)}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.caseId)}>{snapshot.caseId}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.snapshotDate)}>{snapshot.asOfDate}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.policyDigest)}>
