@@ -38,6 +38,7 @@ const caseFixture = (overrides: {
   verificationRequests?: DecisionCase["result"]["verificationRequests"];
   axes?: DecisionCase["result"]["axes"];
   reasonCodes?: string[];
+  calculationTrace?: DecisionCase["result"]["calculationTrace"];
 }): DecisionCase => ({
   policyFileName: "synthetic-guatemala-v7.json",
   snapshot: {
@@ -95,7 +96,7 @@ const caseFixture = (overrides: {
     verificationRequests: overrides.verificationRequests ?? [],
     reasonCodes: overrides.reasonCodes ?? ["governed_terms_available"],
     assessmentTrace: [],
-    calculationTrace: [],
+    calculationTrace: overrides.calculationTrace ?? [],
   },
   resultDigest: "sha256:result",
 });
@@ -118,6 +119,20 @@ const offerCase = caseFixture({
     effectiveAnnualBps: 688,
     feeRatioBps: 333,
   },
+  calculationTrace: [
+    {
+      step: "annual_discount_bps",
+      formula: "cost + loss + uncertainty + return - subsidy",
+      inputs: { costOfFundsBps: 100, expectedLossBps: 240, uncertaintyMarginBps: 100, returnObjectiveBps: 100, subsidyBps: 0 },
+      result: "540",
+    },
+    {
+      step: "applied_discount_sat",
+      formula: "bill * rate * tenor / day count",
+      inputs: { dayCountDenominator: 360 },
+      result: "216000",
+    },
+  ],
 });
 
 const withDocuments: DecisionCase = {
@@ -200,10 +215,23 @@ describe("CreditAssessmentCard", () => {
     );
     expect(feeDisclosure?.open).toBe(false);
     expect(feeDisclosure?.querySelector("summary")?.textContent).toContain("266,000 sat total");
-    expect(feeDisclosure?.textContent).toContain("Discount216,000 sat");
-    expect(feeDisclosure?.textContent).toContain("Operating cost50,000 sat");
-    expect(feeDisclosure?.textContent).not.toContain("Offer amount");
+    expect(feeDisclosure?.textContent).toContain(
+      "1.00% funding + 2.40% expected loss + 1.00% uncertainty + 1.00% return − 0.00% subsidy = 5.40% annual discount"
+    );
+    expect(feeDisclosure?.textContent).toContain("8,000,000 sat × 5.40% × 180 / 360 = 216,000 sat");
+    expect(feeDisclosure?.textContent).toContain("216,000 sat + 50,000 sat operating cost = 266,000 sat");
+    expect(feeDisclosure?.textContent).toContain("8,000,000 sat − 266,000 sat = 7,734,000 sat");
     expect(feeDisclosure?.textContent).not.toContain("Deterministic pricing trace");
+  });
+
+  it("does not invent a fee calculation when its governed trace is missing or inconsistent", () => {
+    const inconsistent = offerCase.result.calculationTrace.map((step) =>
+      step.step === "annual_discount_bps" ? { ...step, inputs: { ...step.inputs, expectedLossBps: 241 } } : step
+    );
+    for (const calculationTrace of [[], inconsistent]) {
+      render(<CreditAssessmentCard decisionCase={{ ...offerCase, result: { ...offerCase.result, calculationTrace } }} />);
+      expect(container.textContent).toContain("Calculation trace unavailable");
+    }
   });
 
   it("keeps evidence and immutable policy provenance collapsed by default", () => {

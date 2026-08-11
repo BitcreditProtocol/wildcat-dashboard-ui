@@ -111,15 +111,38 @@ const messages = defineMessages({
     defaultMessage: "{fee} total",
     description: "Compact total fee under the fee-calculation disclosure",
   },
+  calculationUnavailable: {
+    id: "credit.fee.unavailable",
+    defaultMessage: "Calculation trace unavailable",
+    description: "Fail-closed message when governed fee inputs are missing",
+  },
   appliedDiscount: {
     id: "credit.fee.appliedDiscount",
     defaultMessage: "Discount",
     description: "Applied discount component of the whole-bill fee",
   },
-  operatingCost: {
-    id: "credit.fee.operatingCost",
-    defaultMessage: "Operating cost",
-    description: "Fixed operating cost component of the whole-bill fee",
+  totalFee: { id: "credit.fee.total", defaultMessage: "Total fee", description: "Whole-bill effective fee" },
+  netOffer: { id: "credit.fee.netOffer", defaultMessage: "Offer amount", description: "Net amount offered after the whole-bill fee" },
+  rateEquation: {
+    id: "credit.fee.rateEquation",
+    defaultMessage:
+      "{funding} funding + {loss} expected loss + {uncertainty} uncertainty + {returnObjective} return − {subsidy} subsidy = {annual} annual discount",
+    description: "Operator-readable deterministic annual discount rate calculation",
+  },
+  discountEquation: {
+    id: "credit.fee.discountEquation",
+    defaultMessage: "{bill} × {rate} × {tenor} / {dayCount} = {discount}",
+    description: "Whole-bill applied discount calculation",
+  },
+  totalFeeEquation: {
+    id: "credit.fee.totalFeeEquation",
+    defaultMessage: "{discount} + {cost} operating cost = {fee}",
+    description: "Whole-bill total fee calculation",
+  },
+  offerEquation: {
+    id: "credit.fee.offerEquation",
+    defaultMessage: "{bill} − {fee} = {offer}",
+    description: "Whole-bill offer amount calculation",
   },
   product: { id: "credit.audit.product", defaultMessage: "Product", description: "Policy product label" },
   policyFile: {
@@ -275,6 +298,94 @@ function AuditRow({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
+  const intl = useIntl();
+  const terms = decisionCase.result.terms;
+  const rate = decisionCase.result.calculationTrace.find((step) => step.step === "annual_discount_bps");
+  const discount = decisionCase.result.calculationTrace.find((step) => step.step === "applied_discount_sat");
+  const numberInput = (key: string): number | undefined => {
+    const value = rate?.inputs[key];
+    return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+  };
+  const denominatorValue = discount?.inputs.dayCountDenominator;
+  const dayCountDenominator =
+    typeof denominatorValue === "number" && Number.isSafeInteger(denominatorValue) && denominatorValue > 0 ? denominatorValue : undefined;
+  const costOfFundsBps = numberInput("costOfFundsBps");
+  const expectedLossBps = numberInput("expectedLossBps");
+  const uncertaintyMarginBps = numberInput("uncertaintyMarginBps");
+  const returnObjectiveBps = numberInput("returnObjectiveBps");
+  const subsidyBps = numberInput("subsidyBps");
+
+  if (
+    terms === null ||
+    costOfFundsBps === undefined ||
+    expectedLossBps === undefined ||
+    uncertaintyMarginBps === undefined ||
+    returnObjectiveBps === undefined ||
+    subsidyBps === undefined ||
+    dayCountDenominator === undefined
+  ) {
+    return <p className="text-sm font-medium text-signal-alert">{intl.formatMessage(messages.calculationUnavailable)}</p>;
+  }
+  if (
+    costOfFundsBps + expectedLossBps + uncertaintyMarginBps + returnObjectiveBps - subsidyBps !== terms.annualDiscountBps ||
+    rate?.result !== String(terms.annualDiscountBps) ||
+    discount?.result !== terms.appliedDiscountSat
+  ) {
+    return <p className="text-sm font-medium text-signal-alert">{intl.formatMessage(messages.calculationUnavailable)}</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-4 tabular-nums">
+      <div className="rounded-md border border-border bg-elevation-100 px-3 py-2.5 text-sm">
+        {intl.formatMessage(messages.rateEquation, {
+          funding: percentFromBps(costOfFundsBps),
+          loss: percentFromBps(expectedLossBps),
+          uncertainty: percentFromBps(uncertaintyMarginBps),
+          returnObjective: percentFromBps(returnObjectiveBps),
+          subsidy: percentFromBps(subsidyBps),
+          annual: percentFromBps(terms.annualDiscountBps),
+        })}
+      </div>
+
+      <dl className="grid gap-2 text-sm">
+        <div className="grid gap-0.5 sm:grid-cols-[7rem_1fr] sm:items-baseline">
+          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.appliedDiscount)}</dt>
+          <dd className="font-medium">
+            {intl.formatMessage(messages.discountEquation, {
+              bill: formatSat(terms.billSumSat),
+              rate: percentFromBps(terms.annualDiscountBps),
+              tenor: terms.tenorDays,
+              dayCount: dayCountDenominator,
+              discount: formatSat(terms.appliedDiscountSat),
+            })}
+          </dd>
+        </div>
+        <div className="grid gap-0.5 sm:grid-cols-[7rem_1fr] sm:items-baseline">
+          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.totalFee)}</dt>
+          <dd className="font-medium">
+            {intl.formatMessage(messages.totalFeeEquation, {
+              discount: formatSat(terms.appliedDiscountSat),
+              cost: formatSat(terms.operatingCostSat),
+              fee: formatSat(terms.effectiveFeeSat),
+            })}
+          </dd>
+        </div>
+        <div className="grid gap-0.5 sm:grid-cols-[7rem_1fr] sm:items-baseline">
+          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.netOffer)}</dt>
+          <dd className="font-medium">
+            {intl.formatMessage(messages.offerEquation, {
+              bill: formatSat(terms.billSumSat),
+              fee: formatSat(terms.effectiveFeeSat),
+              offer: formatSat(terms.discountedSat),
+            })}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionCase }) {
   const intl = useIntl();
   const formatSat = (value: string) => `${intl.formatNumber(Number(value))} sat`;
@@ -312,17 +423,7 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
             fee: formatSat(offerTerms.effectiveFeeSat),
           })}
         >
-          <dl className="grid gap-3 sm:grid-cols-2">
-            {[
-              [intl.formatMessage(messages.appliedDiscount), offerTerms.appliedDiscountSat],
-              [intl.formatMessage(messages.operatingCost), offerTerms.operatingCostSat],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt className="text-xs text-muted-foreground">{label}</dt>
-                <dd className="mt-0.5 font-semibold tabular-nums">{formatSat(value)}</dd>
-              </div>
-            ))}
-          </dl>
+          <FeeCalculation decisionCase={decisionCase} formatSat={formatSat} />
         </Disclosure>
       )}
 
