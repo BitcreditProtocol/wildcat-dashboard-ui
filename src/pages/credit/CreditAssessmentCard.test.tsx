@@ -39,6 +39,7 @@ const caseFixture = (overrides: {
   axes?: DecisionCase["result"]["axes"];
   reasonCodes?: string[];
 }): DecisionCase => ({
+  policyFileName: "synthetic-guatemala-v7.json",
   snapshot: {
     caseId: overrides.caseId,
     applicantRef: "synthetic-applicant-a",
@@ -198,10 +199,11 @@ describe("CreditAssessmentCard", () => {
       details.querySelector("summary")?.textContent?.includes("Fee calculation")
     );
     expect(feeDisclosure?.open).toBe(false);
-    expect(feeDisclosure?.querySelector("summary")?.textContent).toContain("8,000,000 sat − 216,000 sat − 50,000 sat = 7,734,000 sat");
-    expect(feeDisclosure?.textContent).toContain("Applied discount216,000 sat");
+    expect(feeDisclosure?.querySelector("summary")?.textContent).toContain("266,000 sat total");
+    expect(feeDisclosure?.textContent).toContain("Discount216,000 sat");
     expect(feeDisclosure?.textContent).toContain("Operating cost50,000 sat");
-    expect(feeDisclosure?.textContent).toContain("Total fee266,000 sat");
+    expect(feeDisclosure?.textContent).not.toContain("Offer amount");
+    expect(feeDisclosure?.textContent).not.toContain("Deterministic pricing trace");
   });
 
   it("keeps evidence and immutable policy provenance collapsed by default", () => {
@@ -218,6 +220,7 @@ describe("CreditAssessmentCard", () => {
     expect(disclosures[0]?.textContent).toContain("Acceptor pays at maturity");
     expect(container.textContent).not.toContain("Independently verified");
     expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
+    expect(container.textContent).toContain("Policy filesynthetic-guatemala-v7.json");
     expect(container.textContent).toContain("Calculation versiondeterministic-credit-core-v7");
     expect(container.textContent).toContain("Maximum effective annual cost15.00%");
     expect(container.textContent).toContain("Maximum fee ratio30.00%");
