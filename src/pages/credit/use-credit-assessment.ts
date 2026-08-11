@@ -23,6 +23,7 @@ export function useCreditAssessments() {
 export function useCreditAssessmentForBill(billId: string | undefined): {
   decisionCase: DecisionCase | undefined;
   isLoading: boolean;
+  error: Error | null;
   /** True when the adapter answered but holds no decision for this bill. */
   isAbsent: boolean;
   /** True when the latest adapter read failed, even if React Query still has stale data. */
@@ -33,6 +34,7 @@ export function useCreditAssessmentForBill(billId: string | undefined): {
   return {
     decisionCase,
     isLoading,
+    error,
     isAbsent: error === null && data !== undefined && decisionCase === undefined,
     isUnavailable: error !== null,
   };

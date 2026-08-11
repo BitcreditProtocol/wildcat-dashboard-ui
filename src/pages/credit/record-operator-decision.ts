@@ -6,12 +6,8 @@
  * why, pinned by the adapter to the exact snapshot and engine result they were shown. Without it
  * the button press is the only trace, and a button press is not a reason.
  *
- * Fail-closed by design. Where an AI Credit assessment exists, this record is the only trace of the
- * human judgement behind the offer, so the caller holds the Mint's offer until it succeeds and shows
- * the operator a retryable error if it does not. It was best-effort, which meant a quiet console
- * warning could be the whole difference between a governed decision and an unexplained offer.
- * Recording is replay-tolerant on the adapter side, so retrying the same judgement is safe; a bill
- * with no assessment never reaches here and the Mint flow is unchanged for it.
+ * The caller must await success before sending the corresponding Mint action. Otherwise a
+ * rejected governed requote would still become an offer through the ordinary quote endpoint.
  */
 export type OperatorDecisionAction = "confirm_proposed_quote" | "propose_adjustment_and_requote" | "return_for_information";
 

@@ -228,6 +228,7 @@
   "credit.invoice.plausibility": "Plausibility",
   "credit.invoice.reviewedBy": "{assessor} · {methodology} · valid through {validThrough}",
   "credit.offer.assessmentUnavailable": "The AI Credit assessment is unavailable.",
+  "credit.offer.governanceRequired": "A governed offer is unavailable. Resolve or retry its assessment before offering terms.",
   "credit.offer.noGovernedOffer": "The governed assessment has no offer available.",
   "credit.offer.recordFailed": "This offer was not submitted: {error}",
   "credit.offer.recordRetry": "Submit again to retry. Nothing has been offered yet.",
