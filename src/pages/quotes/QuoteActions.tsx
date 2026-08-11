@@ -111,7 +111,14 @@ export function QuoteActions({
   });
   const showPendingActions = effectiveQuoteStatus === "Pending";
   const showGovernedOffer = showPendingActions && decisionCase?.result.recommendation === "offer_available";
-  const showGovernedNoFit = showPendingActions && decisionCase?.result.recommendation === "no_current_product_fit";
+  const denyGovernanceAvailable =
+    decisionCase?.result.assessmentStatus === "ready_for_decision" &&
+    (decisionCase.result.recommendation === "offer_available" || decisionCase.result.recommendation === "no_current_product_fit");
+  const denyUnavailableReason = intl.formatMessage({
+    id: "quotes.actions.deny.unavailable",
+    defaultMessage: "Deny is unavailable until the governed assessment is ready.",
+    description: "Explanation shown when a quote cannot yet be denied because its governed credit assessment is incomplete",
+  });
   const showRequestToPayAction =
     (effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
     "keyset_id" in value &&
@@ -148,15 +155,18 @@ export function QuoteActions({
       setIsGovernancePending(false);
     }
   };
-  const submitGovernedNoFit = async () => {
-    if (decisionCase?.result.recommendation !== "no_current_product_fit") return;
+  const submitGovernedDeny = async (writtenBasis: string) => {
+    if (decisionCase === undefined) return;
+    const recommendation = decisionCase.result.recommendation;
+    if (recommendation !== "offer_available" && recommendation !== "no_current_product_fit") return;
+    const confirmsNoFit = recommendation === "no_current_product_fit";
     const recorded = await recordGovernance({
       billId,
       caseId: decisionCase.snapshot.caseId,
       decisionResultDigest: decisionCase.resultDigest,
-      action: "confirm_no_current_product_fit",
-      reasonCode: "operator_confirmed_no_current_product_fit",
-      writtenBasis: "Confirmed the deterministic no-current-product-fit result shown for this bill.",
+      action: confirmsNoFit ? "confirm_no_current_product_fit" : "decline_application",
+      reasonCode: confirmsNoFit ? "operator_confirmed_no_current_product_fit" : "operator_declined_governed_offer",
+      writtenBasis,
     });
     if (!recorded) return;
     handleDenyQuote();
@@ -174,17 +184,22 @@ export function QuoteActions({
     <>
       {showPendingActions || showRequestToPayAction ? (
         <div className="flex items-center gap-2">
-          {showGovernedNoFit && (
+          {showPendingActions && (
             <DenyConfirmDrawer
               title={denyTitle}
               open={denyConfirmDrawerOpen}
               onOpenChange={setDenyConfirmDrawerOpen}
               isPending={isGovernancePending}
-              onSubmit={() => {
-                void submitGovernedNoFit();
+              onSubmit={(writtenBasis) => {
+                void submitGovernedDeny(writtenBasis);
               }}
             >
-              <Button className="flex-1 max-w-sm" disabled={isFetching || denyQuote.isPending} variant="destructive">
+              <Button
+                className="flex-1 max-w-sm"
+                disabled={isFetching || denyQuote.isPending || isGovernancePending || !denyGovernanceAvailable}
+                title={denyGovernanceAvailable ? undefined : denyUnavailableReason}
+                variant="destructive"
+              >
                 {denyButtonLabel} {denyQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
               </Button>
             </DenyConfirmDrawer>

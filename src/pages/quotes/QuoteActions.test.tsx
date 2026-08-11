@@ -29,7 +29,7 @@ let offerFormSubmit: ((data: OfferFormResult) => void) | undefined;
 let offerConfirmationSubmit: ((data: OfferFormResult) => void) | undefined;
 let offerConfirmationOpen = false;
 let offerConfirmationOpenChange: ((open: boolean) => void) | undefined;
-let denySubmit: (() => void) | undefined;
+let denySubmit: ((writtenBasis: string) => void) | undefined;
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -59,7 +59,7 @@ vi.mock("./components/OfferFormDrawer", () => ({
 }));
 
 vi.mock("./components/DenyConfirmDrawer", () => ({
-  DenyConfirmDrawer: ({ children, onSubmit }: { children: ReactNode; onSubmit: () => void }) => {
+  DenyConfirmDrawer: ({ children, onSubmit }: { children: ReactNode; onSubmit: (writtenBasis: string) => void }) => {
     denySubmit = onSubmit;
     return children;
   },
@@ -140,6 +140,11 @@ const governedNoFit = {
   snapshot: { ...governedOffer.snapshot, caseId: "case-no-fit" },
   result: { ...governedOffer.result, recommendation: "no_current_product_fit", terms: null },
   resultDigest: `sha256:${"b".repeat(64)}`,
+} as unknown as DecisionCase;
+
+const governedVerification = {
+  ...governedOffer,
+  result: { ...governedOffer.result, assessmentStatus: "blocked_pending_verification", recommendation: null, terms: null },
 } as unknown as DecisionCase;
 
 const offerData = {
@@ -255,7 +260,7 @@ describe("QuoteActions", () => {
     const page = renderComponent(pendingQuote);
 
     expect(page.textContent).toContain("Offer");
-    expect(page.textContent).not.toContain("Deny");
+    expect(page.textContent).toContain("Deny");
     act(() => {
       offerFormSubmit?.(offerData);
     });
@@ -341,13 +346,13 @@ describe("QuoteActions", () => {
     expect(page.textContent).toContain("Deny");
     expect(page.textContent).not.toContain("Offer");
     await act(async () => {
-      denySubmit?.();
+      denySubmit?.("Reviewed the deterministic no-fit result and confirmed it.");
       await Promise.resolve();
     });
     expect(mockHandleDenyQuote).not.toHaveBeenCalled();
 
     await act(async () => {
-      denySubmit?.();
+      denySubmit?.("Reviewed the deterministic no-fit result and confirmed it.");
       await Promise.resolve();
     });
     expect(mockRecordOperatorDecision).toHaveBeenLastCalledWith({
@@ -356,15 +361,38 @@ describe("QuoteActions", () => {
       decisionResultDigest: `sha256:${"b".repeat(64)}`,
       action: "confirm_no_current_product_fit",
       reasonCode: "operator_confirmed_no_current_product_fit",
-      writtenBasis: "Confirmed the deterministic no-current-product-fit result shown for this bill.",
+      writtenBasis: "Reviewed the deterministic no-fit result and confirmed it.",
     });
     expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
   });
 
-  it("never exposes Deny for a governed offer", () => {
+  it("shows and governs Deny for an available offer", async () => {
     decisionCase = governedOffer;
     const offerPage = renderComponent(pendingQuote);
-    expect(offerPage.textContent).not.toContain("Deny");
-    expect(denySubmit).toBeUndefined();
+    expect(offerPage.textContent).toContain("Deny");
+
+    await act(async () => {
+      denySubmit?.("Reviewed the governed offer and declined this application.");
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenCalledWith({
+      billId: "bill-1",
+      caseId: "case-offer",
+      decisionResultDigest: `sha256:${"a".repeat(64)}`,
+      action: "decline_application",
+      reasonCode: "operator_declined_governed_offer",
+      writtenBasis: "Reviewed the governed offer and declined this application.",
+    });
+    expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
+  });
+
+  it("shows but disables Deny while evidence is unresolved", () => {
+    decisionCase = governedVerification;
+    const page = renderComponent(pendingQuote);
+    const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
+
+    expect(denyButton?.disabled).toBe(true);
+    expect(denyButton?.title).toBe("Deny is unavailable until the governed assessment is ready.");
+    expect(page.textContent).not.toContain("Offer");
   });
 });

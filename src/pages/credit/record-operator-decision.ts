@@ -12,6 +12,7 @@
 export type OperatorDecisionAction =
   | "confirm_proposed_quote"
   | "confirm_no_current_product_fit"
+  | "decline_application"
   | "propose_adjustment_and_requote"
   | "return_for_information";
 
