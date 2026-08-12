@@ -539,9 +539,14 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
       )}
 
       <Disclosure title={intl.formatMessage(messages.reviewDetails)} hint={intl.formatMessage(messages.reviewHint)}>
+        <ApplicantClaims
+          claims={snapshot.confirmedClaims}
+          applicantRef={snapshot.applicantRef}
+          confirmation={decisionCase.applicantConfirmation}
+          submittedEvidence={decisionCase.submittedEvidence ?? []}
+        />
         <InvoiceEvidence invoice={snapshot.invoice} />
         <SubmittedDocuments submittedEvidence={decisionCase.submittedEvidence ?? []} evidencePackets={decisionCase.evidencePackets ?? []} />
-        <ApplicantClaims claims={snapshot.confirmedClaims} applicantRef={snapshot.applicantRef} />
         <AssessmentPanel decisionCase={decisionCase} formatSat={formatSat} />
       </Disclosure>
 

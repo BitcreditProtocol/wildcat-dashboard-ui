@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { FileText } from "lucide-react";
 import { defineMessages, useIntl } from "react-intl";
-import type { EvidencePacket, ProposedEvidenceField, SubmittedEvidence } from "./decision-types";
+import { displayEvidenceLabel, type EvidencePacket, type ProposedEvidenceField, type SubmittedEvidence } from "./decision-types";
 
 const messages = defineMessages({
   heading: {
@@ -102,8 +102,6 @@ const messages = defineMessages({
   lineItem: { id: "credit.evidencePacket.field.lineItem", defaultMessage: "Line item", description: "Invoice line-item field label" },
 });
 
-const STORED_FILE_SUFFIX = /_[a-f0-9-]{36}(?=\.\w+$)/;
-
 function originMessage(origin: SubmittedEvidence["origin"]) {
   if (origin === "bill_attachment") return messages.originBill;
   if (origin === "client_asserted_bill_attachment") return messages.originClientBill;
@@ -162,7 +160,7 @@ export function SubmittedDocuments({
           <article key={`${evidence.reference}:${evidence.origin}`} className="space-y-2 rounded-md border border-divider-200 p-3">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-              <TruncatedTextPopover text={evidence.label.replace(STORED_FILE_SUFFIX, "")} className="min-w-0 font-medium" />
+              <TruncatedTextPopover text={displayEvidenceLabel(evidence.label)} className="min-w-0 font-medium" />
               <Badge variant="outline">{intl.formatMessage(originMessage(evidence.origin))}</Badge>
             </div>
             <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
