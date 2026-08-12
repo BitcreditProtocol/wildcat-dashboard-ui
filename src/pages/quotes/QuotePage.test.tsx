@@ -322,11 +322,13 @@ describe("QuotePage", () => {
     expect(keysetLink).toBeNull();
   });
 
-  it("shows a collapsible documents section", () => {
+  it("shows a collapsed documents and evidence section before the actions", () => {
     const page = renderPage(`/quotes/${quoteId}`);
-    expect(page.textContent).toContain("Documents");
-    expect(page.textContent).toContain("Show documents");
+    expect(page.textContent).toContain("Documents & evidence");
+    expect(page.textContent).toContain("Show details");
     expect(page.textContent).not.toContain("invoice.pdf");
+    const content = page.textContent ?? "";
+    expect(content.indexOf("Documents & evidence")).toBeLessThan(content.indexOf("QuoteActionsMock"));
   });
 
   it("opens minted bill documents with the attachment endpoint", async () => {
@@ -430,6 +432,59 @@ describe("QuotePage", () => {
       parseAs: "blob",
     });
     expect(mockGetEbillAttachment).not.toHaveBeenCalled();
+  });
+
+  it("keeps bill attachments and request-to-mint files visible together", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      const id = opts.queryKey[0]._id;
+      if (id === "getQuote") {
+        return {
+          data: {
+            id: opts.queryKey[0].path?.qid ?? quoteId,
+            status: "Accepted",
+            bill: {
+              id: "bill-1",
+              sum: 100,
+              maturity_date: "2026-03-01",
+              drawee: {},
+              drawer: {},
+              payee: {},
+              endorsees: [],
+              file_urls: ["https://files.example.com/invoices/request-copy.pdf"],
+            },
+          },
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        };
+      }
+      if (id === "listEbills") {
+        return {
+          data: [
+            {
+              id: "bill-1",
+              data: { files: [{ name: "signed-bill-invoice.pdf", hash: "hash-1", nostr_hash: "nostr-hash-1" }] },
+              status: { payment: { paid: false } },
+            },
+          ],
+          isLoading: false,
+          error: null,
+        };
+      }
+      if (id === "getEbillHistory") return { data: [], isLoading: false, error: null };
+      if (id === "getEbillMintComplete") return { data: { complete: false }, isLoading: false, error: null };
+      return { data: undefined, isLoading: false, isFetching: false, error: null };
+    });
+
+    const page = renderPage(`/quotes/${quoteId}`);
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(page.textContent).toContain("Attached to the bill");
+    expect(page.textContent).toContain("signed-bill-invoice.pdf");
+    expect(page.textContent).toContain("Submitted with the mint request");
+    expect(page.textContent).toContain("request-copy.pdf");
   });
 
   it("shows not found for malformed quote ids", () => {

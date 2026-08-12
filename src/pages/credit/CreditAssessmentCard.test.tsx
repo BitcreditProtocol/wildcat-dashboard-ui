@@ -20,6 +20,7 @@ vi.mock("@tanstack/react-query", async () => {
 const { CreditAssessmentCard } = await import("./CreditAssessmentCard");
 const { QuoteCreditAssessment } = await import("./QuoteCreditAssessment");
 const { CreditAssessmentBadge } = await import("./CreditAssessmentBadge");
+const { SubmittedDocuments } = await import("./SubmittedDocuments");
 
 const passingAxes: DecisionCase["result"]["axes"] = [
   { axis: "instrument_eligibility", status: "pass", reasonCodes: ["accepted_bill_eligible"] },
@@ -315,11 +316,11 @@ describe("CreditAssessmentCard", () => {
     }
   });
 
-  it("keeps evidence and immutable policy provenance collapsed by default", () => {
+  it("keeps application rationale and immutable policy provenance collapsed by default", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
     const disclosures = Array.from(container.querySelectorAll("details")).filter((details) =>
-      ["Evidence & decision rationale", "Policy & audit trail"].some((label) =>
+      ["Application & decision rationale", "Policy & audit trail"].some((label) =>
         details.querySelector("summary")?.textContent?.includes(label)
       )
     );
@@ -390,7 +391,7 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).not.toContain("synthetic-acceptor-the-applicant-never-named");
   });
 
-  it("shows applicant document lineage without claiming unavailable files", () => {
+  it("keeps the applicant-confirmed document list in the application", () => {
     render(<CreditAssessmentCard decisionCase={withDocuments} />);
 
     const confirmation = Array.from(container.querySelectorAll("details")).find((details) =>
@@ -399,7 +400,15 @@ describe("CreditAssessmentCard", () => {
     expect(confirmation?.textContent).toContain("Who pays the invoice at maturityCooperativa compradora");
     expect(confirmation?.textContent).toContain("Documents includedgoods-invoice.pdfdelivery-photo.jpg");
     expect(confirmation?.textContent).toContain("Confirmed their answers are true and complete");
-    expect(container.textContent).toContain("Evidence packet");
+    expect(container.textContent).not.toContain("No current server receipt");
+  });
+
+  it("renders submitted evidence provenance independently from the decision card", () => {
+    render(
+      <SubmittedDocuments submittedEvidence={withDocuments.submittedEvidence ?? []} evidencePackets={withDocuments.evidencePackets ?? []} />
+    );
+
+    expect(container.textContent).toContain("Credit evidence");
     // The uuid core appends to a stored file name is not shown to the operator.
     expect(container.textContent).toContain("goods-invoice.pdf");
     expect(container.textContent).not.toContain("0f4d1c22");

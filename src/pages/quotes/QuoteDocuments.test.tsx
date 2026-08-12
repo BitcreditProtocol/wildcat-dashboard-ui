@@ -49,34 +49,38 @@ describe("QuoteDocuments", () => {
   it("renders collapsed by default", () => {
     const page = renderWithIntl(
       <QuoteDocuments
-        documents={[
+        billAttachments={[
           {
             name: "invoice.pdf",
             hash: "hash-1",
             source: "billAttachment",
           },
         ]}
+        requestToMintFiles={[]}
+        creditEvidence={{ status: "available", submittedEvidence: [], evidencePackets: [] }}
         openingDocumentHash={null}
         onOpenDocument={() => undefined}
       />
     );
 
-    expect(page.textContent).toContain("Documents");
-    expect(page.textContent).toContain("(1 document)");
-    expect(page.textContent).toContain("Show documents");
+    expect(page.textContent).toContain("Documents & evidence");
+    expect(page.textContent).toContain("1 bill file · No submitted credit evidence");
+    expect(page.textContent).toContain("Show details");
     expect(page.textContent).not.toContain("invoice.pdf");
   });
 
-  it("shows documents and calls onOpenDocument when expanded", () => {
+  it("shows both bill-file sources without collapsing one into the other", () => {
     const onOpenDocument = vi.fn();
     const page = renderWithIntl(
       <QuoteDocuments
-        documents={[
+        billAttachments={[
           {
             name: "contact-qrcode.png",
             hash: "hash-1",
             source: "billAttachment",
           },
+        ]}
+        requestToMintFiles={[
           {
             name: "invoice.pdf",
             hash: "hash-2",
@@ -84,6 +88,7 @@ describe("QuoteDocuments", () => {
             fileUrl: "https://example.com/invoice.pdf",
           },
         ]}
+        creditEvidence={{ status: "absent" }}
         openingDocumentHash={null}
         onOpenDocument={onOpenDocument}
       />
@@ -96,17 +101,21 @@ describe("QuoteDocuments", () => {
       toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(page.textContent).toContain("Hide documents");
+    expect(page.textContent).toContain("Hide details");
+    expect(page.textContent).toContain("Attached to the bill");
     expect(page.textContent).toContain("contact-qrcode.png");
+    expect(page.textContent).toContain("Submitted with the mint request");
     expect(page.textContent).toContain("invoice.pdf");
+    expect(page.textContent).toContain("No AI Credit assessment exists for this bill.");
 
     const buttons = Array.from(page.querySelectorAll("button"));
-    const viewButton = buttons.find((button) => button.textContent === "View");
+    const viewButtons = buttons.filter((button) => button.textContent === "View");
 
-    expect(viewButton).not.toBeUndefined();
+    expect(viewButtons).toHaveLength(2);
 
     act(() => {
-      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      viewButtons[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      viewButtons[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(onOpenDocument).toHaveBeenCalledWith({
@@ -114,5 +123,62 @@ describe("QuoteDocuments", () => {
       hash: "hash-1",
       source: "billAttachment",
     });
+    expect(onOpenDocument).toHaveBeenCalledWith({
+      name: "invoice.pdf",
+      hash: "hash-2",
+      source: "requestToMint",
+      fileUrl: "https://example.com/invoice.pdf",
+    });
+  });
+
+  it("distinguishes unavailable credit evidence from an empty evidence set", () => {
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{ status: "unavailable" }}
+        openingDocumentHash={null}
+        onOpenDocument={() => undefined}
+      />
+    );
+
+    expect(page.textContent).toContain("No bill files · Credit evidence unavailable");
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(page.textContent).toContain("Credit evidence is unavailable. Do not treat this as an absence of evidence.");
+    expect(page.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it("shows submitted evidence as provenance, without inventing a file action", () => {
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          submittedEvidence: [
+            {
+              reference: "invoice-ref",
+              label: "invoice.pdf",
+              contentDigest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              origin: "applicant_upload",
+            },
+          ],
+          evidencePackets: [],
+        }}
+        openingDocumentHash={null}
+        onOpenDocument={() => undefined}
+      />
+    );
+
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(page.textContent).toContain("Credit evidence");
+    expect(page.textContent).toContain("invoice.pdf");
+    expect(page.textContent).toContain("Applicant upload");
+    expect(page.textContent).toContain("No current server receipt");
+    expect(Array.from(page.querySelectorAll("button")).some((button) => button.textContent === "View")).toBe(false);
   });
 });
