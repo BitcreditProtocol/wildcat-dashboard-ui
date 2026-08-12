@@ -167,6 +167,15 @@ const offerCase = caseFixture({
 
 const withDocuments: DecisionCase = {
   ...offerCase,
+  applicantConfirmation: {
+    schemaVersion: "applicant-confirmation-summary-v1",
+    preparedInputId: "a7d2bb0a-c424-42c2-a77f-e5a7e4bb0c82",
+    useOfFunds: "Fertilizante y mano de obra",
+    acceptor: "Cooperativa compradora",
+    repaymentSource: "Pago de la cooperativa",
+    answersAffirmed: true,
+    recourseAcknowledged: true,
+  },
   submittedEvidence: [
     {
       reference: "goods-invoice_0f4d1c22-8b3a-4a1e-9c7e-2f5b6d8a1234.pdf",
@@ -356,9 +365,9 @@ describe("CreditAssessmentCard", () => {
     render(<CreditAssessmentCard decisionCase={claimed} />);
 
     const said = Array.from(container.querySelectorAll("details")).find((details) =>
-      details.querySelector("summary")?.textContent?.includes("What the applicant said")
+      details.querySelector("summary")?.textContent?.includes("Applicant-confirmed application")
     );
-    // The disclosure is there and quoting the applicant's own words, so the absence below is the
+    // The disclosure is there and shows the applicant's own answers, so the absence below is the
     // acceptor being left out rather than the whole panel being missing.
     expect(said?.textContent).toContain("Fertilizante y mano de obra");
     expect(said?.textContent).toContain("Pago de la cooperativa");
@@ -371,6 +380,12 @@ describe("CreditAssessmentCard", () => {
   it("shows applicant document lineage without claiming unavailable files", () => {
     render(<CreditAssessmentCard decisionCase={withDocuments} />);
 
+    const confirmation = Array.from(container.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("Applicant-confirmed application")
+    );
+    expect(confirmation?.textContent).toContain("Who pays the invoice at maturityCooperativa compradora");
+    expect(confirmation?.textContent).toContain("Documents includedgoods-invoice.pdfdelivery-photo.jpg");
+    expect(confirmation?.textContent).toContain("Confirmed their answers are true and complete");
     expect(container.textContent).toContain("Evidence packet");
     // The uuid core appends to a stored file name is not shown to the operator.
     expect(container.textContent).toContain("goods-invoice.pdf");
