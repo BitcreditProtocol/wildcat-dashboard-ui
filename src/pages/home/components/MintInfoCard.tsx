@@ -31,7 +31,7 @@ export function MintInfoCard() {
         <div className="text-center text-muted-foreground">
           <FormattedMessage id="home.mint.loading" defaultMessage="Loading mint information..." />
         </div>
-      ) : mintError ? (
+      ) : mintError || (mintData !== undefined && mintData.versions === undefined) ? (
         <div className="text-center text-muted-foreground">
           <FormattedMessage id="home.mint.error" defaultMessage="Failed to load mint information" />
         </div>
