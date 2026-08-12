@@ -47,6 +47,16 @@ export interface ConfirmedClaims {
   evidenceState: string;
 }
 
+export interface ApplicantConfirmation {
+  schemaVersion: "applicant-confirmation-summary-v1";
+  preparedInputId: string;
+  useOfFunds: string;
+  acceptor: string | null;
+  repaymentSource: string;
+  answersAffirmed: true;
+  recourseAcknowledged: boolean;
+}
+
 export interface DecisionTerms {
   /** What the acceptor owes at maturity — `BillInfo.sum` in the quote API. */
   billSumSat: string;
@@ -73,6 +83,10 @@ export interface SubmittedEvidence {
   contentDigest: string;
   origin: "bill_attachment" | "client_asserted_bill_attachment" | "applicant_upload";
 }
+
+const STORED_FILE_SUFFIX = /_[a-f0-9-]{36}(?=\.\w+$)/;
+
+export const displayEvidenceLabel = (label: string) => label.replace(STORED_FILE_SUFFIX, "");
 
 export interface EvidenceCitation {
   page: number;
@@ -164,6 +178,7 @@ export interface DecisionCase {
   resultDigest: string;
   submittedEvidence?: SubmittedEvidence[];
   evidencePackets?: EvidencePacket[];
+  applicantConfirmation?: ApplicantConfirmation;
 }
 
 /** Domain codes are rendered as humanized English, matching the rest of this synthetic view. */
