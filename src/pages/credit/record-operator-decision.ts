@@ -31,9 +31,9 @@ export interface OperatorDecisionInput {
   requiredItems?: string[];
 }
 
-type OperatorRole = "reviewer" | "approver";
+type OperatorRole = "approver";
 
-function authenticatedOperator(action: OperatorDecisionAction): { operatorId: string; operatorRole: OperatorRole } | null {
+function authenticatedOperator(): { operatorId: string; operatorRole: OperatorRole } | null {
   // The mock stack has no Keycloak by design. This identity is synthetic test attribution only;
   // deployed builds must derive attribution from authenticated claims below.
   if (env.apiMocksEnabled) return { operatorId: "synthetic-dashboard-operator", operatorRole: "approver" };
@@ -41,18 +41,19 @@ function authenticatedOperator(action: OperatorDecisionAction): { operatorId: st
   // sent onward, because the prototype adapter has no way to verify it and no need for it.
   if (!keycloak.authenticated || keycloak.subject === undefined || keycloak.token === undefined) return null;
   const roles = keycloak.realmAccess?.roles ?? [];
-  const operatorRole = roles.includes("approver") ? "approver" : roles.includes("reviewer") ? "reviewer" : undefined;
-  if (operatorRole === undefined || (action !== "return_for_information" && operatorRole !== "approver")) return null;
+  const operatorRole = roles.includes("approver") ? "approver" : undefined;
+  if (operatorRole === undefined) return null;
   return { operatorId: keycloak.subject, operatorRole };
 }
 
 /** Mirrors the client-side role gate in action controls; the server remains authoritative. */
 export function operatorMayRecordDecision(action: OperatorDecisionAction): boolean {
-  return authenticatedOperator(action) !== null;
+  void action;
+  return authenticatedOperator() !== null;
 }
 
 export async function recordOperatorDecision(input: OperatorDecisionInput): Promise<{ ok: true } | { ok: false; error: string }> {
-  const operator = authenticatedOperator(input.action);
+  const operator = authenticatedOperator();
   if (operator === null) {
     return { ok: false, error: "An authenticated AI Credit operator role is required" };
   }

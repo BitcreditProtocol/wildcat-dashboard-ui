@@ -143,7 +143,9 @@ vi.mock("@/pages/credit/record-operator-decision", () => ({
 }));
 
 vi.mock("@/utils/local-storage", () => ({
-  removeItem: (key: string) => mockRemoveItem(key),
+  removeItem: (key: string) => {
+    mockRemoveItem(key);
+  },
 }));
 
 let root: Root | null = null;

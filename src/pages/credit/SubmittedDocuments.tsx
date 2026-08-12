@@ -75,7 +75,11 @@ const messages = defineMessages({
     defaultMessage: "Extraction",
     description: "Label for the extraction proposal schema version",
   },
-  model: { id: "credit.evidencePacket.model", defaultMessage: "Model route", description: "Label for model identifier" },
+  model: {
+    id: "credit.evidencePacket.model",
+    defaultMessage: "Requested model route",
+    description: "Label for the model route requested by the adapter, not provider attestation",
+  },
   prompt: { id: "credit.evidencePacket.prompt", defaultMessage: "Prompt", description: "Label for prompt version" },
   derivative: {
     id: "credit.evidencePacket.derivative",
