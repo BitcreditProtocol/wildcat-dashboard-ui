@@ -264,7 +264,8 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("7,734,000 sat");
     expect(container.textContent).toContain("Valid until");
     expect(container.textContent).toContain("2026-08-12");
-    expect(container.textContent).toContain("6.88%");
+    expect(container.textContent).toContain("Annual discount rate");
+    expect(container.textContent).toContain("5.40%");
     expect(container.textContent).toContain("Repayment & recourse");
     expect(container.textContent).toContain("Acceptor pays at maturity");
     expect(container.textContent).toContain("Assessed 2026-08-10 · evidence valid through 2026-11-08");
@@ -285,6 +286,7 @@ describe("CreditAssessmentCard", () => {
     expect(feeDisclosure?.textContent).toContain(
       "1.00% funding + 2.40% expected loss + 1.00% uncertainty + 1.00% return − 0.00% subsidy = 5.40% annual discount"
     );
+    expect(feeDisclosure?.textContent).toContain("Annualized all-in cost: 6.88%, including the 50,000 sat operating cost.");
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat × 5.40% × 180 / 360 = 216,000 sat");
     expect(feeDisclosure?.textContent).toContain("216,000 sat + 50,000 sat operating cost = 266,000 sat");
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat − 266,000 sat = 7,734,000 sat");

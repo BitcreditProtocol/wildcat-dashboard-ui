@@ -56,10 +56,15 @@ const messages = defineMessages({
     description: "Label for the whole-bill discounted amount the operator may offer",
   },
   expires: { id: "credit.quote.expires", defaultMessage: "Valid until", description: "Label for the governed offer expiry" },
-  effective: {
-    id: "credit.quote.effective",
-    defaultMessage: "Effective annual cost",
-    description: "Effective annual cost label",
+  discountRate: {
+    id: "credit.quote.discountRate",
+    defaultMessage: "Annual discount rate",
+    description: "Annual discount rate applied to the bill",
+  },
+  annualizedCost: {
+    id: "credit.fee.annualizedCost",
+    defaultMessage: "Annualized all-in cost: {rate}, including the {cost} operating cost.",
+    description: "Annualized cost after including the fixed operating cost",
   },
   repayment: {
     id: "credit.quote.repayment",
@@ -284,8 +289,8 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
           <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
         </div>
         <div>
-          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.effective)}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums">{percentFromBps(terms.effectiveAnnualBps)}</div>
+          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.discountRate)}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums">{percentFromBps(terms.annualDiscountBps)}</div>
         </div>
       </div>
 
@@ -437,15 +442,23 @@ function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCas
 
   return (
     <div className="flex flex-col gap-4 tabular-nums">
-      <div className="rounded-md border border-border bg-elevation-100 px-3 py-2.5 text-sm">
-        {intl.formatMessage(messages.rateEquation, {
-          funding: percentFromBps(costOfFundsBps),
-          loss: percentFromBps(expectedLossBps),
-          uncertainty: percentFromBps(uncertaintyMarginBps),
-          returnObjective: percentFromBps(returnObjectiveBps),
-          subsidy: percentFromBps(subsidyBps),
-          annual: percentFromBps(terms.annualDiscountBps),
-        })}
+      <div className="flex flex-col gap-1 rounded-md border border-border bg-elevation-100 px-3 py-2.5 text-sm">
+        <span>
+          {intl.formatMessage(messages.rateEquation, {
+            funding: percentFromBps(costOfFundsBps),
+            loss: percentFromBps(expectedLossBps),
+            uncertainty: percentFromBps(uncertaintyMarginBps),
+            returnObjective: percentFromBps(returnObjectiveBps),
+            subsidy: percentFromBps(subsidyBps),
+            annual: percentFromBps(terms.annualDiscountBps),
+          })}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {intl.formatMessage(messages.annualizedCost, {
+            rate: percentFromBps(terms.effectiveAnnualBps),
+            cost: formatSat(terms.operatingCostSat),
+          })}
+        </span>
       </div>
 
       <dl className="grid gap-2 text-sm">

@@ -79,10 +79,11 @@ const decisionCase = {
     terms: {
       billSumSat: "8000000",
       discountedSat: "7734000",
-      operatingCostSat: "25000",
+      operatingCostSat: "50000",
       effectiveFeeSat: "266000",
       offerExpiresOn: "2026-08-12",
       tenorDays: 180,
+      annualDiscountBps: 540,
       effectiveAnnualBps: 688,
       feeRatioBps: 333,
     },
@@ -161,10 +162,11 @@ describe("OfferFormDrawer", () => {
     expect(suggestedNets[suggestedNets.length - 1]).toBe("7734000");
     // And the operator can see what they are approving, against the guardrails it was measured on.
     expect(container.textContent).toContain("Governed offer 7,734,000 sat");
-    expect(container.textContent).toContain("6.88% effective annual (ceiling 15.00%)");
+    expect(container.textContent).toContain("5.40% annual discount");
+    expect(container.textContent).toContain("6.88% annualized all-in cost (ceiling 15.00%)");
     expect(container.textContent).toContain("3.33% of the bill sum (ceiling 30.00%)");
     expect(container.textContent).toContain("Offering less than this raises both figures");
-    expect(container.textContent).toContain("Governed amount: 7734000 sat. Absolute maximum: 7975000 sat");
+    expect(container.textContent).toContain("Governed amount: 7734000 sat. Absolute maximum: 7950000 sat");
   });
 
   it("blocks the form when no assessment exists for the bill", () => {
