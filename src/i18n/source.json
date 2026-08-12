@@ -156,7 +156,7 @@
   "credit.quote.allInCost": "All-in cost",
   "credit.quote.allInCostDetail": "{fee} over {tenor} days",
   "credit.quote.discounted": "Offer amount",
-  "credit.quote.expires": "Valid until",
+  "credit.quote.expires": "Offer valid until",
   "credit.quote.noFitAnnualMath": "Effective annual cost {observed} − {limit} maximum = {over} over policy.",
   "credit.quote.noFitFeeMath": "Fee ratio {observed} − {limit} maximum = {over} over policy.",
   "credit.quote.noFitFixedCost": "{cost} fixed operating cost on a {bill} bill contributes to the {fee} total fee.",
