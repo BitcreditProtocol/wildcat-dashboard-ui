@@ -11,14 +11,22 @@ export type CreditEvidenceState =
   | { status: "loading" }
   | { status: "unavailable" }
   | { status: "absent" }
-  | { status: "available"; submittedEvidence: readonly SubmittedEvidence[]; evidencePackets: readonly EvidencePacket[] };
+  | {
+      status: "available";
+      caseId: string;
+      resultDigest: string;
+      submittedEvidence: readonly SubmittedEvidence[];
+      evidencePackets: readonly EvidencePacket[];
+    };
 
 interface QuoteDocumentsProps {
   billAttachments: QuoteDocument[];
   requestToMintFiles: QuoteDocument[];
   creditEvidence: CreditEvidenceState;
   openingDocumentHash: string | null;
+  openingEvidenceReference: string | null;
   onOpenDocument: (document: QuoteDocument) => void | Promise<void>;
+  onOpenEvidence: (evidence: SubmittedEvidence) => void | Promise<void>;
 }
 
 const messages = defineMessages({
@@ -162,7 +170,11 @@ function DocumentGroup({
   );
 }
 
-function CreditEvidence({ state }: { state: CreditEvidenceState }) {
+function CreditEvidence({
+  state,
+  openingEvidenceReference,
+  onOpenEvidence,
+}: Pick<QuoteDocumentsProps, "openingEvidenceReference" | "onOpenEvidence"> & { state: CreditEvidenceState }) {
   const intl = useIntl();
   if (state.status === "loading") {
     return (
@@ -204,7 +216,14 @@ function CreditEvidence({ state }: { state: CreditEvidenceState }) {
       </section>
     );
   }
-  return <SubmittedDocuments submittedEvidence={state.submittedEvidence} evidencePackets={state.evidencePackets} />;
+  return (
+    <SubmittedDocuments
+      submittedEvidence={state.submittedEvidence}
+      evidencePackets={state.evidencePackets}
+      openingEvidenceReference={openingEvidenceReference}
+      onOpenEvidence={onOpenEvidence}
+    />
+  );
 }
 
 export function QuoteDocuments({
@@ -212,7 +231,9 @@ export function QuoteDocuments({
   requestToMintFiles,
   creditEvidence,
   openingDocumentHash,
+  openingEvidenceReference,
   onOpenDocument,
+  onOpenEvidence,
 }: QuoteDocumentsProps) {
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -269,7 +290,7 @@ export function QuoteDocuments({
             </>
           )}
           <div className="border-t border-border pt-5">
-            <CreditEvidence state={creditEvidence} />
+            <CreditEvidence state={creditEvidence} openingEvidenceReference={openingEvidenceReference} onOpenEvidence={onOpenEvidence} />
           </div>
         </CardContent>
       )}
