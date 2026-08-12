@@ -44,9 +44,13 @@ const getRequiredEnvValue = <K extends (typeof requiredEnvKeys)[number]>(key: K)
   return getEnvValue(key) as string;
 };
 
+const configuredApiBaseUrl = getRequiredEnvValue("VITE_API_BASE_URL");
+
 export const env = {
   devModeEnabled: fallbackEnv.DEV,
-  apiBaseUrl: getRequiredEnvValue("VITE_API_BASE_URL"),
+  // `/` keeps browser previews on their actual origin, including tools that expose Vite through
+  // a random proxy port. The Vite `/v1/admin` proxy still owns the upstream Mint address.
+  apiBaseUrl: configuredApiBaseUrl === "/" && typeof window !== "undefined" ? window.location.origin : configuredApiBaseUrl,
   apiMocksEnabled: (getEnvValue("VITE_API_MOCKING_ENABLED") ?? "false") === "true",
   keycloakUrl: getRequiredEnvValue("VITE_KEYCLOAK_URL"),
   keycloakRealm: getRequiredEnvValue("VITE_KEYCLOAK_REALM"),
