@@ -23,7 +23,10 @@ export function useCreditAssessments() {
   });
 }
 
-export function useCreditAssessmentForBill(billId: string | undefined): {
+export function useCreditAssessmentForBill(
+  billId: string | undefined,
+  mintQuoteId: string | undefined
+): {
   decisionCase: DecisionCase | undefined;
   isLoading: boolean;
   error: Error | null;
@@ -33,7 +36,10 @@ export function useCreditAssessmentForBill(billId: string | undefined): {
   isUnavailable: boolean;
 } {
   const { data, isLoading, error } = useCreditAssessments();
-  const decisionCase = billId === undefined ? undefined : data?.cases.find((one) => one.snapshot.bill?.billId === billId);
+  const decisionCase =
+    billId === undefined || mintQuoteId === undefined
+      ? undefined
+      : data?.cases.find((one) => one.snapshot.bill?.billId === billId && one.mintQuoteId === mintQuoteId);
   return {
     decisionCase,
     isLoading,
