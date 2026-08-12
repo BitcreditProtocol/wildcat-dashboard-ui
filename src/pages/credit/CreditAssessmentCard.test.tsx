@@ -296,7 +296,7 @@ describe("CreditAssessmentCard", () => {
     const assessed = { ...offerCase, snapshot: { ...offerCase.snapshot, invoice } };
 
     render(<CreditAssessmentCard decisionCase={assessed} />);
-    expect(container.textContent).not.toContain("Invoice matches bill");
+    expect(container.textContent).not.toContain("Amount, date and currency match");
 
     render(
       <CreditAssessmentCard
@@ -308,7 +308,7 @@ describe("CreditAssessmentCard", () => {
         }}
       />
     );
-    expect(container.textContent).toContain("Invoice matches bill");
+    expect(container.textContent).toContain("Amount, date and currency match");
   });
 
   it("puts the whole fee calculation one disclosure away", () => {
