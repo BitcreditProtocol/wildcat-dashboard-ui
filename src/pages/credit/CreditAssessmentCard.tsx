@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { AssessmentPanel, PricingTrace } from "./AssessmentPanel";
 import { ApplicantClaims, InvoiceEvidence } from "./CaseEvidence";
-import { SubmittedDocuments } from "./SubmittedDocuments";
 import { percentFromBps, words, type DecisionCase } from "./decision-types";
 
 const messages = defineMessages({
@@ -107,14 +106,14 @@ const messages = defineMessages({
     description: "Compact non-positive invoice consistency signal",
   },
   reviewDetails: {
-    id: "credit.details.review",
-    defaultMessage: "Evidence & decision rationale",
-    description: "Expandable section containing evidence and deterministic findings",
+    id: "credit.details.applicationReview",
+    defaultMessage: "Application & decision rationale",
+    description: "Expandable section containing applicant confirmation, invoice findings and deterministic checks",
   },
   reviewHint: {
-    id: "credit.details.reviewHint",
-    defaultMessage: "Invoice, applicant claims and six policy checks",
-    description: "Caption for the evidence and rationale disclosure",
+    id: "credit.details.applicationReviewHint",
+    defaultMessage: "Applicant confirmation, reviewed invoice findings and six policy checks",
+    description: "Caption for the application and decision-rationale disclosure",
   },
   policyDetails: {
     id: "credit.details.policy",
@@ -700,7 +699,6 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
           submittedEvidence={decisionCase.submittedEvidence ?? []}
         />
         <InvoiceEvidence invoice={snapshot.invoice} />
-        <SubmittedDocuments submittedEvidence={decisionCase.submittedEvidence ?? []} evidencePackets={decisionCase.evidencePackets ?? []} />
         <AssessmentPanel decisionCase={decisionCase} formatSat={formatSat} />
       </Disclosure>
 
