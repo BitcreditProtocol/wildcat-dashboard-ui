@@ -16,6 +16,7 @@ import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { type CreditEvidenceState, QuoteDocuments } from "./QuoteDocuments";
+import type { SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { EndorseeList } from "./components/EndorseeList";
@@ -52,6 +53,7 @@ const QUOTE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
   const [openingDocumentHash, setOpeningDocumentHash] = useState<string | null>(null);
+  const [openingEvidenceReference, setOpeningEvidenceReference] = useState<string | null>(null);
 
   const blobUrlTimerRef = useRef<number | null>(null);
 
@@ -95,6 +97,8 @@ function PageBody({ id }: { id: string }) {
           ? { status: "unavailable" }
           : {
               status: "available",
+              caseId: creditAssessment.decisionCase.snapshot.caseId,
+              resultDigest: creditAssessment.decisionCase.resultDigest,
               submittedEvidence: creditAssessment.decisionCase.submittedEvidence ?? [],
               evidencePackets: creditAssessment.decisionCase.evidencePackets ?? [],
             };
@@ -223,6 +227,48 @@ function PageBody({ id }: { id: string }) {
     }
   };
 
+  const handleOpenEvidence = async (evidence: SubmittedEvidence) => {
+    if (creditEvidence.status !== "available" || openingEvidenceReference !== null) return;
+    setOpeningEvidenceReference(evidence.reference);
+    try {
+      const response = await fetch("/api/ai-credit/workbench-evidence", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ caseId: creditEvidence.caseId, resultDigest: creditEvidence.resultDigest, evidence }),
+        cache: "no-store",
+        credentials: "same-origin",
+        redirect: "error",
+      });
+      if (!response.ok || response.headers.get("content-type") !== "application/pdf") {
+        throw new Error(
+          intl.formatMessage({ id: "quotes.documents.evidenceOpenError", defaultMessage: "Submitted evidence could not be opened." })
+        );
+      }
+      const blobUrl = window.URL.createObjectURL(await response.blob());
+      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      if (!openedWindow) {
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.click();
+      }
+      if (blobUrlTimerRef.current !== null) clearTimeout(blobUrlTimerRef.current);
+      blobUrlTimerRef.current = window.setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+        blobUrlTimerRef.current = null;
+      }, 60_000);
+    } catch (error) {
+      toast({
+        title: intl.formatMessage({ id: "quotes.documents.openError", defaultMessage: "Failed to open document" }),
+        description: getApiErrorMessage(error),
+        variant: "error",
+      });
+    } finally {
+      setOpeningEvidenceReference(null);
+    }
+  };
+
   if (!quote || !bill) {
     return (
       <div className="p-4 text-muted-foreground">
@@ -255,7 +301,9 @@ function PageBody({ id }: { id: string }) {
         requestToMintFiles={requestToMintDocuments}
         creditEvidence={creditEvidence}
         openingDocumentHash={openingDocumentHash}
+        openingEvidenceReference={openingEvidenceReference}
         onOpenDocument={handleOpenDocument}
+        onOpenEvidence={handleOpenEvidence}
       />
 
       <QuoteActions

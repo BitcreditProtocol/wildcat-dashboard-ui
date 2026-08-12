@@ -57,9 +57,17 @@ describe("QuoteDocuments", () => {
           },
         ]}
         requestToMintFiles={[]}
-        creditEvidence={{ status: "available", submittedEvidence: [], evidencePackets: [] }}
+        creditEvidence={{
+          status: "available",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
+          submittedEvidence: [],
+          evidencePackets: [],
+        }}
         openingDocumentHash={null}
+        openingEvidenceReference={null}
         onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
       />
     );
 
@@ -90,7 +98,9 @@ describe("QuoteDocuments", () => {
         ]}
         creditEvidence={{ status: "absent" }}
         openingDocumentHash={null}
+        openingEvidenceReference={null}
         onOpenDocument={onOpenDocument}
+        onOpenEvidence={() => undefined}
       />
     );
 
@@ -138,7 +148,9 @@ describe("QuoteDocuments", () => {
         requestToMintFiles={[]}
         creditEvidence={{ status: "unavailable" }}
         openingDocumentHash={null}
+        openingEvidenceReference={null}
         onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
       />
     );
 
@@ -157,6 +169,8 @@ describe("QuoteDocuments", () => {
         requestToMintFiles={[]}
         creditEvidence={{
           status: "available",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
           submittedEvidence: [
             {
               reference: "invoice-ref",
@@ -168,7 +182,9 @@ describe("QuoteDocuments", () => {
           evidencePackets: [],
         }}
         openingDocumentHash={null}
+        openingEvidenceReference={null}
         onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
       />
     );
 
@@ -180,5 +196,43 @@ describe("QuoteDocuments", () => {
     expect(page.textContent).toContain("Applicant upload");
     expect(page.textContent).toContain("No current server receipt");
     expect(Array.from(page.querySelectorAll("button")).some((button) => button.textContent === "View")).toBe(false);
+  });
+
+  it("opens only evidence with a current server receipt", async () => {
+    const onOpenEvidence = vi.fn();
+    const evidence = {
+      reference: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      label: "invoice.pdf",
+      contentDigest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      origin: "applicant_upload" as const,
+    };
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
+          submittedEvidence: [evidence],
+          evidencePackets: [{ evidence, status: "quarantined", byteLength: 42 }],
+        }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={onOpenEvidence}
+      />
+    );
+
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const view = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "View PDF");
+    expect(view).not.toBeUndefined();
+    await act(async () => {
+      view?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(onOpenEvidence).toHaveBeenCalledWith(evidence);
   });
 });

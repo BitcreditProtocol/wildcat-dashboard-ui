@@ -97,8 +97,8 @@ const messages = defineMessages({
   },
   invoiceMatch: {
     id: "credit.signals.invoiceMatch",
-    defaultMessage: "Invoice matches bill",
-    description: "Compact positive invoice consistency signal",
+    defaultMessage: "Amount, date and currency match",
+    description: "Compact positive signal naming the invoice fields deterministically compared with the bill",
   },
   invoiceReview: {
     id: "credit.signals.invoiceReview",
