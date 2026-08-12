@@ -145,7 +145,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
     },
   });
 
-  const handleDenyQuote = () => {
+  const handleDenyQuote = async (): Promise<boolean> => {
     denyToastRef.current?.dismiss();
     denyToastRef.current = toast({
       title: intl.formatMessage({
@@ -154,13 +154,18 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       }),
       variant: "info",
     });
-    denyQuote.mutate({
-      path: { qid: quoteId },
-      body: { action: "Deny" },
-    });
+    try {
+      await denyQuote.mutateAsync({
+        path: { qid: quoteId },
+        body: { action: "Deny" },
+      });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
-  const handleOfferQuote = (result: OfferFormResult) => {
+  const handleOfferQuote = async (result: OfferFormResult): Promise<boolean> => {
     offerToastRef.current?.dismiss();
     const ttl = governedOfferTtl(result);
     if (ttl === null) {
@@ -172,7 +177,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
         }),
         variant: "error",
       });
-      return;
+      return false;
     }
     offerToastRef.current = toast({
       title: intl.formatMessage({
@@ -183,14 +188,19 @@ export function useQuoteMutations(quoteId: string, billId: string) {
     });
     const net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber();
 
-    offerQuote.mutate({
-      path: { qid: quoteId },
-      body: {
-        action: "Offer",
-        discounted: net_amount,
-        ttl,
-      },
-    });
+    try {
+      await offerQuote.mutateAsync({
+        path: { qid: quoteId },
+        body: {
+          action: "Offer",
+          discounted: net_amount,
+          ttl,
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleRequestToPay = (billSum: number, deadline: Date) => {

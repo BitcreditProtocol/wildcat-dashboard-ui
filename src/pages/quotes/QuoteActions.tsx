@@ -16,7 +16,7 @@ import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { buildMempoolTransactionUrl } from "@/utils/mempool";
 import { hasRejectedToPay, latestPaymentRequest } from "@/utils/payment-request";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
-import { recordOperatorDecision } from "@/pages/credit/record-operator-decision";
+import { operatorMayRecordDecision, recordOperatorDecision } from "@/pages/credit/record-operator-decision";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -42,7 +42,7 @@ export function QuoteActions({
   const intl = useIntl();
   const queryClient = useQueryClient();
   const billId = value.bill.id;
-  const { decisionCase } = useCreditAssessmentForBill(billId);
+  const { decisionCase, isUnavailable: isCreditAssessmentUnavailable } = useCreditAssessmentForBill(billId);
   const EBILL_DETAIL_POLL_INTERVAL_MS = 10_000;
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
@@ -104,6 +104,7 @@ export function QuoteActions({
   const [returnInfoDrawerOpen, setReturnInfoDrawerOpen] = useState(false);
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
   const governanceInFlight = useRef(false);
+  const mintActionInFlight = useRef(false);
   const [isGovernancePending, setIsGovernancePending] = useState(false);
 
   const denyTitle = intl.formatMessage({
@@ -127,17 +128,33 @@ export function QuoteActions({
     defaultMessage: "Offer",
   });
   const showPendingActions = effectiveQuoteStatus === "Pending";
-  const showGovernedOffer = showPendingActions && decisionCase?.result.recommendation === "offer_available";
-  const showGovernedReturn = showPendingActions && decisionCase?.result.assessmentStatus === "blocked_pending_verification";
+  const showGovernedOffer =
+    showPendingActions && !isCreditAssessmentUnavailable && decisionCase?.result.recommendation === "offer_available";
+  const showGovernedReturn =
+    showPendingActions && !isCreditAssessmentUnavailable && decisionCase?.result.assessmentStatus === "blocked_pending_verification";
   const requiredVerificationItems = decisionCase?.result.verificationRequests?.map((request) => request.requiredItem) ?? [];
+  const denyAction =
+    decisionCase?.result.recommendation === "no_current_product_fit" ? "confirm_no_current_product_fit" : "decline_application";
+  const mayDeny = operatorMayRecordDecision(denyAction);
+  const mayOffer = operatorMayRecordDecision("confirm_proposed_quote");
+  const mayReturn = operatorMayRecordDecision("return_for_information");
+  const roleUnavailableReason = intl.formatMessage({
+    id: "quotes.actions.role.unavailable",
+    defaultMessage: "Your authenticated operator role cannot perform this action.",
+    description: "Explanation shown when an operator action is unavailable for the current role",
+  });
   const denyGovernanceAvailable =
+    !isCreditAssessmentUnavailable &&
+    mayDeny &&
     decisionCase?.result.assessmentStatus === "ready_for_decision" &&
     (decisionCase.result.recommendation === "offer_available" || decisionCase.result.recommendation === "no_current_product_fit");
-  const denyUnavailableReason = intl.formatMessage({
-    id: "quotes.actions.deny.unavailable",
-    defaultMessage: "Deny is unavailable until the governed assessment is ready.",
-    description: "Explanation shown when a quote cannot yet be denied because its governed credit assessment is incomplete",
-  });
+  const denyUnavailableReason = mayDeny
+    ? intl.formatMessage({
+        id: "quotes.actions.deny.unavailable",
+        defaultMessage: "Deny is unavailable until the governed assessment is ready.",
+        description: "Explanation shown when a quote cannot yet be denied because its governed credit assessment is incomplete",
+      })
+    : roleUnavailableReason;
   const showRequestToPayAction =
     (effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
     "keyset_id" in value &&
@@ -154,6 +171,16 @@ export function QuoteActions({
         id: "quotes.toast.governance.error",
         defaultMessage: "The governed decision could not be recorded. Nothing was sent to the Mint; please retry.",
         description: "Error shown when AI Credit rejects or cannot record an operator action",
+      }),
+      variant: "error",
+    });
+  };
+  const mintUpdateFailed = () => {
+    toast({
+      title: intl.formatMessage({
+        id: "quotes.toast.governance.mintUpdateFailed",
+        defaultMessage: "The decision was recorded, but the Mint was not updated. Your inputs were kept; retry the same action.",
+        description: "Error shown when governance succeeded but the corresponding Mint quote update failed",
       }),
       variant: "error",
     });
@@ -175,23 +202,32 @@ export function QuoteActions({
     }
   };
   const submitGovernedDeny = async (writtenBasis: string) => {
-    if (decisionCase === undefined) return;
+    if (decisionCase === undefined || mintActionInFlight.current) return;
     const recommendation = decisionCase.result.recommendation;
     if (recommendation !== "offer_available" && recommendation !== "no_current_product_fit") return;
     const confirmsNoFit = recommendation === "no_current_product_fit";
-    const recorded = await recordGovernance({
-      billId,
-      caseId: decisionCase.snapshot.caseId,
-      decisionResultDigest: decisionCase.resultDigest,
-      action: confirmsNoFit ? "confirm_no_current_product_fit" : "decline_application",
-      reasonCode: confirmsNoFit ? "operator_confirmed_no_current_product_fit" : "operator_declined_governed_offer",
-      writtenBasis,
-    });
-    if (!recorded) return;
-    handleDenyQuote();
-    setDenyConfirmDrawerOpen(false);
+    mintActionInFlight.current = true;
+    try {
+      const recorded = await recordGovernance({
+        billId,
+        caseId: decisionCase.snapshot.caseId,
+        decisionResultDigest: decisionCase.resultDigest,
+        action: confirmsNoFit ? "confirm_no_current_product_fit" : "decline_application",
+        reasonCode: confirmsNoFit ? "operator_confirmed_no_current_product_fit" : "operator_declined_governed_offer",
+        writtenBasis,
+      });
+      if (!recorded) return;
+      if (!(await handleDenyQuote())) {
+        mintUpdateFailed();
+        return;
+      }
+      setDenyConfirmDrawerOpen(false);
+    } finally {
+      mintActionInFlight.current = false;
+    }
   };
   const submitGovernedOffer = async (finalData: OfferFormResult) => {
+    if (mintActionInFlight.current) return;
     if (governedOfferTtl(finalData) === null) {
       toast({
         title: intl.formatMessage({
@@ -203,11 +239,19 @@ export function QuoteActions({
       });
       return;
     }
-    const recorded = await recordGovernance(finalData.governance);
-    if (!recorded) return;
-    removeItem(`offer-form-${value.id}`);
-    handleOfferQuote(finalData);
-    setOfferConfirmDrawerOpen(false);
+    mintActionInFlight.current = true;
+    try {
+      const recorded = await recordGovernance(finalData.governance);
+      if (!recorded) return;
+      if (!(await handleOfferQuote(finalData))) {
+        mintUpdateFailed();
+        return;
+      }
+      removeItem(`offer-form-${value.id}`);
+      setOfferConfirmDrawerOpen(false);
+    } finally {
+      mintActionInFlight.current = false;
+    }
   };
   const submitGovernedReturn = async (writtenBasis: string) => {
     if (decisionCase?.result.assessmentStatus !== "blocked_pending_verification" || requiredVerificationItems.length === 0) return;
@@ -223,6 +267,14 @@ export function QuoteActions({
     if (!recorded) return;
     setReturnInfoDrawerOpen(false);
     void queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
+    toast({
+      title: intl.formatMessage({
+        id: "quotes.toast.returnForInformation.recorded",
+        defaultMessage: "Required information recorded. Applicant delivery is handled separately.",
+        description: "Success message after recording required information without claiming applicant delivery",
+      }),
+      variant: "success",
+    });
   };
 
   return (
@@ -233,8 +285,11 @@ export function QuoteActions({
             <DenyConfirmDrawer
               title={denyTitle}
               open={denyConfirmDrawerOpen}
-              onOpenChange={setDenyConfirmDrawerOpen}
-              isPending={isGovernancePending}
+              onOpenChange={(open) => {
+                if (!open && denyQuote.isPending) return;
+                setDenyConfirmDrawerOpen(open);
+              }}
+              isPending={isGovernancePending || denyQuote.isPending}
               onSubmit={(writtenBasis) => {
                 void submitGovernedDeny(writtenBasis);
               }}
@@ -263,7 +318,11 @@ export function QuoteActions({
                 setOfferFormDrawerOpen(false);
               }}
             >
-              <Button className="flex-1 max-w-sm" disabled={isFetching || offerQuote.isPending}>
+              <Button
+                className="flex-1 max-w-sm"
+                disabled={isFetching || offerQuote.isPending || !mayOffer}
+                title={mayOffer ? undefined : roleUnavailableReason}
+              >
                 {offerButtonLabel} {offerQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
               </Button>
             </OfferFormDrawer>
@@ -273,8 +332,8 @@ export function QuoteActions({
             <DenyConfirmDrawer
               title={intl.formatMessage({
                 id: "quotes.actions.returnForInformation.title",
-                defaultMessage: "Return for information",
-                description: "Confirmation title for returning a credit case for required verification information",
+                defaultMessage: "Record required information",
+                description: "Confirmation title for recording required verification information",
               })}
               mode="return_for_information"
               requiredItems={requiredVerificationItems}
@@ -287,13 +346,14 @@ export function QuoteActions({
             >
               <Button
                 className="flex-1 max-w-sm"
-                disabled={isFetching || isGovernancePending || requiredVerificationItems.length === 0}
+                disabled={isFetching || isGovernancePending || requiredVerificationItems.length === 0 || !mayReturn}
+                title={mayReturn ? undefined : roleUnavailableReason}
                 variant="outline"
               >
                 {intl.formatMessage({
                   id: "quotes.actions.returnForInformation.button",
-                  defaultMessage: "Return for information",
-                  description: "Action that returns a credit case for required verification information",
+                  defaultMessage: "Record required information",
+                  description: "Action that records required verification information without claiming applicant delivery",
                 })}
               </Button>
             </DenyConfirmDrawer>
@@ -302,8 +362,11 @@ export function QuoteActions({
           <OfferConfirmation
             offerFormData={offerFormData}
             open={offerConfirmDrawerOpen}
-            onOpenChange={setOfferConfirmDrawerOpen}
-            isPending={isGovernancePending}
+            onOpenChange={(open) => {
+              if (!open && offerQuote.isPending) return;
+              setOfferConfirmDrawerOpen(open);
+            }}
+            isPending={isGovernancePending || offerQuote.isPending}
             onSubmit={(finalData) => {
               void submitGovernedOffer(finalData);
             }}

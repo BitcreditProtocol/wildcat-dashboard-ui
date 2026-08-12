@@ -35,8 +35,9 @@ export function DenyConfirmDrawer({
         isReturn
           ? intl.formatMessage({
               id: "quotes.returnForInformation.description",
-              defaultMessage: "Return this case with the verification items listed in the governed assessment.",
-              description: "Confirmation description when an operator returns a credit case for more information",
+              defaultMessage:
+                "Record the verification items from the governed assessment. Applicant status is delivered separately and is not confirmed here.",
+              description: "Confirmation description that records required information without claiming applicant delivery",
             })
           : intl.formatMessage({
               id: "quotes.deny.description",
@@ -54,8 +55,8 @@ export function DenyConfirmDrawer({
         isReturn
           ? intl.formatMessage({
               id: "quotes.returnForInformation.confirmButton",
-              defaultMessage: "Return for information",
-              description: "Confirmation button that returns a credit case for more information",
+              defaultMessage: "Record required information",
+              description: "Confirmation button that records required information without claiming applicant delivery",
             })
           : intl.formatMessage({
               id: "quotes.deny.confirmButton",

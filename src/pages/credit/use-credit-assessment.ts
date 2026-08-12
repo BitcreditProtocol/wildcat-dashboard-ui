@@ -16,6 +16,9 @@ export function useCreditAssessments() {
       return response.json() as Promise<{ cases: DecisionCase[] }>;
     },
     staleTime: 60_000,
+    // Applications and verification replacements arrive from the borrower app. Poll while this
+    // operator view is mounted so an absent or blocked case does not remain stale until refocus.
+    refetchInterval: 10_000,
     retry: 1,
   });
 }

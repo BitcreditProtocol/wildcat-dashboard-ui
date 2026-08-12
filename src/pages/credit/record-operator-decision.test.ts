@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { recordOperatorDecision, type OperatorDecisionInput } from "./record-operator-decision";
+import { operatorMayRecordDecision, recordOperatorDecision, type OperatorDecisionInput } from "./record-operator-decision";
 
 const keycloak = vi.hoisted(() => ({
   authenticated: false,
@@ -88,6 +88,8 @@ describe("recordOperatorDecision", () => {
     const fetch = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetch);
 
+    expect(operatorMayRecordDecision("confirm_proposed_quote")).toBe(false);
+    expect(operatorMayRecordDecision("return_for_information")).toBe(true);
     await expect(recordOperatorDecision(command)).resolves.toEqual({
       ok: false,
       error: "An authenticated AI Credit operator role is required",

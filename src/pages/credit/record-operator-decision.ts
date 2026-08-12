@@ -46,6 +46,11 @@ function authenticatedOperator(action: OperatorDecisionAction): { operatorId: st
   return { operatorId: keycloak.subject, operatorRole };
 }
 
+/** Mirrors the client-side role gate in action controls; the server remains authoritative. */
+export function operatorMayRecordDecision(action: OperatorDecisionAction): boolean {
+  return authenticatedOperator(action) !== null;
+}
+
 export async function recordOperatorDecision(input: OperatorDecisionInput): Promise<{ ok: true } | { ok: false; error: string }> {
   const operator = authenticatedOperator(input.action);
   if (operator === null) {
