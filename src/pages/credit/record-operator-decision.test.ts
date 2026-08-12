@@ -80,7 +80,7 @@ describe("recordOperatorDecision", () => {
     });
   });
 
-  it("allows reviewers to return for information but not make final decisions", async () => {
+  it("keeps every governed action approver-only", async () => {
     keycloak.authenticated = true;
     keycloak.realmAccess = { roles: ["reviewer"] };
     keycloak.subject = "reviewer-123";
@@ -89,7 +89,7 @@ describe("recordOperatorDecision", () => {
     vi.stubGlobal("fetch", fetch);
 
     expect(operatorMayRecordDecision("confirm_proposed_quote")).toBe(false);
-    expect(operatorMayRecordDecision("return_for_information")).toBe(true);
+    expect(operatorMayRecordDecision("return_for_information")).toBe(false);
     await expect(recordOperatorDecision(command)).resolves.toEqual({
       ok: false,
       error: "An authenticated AI Credit operator role is required",
@@ -101,11 +101,7 @@ describe("recordOperatorDecision", () => {
         reasonCode: "operator_returned_for_information",
         requiredItems: ["Signed delivery receipt"],
       })
-    ).resolves.toEqual({ ok: true });
-    expect(fetch).toHaveBeenCalledOnce();
-    const request = fetch.mock.calls[0]?.[1] as RequestInit;
-    if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
-    const requestBody: unknown = JSON.parse(request.body);
-    expect(requestBody).toMatchObject({ operatorId: "reviewer-123", operatorRole: "reviewer" });
+    ).resolves.toEqual({ ok: false, error: "An authenticated AI Credit operator role is required" });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

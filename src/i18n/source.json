@@ -103,7 +103,7 @@
   "credit.evidencePacket.field.seller": "Seller",
   "credit.evidencePacket.field.total": "Total",
   "credit.evidencePacket.field.transaction": "Transaction reference",
-  "credit.evidencePacket.model": "Model route",
+  "credit.evidencePacket.model": "Requested model route",
   "credit.evidencePacket.opening": "Opening…",
   "credit.evidencePacket.origin": "Origin",
   "credit.evidencePacket.origin.bill": "Bill attachment lineage",
