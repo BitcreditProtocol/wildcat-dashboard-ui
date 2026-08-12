@@ -27,9 +27,9 @@ const messages = defineMessages({
   },
 });
 
-export function QuoteCreditAssessment({ billId }: { billId: string | undefined }) {
+export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
   const intl = useIntl();
-  const { decisionCase, isLoading, isAbsent, error } = useCreditAssessmentForBill(billId);
+  const { decisionCase, isLoading, isAbsent, error } = useCreditAssessmentForBill(billId, mintQuoteId);
 
   if (isLoading) {
     return (

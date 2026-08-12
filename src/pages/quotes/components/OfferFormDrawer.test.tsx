@@ -66,6 +66,7 @@ const quote = {
 } as unknown as InfoReply;
 
 const decisionCase = {
+  mintQuoteId: quote.id,
   snapshot: { caseId: "case-a", bill: { billId: "synthetic-bill-a" } },
   policyPack: {
     policyPackVersion: "synthetic-guatemala-coffee-v7",
