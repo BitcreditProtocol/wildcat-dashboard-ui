@@ -262,7 +262,7 @@ describe("CreditAssessmentCard", () => {
     // The amount to offer and its ttl — never "advance".
     expect(container.textContent).toContain("Offer amount");
     expect(container.textContent).toContain("7,734,000 sat");
-    expect(container.textContent).toContain("Valid until");
+    expect(container.textContent).toContain("Offer valid until");
     expect(container.textContent).toContain("2026-08-12");
     expect(container.textContent).toContain("All-in cost");
     expect(container.textContent).toContain("3.33% of bill amount");

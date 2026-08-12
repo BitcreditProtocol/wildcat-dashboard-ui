@@ -55,7 +55,7 @@ const messages = defineMessages({
     defaultMessage: "Offer amount",
     description: "Label for the whole-bill discounted amount the operator may offer",
   },
-  expires: { id: "credit.quote.expires", defaultMessage: "Valid until", description: "Label for the governed offer expiry" },
+  expires: { id: "credit.quote.expires", defaultMessage: "Offer valid until", description: "Label for the governed offer expiry" },
   allInCost: {
     id: "credit.quote.allInCost",
     defaultMessage: "All-in cost",
