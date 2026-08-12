@@ -133,8 +133,6 @@ export function useQuoteDetail(id: string) {
       source: "requestToMint",
       fileUrl,
     })) ?? [];
-  const documentFiles = billAttachmentDocuments.length > 0 ? billAttachmentDocuments : requestToMintDocuments;
-
   const historyBlocks = billEndorsedToMint ? billHistoryQuery.data : sharedHistoryQuery.data;
   const isHistoryLoading = billEndorsedToMint ? billHistoryQuery.isLoading : sharedHistoryQuery.isLoading;
 
@@ -158,7 +156,8 @@ export function useQuoteDetail(id: string) {
     timeOfRequestToPay,
     isInMempool,
     showPayment,
-    documentFiles,
+    billAttachmentDocuments,
+    requestToMintDocuments,
     billId,
   };
 }
