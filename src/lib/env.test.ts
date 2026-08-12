@@ -74,6 +74,18 @@ describe("env runtime resolution", () => {
     expect(env.crowdinInContextToolingEnabled).toBe(false);
   });
 
+  it("uses the browser origin for a same-origin API preview", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "/");
+    vi.stubEnv("VITE_KEYCLOAK_URL", "https://keycloak.example.com");
+    vi.stubEnv("VITE_KEYCLOAK_REALM", "realm");
+    vi.stubEnv("VITE_KEYCLOAK_CLIENT_ID", "client");
+    vi.stubGlobal("window", { location: { origin: "http://localhost:62009" } });
+
+    const env = await loadEnv();
+
+    expect(env.apiBaseUrl).toBe("http://localhost:62009");
+  });
+
   it("handles SSR where window is undefined", async () => {
     vi.stubEnv("VITE_API_BASE_URL", "https://fallback.example.com");
     vi.stubEnv("VITE_KEYCLOAK_URL", "https://fallback-keycloak.example.com");

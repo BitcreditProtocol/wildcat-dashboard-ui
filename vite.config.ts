@@ -85,15 +85,15 @@ export default defineViteConfig(({ mode }) => {
     server: {
       proxy: {
         "/api/ai-credit/workbench-decisions": {
-          target: "http://127.0.0.1:8787",
+          target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
           headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
         },
         "/api/ai-credit/operator-decisions": {
-          target: "http://127.0.0.1:8787",
+          target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
           headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
         },
         // Borrower routes carry no operator credential.
-        "/api/ai-credit": "http://127.0.0.1:8787",
+        "/api/ai-credit": env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
         // Whatever is serving the admin API locally, same-origin so no CORS is involved:
         // :4242 the BFF Envoy (real Keycloak token required), :4243 the admin aggregator directly
         // (no auth — Envoy is where auth lives), or the mint stub on :4242. Default is the BFF.

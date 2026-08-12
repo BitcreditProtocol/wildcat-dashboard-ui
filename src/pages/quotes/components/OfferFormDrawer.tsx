@@ -1,43 +1,16 @@
 import Big from "big.js";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { defineMessages, useIntl } from "react-intl";
 import { BaseDrawer } from "@/components/Drawers";
 import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm/GrossToNetDiscountForm";
 import type { InfoReply } from "@/generated/client/types.gen";
 import { GovernedOfferGuidance } from "@/pages/credit/GovernedOfferGuidance";
-import { recordOperatorDecision } from "@/pages/credit/record-operator-decision";
+import type { OperatorDecisionInput } from "@/pages/credit/record-operator-decision";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
-import type { ReactNode } from "react";
-
-const messages = defineMessages({
-  recording: {
-    id: "credit.offer.recording",
-    defaultMessage: "Recording the governed decision…",
-    description: "Shown while the operator's decision is being recorded, before the offer is made",
-  },
-  failed: {
-    id: "credit.offer.recordFailed",
-    defaultMessage: "This offer was not submitted: {error}",
-    description: "Shown when a governed assessment prevents the Mint offer from being submitted",
-  },
-  retry: {
-    id: "credit.offer.recordRetry",
-    defaultMessage: "Submit again to retry. Nothing has been offered yet.",
-    description: "Tells the operator the failure is retryable and no offer was made",
-  },
-  unavailable: {
-    id: "credit.offer.assessmentUnavailable",
-    defaultMessage: "The AI Credit assessment is unavailable.",
-    description: "Shown when the assessment service has not returned a definitive result",
-  },
-  noOffer: {
-    id: "credit.offer.noGovernedOffer",
-    defaultMessage: "The governed assessment has no offer available.",
-    description: "Shown when the assessment is blocked or recommends no product",
-  },
-});
+import type { FormEvent, ReactNode } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 export interface OfferFormResult {
+  governance: OperatorDecisionInput;
   discount: {
     days: number;
     discountRate: Big;
@@ -53,6 +26,8 @@ export interface OfferFormResult {
   ttl: {
     ttl: Date;
   };
+  /** End-of-day UTC for the governed date. Kept outside `ttl`, which the confirmation drawer replaces. */
+  governedOfferExpiresAt?: Date;
 }
 
 interface OfferFormDrawerProps {
@@ -70,16 +45,43 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 export function OfferFormDrawer({ title, description, value, open, onOpenChange, onSubmit, children }: OfferFormDrawerProps) {
   const intl = useIntl();
   // The AI Credit assessment for this bill, from the same cached query the quote page already runs.
-  // Its terms open the form; the operator confirms them or edits them. Absent — no application, or
-  // the local adapter is not running — and the form behaves exactly as it did before.
-  const { decisionCase, isAbsent, isUnavailable } = useCreditAssessmentForBill(value.bill.id);
+  // Its terms open the form; the operator confirms them or edits them. The Mint action is blocked
+  // unless the same governed case accepts that review first.
+  const { decisionCase } = useCreditAssessmentForBill(value.bill.id);
   const governedTerms = decisionCase?.result.recommendation === "offer_available" ? decisionCase.result.terms : null;
+  const [amountExceedsMaximum, setAmountExceedsMaximum] = useState(false);
+  const [writtenBasis, setWrittenBasis] = useState("");
+  const [showBasisError, setShowBasisError] = useState(false);
+  const governedMaximum = useMemo(() => {
+    if (governedTerms === null) return null;
+    try {
+      const maximum = new Big(governedTerms.billSumSat).minus(governedTerms.operatingCostSat);
+      return maximum.gte(0) ? maximum : null;
+    } catch {
+      return null;
+    }
+  }, [governedTerms]);
+  const governedOfferExpiresAt = useMemo(() => {
+    if (governedTerms === null) return null;
+    const expiry = new Date(`${governedTerms.offerExpiresOn}T23:59:59.999Z`);
+    return Number.isNaN(expiry.getTime()) ? null : expiry;
+  }, [governedTerms]);
 
-  const [recording, setRecording] = useState(false);
-  const [submitError, setSubmitError] = useState<{ message: string; retryable: boolean }>();
-  const recordingRef = useRef(false);
-  /** Which judgement has already been recorded, so a retry after this step never records twice. */
-  const recordedRef = useRef<string | undefined>(undefined);
+  const validateAmount = (offered: Big): boolean => {
+    if (governedMaximum === null) return false;
+    if (offered.gt(governedMaximum)) {
+      setAmountExceedsMaximum(true);
+      return false;
+    }
+    setAmountExceedsMaximum(false);
+    return true;
+  };
+
+  const handleNetInput = (event: FormEvent<HTMLDivElement>) => {
+    if (!(event.target instanceof HTMLInputElement) || event.target.id !== "netInput") return;
+    const digits = event.target.value.replace(/\D/g, "");
+    if (digits.length > 0) validateAmount(new Big(digits));
+  };
 
   const handleFormSubmit = (values: {
     days: number;
@@ -87,74 +89,41 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     net: { value: Big; currency: string };
     gross: { value: Big; currency: string };
   }) => {
-    const ttl = new Date(Date.now() + ONE_HOUR_MS);
+    if (
+      governedTerms === null ||
+      decisionCase === undefined ||
+      governedMaximum === null ||
+      governedOfferExpiresAt === null ||
+      governedOfferExpiresAt.getTime() <= Date.now()
+    ) {
+      return;
+    }
+    const offeredValue = values.net.value.round(0, Big.roundDown);
+    const trimmedBasis = writtenBasis.trim();
+    const amountIsValid = validateAmount(offeredValue);
+    const basisIsValid = trimmedBasis.length >= 20;
+    setShowBasisError(!basisIsValid);
+    if (!amountIsValid || !basisIsValid) return;
 
+    const ttl = new Date(Math.min(Date.now() + ONE_HOUR_MS, governedOfferExpiresAt.getTime()));
+    const offered = offeredValue.toFixed(0);
+    const isGovernedAmount = offered === governedTerms.discountedSat;
     const result: OfferFormResult = {
+      governance: {
+        billId: value.bill.id,
+        caseId: decisionCase.snapshot.caseId,
+        decisionResultDigest: decisionCase.resultDigest,
+        action: isGovernedAmount ? "confirm_proposed_quote" : "propose_adjustment_and_requote",
+        ...(isGovernedAmount ? {} : { discountedSat: offered }),
+        reasonCode: isGovernedAmount ? "operator_confirmed_governed_terms" : "operator_adjusted_price_within_bounds",
+        writtenBasis: trimmedBasis,
+      },
       discount: values,
       ttl: { ttl },
+      governedOfferExpiresAt,
     };
 
-    // A definitive response with no case means this bill never entered AI Credit, so the Mint's
-    // own flow is untouched. Loading/failure is not absence, and an existing blocked assessment
-    // is not an offer: both fail closed.
-    if (isUnavailable) {
-      setSubmitError({ message: intl.formatMessage(messages.unavailable), retryable: true });
-      return;
-    }
-    if (decisionCase === undefined && isAbsent) {
-      onSubmit(result);
-      return;
-    }
-    if (decisionCase === undefined) {
-      setSubmitError({ message: intl.formatMessage(messages.unavailable), retryable: true });
-      return;
-    }
-    if (governedTerms === null) {
-      setSubmitError({ message: intl.formatMessage(messages.noOffer), retryable: false });
-      return;
-    }
-
-    // One submission at a time. Without this, a second click while the first record is in flight
-    // would record the judgement twice and could open the confirmation twice for one offer.
-    if (recordingRef.current) return;
-
-    const offered = values.net.value.toFixed(0);
-    const isGovernedAmount = offered === governedTerms.discountedSat;
-    const action = isGovernedAmount ? "confirm_proposed_quote" : "propose_adjustment_and_requote";
-    const judgement = `${value.bill.id}:${decisionCase.snapshot.caseId}:${action}:${offered}`;
-
-    setSubmitError(undefined);
-    recordingRef.current = true;
-    setRecording(true);
-    void (async () => {
-      try {
-        // The governed record of the judgement behind this offer. It is awaited and it is a gate:
-        // an AI-assessed case whose human decision was not recorded must not reach the Mint at all,
-        // because the offer would then exist with no reviewer, reason or basis behind it (PRD §116).
-        const recorded =
-          recordedRef.current === judgement
-            ? { ok: true as const }
-            : await recordOperatorDecision({
-                billId: value.bill.id,
-                action,
-                ...(isGovernedAmount ? {} : { discountedSat: offered }),
-                reasonCode: isGovernedAmount ? "operator_confirmed_governed_terms" : "operator_adjusted_price_within_bounds",
-                writtenBasis: isGovernedAmount
-                  ? "Offered the governed amount from the dashboard quote actions."
-                  : `Adjusted the governed amount to ${offered} sat from the dashboard quote actions.`,
-              });
-        if (!recorded.ok) {
-          // Visible, not a console warning: the operator pressed submit and no offer was made.
-          setSubmitError({ message: recorded.error, retryable: true });
-          return;
-        }
-        recordedRef.current = judgement;
-        onSubmit(result);
-      } finally {
-        recordingRef.current = false;
-        setRecording(false);
-      }
-    })();
+    onSubmit(result);
   };
 
   const [formKey, setFormKey] = useState(0);
@@ -163,6 +132,9 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   useEffect(() => {
     if (open && !prevOpenRef.current) {
       setFormKey((k) => k + 1);
+      setAmountExceedsMaximum(false);
+      setWrittenBasis("");
+      setShowBasisError(false);
     }
     prevOpenRef.current = open;
   }, [open]);
@@ -175,27 +147,97 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   }, [openedFormInstance, value.bill.maturity_date]);
   const gross = useMemo(() => ({ value: new Big(value.bill.sum), currency: "sat" as const }), [value.bill.sum]);
 
+  // The AI Credit assessment for this bill, from the same cached query the quote page already runs.
+  // Its terms open the form; the operator confirms them or edits them. Absent — no application, or
+  // the local adapter is not running — and the form behaves exactly as it did before.
   return (
     <BaseDrawer title={title} description={description} open={open} onOpenChange={onOpenChange} trigger={children}>
-      {decisionCase !== undefined && governedTerms !== null && (
-        <GovernedOfferGuidance policyPack={decisionCase.policyPack} terms={governedTerms} />
-      )}
-      {recording && <p className="px-4 pb-2 text-xs text-muted-foreground">{intl.formatMessage(messages.recording)}</p>}
-      {submitError !== undefined && (
-        <p role="alert" className="px-4 pb-2 text-xs font-medium text-signal-alert">
-          {intl.formatMessage(messages.failed, { error: submitError.message })}{" "}
-          {submitError.retryable ? intl.formatMessage(messages.retry) : null}
+      {decisionCase === undefined ||
+      governedTerms === null ||
+      governedMaximum === null ||
+      governedOfferExpiresAt === null ||
+      governedOfferExpiresAt.getTime() <= Date.now() ? (
+        <p role="alert">
+          <FormattedMessage
+            id="credit.offer.governanceRequired"
+            defaultMessage="A governed offer is unavailable. Resolve or retry its assessment before offering terms."
+            description="Blocks a Mint offer until AI Credit has a valid governed offer for the bill"
+          />
         </p>
+      ) : (
+        <>
+          <GovernedOfferGuidance policyPack={decisionCase.policyPack} terms={governedTerms} />
+          <div className="px-4 pb-4 text-xs text-muted-foreground">
+            <FormattedMessage
+              id="credit.offer.adjustmentLimits"
+              defaultMessage="Governed amount: {governed} sat. Absolute maximum: {maximum} sat. Lower adjustments are checked against policy when confirmed. The governed offer expires {expiresOn}."
+              description="Governed amount, exposed absolute maximum and governed expiry shown above the Mint offer form"
+              values={{
+                governed: governedTerms.discountedSat,
+                maximum: governedMaximum.toFixed(0),
+                expiresOn: governedTerms.offerExpiresOn,
+              }}
+            />
+          </div>
+          <div className="px-4 pb-4">
+            <label className="mb-2 block text-sm font-medium" htmlFor="offer-written-basis">
+              <FormattedMessage
+                id="credit.offer.writtenBasis.label"
+                defaultMessage="Decision basis"
+                description="Label for the operator's written basis when confirming or adjusting a governed offer"
+              />
+            </label>
+            <textarea
+              aria-describedby="offer-written-basis-help"
+              aria-invalid={showBasisError}
+              className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              id="offer-written-basis"
+              maxLength={2_000}
+              onChange={(event) => {
+                setWrittenBasis(event.target.value);
+                if (showBasisError) setShowBasisError(event.target.value.trim().length < 20);
+              }}
+              placeholder={intl.formatMessage({
+                id: "credit.offer.writtenBasis.placeholder",
+                defaultMessage: "Explain the reviewed basis for this offer",
+                description: "Placeholder for the operator's written basis on a governed offer",
+              })}
+              required
+              value={writtenBasis}
+            />
+            <p
+              className={showBasisError ? "mt-1 text-xs text-destructive" : "mt-1 text-xs text-muted-foreground"}
+              id="offer-written-basis-help"
+            >
+              <FormattedMessage
+                id="credit.offer.writtenBasis.help"
+                defaultMessage="Required, at least 20 characters. This is stored with the governed decision."
+                description="Help and validation text for the operator's written basis on a governed offer"
+              />
+            </p>
+          </div>
+          <div onInput={handleNetInput}>
+            <GrossToNetDiscountForm
+              key={formKey}
+              startDate={startDate}
+              endDate={endDate}
+              gross={gross}
+              onSubmit={handleFormSubmit}
+              quoteId={value.id}
+              suggestedNet={governedTerms.discountedSat}
+            />
+          </div>
+          {!amountExceedsMaximum ? null : (
+            <p className="px-4 pb-3 text-sm text-destructive" role="alert">
+              <FormattedMessage
+                id="credit.offer.amountAboveMaximum"
+                defaultMessage="This amount is above the maximum that covers operating cost."
+                description="Validation message when an adjusted Mint offer is outside the safe governed range"
+              />
+            </p>
+          )}
+        </>
       )}
-      <GrossToNetDiscountForm
-        key={formKey}
-        startDate={startDate}
-        endDate={endDate}
-        gross={gross}
-        onSubmit={handleFormSubmit}
-        quoteId={value.id}
-        suggestedNet={governedTerms?.discountedSat}
-      />
     </BaseDrawer>
   );
 }

@@ -3,13 +3,14 @@ import type { InfoReply } from "@/generated/client/types.gen";
 import { act, type ReactElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { IntlProvider } from "react-intl";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DecisionCase } from "@/pages/credit/decision-types";
+import type { OfferFormResult } from "./OfferFormDrawer";
 
 /**
  * The operator's offer form is the Mint's own; AI Credit only opens it on the governed amount.
- * These tests hold that contract: the suggestion reaches the form, a known-unassessed quote keeps
- * the Mint flow, and an unavailable or non-offer assessment fails closed.
+ * These tests hold that contract: the suggestion reaches the form, while missing or rejected
+ * governance cannot reach the Mint submission callback.
  */
 
 interface QueryResult {
@@ -19,12 +20,7 @@ interface QueryResult {
 }
 
 const mockUseQuery = vi.fn<() => QueryResult>();
-/** What the drawer asked the adapter to record, captured without cross-module types. */
-const recordedDecisions: { billId: string; action: string; discountedSat?: string; reasonCode: string }[] = [];
-/** What the stubbed adapter answers. Failure is the interesting case: the offer must not proceed. */
-let recordResult: { ok: true } | { ok: false; error: string } = { ok: true };
-/** Every Mint offer the drawer released, i.e. what would reach the quote's offer action. */
-const submittedOffers: unknown[] = [];
+const mintSubmit = vi.fn<(result: OfferFormResult) => void>();
 /** The form's submit handler, so a submission can be driven without a real form. */
 let submitForm:
   | ((values: { days: number; discountRate: Big; net: { value: Big; currency: string }; gross: { value: Big; currency: string } }) => void)
@@ -41,13 +37,6 @@ vi.mock("@/components/Drawers", () => ({
   BaseDrawer: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock("@/pages/credit/record-operator-decision", () => ({
-  recordOperatorDecision: (input: { billId: string; action: string; discountedSat?: string; reasonCode: string }) => {
-    recordedDecisions.push(input);
-    return Promise.resolve(recordResult);
-  },
-}));
-
 vi.mock("@/components/GrossToNetDiscountForm/GrossToNetDiscountForm", () => ({
   GrossToNetDiscountForm: (props: {
     suggestedNet?: string;
@@ -60,7 +49,11 @@ vi.mock("@/components/GrossToNetDiscountForm/GrossToNetDiscountForm", () => ({
   }) => {
     suggestedNets.push(props.suggestedNet);
     submitForm = props.onSubmit;
-    return <form data-testid="discount-form" />;
+    return (
+      <form data-testid="discount-form">
+        <input defaultValue={props.suggestedNet} id="netInput" />
+      </form>
+    );
   },
 }));
 
@@ -73,7 +66,7 @@ const quote = {
 } as unknown as InfoReply;
 
 const decisionCase = {
-  snapshot: { bill: { billId: "synthetic-bill-a" } },
+  snapshot: { caseId: "case-a", bill: { billId: "synthetic-bill-a" } },
   policyPack: {
     policyPackVersion: "synthetic-guatemala-coffee-v7",
     calculationVersion: "deterministic-credit-core-v7",
@@ -86,16 +79,30 @@ const decisionCase = {
     terms: {
       billSumSat: "8000000",
       discountedSat: "7734000",
+      operatingCostSat: "25000",
       effectiveFeeSat: "266000",
+      offerExpiresOn: "2026-08-12",
       tenorDays: 180,
       effectiveAnnualBps: 688,
       feeRatioBps: 333,
     },
   },
+  resultDigest: `sha256:${"a".repeat(64)}`,
 } as unknown as DecisionCase;
 
 let container: HTMLElement;
 let root: Root;
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-08-11T09:00:00.000Z"));
+});
+
+afterEach(() => {
+  root?.unmount();
+  container?.remove();
+  vi.useRealTimers();
+});
 
 const render = (element: ReactElement) => {
   act(() => {
@@ -115,13 +122,25 @@ const renderDrawer = () => {
       value={quote}
       open={true}
       onOpenChange={() => undefined}
-      onSubmit={(data) => {
-        submittedOffers.push(data);
-      }}
+      onSubmit={mintSubmit}
     >
       <button type="button">Offer</button>
     </OfferFormDrawer>
   );
+};
+
+const enterWrittenBasis = (basis = "Reviewed the governed terms and supporting evidence.") => {
+  const textarea = container.querySelector<HTMLTextAreaElement>("#offer-written-basis");
+  if (textarea === null) throw new Error("Decision basis was not rendered");
+  // Bound immediately below; extracting the native setter is the only way React sees a controlled-input change in this dependency-free test.
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  const nativeSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+  if (nativeSetter === undefined) throw new Error("Textarea value setter is unavailable");
+  const setValue = nativeSetter.bind(textarea);
+  act(() => {
+    setValue(basis);
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  });
 };
 
 describe("OfferFormDrawer", () => {
@@ -131,6 +150,8 @@ describe("OfferFormDrawer", () => {
     root = createRoot(container);
     mockUseQuery.mockReset();
     suggestedNets.length = 0;
+    submitForm = undefined;
+    mintSubmit.mockReset();
   });
 
   it("opens the form on the governed amount, so confirming approves it", () => {
@@ -143,14 +164,16 @@ describe("OfferFormDrawer", () => {
     expect(container.textContent).toContain("6.88% effective annual (ceiling 15.00%)");
     expect(container.textContent).toContain("3.33% of the bill sum (ceiling 30.00%)");
     expect(container.textContent).toContain("Offering less than this raises both figures");
+    expect(container.textContent).toContain("Governed amount: 7734000 sat. Absolute maximum: 7975000 sat");
   });
 
-  it("leaves the form untouched when no assessment exists for the bill", () => {
+  it("blocks the form when no assessment exists for the bill", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [] }, isLoading: false, error: null });
     renderDrawer();
 
-    expect(suggestedNets[suggestedNets.length - 1]).toBeUndefined();
+    expect(suggestedNets).toHaveLength(0);
     expect(container.textContent).not.toContain("Governed offer");
+    expect(container.textContent).toContain("A governed offer is unavailable");
   });
 
   it("suggests nothing when the assessment produced no offer", () => {
@@ -158,136 +181,112 @@ describe("OfferFormDrawer", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [noFit] }, isLoading: false, error: null });
     renderDrawer();
 
-    expect(suggestedNets[suggestedNets.length - 1]).toBeUndefined();
+    expect(suggestedNets).toHaveLength(0);
     expect(container.textContent).not.toContain("Governed offer");
   });
 });
 
 /**
- * Offering from the dashboard also records the judgement behind it, and where an AI Credit
- * assessment exists that record is a gate rather than a courtesy: the Mint offer waits for it,
- * a failure is visible and retryable, and one operator submission never records twice. A bill with
- * no assessment keeps the Mint's own behaviour exactly.
+ * The form prepares the exact governed command beside the Mint form values. It does not record it:
+ * that happens only after the operator confirms in the second drawer.
  */
-describe("OfferFormDrawer records the operator's decision", () => {
+describe("OfferFormDrawer prepares the operator's decision", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
     mockUseQuery.mockReset();
     suggestedNets.length = 0;
-    recordedDecisions.length = 0;
-    submittedOffers.length = 0;
-    recordResult = { ok: true };
+    submitForm = undefined;
+    mintSubmit.mockReset();
   });
 
-  const submit = async (net: string) => {
-    await act(async () => {
+  const submitWith = (net: string, basis = "Reviewed the governed terms and supporting evidence.") => {
+    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
+    renderDrawer();
+    enterWrittenBasis(basis);
+    act(() => {
       submitForm?.({
         days: 180,
         discountRate: new Big("6.5"),
         net: { value: new Big(net), currency: "sat" },
         gross: { value: new Big("8000000"), currency: "sat" },
       });
-      // The drawer now awaits the recording before it releases the offer, so the submission is only
-      // finished once those microtasks have run inside act.
-      await Promise.resolve();
     });
   };
 
-  const submitWith = async (net: string) => {
-    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
-    renderDrawer();
-    await submit(net);
-  };
+  it("prepares a confirmation when the operator offers the governed amount", () => {
+    submitWith("7734000");
 
-  it("confirms when the operator offers the governed amount", async () => {
-    await submitWith("7734000");
-
-    expect(recordedDecisions).toHaveLength(1);
-    expect(recordedDecisions[0]).toMatchObject({
-      billId: "synthetic-bill-a",
-      action: "confirm_proposed_quote",
-      reasonCode: "operator_confirmed_governed_terms",
+    expect(mintSubmit).toHaveBeenCalledOnce();
+    expect(mintSubmit.mock.calls[0]?.[0]).toMatchObject({
+      governance: {
+        billId: "synthetic-bill-a",
+        caseId: "case-a",
+        decisionResultDigest: `sha256:${"a".repeat(64)}`,
+        action: "confirm_proposed_quote",
+        reasonCode: "operator_confirmed_governed_terms",
+        writtenBasis: "Reviewed the governed terms and supporting evidence.",
+      },
     });
-    expect(recordedDecisions[0]?.discountedSat).toBeUndefined();
-    // Recorded first, then offered.
-    expect(submittedOffers).toHaveLength(1);
+    expect(mintSubmit.mock.calls[0]?.[0].governance.discountedSat).toBeUndefined();
+    expect(mintSubmit.mock.calls[0]?.[0].governedOfferExpiresAt?.toISOString()).toBe("2026-08-12T23:59:59.999Z");
+    expect(mintSubmit.mock.calls[0]?.[0].ttl.ttl.toISOString()).toBe("2026-08-11T10:00:00.000Z");
   });
 
-  it("adjusts, and names the amount, when the operator edits it", async () => {
-    await submitWith("7800000");
+  it("prepares an adjustment, and names the amount, when the operator edits it", () => {
+    submitWith("7800000");
 
-    expect(recordedDecisions[0]).toMatchObject({
-      action: "propose_adjustment_and_requote",
-      discountedSat: "7800000",
-      reasonCode: "operator_adjusted_price_within_bounds",
+    expect(mintSubmit.mock.calls[0]?.[0]).toMatchObject({
+      governance: {
+        action: "propose_adjustment_and_requote",
+        discountedSat: "7800000",
+        reasonCode: "operator_adjusted_price_within_bounds",
+      },
     });
-    expect(submittedOffers).toHaveLength(1);
   });
 
-  it("records nothing, and offers immediately, when the bill has no assessment", async () => {
+  it("leaves lower adjustment policy validation to the governed service", () => {
+    submitWith("7000000");
+
+    expect(mintSubmit.mock.calls[0]?.[0]).toMatchObject({
+      governance: { action: "propose_adjustment_and_requote", discountedSat: "7000000" },
+    });
+  });
+
+  it("submits nothing when the bill has no assessment", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [] }, isLoading: false, error: null });
     renderDrawer();
-    await submit("7734000");
-
-    expect(recordedDecisions).toHaveLength(0);
-    expect(submittedOffers).toHaveLength(1);
-  });
-
-  it("fails closed while the assessment is unavailable", async () => {
-    // React Query may retain the last offer while a refresh fails. Stale data is still unavailable
-    // for an irreversible Mint action.
-    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: new Error("adapter unavailable") });
-    renderDrawer();
-    await submit("7734000");
-
-    expect(recordedDecisions).toHaveLength(0);
-    expect(submittedOffers).toHaveLength(0);
-    expect(container.querySelector('[role="alert"]')?.textContent).toContain("assessment is unavailable");
-  });
-
-  it("fails closed when the governed assessment has no offer", async () => {
-    mockUseQuery.mockReturnValue({
-      data: { cases: [{ ...decisionCase, result: { ...decisionCase.result, recommendation: null, terms: null } }] },
-      isLoading: false,
-      error: null,
+    act(() => {
+      submitForm?.({
+        days: 180,
+        discountRate: new Big("6.5"),
+        net: { value: new Big("7734000"), currency: "sat" },
+        gross: { value: new Big("8000000"), currency: "sat" },
+      });
     });
+
+    expect(mintSubmit).not.toHaveBeenCalled();
+  });
+
+  it("validates a direct net edit immediately", () => {
+    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
     renderDrawer();
-    await submit("7734000");
+    const netInput = container.querySelector<HTMLInputElement>("#netInput");
+    if (netInput === null) throw new Error("Net amount was not rendered");
 
-    expect(recordedDecisions).toHaveLength(0);
-    expect(submittedOffers).toHaveLength(0);
-    expect(container.querySelector('[role="alert"]')?.textContent).toContain("no offer available");
-    expect(container.textContent).not.toContain("Submit again to retry");
+    act(() => {
+      netInput.value = "7975001";
+      netInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain("above the maximum that covers operating cost");
   });
 
-  it("holds the Mint offer back, visibly, when the decision cannot be recorded", async () => {
-    recordResult = { ok: false, error: "The AI Credit adapter is not reachable" };
-    await submitWith("7734000");
+  it("requires the operator's own written basis", () => {
+    submitWith("7734000", "too short");
 
-    expect(recordedDecisions).toHaveLength(1);
-    // The whole point: an assessed case whose human decision was not recorded makes no offer.
-    expect(submittedOffers).toHaveLength(0);
-    expect(container.querySelector('[role="alert"]')?.textContent).toContain("The AI Credit adapter is not reachable");
-    expect(container.textContent).toContain("Submit again to retry");
-  });
-
-  it("submits on retry after a failure, without recording the same judgement twice", async () => {
-    recordResult = { ok: false, error: "Credit adapter responded 503" };
-    await submitWith("7734000");
-    expect(submittedOffers).toHaveLength(0);
-
-    recordResult = { ok: true };
-    await submit("7734000");
-
-    expect(recordedDecisions).toHaveLength(2);
-    expect(submittedOffers).toHaveLength(1);
-    expect(container.querySelector('[role="alert"]')).toBeNull();
-
-    // A further submission of the same judgement is not a second governed record.
-    await submit("7734000");
-    expect(recordedDecisions).toHaveLength(2);
-    expect(submittedOffers).toHaveLength(2);
+    expect(mintSubmit).not.toHaveBeenCalled();
+    expect(container.querySelector("#offer-written-basis")).toHaveAttribute("aria-invalid", "true");
   });
 });
