@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { TruncatedTextPopover } from "@bitcredit/ui-library";
+import { Button, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { FileText } from "lucide-react";
 import { defineMessages, useIntl } from "react-intl";
 import { displayEvidenceLabel, type EvidencePacket, type ProposedEvidenceField, type SubmittedEvidence } from "./decision-types";
@@ -100,6 +100,8 @@ const messages = defineMessages({
   currency: { id: "credit.evidencePacket.field.currency", defaultMessage: "Currency", description: "Invoice currency field label" },
   total: { id: "credit.evidencePacket.field.total", defaultMessage: "Total", description: "Invoice total field label" },
   lineItem: { id: "credit.evidencePacket.field.lineItem", defaultMessage: "Line item", description: "Invoice line-item field label" },
+  view: { id: "credit.evidencePacket.view", defaultMessage: "View PDF", description: "Button to open submitted evidence" },
+  opening: { id: "credit.evidencePacket.opening", defaultMessage: "Opening…", description: "Button while submitted evidence opens" },
 });
 
 function originMessage(origin: SubmittedEvidence["origin"]) {
@@ -135,9 +137,13 @@ function proposedFields(
 export function SubmittedDocuments({
   submittedEvidence,
   evidencePackets,
+  openingEvidenceReference,
+  onOpenEvidence,
 }: {
   submittedEvidence: readonly SubmittedEvidence[];
   evidencePackets: readonly EvidencePacket[];
+  openingEvidenceReference?: string | null;
+  onOpenEvidence?: (evidence: SubmittedEvidence) => void | Promise<void>;
 }) {
   const intl = useIntl();
   if (submittedEvidence.length === 0) return null;
@@ -162,6 +168,17 @@ export function SubmittedDocuments({
               <FileText className="size-3.5 shrink-0 text-muted-foreground" />
               <TruncatedTextPopover text={displayEvidenceLabel(evidence.label)} className="min-w-0 font-medium" />
               <Badge variant="outline">{intl.formatMessage(originMessage(evidence.origin))}</Badge>
+              {packet !== undefined && onOpenEvidence !== undefined && (
+                <Button
+                  className="ml-auto"
+                  variant="outline"
+                  size="sm"
+                  disabled={openingEvidenceReference !== null && openingEvidenceReference !== undefined}
+                  onClick={() => void onOpenEvidence(evidence)}
+                >
+                  {intl.formatMessage(openingEvidenceReference === evidence.reference ? messages.opening : messages.view)}
+                </Button>
+              )}
             </div>
             <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
               <div>
