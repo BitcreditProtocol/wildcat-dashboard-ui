@@ -25,7 +25,7 @@ const messages = defineMessages({
   measured: {
     id: "credit.guidance.measured",
     defaultMessage:
-      "Fee {fee} over {tenor} days: {feeRatio} of the bill sum (ceiling {feeCeiling}), {effective} effective annual (ceiling {annualCeiling}).",
+      "{discount} annual discount. Fee {fee} over {tenor} days: {feeRatio} of the bill sum (ceiling {feeCeiling}), {effective} annualized all-in cost (ceiling {annualCeiling}).",
     description: "The measured price against the two holder guardrails",
   },
   direction: {
@@ -47,6 +47,7 @@ export function GovernedOfferGuidance({ policyPack, terms }: { policyPack: Decis
       <span className="font-medium">{intl.formatMessage(messages.governed, { discounted: formatSat(terms.discountedSat) })}</span>
       <span className="text-muted-foreground">
         {intl.formatMessage(messages.measured, {
+          discount: percentFromBps(terms.annualDiscountBps),
           fee: formatSat(terms.effectiveFeeSat),
           tenor: terms.tenorDays,
           feeRatio: percentFromBps(terms.feeRatioBps),
