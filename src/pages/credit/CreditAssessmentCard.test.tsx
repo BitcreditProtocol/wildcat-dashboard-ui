@@ -277,6 +277,40 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).not.toContain("advance");
   });
 
+  it("shows an invoice match only when the referenced invoice evidence is present", () => {
+    const invoice = {
+      reference: "goods-invoice.pdf",
+      invoiceNumber: "GT-A-001",
+      goodsDescription: "Green coffee",
+      sellerRef: "synthetic-holder-a",
+      buyerRef: "synthetic-cooperative-a",
+      issueDate: "2026-08-01",
+      totalSat: "8000000",
+      plausibility: "plausible",
+      billAndClaimsConsistency: "match",
+      evidenceState: "independently_verified",
+      methodologyVersion: "invoice-review-v1",
+      assessedBy: "synthetic-verifier",
+      validThrough: "2026-11-08",
+    };
+    const assessed = { ...offerCase, snapshot: { ...offerCase.snapshot, invoice } };
+
+    render(<CreditAssessmentCard decisionCase={assessed} />);
+    expect(container.textContent).not.toContain("Invoice matches bill");
+
+    render(
+      <CreditAssessmentCard
+        decisionCase={{
+          ...assessed,
+          submittedEvidence: [
+            { reference: invoice.reference, label: invoice.reference, contentDigest: "sha256:invoice", origin: "bill_attachment" },
+          ],
+        }}
+      />
+    );
+    expect(container.textContent).toContain("Invoice matches bill");
+  });
+
   it("puts the whole fee calculation one disclosure away", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
