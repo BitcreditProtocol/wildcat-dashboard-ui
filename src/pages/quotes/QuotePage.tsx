@@ -16,7 +16,7 @@ import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { QuoteDocuments } from "./QuoteDocuments";
+import { type CreditEvidenceState, QuoteDocuments } from "./QuoteDocuments";
 import { type QuoteDocumentPreview, QuoteDocumentViewer } from "./QuoteDocumentViewer";
 import { resolveDocumentMimeType } from "@/utils/document-preview";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
@@ -26,6 +26,7 @@ import { useSyncBillChain } from "./components/useSyncBillChain";
 import type { InfoReply } from "@/generated/client/types.gen";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { QuoteCreditAssessment } from "@/pages/credit/QuoteCreditAssessment";
+import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 
 interface LocationState {
   from?: string;
@@ -90,9 +91,24 @@ function PageBody({ id }: { id: string }) {
     timeOfRequestToPay,
     isInMempool,
     showPayment,
-    documentFiles,
+    billAttachmentDocuments,
+    requestToMintDocuments,
     billId,
   } = useQuoteDetail(id);
+  const creditAssessment = useCreditAssessmentForBill(billId);
+  const creditEvidence: CreditEvidenceState = creditAssessment.isLoading
+    ? { status: "loading" }
+    : creditAssessment.error !== null
+      ? { status: "unavailable" }
+      : creditAssessment.isAbsent
+        ? { status: "absent" }
+        : creditAssessment.decisionCase === undefined
+          ? { status: "unavailable" }
+          : {
+              status: "available",
+              submittedEvidence: creditAssessment.decisionCase.submittedEvidence ?? [],
+              evidencePackets: creditAssessment.decisionCase.evidencePackets ?? [],
+            };
 
   if (error) {
     const errorMessage = getApiErrorMessage(error);
@@ -236,6 +252,14 @@ function PageBody({ id }: { id: string }) {
 
       <QuoteCreditAssessment billId={bill.id} />
 
+      <QuoteDocuments
+        billAttachments={billAttachmentDocuments}
+        requestToMintFiles={requestToMintDocuments}
+        creditEvidence={creditEvidence}
+        openingDocumentHash={openingDocumentHash}
+        onOpenDocument={handleOpenDocument}
+      />
+
       <QuoteActions
         value={quote}
         isFetching={isFetching}
@@ -248,10 +272,7 @@ function PageBody({ id }: { id: string }) {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
-
           <QuoteDocumentViewer preview={documentPreview} onClose={handleClosePreview} />
-
           <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
         </div>
 

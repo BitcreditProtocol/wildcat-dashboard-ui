@@ -6,9 +6,9 @@ import { displayEvidenceLabel, type EvidencePacket, type ProposedEvidenceField, 
 
 const messages = defineMessages({
   heading: {
-    id: "credit.evidencePacket.heading",
-    defaultMessage: "Evidence packet",
-    description: "Heading of the operator's evidence provenance packet",
+    id: "credit.submittedEvidence.heading",
+    defaultMessage: "Credit evidence",
+    description: "Heading for evidence submitted with the AI Credit application",
   },
   warning: {
     id: "credit.evidencePacket.warning",
