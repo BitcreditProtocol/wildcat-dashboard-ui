@@ -73,8 +73,13 @@ const messages = defineMessages({
   },
   annualizedCost: {
     id: "credit.fee.annualizedCost",
-    defaultMessage: "Annualized all-in cost: {rate}, including the {cost} operating cost.",
-    description: "Annualized cost after including the fixed operating cost",
+    defaultMessage: "Annualized all-in cost",
+    description: "Annualized all-in cost label",
+  },
+  annualizedCostHelp: {
+    id: "credit.fee.annualizedCostHelp",
+    defaultMessage: "Comparison metric including the fixed operating cost",
+    description: "Explanation of the annualized all-in cost",
   },
   repayment: {
     id: "credit.quote.repayment",
@@ -133,16 +138,86 @@ const messages = defineMessages({
   },
   appliedDiscount: {
     id: "credit.fee.appliedDiscount",
-    defaultMessage: "Discount",
+    defaultMessage: "Discount for {tenor} days",
     description: "Applied discount component of the whole-bill fee",
   },
+  fundingCost: { id: "credit.fee.fundingCost", defaultMessage: "Funding cost", description: "Pricing component label" },
+  fundingCostHelp: {
+    id: "credit.fee.fundingCostHelp",
+    defaultMessage: "Mint’s annual cost of funds",
+    description: "Explanation of the funding-cost component",
+  },
+  expectedLoss: { id: "credit.fee.expectedLoss", defaultMessage: "Expected loss", description: "Pricing component label" },
+  expectedLossHelp: {
+    id: "credit.fee.expectedLossHelp",
+    defaultMessage: "Acceptor probability of default × loss given default",
+    description: "Explanation of the expected-loss component",
+  },
+  expectedLossEquation: {
+    id: "credit.fee.expectedLossEquation",
+    defaultMessage: "{pd} PD × {lgd} LGD = {loss}",
+    description: "Expected-loss rate calculation",
+  },
+  uncertainty: { id: "credit.fee.uncertainty", defaultMessage: "Uncertainty margin", description: "Pricing component label" },
+  uncertaintyHelp: {
+    id: "credit.fee.uncertaintyHelp",
+    defaultMessage: "Selected from the admissible evidence quality",
+    description: "Explanation of the uncertainty component",
+  },
+  returnObjective: { id: "credit.fee.return", defaultMessage: "Return objective", description: "Pricing component label" },
+  returnObjectiveHelp: {
+    id: "credit.fee.returnHelp",
+    defaultMessage: "Mint’s target annual return",
+    description: "Explanation of the return component",
+  },
+  subsidy: { id: "credit.fee.subsidy", defaultMessage: "Subsidy", description: "Pricing component label" },
+  subsidyHelp: {
+    id: "credit.fee.subsidyHelp",
+    defaultMessage: "Policy subsidy, subtracted from the rate",
+    description: "Explanation of the subsidy component",
+  },
+  annualDiscount: {
+    id: "credit.fee.annualDiscount",
+    defaultMessage: "Annual discount rate",
+    description: "Total annual discount rate label",
+  },
+  annualDiscountHelp: {
+    id: "credit.fee.annualDiscountHelp",
+    defaultMessage: "Funding + expected loss + uncertainty + return − subsidy",
+    description: "Explanation of the annual discount rate",
+  },
+  appliedDiscountHelp: {
+    id: "credit.fee.appliedDiscountHelp",
+    defaultMessage: "Applied to the whole bill using a {dayCount}-day year",
+    description: "Explanation of the tenor-adjusted discount",
+  },
+  operatingCost: { id: "credit.fee.operatingCost", defaultMessage: "Operating cost", description: "Fixed operating cost label" },
+  operatingCostHelp: {
+    id: "credit.fee.operatingCostHelp",
+    defaultMessage: "Fixed cost for this case",
+    description: "Explanation of the operating cost",
+  },
   totalFee: { id: "credit.fee.total", defaultMessage: "Total fee", description: "Whole-bill effective fee" },
+  totalFeeHelp: {
+    id: "credit.fee.totalHelp",
+    defaultMessage: "Discount + operating cost",
+    description: "Explanation of the total fee",
+  },
+  allInBillCost: {
+    id: "credit.fee.allInBillCost",
+    defaultMessage: "All-in cost of bill",
+    description: "All-in fee ratio label",
+  },
+  allInBillCostHelp: {
+    id: "credit.fee.allInBillCostHelp",
+    defaultMessage: "Total fee as a share of the bill amount",
+    description: "Explanation of the all-in bill cost ratio",
+  },
   netOffer: { id: "credit.fee.netOffer", defaultMessage: "Offer amount", description: "Net amount offered after the whole-bill fee" },
-  rateEquation: {
-    id: "credit.fee.rateEquation",
-    defaultMessage:
-      "{funding} funding + {loss} expected loss + {uncertainty} uncertainty + {returnObjective} return − {subsidy} subsidy = {annual} annual discount",
-    description: "Operator-readable deterministic annual discount rate calculation",
+  netOfferHelp: {
+    id: "credit.fee.netOfferHelp",
+    defaultMessage: "Bill amount − total fee",
+    description: "Explanation of the net offer amount",
   },
   discountEquation: {
     id: "credit.fee.discountEquation",
@@ -153,6 +228,16 @@ const messages = defineMessages({
     id: "credit.fee.totalFeeEquation",
     defaultMessage: "{discount} + {cost} operating cost = {fee}",
     description: "Whole-bill total fee calculation",
+  },
+  feeRatioEquation: {
+    id: "credit.fee.feeRatioEquation",
+    defaultMessage: "{fee} ÷ {bill} = {rate}",
+    description: "All-in fee as a percentage of the bill amount",
+  },
+  annualizedCostEquation: {
+    id: "credit.fee.annualizedCostEquation",
+    defaultMessage: "{fee} ÷ ({offer} × {tenor} / {dayCount}) = {rate}",
+    description: "Annualized all-in cost calculation",
   },
   offerEquation: {
     id: "credit.fee.offerEquation",
@@ -421,6 +506,18 @@ function AuditRow({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+function FeeRow({ label, help, children, total = false }: { label: string; help: string; children: ReactNode; total?: boolean }) {
+  return (
+    <div className={`grid gap-1 py-1.5 sm:grid-cols-[15rem_1fr] sm:items-baseline sm:gap-4 ${total ? "border-t border-border pt-3" : ""}`}>
+      <dt>
+        <span className="block font-medium">{label}</span>
+        <span className="block text-xs text-muted-foreground">{help}</span>
+      </dt>
+      <dd className="font-medium sm:text-right">{children}</dd>
+    </div>
+  );
+}
+
 function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
   const intl = useIntl();
   const terms = decisionCase.result.terms;
@@ -438,6 +535,12 @@ function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCas
   const uncertaintyMarginBps = numberInput("uncertaintyMarginBps");
   const returnObjectiveBps = numberInput("returnObjectiveBps");
   const subsidyBps = numberInput("subsidyBps");
+  const probabilityOfDefaultBps = decisionCase.snapshot.acceptor.probabilityOfDefaultBps;
+  const lossGivenDefaultBps = decisionCase.snapshot.acceptor.lossGivenDefaultBps;
+  const snapshotExpectedLossBps =
+    probabilityOfDefaultBps === null || lossGivenDefaultBps === null
+      ? undefined
+      : Math.ceil((probabilityOfDefaultBps * lossGivenDefaultBps) / 10_000);
 
   if (
     terms === null ||
@@ -446,12 +549,16 @@ function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCas
     uncertaintyMarginBps === undefined ||
     returnObjectiveBps === undefined ||
     subsidyBps === undefined ||
+    probabilityOfDefaultBps === null ||
+    lossGivenDefaultBps === null ||
+    snapshotExpectedLossBps === undefined ||
     dayCountDenominator === undefined
   ) {
     return <p className="text-sm font-medium text-signal-alert">{intl.formatMessage(messages.calculationUnavailable)}</p>;
   }
   if (
     costOfFundsBps + expectedLossBps + uncertaintyMarginBps + returnObjectiveBps - subsidyBps !== terms.annualDiscountBps ||
+    snapshotExpectedLossBps !== expectedLossBps ||
     rate?.result !== String(terms.annualDiscountBps) ||
     discount?.result !== terms.appliedDiscountSat
   ) {
@@ -460,58 +567,74 @@ function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCas
 
   return (
     <div className="flex flex-col gap-4 tabular-nums">
-      <div className="flex flex-col gap-1 rounded-md border border-border bg-elevation-100 px-3 py-2.5 text-sm">
-        <span>
-          {intl.formatMessage(messages.rateEquation, {
-            funding: percentFromBps(costOfFundsBps),
+      <dl className="grid text-sm">
+        <FeeRow label={intl.formatMessage(messages.fundingCost)} help={intl.formatMessage(messages.fundingCostHelp)}>
+          {percentFromBps(costOfFundsBps)}
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.expectedLoss)} help={intl.formatMessage(messages.expectedLossHelp)}>
+          {intl.formatMessage(messages.expectedLossEquation, {
+            pd: percentFromBps(probabilityOfDefaultBps),
+            lgd: percentFromBps(lossGivenDefaultBps),
             loss: percentFromBps(expectedLossBps),
-            uncertainty: percentFromBps(uncertaintyMarginBps),
-            returnObjective: percentFromBps(returnObjectiveBps),
-            subsidy: percentFromBps(subsidyBps),
-            annual: percentFromBps(terms.annualDiscountBps),
           })}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {intl.formatMessage(messages.annualizedCost, {
-            rate: percentFromBps(terms.effectiveAnnualBps),
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.uncertainty)} help={intl.formatMessage(messages.uncertaintyHelp)}>
+          {percentFromBps(uncertaintyMarginBps)}
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.returnObjective)} help={intl.formatMessage(messages.returnObjectiveHelp)}>
+          {percentFromBps(returnObjectiveBps)}
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.subsidy)} help={intl.formatMessage(messages.subsidyHelp)}>
+          −{percentFromBps(subsidyBps)}
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.annualDiscount)} help={intl.formatMessage(messages.annualDiscountHelp)} total>
+          {percentFromBps(terms.annualDiscountBps)}
+        </FeeRow>
+        <FeeRow
+          label={intl.formatMessage(messages.appliedDiscount, { tenor: terms.tenorDays })}
+          help={intl.formatMessage(messages.appliedDiscountHelp, { dayCount: dayCountDenominator })}
+        >
+          {intl.formatMessage(messages.discountEquation, {
+            bill: formatSat(terms.billSumSat),
+            rate: percentFromBps(terms.annualDiscountBps),
+            tenor: terms.tenorDays,
+            dayCount: dayCountDenominator,
+            discount: formatSat(terms.appliedDiscountSat),
+          })}
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.operatingCost)} help={intl.formatMessage(messages.operatingCostHelp)}>
+          {formatSat(terms.operatingCostSat)}
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.totalFee)} help={intl.formatMessage(messages.totalFeeHelp)} total>
+          {intl.formatMessage(messages.totalFeeEquation, {
+            discount: formatSat(terms.appliedDiscountSat),
             cost: formatSat(terms.operatingCostSat),
+            fee: formatSat(terms.effectiveFeeSat),
           })}
-        </span>
-      </div>
-
-      <dl className="grid gap-2 text-sm">
-        <div className="grid gap-0.5 sm:grid-cols-[7rem_1fr] sm:items-baseline">
-          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.appliedDiscount)}</dt>
-          <dd className="font-medium">
-            {intl.formatMessage(messages.discountEquation, {
-              bill: formatSat(terms.billSumSat),
-              rate: percentFromBps(terms.annualDiscountBps),
-              tenor: terms.tenorDays,
-              dayCount: dayCountDenominator,
-              discount: formatSat(terms.appliedDiscountSat),
-            })}
-          </dd>
-        </div>
-        <div className="grid gap-0.5 sm:grid-cols-[7rem_1fr] sm:items-baseline">
-          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.totalFee)}</dt>
-          <dd className="font-medium">
-            {intl.formatMessage(messages.totalFeeEquation, {
-              discount: formatSat(terms.appliedDiscountSat),
-              cost: formatSat(terms.operatingCostSat),
-              fee: formatSat(terms.effectiveFeeSat),
-            })}
-          </dd>
-        </div>
-        <div className="grid gap-0.5 sm:grid-cols-[7rem_1fr] sm:items-baseline">
-          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.netOffer)}</dt>
-          <dd className="font-medium">
-            {intl.formatMessage(messages.offerEquation, {
-              bill: formatSat(terms.billSumSat),
-              fee: formatSat(terms.effectiveFeeSat),
-              offer: formatSat(terms.discountedSat),
-            })}
-          </dd>
-        </div>
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.allInBillCost)} help={intl.formatMessage(messages.allInBillCostHelp)}>
+          {intl.formatMessage(messages.feeRatioEquation, {
+            fee: formatSat(terms.effectiveFeeSat),
+            bill: formatSat(terms.billSumSat),
+            rate: percentFromBps(terms.feeRatioBps),
+          })}
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.annualizedCost)} help={intl.formatMessage(messages.annualizedCostHelp)}>
+          {intl.formatMessage(messages.annualizedCostEquation, {
+            fee: formatSat(terms.effectiveFeeSat),
+            offer: formatSat(terms.discountedSat),
+            tenor: terms.tenorDays,
+            dayCount: dayCountDenominator,
+            rate: percentFromBps(terms.effectiveAnnualBps),
+          })}
+        </FeeRow>
+        <FeeRow label={intl.formatMessage(messages.netOffer)} help={intl.formatMessage(messages.netOfferHelp)} total>
+          {intl.formatMessage(messages.offerEquation, {
+            bill: formatSat(terms.billSumSat),
+            fee: formatSat(terms.effectiveFeeSat),
+            offer: formatSat(terms.discountedSat),
+          })}
+        </FeeRow>
       </dl>
 
       <div className="border-t border-border pt-3">
