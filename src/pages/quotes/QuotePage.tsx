@@ -229,6 +229,22 @@ function PageBody({ id }: { id: string }) {
 
   const handleOpenEvidence = async (evidence: SubmittedEvidence) => {
     if (creditEvidence.status !== "available" || openingEvidenceReference !== null) return;
+    // Browsers only permit a new tab during the original click. Reserve it before the authenticated
+    // fetch, then point it at the verified PDF bytes; otherwise the useful result is popup-blocked.
+    const openedWindow = window.open("about:blank", "_blank");
+    if (openedWindow === null) {
+      toast({
+        title: intl.formatMessage({ id: "quotes.documents.openError", defaultMessage: "Failed to open document" }),
+        description: intl.formatMessage({
+          id: "quotes.documents.popupBlocked",
+          defaultMessage: "Allow popups for this dashboard, then try again.",
+          description: "Instructions when a browser blocks opening submitted evidence",
+        }),
+        variant: "error",
+      });
+      return;
+    }
+    openedWindow.opener = null;
     setOpeningEvidenceReference(evidence.reference);
     try {
       const response = await fetch("/api/ai-credit/workbench-evidence", {
@@ -238,6 +254,7 @@ function PageBody({ id }: { id: string }) {
         cache: "no-store",
         credentials: "same-origin",
         redirect: "error",
+        signal: AbortSignal.timeout(15_000),
       });
       if (!response.ok || response.headers.get("content-type") !== "application/pdf") {
         throw new Error(
@@ -245,20 +262,14 @@ function PageBody({ id }: { id: string }) {
         );
       }
       const blobUrl = window.URL.createObjectURL(await response.blob());
-      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
-      if (!openedWindow) {
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.click();
-      }
+      openedWindow.location.replace(blobUrl);
       if (blobUrlTimerRef.current !== null) clearTimeout(blobUrlTimerRef.current);
       blobUrlTimerRef.current = window.setTimeout(() => {
         window.URL.revokeObjectURL(blobUrl);
         blobUrlTimerRef.current = null;
       }, 60_000);
     } catch (error) {
+      openedWindow.close();
       toast({
         title: intl.formatMessage({ id: "quotes.documents.openError", defaultMessage: "Failed to open document" }),
         description: getApiErrorMessage(error),

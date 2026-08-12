@@ -22,9 +22,10 @@ const seenQueryOptions: MockQueryOptions[] = [];
 const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
 const mockInvalidateQueries = vi.fn();
 const mockRecordOperatorDecision = vi.fn<(input: unknown) => Promise<{ ok: true } | { ok: false; error: string }>>();
-const mockHandleDenyQuote = vi.fn();
-const mockHandleOfferQuote = vi.fn();
+const mockHandleDenyQuote = vi.fn<() => Promise<boolean>>();
+const mockHandleOfferQuote = vi.fn<(data: OfferFormResult) => Promise<boolean>>();
 const mockHandleRequestToPay = vi.fn();
+const mockRemoveItem = vi.fn();
 let decisionCase: DecisionCase | undefined;
 let offerFormSubmit: ((data: OfferFormResult) => void) | undefined;
 let offerConfirmationSubmit: ((data: OfferFormResult) => void) | undefined;
@@ -127,15 +128,22 @@ vi.mock("./components/useQuoteMutations", () => ({
 }));
 
 vi.mock("@/pages/credit/use-credit-assessment", () => ({
-  useCreditAssessmentForBill: () => ({ decisionCase, isLoading: false, error: null, isAbsent: decisionCase === undefined }),
+  useCreditAssessmentForBill: () => ({
+    decisionCase,
+    isLoading: false,
+    error: null,
+    isAbsent: decisionCase === undefined,
+    isUnavailable: false,
+  }),
 }));
 
 vi.mock("@/pages/credit/record-operator-decision", () => ({
+  operatorMayRecordDecision: () => true,
   recordOperatorDecision: (input: unknown) => mockRecordOperatorDecision(input),
 }));
 
 vi.mock("@/utils/local-storage", () => ({
-  removeItem: vi.fn(),
+  removeItem: (key: string) => mockRemoveItem(key),
 }));
 
 let root: Root | null = null;
@@ -235,6 +243,8 @@ beforeEach(() => {
   returnInfoOpen = false;
   returnInfoOpenChange = undefined;
   mockRecordOperatorDecision.mockResolvedValue({ ok: true });
+  mockHandleDenyQuote.mockResolvedValue(true);
+  mockHandleOfferQuote.mockResolvedValue(true);
   vi.stubGlobal("matchMedia", () => ({
     matches: false,
     media: "",
@@ -338,6 +348,35 @@ describe("QuoteActions", () => {
     expect(mockRecordOperatorDecision).toHaveBeenCalledTimes(2);
     expect(mockHandleOfferQuote).toHaveBeenCalledOnce();
     expect(mockHandleOfferQuote).toHaveBeenCalledWith(offerData);
+    expect(offerConfirmationOpen).toBe(false);
+  });
+
+  it("keeps the exact governed offer available when the Mint update fails", async () => {
+    decisionCase = governedOffer;
+    mockHandleOfferQuote.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    renderComponent(pendingQuote);
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(offerConfirmationOpen).toBe(true);
+    expect(mockRemoveItem).not.toHaveBeenCalled();
+
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenNthCalledWith(1, offerData.governance);
+    expect(mockRecordOperatorDecision).toHaveBeenNthCalledWith(2, offerData.governance);
+    expect(mockHandleOfferQuote).toHaveBeenNthCalledWith(1, offerData);
+    expect(mockHandleOfferQuote).toHaveBeenNthCalledWith(2, offerData);
+    expect(mockRemoveItem).toHaveBeenCalledWith("offer-form-quote-1");
     expect(offerConfirmationOpen).toBe(false);
   });
 
@@ -457,7 +496,7 @@ describe("QuoteActions", () => {
     expect(denyButton?.disabled).toBe(true);
     expect(denyButton?.title).toBe("Deny is unavailable until the governed assessment is ready.");
     expect(page.textContent).not.toContain("Offer");
-    expect(page.textContent).toContain("Return for information");
+    expect(page.textContent).toContain("Record required information");
 
     act(() => {
       returnInfoOpenChange?.(true);
