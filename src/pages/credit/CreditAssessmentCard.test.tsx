@@ -284,12 +284,22 @@ describe("CreditAssessmentCard", () => {
     );
     expect(feeDisclosure?.open).toBe(false);
     expect(feeDisclosure?.querySelector("summary")?.textContent).toContain("266,000 sat total");
+    expect(feeDisclosure?.textContent).toContain("Funding costMint’s annual cost of funds1.00%");
     expect(feeDisclosure?.textContent).toContain(
-      "1.00% funding + 2.40% expected loss + 1.00% uncertainty + 1.00% return − 0.00% subsidy = 5.40% annual discount"
+      "Expected lossAcceptor probability of default × loss given default6.00% PD × 40.00% LGD = 2.40%"
     );
-    expect(feeDisclosure?.textContent).toContain("Annualized all-in cost: 6.88%, including the 50,000 sat operating cost.");
+    expect(feeDisclosure?.textContent).toContain("Uncertainty marginSelected from the admissible evidence quality1.00%");
+    expect(feeDisclosure?.textContent).toContain("Return objectiveMint’s target annual return1.00%");
+    expect(feeDisclosure?.textContent).toContain("SubsidyPolicy subsidy, subtracted from the rate−0.00%");
+    expect(feeDisclosure?.textContent).toContain("Annual discount rateFunding + expected loss + uncertainty + return − subsidy5.40%");
+    expect(feeDisclosure?.textContent).not.toContain("1.00% funding +");
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat × 5.40% × 180 / 360 = 216,000 sat");
+    expect(feeDisclosure?.textContent).toContain("Operating costFixed cost for this case50,000 sat");
     expect(feeDisclosure?.textContent).toContain("216,000 sat + 50,000 sat operating cost = 266,000 sat");
+    expect(feeDisclosure?.textContent).toContain("266,000 sat ÷ 8,000,000 sat = 3.33%");
+    expect(feeDisclosure?.textContent).toContain(
+      "Annualized all-in costComparison metric including the fixed operating cost266,000 sat ÷ (7,734,000 sat × 180 / 360) = 6.88%"
+    );
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat − 266,000 sat = 7,734,000 sat");
     expect(feeDisclosure?.textContent).toContain("Repayment & recourse");
     expect(feeDisclosure?.textContent).not.toContain("Deterministic pricing trace");
