@@ -370,7 +370,10 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
     );
   }
 
-  const invoiceMatches = snapshot.invoice?.billAndClaimsConsistency === "match" && snapshot.invoice.plausibility === "plausible";
+  const invoice = snapshot.invoice;
+  const hasInvoiceEvidence =
+    invoice !== null && (decisionCase.submittedEvidence ?? []).some((evidence) => evidence.reference === invoice.reference);
+  const invoiceMatches = invoice?.billAndClaimsConsistency === "match" && invoice.plausibility === "plausible";
   return (
     <div className="flex flex-col gap-3">
       <div className="grid gap-4 rounded-lg border border-border bg-elevation-100 p-4 sm:grid-cols-3">
@@ -398,7 +401,7 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
 
       <div className="flex flex-wrap gap-2">
         <Badge variant="outline">{intl.formatMessage(messages.checksPassed, { passed, total: result.axes.length })}</Badge>
-        {snapshot.invoice !== null && (
+        {hasInvoiceEvidence && (
           <Badge variant={invoiceMatches ? "success" : "pending"}>
             {intl.formatMessage(invoiceMatches ? messages.invoiceMatch : messages.invoiceReview)}
           </Badge>
