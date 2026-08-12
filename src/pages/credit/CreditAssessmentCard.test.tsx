@@ -264,8 +264,9 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("7,734,000 sat");
     expect(container.textContent).toContain("Valid until");
     expect(container.textContent).toContain("2026-08-12");
-    expect(container.textContent).toContain("Annual discount rate");
-    expect(container.textContent).toContain("5.40%");
+    expect(container.textContent).toContain("All-in cost");
+    expect(container.textContent).toContain("3.33% of bill amount");
+    expect(container.textContent).toContain("266,000 sat over 180 days");
     expect(container.textContent).toContain("Repayment & recourse");
     expect(container.textContent).toContain("Acceptor pays at maturity");
     expect(container.textContent).toContain("Assessed 2026-08-10 · evidence valid through 2026-11-08");
