@@ -1,7 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import type { PropsWithChildren } from "react";
 import { defineMessages, useIntl } from "react-intl";
-import { words, type ConfirmedClaims, type DecisionInvoice } from "./decision-types";
+import {
+  displayEvidenceLabel,
+  words,
+  type ApplicantConfirmation,
+  type ConfirmedClaims,
+  type DecisionInvoice,
+  type SubmittedEvidence,
+} from "./decision-types";
 
 const messages = defineMessages({
   evidence: { id: "credit.invoice.heading", defaultMessage: "Invoice evidence", description: "Heading of the invoice evidence block" },
@@ -20,17 +27,36 @@ const messages = defineMessages({
   },
   saidHeading: {
     id: "credit.said.heading",
-    defaultMessage: "What the applicant said",
-    description: "Summary label of the collapsed applicant-claims panel",
+    defaultMessage: "Applicant-confirmed application",
+    description: "Summary label for the application fields the applicant reviewed and affirmed",
   },
   saidCaption: {
     id: "credit.said.caption",
-    defaultMessage:
-      "No chat transcript is stored. These are the claims the applicant confirmed during onboarding — quoted verbatim where the applicant wrote them.",
-    description: "Honest caption explaining that no transcript exists",
+    defaultMessage: "The same summary the applicant reviewed before submitting. No chat transcript is stored.",
+    description: "Caption explaining that this mirrors the applicant confirmation without storing a transcript",
   },
-  saidUse: { id: "credit.said.use", defaultMessage: "Use of funds", description: "Label for the use-of-funds quote" },
-  saidRepayment: { id: "credit.said.repayment", defaultMessage: "Repayment source", description: "Label for the repayment-source quote" },
+  saidUse: { id: "credit.said.use", defaultMessage: "What the money is for", description: "Applicant-reviewed use-of-funds label" },
+  saidAcceptor: {
+    id: "credit.said.acceptor",
+    defaultMessage: "Who pays the invoice at maturity",
+    description: "Applicant-reviewed payer label, shown only when the applicant volunteered one",
+  },
+  saidRepayment: {
+    id: "credit.said.repayment",
+    defaultMessage: "Where repayment comes from",
+    description: "Applicant-reviewed repayment-source label",
+  },
+  saidDocuments: {
+    id: "credit.said.documents",
+    defaultMessage: "Documents included",
+    description: "Applicant-reviewed submitted-document label",
+  },
+  saidNoDocuments: { id: "credit.said.noDocuments", defaultMessage: "None", description: "No submitted documents value" },
+  saidAffirmed: {
+    id: "credit.said.affirmed",
+    defaultMessage: "Confirmed their answers are true and complete to the best of their knowledge",
+    description: "Applicant truthfulness attestation",
+  },
   saidRecourse: {
     id: "credit.said.recourse",
     defaultMessage: "Acknowledged liability for the whole bill sum if the acceptor dishonours it",
@@ -43,8 +69,8 @@ const messages = defineMessages({
   },
   attribution: {
     id: "credit.said.attribution",
-    defaultMessage: "Applicant {applicantRef} · {evidenceState}",
-    description: "Attribution line for the applicant's claims",
+    defaultMessage: "Applicant {applicantRef} · Applicant confirmed",
+    description: "Attribution line for the applicant-confirmed application",
   },
 });
 
@@ -101,6 +127,8 @@ export function InvoiceEvidence({ invoice }: { invoice: DecisionInvoice | null }
 export interface ApplicantClaimsProps {
   claims: ConfirmedClaims;
   applicantRef: string;
+  confirmation?: ApplicantConfirmation;
+  submittedEvidence: readonly SubmittedEvidence[];
 }
 
 /**
@@ -110,18 +138,23 @@ export interface ApplicantClaimsProps {
  * The acceptor is deliberately absent. `confirmedClaims.acceptorRef` is copied from the
  * authoritative bill when the snapshot is assembled, not from the interview, so showing it here
  * attributed a statement to the applicant that they may never have made — and the free-text
- * acceptor claim they did make is not carried on this DTO at all. Restating the bill's acceptor
- * would be true and pointless; restating it under "what the applicant said" was neither. It stays
- * out until the snapshot carries the applicant's own claim to show.
+ * acceptor claim they did make is carried only in the optional confirmation summary. Restating
+ * the bill's acceptor would be true and pointless; that summary is the only source for a payer
+ * the applicant actually volunteered.
  */
-export function ApplicantClaims({ claims, applicantRef }: ApplicantClaimsProps) {
+export function ApplicantClaims({ claims, applicantRef, confirmation, submittedEvidence }: ApplicantClaimsProps) {
   const intl = useIntl();
-  const quotes = [
-    { label: intl.formatMessage(messages.saidUse), text: claims.useOfFunds },
-    { label: intl.formatMessage(messages.saidRepayment), text: claims.repaymentSource },
+  const rows = [
+    { label: intl.formatMessage(messages.saidUse), value: confirmation?.useOfFunds ?? claims.useOfFunds },
+    ...(confirmation?.acceptor === null || confirmation?.acceptor === undefined
+      ? []
+      : [{ label: intl.formatMessage(messages.saidAcceptor), value: confirmation.acceptor }]),
+    { label: intl.formatMessage(messages.saidRepayment), value: confirmation?.repaymentSource ?? claims.repaymentSource },
   ];
+  const recourseAcknowledged = confirmation?.recourseAcknowledged ?? claims.wholeFaceRecourseAcknowledged;
   const confirmations = [
-    claims.wholeFaceRecourseAcknowledged ? intl.formatMessage(messages.saidRecourse) : intl.formatMessage(messages.saidRecourseMissing),
+    intl.formatMessage(messages.saidAffirmed),
+    recourseAcknowledged ? intl.formatMessage(messages.saidRecourse) : intl.formatMessage(messages.saidRecourseMissing),
   ];
   return (
     <details className="rounded-md border border-border px-3 py-2">
@@ -130,20 +163,28 @@ export function ApplicantClaims({ claims, applicantRef }: ApplicantClaimsProps) 
       </summary>
       <div className="mt-2 flex flex-col gap-2 text-sm">
         <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.saidCaption)}</p>
-        {quotes.map((quote) => (
-          <blockquote key={quote.label} className="border-l-2 border-divider-200 pl-3">
-            <p className="font-serif italic">“{quote.text}”</p>
-            <footer className="text-xs text-muted-foreground">{quote.label}</footer>
-          </blockquote>
-        ))}
+        <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          {rows.map((row) => (
+            <div key={row.label} className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">{row.label}</span>
+              <span className="break-words">{row.value}</span>
+            </div>
+          ))}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">{intl.formatMessage(messages.saidDocuments)}</span>
+            {submittedEvidence.length === 0 ? (
+              <span>{intl.formatMessage(messages.saidNoDocuments)}</span>
+            ) : (
+              submittedEvidence.map((evidence) => <span key={evidence.contentDigest}>{displayEvidenceLabel(evidence.label)}</span>)
+            )}
+          </div>
+        </div>
         <ul className="list-disc pl-6 text-xs">
           {confirmations.map((confirmation) => (
             <li key={confirmation}>{confirmation}</li>
           ))}
         </ul>
-        <p className="text-xs text-muted-foreground">
-          {intl.formatMessage(messages.attribution, { applicantRef, evidenceState: words(claims.evidenceState) })}
-        </p>
+        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.attribution, { applicantRef })}</p>
       </div>
     </details>
   );
