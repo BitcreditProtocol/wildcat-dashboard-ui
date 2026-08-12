@@ -39,7 +39,7 @@ export function QuoteActions({
   const intl = useIntl();
   const queryClient = useQueryClient();
   const billId = value.bill.id;
-  const { decisionCase, isUnavailable: isCreditAssessmentUnavailable } = useCreditAssessmentForBill(billId);
+  const { decisionCase, isUnavailable: isCreditAssessmentUnavailable } = useCreditAssessmentForBill(billId, value.id);
   const EBILL_DETAIL_POLL_INTERVAL_MS = 10_000;
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),

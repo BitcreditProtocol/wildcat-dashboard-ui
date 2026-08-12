@@ -47,7 +47,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   // The AI Credit assessment for this bill, from the same cached query the quote page already runs.
   // Its terms open the form; the operator confirms them or edits them. The Mint action is blocked
   // unless the same governed case accepts that review first.
-  const { decisionCase } = useCreditAssessmentForBill(value.bill.id);
+  const { decisionCase } = useCreditAssessmentForBill(value.bill.id, value.id);
   const governedTerms = decisionCase?.result.recommendation === "offer_available" ? decisionCase.result.terms : null;
   const [amountExceedsMaximum, setAmountExceedsMaximum] = useState(false);
   const [writtenBasis, setWrittenBasis] = useState("");

@@ -97,7 +97,7 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
             <Badge variant={getQuoteStatusVariant(effectiveStatus)}>
               <HighlightText text={intl.formatMessage(getQuoteStatusMessage(effectiveStatus))} highlight={searchQuery} />
             </Badge>
-            <CreditAssessmentBadge billId={bill?.id} />
+            <CreditAssessmentBadge billId={bill?.id} mintQuoteId={quote.id} />
           </div>
         </div>
       </div>

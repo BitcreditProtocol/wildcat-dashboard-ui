@@ -86,7 +86,7 @@ function PageBody({ id }: { id: string }) {
     requestToMintDocuments,
     billId,
   } = useQuoteDetail(id);
-  const creditAssessment = useCreditAssessmentForBill(billId);
+  const creditAssessment = useCreditAssessmentForBill(billId, id);
   const creditEvidence: CreditEvidenceState = creditAssessment.isLoading
     ? { status: "loading" }
     : creditAssessment.error !== null
@@ -305,7 +305,7 @@ function PageBody({ id }: { id: string }) {
         requestedToPay={requestedToPay}
       />
 
-      <QuoteCreditAssessment billId={bill.id} />
+      <QuoteCreditAssessment billId={bill.id} mintQuoteId={quote.id} />
 
       <QuoteDocuments
         billAttachments={billAttachmentDocuments}

@@ -31,9 +31,9 @@ const messages = defineMessages({
   },
 });
 
-export function CreditAssessmentBadge({ billId }: { billId: string | undefined }) {
+export function CreditAssessmentBadge({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
   const intl = useIntl();
-  const { decisionCase } = useCreditAssessmentForBill(billId);
+  const { decisionCase } = useCreditAssessmentForBill(billId, mintQuoteId);
   if (decisionCase === undefined) return null;
 
   const { result } = decisionCase;
