@@ -130,6 +130,8 @@ export interface VerificationRequest {
 }
 
 export interface DecisionCase {
+  /** Exact Mint quote this assessment governs; null only for read-only synthetic fixtures. */
+  mintQuoteId: string | null;
   policyFileName: string;
   snapshot: {
     snapshotDigest: string;
