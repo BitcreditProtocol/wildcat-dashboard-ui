@@ -56,10 +56,20 @@ const messages = defineMessages({
     description: "Label for the whole-bill discounted amount the operator may offer",
   },
   expires: { id: "credit.quote.expires", defaultMessage: "Valid until", description: "Label for the governed offer expiry" },
-  discountRate: {
-    id: "credit.quote.discountRate",
-    defaultMessage: "Annual discount rate",
-    description: "Annual discount rate applied to the bill",
+  allInCost: {
+    id: "credit.quote.allInCost",
+    defaultMessage: "All-in cost",
+    description: "Total cost of the offer including every fee component",
+  },
+  ofBillAmount: {
+    id: "credit.quote.ofBillAmount",
+    defaultMessage: "{rate} of bill amount",
+    description: "Total cost as a percentage of the bill face amount",
+  },
+  allInCostDetail: {
+    id: "credit.quote.allInCostDetail",
+    defaultMessage: "{fee} over {tenor} days",
+    description: "Total fee and tenor beneath the all-in cost ratio",
   },
   annualizedCost: {
     id: "credit.fee.annualizedCost",
@@ -285,12 +295,20 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
           <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{formatSat(terms.discountedSat)}</div>
         </div>
         <div>
-          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
+          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.allInCost)}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums">
+            {intl.formatMessage(messages.ofBillAmount, { rate: percentFromBps(terms.feeRatioBps) })}
+          </div>
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            {intl.formatMessage(messages.allInCostDetail, {
+              fee: formatSat(terms.effectiveFeeSat),
+              tenor: terms.tenorDays,
+            })}
+          </div>
         </div>
         <div>
-          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.discountRate)}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums">{percentFromBps(terms.annualDiscountBps)}</div>
+          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
         </div>
       </div>
 
