@@ -31,11 +31,6 @@ const messages = defineMessages({
   },
   saidUse: { id: "credit.said.use", defaultMessage: "Use of funds", description: "Label for the use-of-funds quote" },
   saidRepayment: { id: "credit.said.repayment", defaultMessage: "Repayment source", description: "Label for the repayment-source quote" },
-  saidAcceptor: {
-    id: "credit.said.acceptor",
-    defaultMessage: "Named {acceptor} as the acceptor",
-    description: "Structured claim: acceptor",
-  },
   saidRecourse: {
     id: "credit.said.recourse",
     defaultMessage: "Acknowledged liability for the whole bill sum if the acceptor dishonours it",
@@ -85,7 +80,6 @@ export function InvoiceEvidence({ invoice }: { invoice: DecisionInvoice | null }
         <Badge variant={invoice.billAndClaimsConsistency === "match" ? "success" : "destructive"}>
           {intl.formatMessage(messages.consistency)}: {words(invoice.billAndClaimsConsistency)}
         </Badge>
-        <Badge variant="outline">{words(invoice.evidenceState)}</Badge>
       </div>
       <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
         <Row label={intl.formatMessage(messages.goods)}>{invoice.goodsDescription}</Row>
@@ -112,6 +106,13 @@ export interface ApplicantClaimsProps {
 /**
  * The applicant's own words, on demand. Collapsed by default; the verbatim fields are quoted, the
  * structured confirmations are listed. Nothing here is invented.
+ *
+ * The acceptor is deliberately absent. `confirmedClaims.acceptorRef` is copied from the
+ * authoritative bill when the snapshot is assembled, not from the interview, so showing it here
+ * attributed a statement to the applicant that they may never have made — and the free-text
+ * acceptor claim they did make is not carried on this DTO at all. Restating the bill's acceptor
+ * would be true and pointless; restating it under "what the applicant said" was neither. It stays
+ * out until the snapshot carries the applicant's own claim to show.
  */
 export function ApplicantClaims({ claims, applicantRef }: ApplicantClaimsProps) {
   const intl = useIntl();
@@ -120,7 +121,6 @@ export function ApplicantClaims({ claims, applicantRef }: ApplicantClaimsProps) 
     { label: intl.formatMessage(messages.saidRepayment), text: claims.repaymentSource },
   ];
   const confirmations = [
-    intl.formatMessage(messages.saidAcceptor, { acceptor: claims.acceptorRef }),
     claims.wholeFaceRecourseAcknowledged ? intl.formatMessage(messages.saidRecourse) : intl.formatMessage(messages.saidRecourseMissing),
   ];
   return (
