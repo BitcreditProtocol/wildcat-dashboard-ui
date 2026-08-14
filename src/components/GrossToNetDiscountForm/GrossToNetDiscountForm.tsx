@@ -26,7 +26,16 @@ import { useFormPersistence } from "./usePersistence";
 
 type GrossToNetFormValues = FormValues;
 
-const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitButtonText, quoteId, suggestedNet }: GrossToNetProps) => {
+const GrossToNetDiscountForm = ({
+  startDate,
+  endDate,
+  gross,
+  onSubmit,
+  submitButtonText,
+  quoteId,
+  suggestedNet,
+  confirmDisabled: externallyDisabled = false,
+}: GrossToNetProps) => {
   const intl = useIntl();
   const { formatAmount: formatAmountByPreference, formatGroupedSats, parseAmount: parseAmountByPreference } = useAmountFormatter();
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false);
@@ -281,7 +290,7 @@ const GrossToNetDiscountForm = ({ startDate, endDate, gross, onSubmit, submitBut
     id: "Cancel",
     defaultMessage: "Cancel",
   });
-  const confirmDisabled = !isValid || net === undefined || discountRate === undefined || days === undefined;
+  const confirmDisabled = externallyDisabled || !isValid || net === undefined || discountRate === undefined || days === undefined;
 
   return (
     <>

@@ -162,7 +162,7 @@
   "credit.offer.adjustmentLimits": "Governed amount: {governed} sat. Absolute maximum: {maximum} sat. Lower adjustments are checked against policy when confirmed. The governed offer expires {expiresOn}.",
   "credit.offer.amountAboveMaximum": "This amount is above the maximum that covers operating cost.",
   "credit.offer.governanceRequired": "A governed offer is unavailable. Resolve or retry its assessment before offering terms.",
-  "credit.offer.writtenBasis.help": "Required, at least 20 characters. This is stored with the governed decision.",
+  "credit.offer.writtenBasis.help": "Required, at least 20 characters ({count}/20). This is stored with the governed decision.",
   "credit.offer.writtenBasis.label": "Decision basis",
   "credit.offer.writtenBasis.placeholder": "Explain the reviewed basis for this offer",
   "credit.outcome.blocked": "Blocked",
