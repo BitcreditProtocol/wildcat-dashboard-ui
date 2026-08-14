@@ -31,6 +31,8 @@ export interface GrossToNetProps {
   onConfirm?: () => void;
   onSubmit: (values: FormResult) => void;
   quoteId?: string;
+  /** Additional host-level condition that must be satisfied before confirmation. */
+  confirmDisabled?: boolean;
 }
 
 export type LastEditedField = "rate" | "net" | null;
