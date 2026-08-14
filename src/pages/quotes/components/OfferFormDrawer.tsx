@@ -52,6 +52,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   const [amountExceedsMaximum, setAmountExceedsMaximum] = useState(false);
   const [writtenBasis, setWrittenBasis] = useState("");
   const [showBasisError, setShowBasisError] = useState(false);
+  const writtenBasisLength = writtenBasis.trim().length;
   const governedMaximum = useMemo(() => {
     if (governedTerms === null) return null;
     try {
@@ -211,8 +212,9 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
             >
               <FormattedMessage
                 id="credit.offer.writtenBasis.help"
-                defaultMessage="Required, at least 20 characters. This is stored with the governed decision."
+                defaultMessage="Required, at least 20 characters ({count}/20). This is stored with the governed decision."
                 description="Help and validation text for the operator's written basis on a governed offer"
+                values={{ count: Math.min(writtenBasisLength, 20) }}
               />
             </p>
           </div>
@@ -225,6 +227,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
               onSubmit={handleFormSubmit}
               quoteId={value.id}
               suggestedNet={governedTerms.discountedSat}
+              confirmDisabled={writtenBasisLength < 20}
             />
           </div>
           {!amountExceedsMaximum ? null : (
