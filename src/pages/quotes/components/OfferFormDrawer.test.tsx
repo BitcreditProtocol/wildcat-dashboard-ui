@@ -27,6 +27,7 @@ let submitForm:
   | undefined;
 /** Only the prop under test is captured, so the assertion needs no cross-module types. */
 const suggestedNets: (string | undefined)[] = [];
+const confirmDisabledValues: (boolean | undefined)[] = [];
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -40,6 +41,7 @@ vi.mock("@/components/Drawers", () => ({
 vi.mock("@/components/GrossToNetDiscountForm/GrossToNetDiscountForm", () => ({
   GrossToNetDiscountForm: (props: {
     suggestedNet?: string;
+    confirmDisabled?: boolean;
     onSubmit: (values: {
       days: number;
       discountRate: Big;
@@ -48,6 +50,7 @@ vi.mock("@/components/GrossToNetDiscountForm/GrossToNetDiscountForm", () => ({
     }) => void;
   }) => {
     suggestedNets.push(props.suggestedNet);
+    confirmDisabledValues.push(props.confirmDisabled);
     submitForm = props.onSubmit;
     return (
       <form data-testid="discount-form">
@@ -152,6 +155,7 @@ describe("OfferFormDrawer", () => {
     root = createRoot(container);
     mockUseQuery.mockReset();
     suggestedNets.length = 0;
+    confirmDisabledValues.length = 0;
     submitForm = undefined;
     mintSubmit.mockReset();
   });
@@ -291,5 +295,18 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
 
     expect(mintSubmit).not.toHaveBeenCalled();
     expect(container.querySelector("#offer-written-basis")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("keeps confirmation disabled until the written basis is complete", () => {
+    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
+    renderDrawer();
+
+    expect(confirmDisabledValues[confirmDisabledValues.length - 1]).toBe(true);
+    expect(container.textContent).toContain("(0/20)");
+
+    enterWrittenBasis("Reviewed evidence supports this offer.");
+
+    expect(confirmDisabledValues[confirmDisabledValues.length - 1]).toBe(false);
+    expect(container.textContent).toContain("(20/20)");
   });
 });
