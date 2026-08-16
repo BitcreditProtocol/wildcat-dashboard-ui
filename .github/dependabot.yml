@@ -17,7 +17,7 @@ updates:
       - "dependencies"
       - "github-actions"
     assignees:
-      - "cleot" # devops maintainer
+      - "JulianVIE"
 
   - package-ecosystem: "npm"
     directory: "/"
@@ -46,3 +46,5 @@ updates:
       semver-major-days: 30
       semver-minor-days: 7
       semver-patch-days: 3
+    assignees:
+      - "JulianVIE"
