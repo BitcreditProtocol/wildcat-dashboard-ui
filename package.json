@@ -56,7 +56,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.7",
+    "@biomejs/biome": "2.5.8",
     "@eslint/js": "^10.0.1",
     "@eslint/plugin-kit": "^0.7.2",
     "@formatjs/cli": "^6.16.16",
@@ -73,7 +73,7 @@
     "eslint": "^10.8.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
+    "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.9.0",
     "jsdom": "^29.1.1",
     "msw": "^2.15.0",
