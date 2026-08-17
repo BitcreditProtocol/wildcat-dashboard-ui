@@ -1,7 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import type { ReactNode } from "react";
-import { Heading, Text } from "@bitcredit/ui-library";
-import { FormattedMessage } from "react-intl";
+import { Heading, Popover, PopoverContent, PopoverTrigger, Text } from "@bitcredit/ui-library";
+import { Info } from "lucide-react";
+import { FormattedMessage, useIntl } from "react-intl";
 import type { ConnectedMintResponse, SimpleAlphaState } from "@/generated/client/types.gen";
 import { PeerDetailPanel } from "./PeerDetailPanel";
 import { PeerStatusRow } from "./PeerStatusRow";
@@ -21,6 +22,7 @@ interface SubstituteQueryResult {
 interface PeerStatusSectionProps {
   title: ReactNode;
   description?: ReactNode;
+  infoTooltip?: ReactNode;
   peers: ConnectedMintResponse[];
   statuses: PeerQueryResult[];
   substitutes?: SubstituteQueryResult[];
@@ -32,6 +34,7 @@ interface PeerStatusSectionProps {
 export function PeerStatusSection({
   title,
   description,
+  infoTooltip,
   peers,
   statuses,
   substitutes,
@@ -39,6 +42,7 @@ export function PeerStatusSection({
   isError,
   renderDetailPanel,
 }: PeerStatusSectionProps) {
+  const intl = useIntl();
   const sectionId = useId();
   const [selectedPeerId, setSelectedPeerId] = useState<string | undefined>();
   const selectedPeerIndex = Math.max(
@@ -66,9 +70,25 @@ export function PeerStatusSection({
   return (
     <div className="@container bg-card text-card-foreground flex min-w-0 flex-col gap-3 rounded-lg border p-4 sm:p-6">
       <div className="flex flex-col gap-1">
-        <Heading as="h4" variant="sub">
-          {title}
-        </Heading>
+        <div className="flex items-center gap-1.5">
+          <Heading as="h4" variant="sub">
+            {title}
+          </Heading>
+          {infoTooltip && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label={intl.formatMessage({ id: "home.clowderPeers.info.ariaLabel", defaultMessage: "More information" })}
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="max-w-xs text-sm">{infoTooltip}</PopoverContent>
+            </Popover>
+          )}
+        </div>
         {description && (
           <Text variant="caption" className="text-muted-foreground">
             {description}
