@@ -46,10 +46,12 @@ export function DenyConfirmDrawer({
       }
       open={open}
       onOpenChange={(nextOpen) => {
+        if (!nextOpen && isPending) return;
         if (!nextOpen) setWrittenBasis("");
         onOpenChange(nextOpen);
       }}
       onSubmit={() => onSubmit(trimmedBasis)}
+      cancelButtonDisabled={isPending}
       submitButtonDisabled={isPending || trimmedBasis.length < 20}
       submitButtonText={
         isReturn
