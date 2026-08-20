@@ -307,7 +307,11 @@ function PageBody({ id }: { id: string }) {
         requestedToPay={requestedToPay}
       />
 
-      <QuoteCreditAssessment billId={bill.id} mintQuoteId={quote.id} />
+      <QuoteCreditAssessment
+        billId={bill.id}
+        mintQuoteId={quote.id}
+        mintQuoteAmountSat={"discounted" in quote ? String(quote.discounted) : undefined}
+      />
 
       <QuoteDocuments
         billAttachments={billAttachmentDocuments}
