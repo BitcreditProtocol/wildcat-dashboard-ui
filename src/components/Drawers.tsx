@@ -24,8 +24,8 @@ export function BaseDrawer({ title, description = "", trigger, children, ...draw
   return (
     <Drawer {...drawerProps}>
       {trigger && <DrawerTrigger asChild>{trigger}</DrawerTrigger>}
-      <DrawerContent className="max-h-[calc(100dvh-1rem)] max-w-full overflow-y-auto overscroll-contain border-x-0">
-        <div className="mx-auto w-full max-w-sm pb-[env(safe-area-inset-bottom)]">
+      <DrawerContent className="max-h-[calc(100dvh-1rem)] max-w-full overflow-hidden border-x-0 [&>div]:flex [&>div]:min-h-0 [&>div]:flex-1 [&>div]:flex-col [&>div]:overflow-hidden">
+        <div className="mx-auto flex min-h-0 w-full max-w-sm flex-1 flex-col overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
             {description && <DrawerDescription>{description}</DrawerDescription>}

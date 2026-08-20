@@ -41,6 +41,7 @@ const GrossToNetDiscountForm = ({
   const [hasSetInitialDays, setHasSetInitialDays] = useState(false);
   const [lastEdited, setLastEdited] = useState<"rate" | "net" | null>(null);
   const [netInputDisplay, setNetInputDisplay] = useState("");
+  const formId = React.useId();
   const isSat = gross.currency === "sat";
   const daysLabel = intl.formatMessage({
     id: "discountForm.days",
@@ -255,14 +256,6 @@ const GrossToNetDiscountForm = ({
     }
   };
 
-  const handleConfirmClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    void handleSubmit(handleFormSubmit)().catch((err) => {
-      console.error("Submit failed:", err);
-    });
-  };
-
   const daysError = errors.daysInput
     ? intl.formatMessage(
         {
@@ -295,6 +288,7 @@ const GrossToNetDiscountForm = ({
   return (
     <>
       <form
+        id={formId}
         className="flex flex-col gap-6 min-w-[8rem] px-4"
         onSubmit={(e) => {
           handleSubmit(handleFormSubmit)(e).catch((err) => {
@@ -398,12 +392,7 @@ const GrossToNetDiscountForm = ({
         )}
       </form>
 
-      <FormActions
-        confirmDisabled={confirmDisabled}
-        onConfirmClick={handleConfirmClick}
-        confirmLabel={confirmLabel}
-        cancelLabel={cancelLabel}
-      />
+      <FormActions confirmDisabled={confirmDisabled} formId={formId} confirmLabel={confirmLabel} cancelLabel={cancelLabel} />
     </>
   );
 };
