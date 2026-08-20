@@ -552,6 +552,7 @@
   "quotes.toast.deny.error": "Error while denying quote: {error}",
   "quotes.toast.deny.pending": "Denying quote...",
   "quotes.toast.deny.success": "Quote has been denied.",
+  "quotes.toast.governance.assessmentUnavailable": "The governed assessment is unavailable or changed",
   "quotes.toast.governance.error": "Decision not recorded: {error}. Nothing was sent to the Mint; your inputs were kept.",
   "quotes.toast.governance.mintUpdateFailed": "The decision was recorded, but the Mint was not updated. Your inputs were kept; retry the same action.",
   "quotes.toast.offer.error": "Error while offering quote: {error}",

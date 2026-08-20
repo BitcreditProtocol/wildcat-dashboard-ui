@@ -184,6 +184,20 @@ export function QuoteActions({
     });
   };
   const recordGovernance = async (input: OfferFormResult["governance"]): Promise<boolean> => {
+    if (
+      isCreditAssessmentUnavailable ||
+      input.caseId !== decisionCase?.snapshot.caseId ||
+      input.decisionResultDigest !== decisionCase?.resultDigest
+    ) {
+      governanceFailed(
+        intl.formatMessage({
+          id: "quotes.toast.governance.assessmentUnavailable",
+          defaultMessage: "The governed assessment is unavailable or changed",
+          description: "Error shown when a stale operator drawer can no longer be bound to the current governed assessment",
+        })
+      );
+      return false;
+    }
     if (!operatorMayRecordDecision(operatorCapability.capability, input.action)) {
       governanceFailed(roleUnavailableReason);
       return false;

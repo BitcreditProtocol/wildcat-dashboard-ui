@@ -38,6 +38,7 @@ let returnInfoOpen = false;
 let returnInfoOpenChange: ((open: boolean) => void) | undefined;
 let operatorCapability: OperatorCapability | undefined = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
 let operatorCapabilityError: string | null = null;
+let creditAssessmentUnavailable = false;
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -136,7 +137,7 @@ vi.mock("@/pages/credit/use-credit-assessment", () => ({
     isLoading: false,
     error: null,
     isAbsent: decisionCase === undefined,
-    isUnavailable: false,
+    isUnavailable: creditAssessmentUnavailable,
   }),
 }));
 
@@ -254,6 +255,7 @@ beforeEach(() => {
   returnInfoOpenChange = undefined;
   operatorCapability = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
   operatorCapabilityError = null;
+  creditAssessmentUnavailable = false;
   mockRecordOperatorDecision.mockResolvedValue({ ok: true });
   mockHandleDenyQuote.mockResolvedValue(true);
   mockHandleOfferQuote.mockResolvedValue(true);
@@ -360,6 +362,20 @@ describe("QuoteActions", () => {
     act(() => {
       offerConfirmationOpenChange?.(false);
     });
+    expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+  });
+
+  it("does not send a stale confirmation after the governed assessment becomes unavailable", async () => {
+    decisionCase = governedOffer;
+    creditAssessmentUnavailable = true;
+    renderComponent(pendingQuote);
+
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+
     expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();
   });

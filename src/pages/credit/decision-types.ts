@@ -20,7 +20,7 @@ export interface DecisionBill {
   faceValueSat: string;
   acceptedDate: string;
   maturityDate: string;
-  alreadyFinanced: boolean;
+  alreadyFinanced: boolean | null;
 }
 
 export interface DecisionInvoice {
