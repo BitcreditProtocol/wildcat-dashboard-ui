@@ -17,6 +17,7 @@ import { buildMempoolTransactionUrl } from "@/utils/mempool";
 import { hasRejectedToPay, latestPaymentRequest } from "@/utils/payment-request";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import { operatorMayRecordDecision, recordOperatorDecision } from "@/pages/credit/record-operator-decision";
+import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -43,6 +44,7 @@ export function QuoteActions({
   const queryClient = useQueryClient();
   const billId = value.bill.id;
   const { decisionCase, isUnavailable: isCreditAssessmentUnavailable } = useCreditAssessmentForBill(billId, value.id);
+  const operatorCapability = useOperatorCapability();
   const EBILL_DETAIL_POLL_INTERVAL_MS = 10_000;
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
@@ -104,6 +106,7 @@ export function QuoteActions({
   const [returnInfoDrawerOpen, setReturnInfoDrawerOpen] = useState(false);
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
   const governanceInFlight = useRef(false);
+  const recordedGovernanceKey = useRef<string | undefined>(undefined);
   const mintActionInFlight = useRef(false);
   const [isGovernancePending, setIsGovernancePending] = useState(false);
 
@@ -135,14 +138,21 @@ export function QuoteActions({
   const requiredVerificationItems = decisionCase?.result.verificationRequests?.map((request) => request.requiredItem) ?? [];
   const denyAction =
     decisionCase?.result.recommendation === "no_current_product_fit" ? "confirm_no_current_product_fit" : "decline_application";
-  const mayDeny = operatorMayRecordDecision(denyAction);
-  const mayOffer = operatorMayRecordDecision("confirm_proposed_quote");
-  const mayReturn = operatorMayRecordDecision("return_for_information");
-  const roleUnavailableReason = intl.formatMessage({
-    id: "quotes.actions.role.unavailable",
-    defaultMessage: "Your authenticated operator role cannot perform this action.",
-    description: "Explanation shown when an operator action is unavailable for the current role",
-  });
+  const mayDeny = operatorMayRecordDecision(operatorCapability.capability, denyAction);
+  const mayOffer = operatorMayRecordDecision(operatorCapability.capability, "confirm_proposed_quote");
+  const mayReturn = operatorMayRecordDecision(operatorCapability.capability, "return_for_information");
+  const roleUnavailableReason = operatorCapability.isLoading
+    ? intl.formatMessage({
+        id: "quotes.actions.role.checking",
+        defaultMessage: "Checking AI Credit operator authorization…",
+        description: "Explanation shown while operator authorization is checked",
+      })
+    : (operatorCapability.error ??
+      intl.formatMessage({
+        id: "quotes.actions.role.unavailable",
+        defaultMessage: "Your authenticated operator role cannot perform this action.",
+        description: "Explanation shown when an operator action is unavailable for the current role",
+      }));
   const denyGovernanceAvailable =
     !isCreditAssessmentUnavailable &&
     mayDeny &&
@@ -165,13 +175,16 @@ export function QuoteActions({
     value.id,
     billId
   );
-  const governanceFailed = () => {
+  const governanceFailed = (error: string) => {
     toast({
-      title: intl.formatMessage({
-        id: "quotes.toast.governance.error",
-        defaultMessage: "The governed decision could not be recorded. Nothing was sent to the Mint; please retry.",
-        description: "Error shown when AI Credit rejects or cannot record an operator action",
-      }),
+      title: intl.formatMessage(
+        {
+          id: "quotes.toast.governance.error",
+          defaultMessage: "Decision not recorded: {error}. Nothing was sent to the Mint; your inputs were kept.",
+          description: "Safe exact backend error shown when AI Credit rejects or cannot record an operator action",
+        },
+        { error }
+      ),
       variant: "error",
     });
   };
@@ -186,15 +199,22 @@ export function QuoteActions({
     });
   };
   const recordGovernance = async (input: OfferFormResult["governance"]): Promise<boolean> => {
+    if (!operatorMayRecordDecision(operatorCapability.capability, input.action)) {
+      governanceFailed(roleUnavailableReason);
+      return false;
+    }
+    const inputKey = JSON.stringify(input);
+    if (recordedGovernanceKey.current === inputKey) return true;
     if (governanceInFlight.current) return false;
     governanceInFlight.current = true;
     setIsGovernancePending(true);
     try {
-      const recorded = await recordOperatorDecision(input);
-      if (!recorded.ok) governanceFailed();
+      const recorded = await recordOperatorDecision(input, operatorCapability.capability);
+      if (recorded.ok) recordedGovernanceKey.current = inputKey;
+      else governanceFailed(recorded.error);
       return recorded.ok;
     } catch {
-      governanceFailed();
+      governanceFailed("The AI Credit operator service is not reachable");
       return false;
     } finally {
       governanceInFlight.current = false;
@@ -221,6 +241,7 @@ export function QuoteActions({
         mintUpdateFailed();
         return;
       }
+      recordedGovernanceKey.current = undefined;
       setDenyConfirmDrawerOpen(false);
     } finally {
       mintActionInFlight.current = false;
@@ -247,6 +268,7 @@ export function QuoteActions({
         mintUpdateFailed();
         return;
       }
+      recordedGovernanceKey.current = undefined;
       removeItem(`offer-form-${value.id}`);
       setOfferConfirmDrawerOpen(false);
     } finally {
@@ -265,6 +287,7 @@ export function QuoteActions({
       requiredItems: requiredVerificationItems,
     });
     if (!recorded) return;
+    recordedGovernanceKey.current = undefined;
     setReturnInfoDrawerOpen(false);
     void queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
     toast({
