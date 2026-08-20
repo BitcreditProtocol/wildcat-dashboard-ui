@@ -1,0 +1,247 @@
+import { describe, expect, it } from "vitest";
+import { parseDecisionCasesResponse } from "./parse-decision-cases";
+
+const SNAPSHOT_DIGEST = `sha256:${"a".repeat(64)}`;
+const POLICY_DIGEST = `sha256:${"b".repeat(64)}`;
+const RESULT_DIGEST = `sha256:${"c".repeat(64)}`;
+
+function validCase() {
+  const axes = [
+    "instrument_eligibility",
+    "acceptor_repayment_risk",
+    "transaction_integrity",
+    "applicant_recourse_risk",
+    "evidence_sufficiency",
+    "mint_exposure_capacity",
+  ];
+  return {
+    mintQuoteId: "quote-a",
+    policyFileName: "synthetic-guatemala-v11.json",
+    snapshot: {
+      schemaVersion: "decision-input-snapshot-v8",
+      snapshotDigest: SNAPSHOT_DIGEST,
+      caseId: "case-a",
+      applicantRef: "applicant-a",
+      mintId: "mint-a",
+      asOfDate: "2026-08-10",
+      policyPackDigest: POLICY_DIGEST,
+      calculationVersion: "deterministic-credit-core-v9",
+      isSynthetic: true,
+      product: "accepted_bill_discount",
+      country: "GT",
+      industry: "coffee_production",
+      confirmedClaims: {
+        useOfFunds: "Harvest inputs",
+        acceptorRef: "acceptor-a",
+        repaymentSource: "Invoice payment",
+        wholeFaceRecourseAcknowledged: true,
+        evidenceState: "applicant_confirmed",
+      },
+      contradictions: [],
+      bill: {
+        billId: "bill-a",
+        billStateDigest: `sha256:${"d".repeat(64)}`,
+        acceptanceState: "accepted",
+        holderRef: "holder-a",
+        acceptorRef: "acceptor-a",
+        faceValueSat: "8000000",
+        acceptedDate: "2026-08-10",
+        maturityDate: "2027-02-06",
+        alreadyFinanced: false,
+      },
+      invoice: null,
+      acceptor: {
+        probabilityOfDefaultBps: 600,
+        lossGivenDefaultBps: 4000,
+        evidenceState: "independently_verified",
+        methodologyVersion: "acceptor-risk-v1",
+        assessedBy: "fixture-verifier",
+        assessedAt: "2026-08-10",
+        validThrough: "2026-11-08",
+        evidenceRefs: ["acceptor-evidence-a"],
+      },
+      duplicateCheck: {
+        result: "clear",
+        evidenceState: "independently_verified",
+        methodologyVersion: "duplicate-check-v1",
+        assessedBy: "fixture-verifier",
+        assessedAt: "2026-08-10",
+        validThrough: "2026-11-08",
+        evidenceRefs: ["duplicate-evidence-a"],
+      },
+      mintCapacity: {
+        existingExposureSat: "0",
+        exposureLimitSat: "40000000",
+        evidenceState: "independently_verified",
+        methodologyVersion: "mint-capacity-v1",
+        assessedBy: "fixture-verifier",
+        assessedAt: "2026-08-10",
+        validThrough: "2026-11-08",
+        evidenceRefs: ["capacity-evidence-a"],
+      },
+    },
+    policyPack: {
+      schemaVersion: "synthetic-credit-policy-pack-v11",
+      isSynthetic: true,
+      currency: "SAT",
+      policyPackVersion: "synthetic-guatemala-v11",
+      policyPackDigest: POLICY_DIGEST,
+      calculationVersion: "deterministic-credit-core-v9",
+      product: "accepted_bill_discount",
+      country: "GT",
+      industry: "coffee_production",
+      maximumEffectiveAnnualBps: 1500,
+      maximumFeeRatioBps: 3000,
+    },
+    result: {
+      schemaVersion: "decision-result-v9",
+      snapshotDigest: SNAPSHOT_DIGEST,
+      mintId: "mint-a",
+      policyPackDigest: POLICY_DIGEST,
+      policyPackVersion: "synthetic-guatemala-v11",
+      calculationVersion: "deterministic-credit-core-v9",
+      assessmentStatus: "ready_for_decision",
+      recommendation: "offer_available",
+      axes: axes.map((axis) => ({ axis, status: "pass", reasonCodes: [`${axis}_passed`] })),
+      terms: {
+        billSumSat: "8000000",
+        discountedSat: "7734000",
+        appliedDiscountSat: "216000",
+        operatingCostSat: "50000",
+        effectiveFeeSat: "266000",
+        endorsementExposureSat: "8000000",
+        maturityDate: "2027-02-06",
+        offerExpiresOn: "2026-08-12",
+        tenorDays: 180,
+        annualDiscountBps: 540,
+        effectiveAnnualBps: 688,
+        feeRatioBps: 333,
+      },
+      verificationRequests: [],
+      reasonCodes: ["governed_terms_available"],
+      assessmentTrace: [
+        ...axes.map((axis) => ({
+          ruleId: `${axis}_rule`,
+          subject: axis,
+          outcome: "pass",
+          reasonCode: `${axis}_passed`,
+          observed: { present: true },
+          policy: { required: true },
+          effect: { findingStatus: "pass" },
+        })),
+        {
+          ruleId: "whole_bill_offer",
+          subject: "product_fit",
+          outcome: "pass",
+          reasonCode: "governed_terms_available",
+          observed: { billSumSat: "8000000" },
+          policy: { wholeBillOnly: true },
+          effect: { recommendation: "offer_available" },
+        },
+      ],
+      calculationTrace: [
+        {
+          step: "discounted_sat",
+          formula: "billSumSat - effectiveFeeSat",
+          inputs: { billSumSat: "8000000", effectiveFeeSat: "266000" },
+          result: "7734000",
+        },
+      ],
+    },
+    resultDigest: RESULT_DIGEST,
+    submittedEvidence: [],
+    evidencePackets: [],
+  };
+}
+
+describe("parseDecisionCasesResponse", () => {
+  it("accepts an empty response and a fully bound governed offer", () => {
+    expect(parseDecisionCasesResponse({ cases: [] })).toEqual({ cases: [] });
+    const decisionCase = validCase();
+    expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase] });
+  });
+
+  it("accepts the governed no-fit and verification-blocked result shapes", () => {
+    const offer = validCase();
+    const noFit = { ...offer, result: { ...offer.result, recommendation: "no_current_product_fit", terms: null } };
+    const blocked = {
+      ...offer,
+      result: {
+        ...offer.result,
+        assessmentStatus: "blocked_pending_verification",
+        recommendation: null,
+        terms: null,
+        calculationTrace: [],
+        axes: offer.result.axes.map((axis, index) =>
+          index === 1
+            ? {
+                axis: "acceptor_repayment_risk",
+                status: "blocked",
+                reasonCodes: ["verification_acceptor_required"],
+              }
+            : axis
+        ),
+        assessmentTrace: offer.result.assessmentTrace.map((step, index) =>
+          index === 1
+            ? {
+                ruleId: "verification_acceptor_required",
+                subject: "acceptor_repayment_risk",
+                outcome: "blocked",
+                reasonCode: "verification_acceptor_required",
+                observed: { present: false },
+                policy: { required: true },
+                effect: { findingStatus: "blocked" },
+              }
+            : step
+        ),
+        reasonCodes: ["verification_acceptor_required"],
+        verificationRequests: [
+          {
+            code: "acceptor_parameters",
+            axis: "acceptor_repayment_risk",
+            requiredItem: "Current acceptor loss parameters",
+            reasonCode: "verification_acceptor_required",
+          },
+        ],
+      },
+    };
+
+    expect(parseDecisionCasesResponse({ cases: [noFit, blocked] })).toEqual({ cases: [noFit, blocked] });
+  });
+
+  it.each([
+    ["quote id", () => ({ ...validCase(), mintQuoteId: 7 })],
+    ["case id", () => ({ ...validCase(), snapshot: { ...validCase().snapshot, caseId: null } })],
+    ["result digest", () => ({ ...validCase(), resultDigest: "sha256:not-a-digest" })],
+    ["recommendation", () => ({ ...validCase(), result: { ...validCase().result, recommendation: "manual_offer" } })],
+    ["missing offer terms", () => ({ ...validCase(), result: { ...validCase().result, terms: null } })],
+    [
+      "inconsistent governed terms",
+      () => {
+        const decisionCase = validCase();
+        return {
+          ...decisionCase,
+          result: { ...decisionCase.result, terms: { ...decisionCase.result.terms, discountedSat: "7733999" } },
+        };
+      },
+    ],
+    ["axes array", () => ({ ...validCase(), result: { ...validCase().result, axes: [] } })],
+    ["reason-code array", () => ({ ...validCase(), result: { ...validCase().result, reasonCodes: [false] } })],
+    ["verification-request array", () => ({ ...validCase(), result: { ...validCase().result, verificationRequests: null } })],
+    ["submitted-evidence array", () => ({ ...validCase(), submittedEvidence: [{ reference: "missing-fields" }] })],
+    ["top-level cases array", () => ({ notCases: [] })],
+  ])("rejects a malformed %s", (_label, makeCase) => {
+    const candidate = makeCase();
+    const response = "notCases" in candidate ? candidate : { cases: [candidate] };
+    expect(() => parseDecisionCasesResponse(response)).toThrow("invalid governed decision response");
+  });
+
+  it("rejects valid-looking digests when result, snapshot and policy bindings disagree", () => {
+    const decisionCase = validCase();
+    const mismatched = {
+      ...decisionCase,
+      result: { ...decisionCase.result, snapshotDigest: `sha256:${"e".repeat(64)}` },
+    };
+    expect(() => parseDecisionCasesResponse({ cases: [mismatched] })).toThrow("invalid governed decision response");
+  });
+});

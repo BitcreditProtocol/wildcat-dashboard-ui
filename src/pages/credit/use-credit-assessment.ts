@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { DecisionCase } from "./decision-types";
+import { parseDecisionCasesResponse } from "./parse-decision-cases";
 
 /**
  * Evaluated AI Credit decisions from the local adapter (`127.0.0.1:8787` via the dev proxy).
@@ -13,7 +14,7 @@ export function useCreditAssessments() {
     queryFn: async (): Promise<{ cases: DecisionCase[] }> => {
       const response = await fetch("/api/ai-credit/workbench-decisions");
       if (!response.ok) throw new Error(`Credit adapter responded ${response.status}`);
-      return response.json() as Promise<{ cases: DecisionCase[] }>;
+      return parseDecisionCasesResponse(await response.json());
     },
     staleTime: 60_000,
     // Applications and verification replacements arrive from the borrower app. Poll while this
@@ -37,7 +38,7 @@ export function useCreditAssessmentForBill(
 } {
   const { data, isLoading, error } = useCreditAssessments();
   const decisionCase =
-    billId === undefined || mintQuoteId === undefined
+    error !== null || billId === undefined || mintQuoteId === undefined
       ? undefined
       : data?.cases.find((one) => one.snapshot.bill?.billId === billId && one.mintQuoteId === mintQuoteId);
   return {
