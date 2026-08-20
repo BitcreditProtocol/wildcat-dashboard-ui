@@ -5,6 +5,7 @@ import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { GrossToNetDiscountForm } from "./GrossToNetDiscountForm";
+import type { FormResult } from "./types";
 
 vi.mock("@bitcredit/ui-library", async () => {
   const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
@@ -219,5 +220,41 @@ describe("GrossToNetDiscountForm", () => {
     });
 
     expect(feeRateInput?.value).toBe("12.5");
+  });
+
+  it("submits an adjusted sat net amount from the real confirmation button", async () => {
+    storageData["user-preferences"] = JSON.stringify({ decimalFormat: "comma", currency: "sat" });
+    const onSubmit = vi.fn<(result: FormResult) => void>();
+    const page = renderWithProviders(
+      <GrossToNetDiscountForm
+        startDate={new Date("2026-08-20T00:00:00Z")}
+        endDate={new Date("2027-02-16T00:00:00Z")}
+        gross={{ value: new Big("8000000"), currency: "sat" }}
+        quoteId="quote-adjusted"
+        suggestedNet="7734000"
+        onSubmit={onSubmit}
+      />
+    );
+
+    await flush();
+
+    const netInput = page.querySelector<HTMLInputElement>("#netInput");
+    expect(netInput).not.toBeNull();
+    act(() => {
+      if (!netInput) return;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(netInput, "7,735,000");
+      netInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await flush();
+
+    const confirmButton = [...page.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Confirm");
+    expect(confirmButton?.disabled).toBe(false);
+    act(() => {
+      confirmButton?.click();
+    });
+    await flush();
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0]?.[0].net.value.toFixed(0)).toBe("7735000");
   });
 });

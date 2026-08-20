@@ -179,16 +179,16 @@ export function FormActions({
   cancelLabel,
   confirmDisabled,
   confirmLabel,
-  onConfirmClick,
+  formId,
 }: {
   cancelLabel: string;
   confirmDisabled: boolean;
   confirmLabel: string;
-  onConfirmClick: React.MouseEventHandler<HTMLButtonElement>;
+  formId: string;
 }) {
   return (
     <DrawerFooter className="pt-4">
-      <Button className="w-full mb-1" size="sm" type="button" onClick={onConfirmClick} disabled={confirmDisabled}>
+      <Button className="w-full mb-1" size="sm" type="submit" form={formId} disabled={confirmDisabled}>
         {confirmLabel}
       </Button>
       <DrawerClose asChild>
