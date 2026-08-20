@@ -1,17 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { operatorMayRecordDecision, recordOperatorDecision, type OperatorDecisionInput } from "./record-operator-decision";
+import {
+  fetchOperatorCapability,
+  operatorMayRecordDecision,
+  recordOperatorDecision,
+  type OperatorCapability,
+  type OperatorDecisionInput,
+} from "./record-operator-decision";
 
-const keycloak = vi.hoisted(() => ({
-  authenticated: false,
-  realmAccess: undefined as { roles: string[] } | undefined,
-  subject: undefined as string | undefined,
-  token: undefined as string | undefined,
-}));
-const env = vi.hoisted(() => ({ apiMocksEnabled: false }));
-
-vi.mock("@/keycloak", () => ({ default: keycloak }));
-vi.mock("@/lib/env", () => ({ env }));
-
+const approver = { ready: true, operatorId: "operator-123", operatorRole: "approver" } satisfies OperatorCapability;
+const reviewer = { ready: true, operatorId: "reviewer-123", operatorRole: "reviewer" } satisfies OperatorCapability;
 const command: OperatorDecisionInput = {
   billId: "bill-1",
   caseId: "case-1",
@@ -21,87 +18,68 @@ const command: OperatorDecisionInput = {
   writtenBasis: "Reviewed the governed result and confirmed the proposed terms.",
 };
 
+function response(ok: boolean, status: number, body: unknown): Response {
+  return { ok, status, json: () => Promise.resolve(body) } as Response;
+}
+
 beforeEach(() => {
-  keycloak.authenticated = false;
-  keycloak.realmAccess = undefined;
-  keycloak.subject = undefined;
-  keycloak.token = undefined;
-  env.apiMocksEnabled = false;
   vi.unstubAllGlobals();
 });
 
+describe("operator capability", () => {
+  it.each([
+    [401, "Operator authentication required"],
+    [403, "Operator token does not match the running service"],
+  ])("fails closed and preserves the safe backend error for status %s", async (status, error) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(false, status, { error })));
+
+    await expect(fetchOperatorCapability()).rejects.toThrow(error);
+  });
+
+  it("accepts only the exact ready capability shape", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, approver)));
+
+    await expect(fetchOperatorCapability()).resolves.toEqual(approver);
+  });
+
+  it("lets reviewers return a case but keeps quote decisions approver-only", () => {
+    expect(operatorMayRecordDecision(reviewer, "return_for_information")).toBe(true);
+    expect(operatorMayRecordDecision(reviewer, "confirm_proposed_quote")).toBe(false);
+    expect(operatorMayRecordDecision(approver, "propose_adjustment_and_requote")).toBe(true);
+    expect(operatorMayRecordDecision(undefined, "return_for_information")).toBe(false);
+  });
+});
+
 describe("recordOperatorDecision", () => {
-  it("fails closed without an authenticated subject and governed role", async () => {
+  it("does not call the service without a ready capability", async () => {
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
 
-    await expect(recordOperatorDecision(command)).resolves.toEqual({
+    await expect(recordOperatorDecision(command, undefined)).resolves.toEqual({
       ok: false,
-      error: "An authenticated AI Credit operator role is required",
+      error: "A ready AI Credit operator capability is required for this action",
     });
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("derives the operator identity and role from the authenticated session without sending its token", async () => {
-    keycloak.authenticated = true;
-    keycloak.realmAccess = { roles: ["reviewer", "approver"] };
-    keycloak.subject = "operator-123";
-    keycloak.token = "signed-token";
-    const fetch = vi.fn().mockResolvedValue({ ok: true });
+  it("attributes the command to the capability without sending a browser credential", async () => {
+    const fetch = vi.fn().mockResolvedValue(response(true, 200, {}));
     vi.stubGlobal("fetch", fetch);
 
-    await expect(recordOperatorDecision(command)).resolves.toEqual({ ok: true });
-    // The adapter is an unauthenticated local prototype: it never verifies this token, so sending
-    // it only widens where a live credential ends up.
+    await expect(recordOperatorDecision(command, approver)).resolves.toEqual({ ok: true });
     expect(fetch).toHaveBeenCalledWith(
       "/api/ai-credit/operator-decisions",
       expect.objectContaining({ headers: { "content-type": "application/json" } })
     );
     const request = fetch.mock.calls[0]?.[1] as RequestInit;
-    expect(JSON.stringify(request)).not.toContain("signed-token");
     if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
-    const requestBody: unknown = JSON.parse(request.body);
-    expect(requestBody).toMatchObject({ operatorId: "operator-123", operatorRole: "approver" });
+    expect(JSON.parse(request.body)).toMatchObject({ operatorId: "operator-123", operatorRole: "approver" });
   });
 
-  it("uses explicitly synthetic attribution only in local mock mode", async () => {
-    env.apiMocksEnabled = true;
-    const fetch = vi.fn().mockResolvedValue({ ok: true });
-    vi.stubGlobal("fetch", fetch);
+  it("returns the exact safe stale-case error", async () => {
+    const error = "The governed case changed; refresh before deciding";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(false, 409, { error })));
 
-    await expect(recordOperatorDecision(command)).resolves.toEqual({ ok: true });
-    const request = fetch.mock.calls[0]?.[1] as RequestInit;
-    expect(request.headers).toEqual({ "content-type": "application/json" });
-    if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
-    const requestBody: unknown = JSON.parse(request.body);
-    expect(requestBody).toMatchObject({
-      operatorId: "synthetic-dashboard-operator",
-      operatorRole: "approver",
-    });
-  });
-
-  it("keeps every governed action approver-only", async () => {
-    keycloak.authenticated = true;
-    keycloak.realmAccess = { roles: ["reviewer"] };
-    keycloak.subject = "reviewer-123";
-    keycloak.token = "signed-token";
-    const fetch = vi.fn().mockResolvedValue({ ok: true });
-    vi.stubGlobal("fetch", fetch);
-
-    expect(operatorMayRecordDecision("confirm_proposed_quote")).toBe(false);
-    expect(operatorMayRecordDecision("return_for_information")).toBe(false);
-    await expect(recordOperatorDecision(command)).resolves.toEqual({
-      ok: false,
-      error: "An authenticated AI Credit operator role is required",
-    });
-    await expect(
-      recordOperatorDecision({
-        ...command,
-        action: "return_for_information",
-        reasonCode: "operator_returned_for_information",
-        requiredItems: ["Signed delivery receipt"],
-      })
-    ).resolves.toEqual({ ok: false, error: "An authenticated AI Credit operator role is required" });
-    expect(fetch).not.toHaveBeenCalled();
+    await expect(recordOperatorDecision(command, approver)).resolves.toEqual({ ok: false, error });
   });
 });
