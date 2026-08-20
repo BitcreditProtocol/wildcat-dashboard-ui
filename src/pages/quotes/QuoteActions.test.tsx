@@ -5,6 +5,7 @@ import { IntlProvider } from "react-intl";
 import { QuoteActions } from "./QuoteActions";
 import type { OfferFormResult } from "./components/OfferFormDrawer";
 import type { DecisionCase } from "@/pages/credit/decision-types";
+import type { OperatorCapability } from "@/pages/credit/record-operator-decision";
 import type { InfoReply } from "@/generated/client/types.gen";
 import Big from "big.js";
 
@@ -35,6 +36,8 @@ let denySubmit: ((writtenBasis: string) => void) | undefined;
 let returnInfoSubmit: ((writtenBasis: string) => void) | undefined;
 let returnInfoOpen = false;
 let returnInfoOpenChange: ((open: boolean) => void) | undefined;
+let operatorCapability: OperatorCapability | undefined = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
+let operatorCapabilityError: string | null = null;
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -138,8 +141,13 @@ vi.mock("@/pages/credit/use-credit-assessment", () => ({
 }));
 
 vi.mock("@/pages/credit/record-operator-decision", () => ({
-  operatorMayRecordDecision: () => true,
+  operatorMayRecordDecision: (capability: OperatorCapability | undefined, action: string) =>
+    capability?.operatorRole === "approver" || (capability?.operatorRole === "reviewer" && action === "return_for_information"),
   recordOperatorDecision: (input: unknown) => mockRecordOperatorDecision(input),
+}));
+
+vi.mock("@/pages/credit/use-operator-capability", () => ({
+  useOperatorCapability: () => ({ capability: operatorCapability, error: operatorCapabilityError, isLoading: false }),
 }));
 
 vi.mock("@/utils/local-storage", () => ({
@@ -244,6 +252,8 @@ beforeEach(() => {
   returnInfoSubmit = undefined;
   returnInfoOpen = false;
   returnInfoOpenChange = undefined;
+  operatorCapability = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
+  operatorCapabilityError = null;
   mockRecordOperatorDecision.mockResolvedValue({ ok: true });
   mockHandleDenyQuote.mockResolvedValue(true);
   mockHandleOfferQuote.mockResolvedValue(true);
@@ -268,6 +278,33 @@ beforeEach(() => {
 });
 
 describe("QuoteActions", () => {
+  it("disables governed decisions and exposes the capability error when the handshake fails", () => {
+    decisionCase = governedOffer;
+    operatorCapability = undefined;
+    operatorCapabilityError = "Operator token does not match the running service";
+    const page = renderComponent(pendingQuote);
+    const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
+    const offerButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Offer"));
+
+    expect(denyButton?.disabled).toBe(true);
+    expect(offerButton?.disabled).toBe(true);
+    expect(denyButton?.title).toBe(operatorCapabilityError);
+    expect(offerButton?.title).toBe(operatorCapabilityError);
+  });
+
+  it("allows a reviewer to return verification work but not decide the quote", () => {
+    decisionCase = governedVerification;
+    operatorCapability = { ready: true, operatorId: "reviewer-123", operatorRole: "reviewer" };
+    const page = renderComponent(pendingQuote);
+    const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
+    const returnButton = Array.from(page.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Record required information")
+    );
+
+    expect(denyButton?.disabled).toBe(true);
+    expect(returnButton?.disabled).toBe(false);
+  });
+
   it("builds a mempool link from tx_id and requests mint info", () => {
     mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) => {
       if (options.queryKey[0]._id === "getEbill") {
@@ -353,6 +390,34 @@ describe("QuoteActions", () => {
     expect(offerConfirmationOpen).toBe(false);
   });
 
+  it("keeps an adjusted offer in confirmation when governed requote fails", async () => {
+    decisionCase = governedOffer;
+    const adjustedOffer = {
+      ...offerData,
+      governance: {
+        ...offerData.governance,
+        action: "propose_adjustment_and_requote" as const,
+        discountedSat: "94",
+        reasonCode: "operator_adjusted_price_within_bounds",
+      },
+      discount: { ...offerData.discount, net: { ...offerData.discount.net, value: new Big(94) } },
+    };
+    mockRecordOperatorDecision.mockResolvedValue({ ok: false, error: "The adjusted amount is outside policy" });
+    renderComponent(pendingQuote);
+    act(() => {
+      offerFormSubmit?.(adjustedOffer);
+    });
+
+    await act(async () => {
+      offerConfirmationSubmit?.(adjustedOffer);
+      await Promise.resolve();
+    });
+
+    expect(mockRecordOperatorDecision).toHaveBeenCalledWith(adjustedOffer.governance);
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+    expect(offerConfirmationOpen).toBe(true);
+  });
+
   it("keeps the exact governed offer available when the Mint update fails", async () => {
     decisionCase = governedOffer;
     mockHandleOfferQuote.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
@@ -374,8 +439,8 @@ describe("QuoteActions", () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(mockRecordOperatorDecision).toHaveBeenNthCalledWith(1, offerData.governance);
-    expect(mockRecordOperatorDecision).toHaveBeenNthCalledWith(2, offerData.governance);
+    expect(mockRecordOperatorDecision).toHaveBeenCalledOnce();
+    expect(mockRecordOperatorDecision).toHaveBeenCalledWith(offerData.governance);
     expect(mockHandleOfferQuote).toHaveBeenNthCalledWith(1, offerData);
     expect(mockHandleOfferQuote).toHaveBeenNthCalledWith(2, offerData);
     expect(mockRemoveItem).toHaveBeenCalledWith("offer-form-quote-1");

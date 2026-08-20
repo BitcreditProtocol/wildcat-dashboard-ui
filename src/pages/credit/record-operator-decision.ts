@@ -1,17 +1,4 @@
-import keycloak from "@/keycloak";
-import { env } from "@/lib/env";
-
-/**
- * Records the operator's judgement with the AI Credit adapter when they act on a quote.
- *
- * The Mint's own Offer and Deny still happen on the Mint — this does not stand in for them. What
- * it adds is the governed record the PRD requires behind them: who decided, what they chose, and
- * why, pinned by the adapter to the exact snapshot and engine result they were shown. Without it
- * the button press is the only trace, and a button press is not a reason.
- *
- * The caller must await success before sending the corresponding Mint action. Otherwise a
- * rejected governed requote would still become an offer through the ordinary quote endpoint.
- */
+/** Records the governed operator judgement before the corresponding Mint action. */
 export type OperatorDecisionAction =
   | "confirm_proposed_quote"
   | "confirm_no_current_product_fit"
@@ -31,54 +18,85 @@ export interface OperatorDecisionInput {
   requiredItems?: string[];
 }
 
-type OperatorRole = "approver";
-
-function authenticatedOperator(): { operatorId: string; operatorRole: OperatorRole } | null {
-  // The mock stack has no Keycloak by design. This identity is synthetic test attribution only;
-  // deployed builds must derive attribution from authenticated claims below.
-  if (env.apiMocksEnabled) return { operatorId: "synthetic-dashboard-operator", operatorRole: "approver" };
-  // A live token is still required as evidence of an authenticated session — it is simply never
-  // sent onward, because the prototype adapter has no way to verify it and no need for it.
-  if (!keycloak.authenticated || keycloak.subject === undefined || keycloak.token === undefined) return null;
-  const roles = keycloak.realmAccess?.roles ?? [];
-  const operatorRole = roles.includes("approver") ? "approver" : undefined;
-  if (operatorRole === undefined) return null;
-  return { operatorId: keycloak.subject, operatorRole };
+export interface OperatorCapability {
+  ready: true;
+  operatorId: string;
+  operatorRole: "reviewer" | "approver";
 }
 
-/** Mirrors the client-side role gate in action controls; the server remains authoritative. */
-export function operatorMayRecordDecision(action: OperatorDecisionAction): boolean {
-  void action;
-  return authenticatedOperator() !== null;
+const FALLBACK_ERROR = "The AI Credit operator service rejected the request";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
-export async function recordOperatorDecision(input: OperatorDecisionInput): Promise<{ ok: true } | { ok: false; error: string }> {
-  const operator = authenticatedOperator();
-  if (operator === null) {
-    return { ok: false, error: "An authenticated AI Credit operator role is required" };
+function safeMessage(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const message = Array.from(value, (character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127 ? " " : character;
+  })
+    .join("")
+    .trim()
+    .slice(0, 500);
+  return message.length > 0 ? message : fallback;
+}
+
+async function responseError(response: Response): Promise<string> {
+  const fallback = `${FALLBACK_ERROR} (${String(response.status)})`;
+  const body: unknown = await response.json().catch(() => null);
+  return safeMessage(isRecord(body) ? body.error : undefined, fallback);
+}
+
+export async function fetchOperatorCapability(): Promise<OperatorCapability> {
+  let response: Response;
+  try {
+    response = await fetch("/api/ai-credit/operator-capability", { signal: AbortSignal.timeout(10_000) });
+  } catch {
+    throw new Error("The AI Credit operator service is not reachable");
+  }
+  if (!response.ok) throw new Error(await responseError(response));
+
+  const body: unknown = await response.json().catch(() => null);
+  if (
+    !isRecord(body) ||
+    body.ready !== true ||
+    typeof body.operatorId !== "string" ||
+    body.operatorId.trim().length === 0 ||
+    (body.operatorRole !== "reviewer" && body.operatorRole !== "approver")
+  ) {
+    throw new Error("The AI Credit operator capability response is invalid");
+  }
+  return { ready: true, operatorId: body.operatorId, operatorRole: body.operatorRole };
+}
+
+/** Client affordance only. The operator service remains authoritative for every command. */
+export function operatorMayRecordDecision(capability: OperatorCapability | undefined, action: OperatorDecisionAction): boolean {
+  if (capability === undefined) return false;
+  return capability.operatorRole === "approver" || action === "return_for_information";
+}
+
+export async function recordOperatorDecision(
+  input: OperatorDecisionInput,
+  capability: OperatorCapability | undefined
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!operatorMayRecordDecision(capability, input.action) || capability === undefined) {
+    return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
   }
   try {
     const response = await fetch("/api/ai-credit/operator-decisions", {
       body: JSON.stringify({
         ...input,
-        operatorId: operator.operatorId,
-        operatorRole: operator.operatorRole,
+        operatorId: capability.operatorId,
+        operatorRole: capability.operatorRole,
         requiredItems: input.requiredItems ?? [],
       }),
-      // No bearer token: the prototype adapter neither verifies one nor needs one, and a live
-      // Keycloak JWT sent to an unauthenticated local process is a credential given away for
-      // nothing. The gate above still decides whether this call happens at all. When the adapter
-      // grows real authentication, the token travels with that — not ahead of it.
       headers: { "content-type": "application/json" },
       method: "POST",
       signal: AbortSignal.timeout(10_000),
     });
-    if (!response.ok) {
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
-      return { ok: false, error: body.error ?? `Credit adapter responded ${String(response.status)}` };
-    }
-    return { ok: true };
+    return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
   } catch {
-    return { ok: false, error: "The AI Credit adapter is not reachable" };
+    return { ok: false, error: "The AI Credit operator service is not reachable" };
   }
 }

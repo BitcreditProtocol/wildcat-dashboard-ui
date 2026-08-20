@@ -76,6 +76,10 @@ export default defineViteConfig(({ mode }) => {
           target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
           headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
         },
+        "/api/ai-credit/operator-capability": {
+          target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
+          headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
+        },
         // Borrower routes carry no operator credential.
         "/api/ai-credit": env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
         // Whatever is serving the admin API locally, same-origin so no CORS is involved:
