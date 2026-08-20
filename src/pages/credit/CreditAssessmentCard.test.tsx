@@ -262,9 +262,9 @@ describe("CreditAssessmentCard", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
     // The amount to offer and its ttl — never "advance".
-    expect(container.textContent).toContain("Offer amount");
+    expect(container.textContent).toContain("Recommended offer");
     expect(container.textContent).toContain("7,734,000 sat");
-    expect(container.textContent).toContain("Offer valid until");
+    expect(container.textContent).toContain("Recommendation valid until");
     expect(container.textContent).toContain("2026-08-12");
     expect(container.textContent).toContain("All-in cost");
     expect(container.textContent).toContain("3.33% of bill amount");
@@ -276,6 +276,24 @@ describe("CreditAssessmentCard", () => {
     // The real action rail is directly below, so the card no longer explains its own placement.
     expect(container.textContent).not.toContain("Offering and denying happen");
     expect(container.textContent).not.toContain("advance");
+  });
+
+  it("leads with adjusted Mint terms while retaining the immutable recommendation", () => {
+    render(<CreditAssessmentCard decisionCase={offerCase} mintQuoteAmountSat="7735000" />);
+
+    expect(container.textContent).toContain("Mint quote amount7,735,000 sat");
+    expect(container.textContent).toContain("All-in cost3.32% of bill amount265,000 sat over 180 days");
+    expect(container.textContent).toContain("Governed recommendation7,734,000 sat");
+    expect(container.textContent).toContain("+1,000 sat vs recommendation · recommendation valid until 2026-08-12");
+    expect(container.textContent).toContain("Recommendation calculation266,000 sat recommended fee");
+  });
+
+  it("ignores an invalid Mint amount instead of presenting incoherent actual terms", () => {
+    render(<CreditAssessmentCard decisionCase={offerCase} mintQuoteAmountSat="9000000" />);
+
+    expect(container.textContent).toContain("Recommended offer7,734,000 sat");
+    expect(container.textContent).not.toContain("Mint quote amount");
+    expect(container.textContent).not.toContain("vs recommendation");
   });
 
   it("shows an invoice match only when the referenced invoice evidence is present", () => {
@@ -316,10 +334,10 @@ describe("CreditAssessmentCard", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
     const feeDisclosure = Array.from(container.querySelectorAll("details")).find((details) =>
-      details.querySelector("summary")?.textContent?.includes("Fee calculation")
+      details.querySelector("summary")?.textContent?.includes("Recommendation calculation")
     );
     expect(feeDisclosure?.open).toBe(false);
-    expect(feeDisclosure?.querySelector("summary")?.textContent).toContain("266,000 sat total");
+    expect(feeDisclosure?.querySelector("summary")?.textContent).toContain("266,000 sat recommended fee");
     expect(feeDisclosure?.textContent).toContain("Funding costMint’s annual cost of funds1.00%");
     expect(feeDisclosure?.textContent).toContain(
       "Expected lossAcceptor probability of default × loss given default6.00% PD × 40.00% LGD = 2.40%"
@@ -459,7 +477,7 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("Verification required");
     expect(container.textContent).toContain("No quote can be issued until the requested evidence is verified.");
     expect(container.textContent).toContain("Current governed acceptor PD and LGD");
-    expect(container.textContent).not.toContain("Offer amount");
+    expect(container.textContent).not.toContain("Recommended offer");
   });
 
   it("shows no terms when policy finds no current product fit", () => {
@@ -471,7 +489,7 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain(
       "50,000 sat fixed operating cost on a 250,000 sat bill contributes to the 58,000 sat total fee."
     );
-    expect(container.textContent).not.toContain("Offer amount");
+    expect(container.textContent).not.toContain("Recommended offer");
   });
 
   it("fails closed when a future recommendation is unreadable", () => {
@@ -479,7 +497,7 @@ describe("CreditAssessmentCard", () => {
     render(<CreditAssessmentCard decisionCase={unreadable} />);
 
     expect(container.textContent).toContain("Assessment unavailable");
-    expect(container.textContent).not.toContain("Offer amount");
+    expect(container.textContent).not.toContain("Recommended offer");
   });
 });
 
@@ -497,6 +515,14 @@ describe("QuoteCreditAssessment", () => {
 
     expect(container.textContent).toContain("Governed credit decision");
     expect(container.textContent).toContain("7,734,000 sat");
+  });
+
+  it("carries the authoritative Mint amount into the governed assessment", () => {
+    mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
+    render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-1" mintQuoteAmountSat="7735000" />);
+
+    expect(container.textContent).toContain("Mint quote amount7,735,000 sat");
+    expect(container.textContent).toContain("Governed recommendation7,734,000 sat");
   });
 
   it("says so quietly when the adapter holds no decision for the bill", () => {
