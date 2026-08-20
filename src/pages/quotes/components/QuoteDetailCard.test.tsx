@@ -5,6 +5,7 @@ import { IntlProvider } from "react-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import type { BillIdentParticipant, BillParticipant, Id, InfoReply } from "@/generated/client/types.gen";
+import { messagesByLocale } from "@/i18n/messages";
 import { QuoteDetailCard } from "./QuoteDetailCard";
 
 const participant: BillIdentParticipant = {
@@ -64,7 +65,7 @@ function renderIntoDom(element: ReactElement): HTMLDivElement {
 function renderWithProviders(element: ReactElement): HTMLDivElement {
   return renderIntoDom(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <IntlProvider locale="en-US">
+      <IntlProvider locale="en-US" messages={messagesByLocale["en-US"]}>
         <PreferencesProvider>{element}</PreferencesProvider>
       </IntlProvider>
     </QueryClientProvider>
@@ -124,6 +125,26 @@ beforeEach(() => {
 });
 
 describe("QuoteDetailCard", () => {
+  it("distinguishes the discounted Mint payout from the fee", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={baseQuote}
+        effectiveQuoteStatus="Accepted"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+      />
+    );
+
+    expect(page.textContent).toContain("Discounted amount:80,000,000sat");
+    expect(page.textContent).toContain("Effective fee (absolute):20,000,000sat");
+    expect(page.textContent).not.toContain("Fee:80,000,000sat");
+  });
+
   it("renders primary sat values with secondary eur conversions when rates are available", async () => {
     storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
     vi.stubGlobal(

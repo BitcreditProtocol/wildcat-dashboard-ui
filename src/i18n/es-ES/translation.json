@@ -263,7 +263,7 @@
   "quotes.detail.deadline": "Deadline:",
   "quotes.detail.discount.absolute": "Effective fee (absolute):",
   "quotes.detail.discount.relative": "Effective fee (relative):",
-  "quotes.detail.discounted": "Fee:",
+  "quotes.detail.discounted": "Importe descontado:",
   "quotes.detail.goToKeyset": "Go to keyset",
   "quotes.detail.maturityDate": "Maturity date:",
   "quotes.detail.participants": "Participants:",

@@ -263,7 +263,7 @@
   "quotes.detail.deadline": "crwdns10975:0crwdne10975:0",
   "quotes.detail.discount.absolute": "crwdns10991:0crwdne10991:0",
   "quotes.detail.discount.relative": "crwdns10993:0crwdne10993:0",
-  "quotes.detail.discounted": "crwdns10989:0crwdne10989:0",
+  "quotes.detail.discounted": "Discounted amount:",
   "quotes.detail.goToKeyset": "crwdns11007:0crwdne11007:0",
   "quotes.detail.maturityDate": "crwdns10997:0crwdne10997:0",
   "quotes.detail.participants": "crwdns10999:0crwdne10999:0",
