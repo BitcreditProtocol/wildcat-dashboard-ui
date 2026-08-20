@@ -27,7 +27,15 @@ const messages = defineMessages({
   },
 });
 
-export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
+export function QuoteCreditAssessment({
+  billId,
+  mintQuoteId,
+  mintQuoteAmountSat,
+}: {
+  billId: string | undefined;
+  mintQuoteId: string | undefined;
+  mintQuoteAmountSat?: string;
+}) {
   const intl = useIntl();
   const { decisionCase, isLoading, isAbsent, error } = useCreditAssessmentForBill(billId, mintQuoteId);
 
@@ -39,7 +47,9 @@ export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string 
       </div>
     );
   }
-  if (error === null && decisionCase !== undefined) return <CreditAssessmentCard decisionCase={decisionCase} />;
+  if (error === null && decisionCase !== undefined) {
+    return <CreditAssessmentCard decisionCase={decisionCase} mintQuoteAmountSat={mintQuoteAmountSat} />;
+  }
   if (error === null && isAbsent) return <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.absent)}</p>;
   return (
     <p role="alert" className="rounded-lg border border-signal-alert/40 p-3 text-xs text-signal-alert">

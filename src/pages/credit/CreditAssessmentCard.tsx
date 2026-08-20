@@ -19,7 +19,11 @@ const messages = defineMessages({
     defaultMessage: "Verification required",
     description: "Primary title when evidence is incomplete",
   },
-  outcomeOffer: { id: "credit.outcome.offer", defaultMessage: "Offer ready", description: "Primary title when governed terms exist" },
+  outcomeOffer: {
+    id: "credit.outcome.offer",
+    defaultMessage: "Offer recommended",
+    description: "Primary title when the deterministic core recommends offer terms",
+  },
   outcomeNoFit: {
     id: "credit.outcome.noFit",
     defaultMessage: "No current product fit",
@@ -51,10 +55,34 @@ const messages = defineMessages({
   unreadable: { id: "credit.outcome.unreadable", defaultMessage: "Unreadable", description: "Unreadable outcome badge" },
   discounted: {
     id: "credit.quote.discounted",
-    defaultMessage: "Offer amount",
-    description: "Label for the whole-bill discounted amount the operator may offer",
+    defaultMessage: "Recommended offer",
+    description: "Label for the whole-bill amount recommended by the deterministic core",
   },
-  expires: { id: "credit.quote.expires", defaultMessage: "Offer valid until", description: "Label for the governed offer expiry" },
+  mintQuoteAmount: {
+    id: "credit.quote.mintQuoteAmount",
+    defaultMessage: "Mint quote amount",
+    description: "Label for the actual amount sent by the Mint after operator review",
+  },
+  governedRecommendation: {
+    id: "credit.quote.governedRecommendation",
+    defaultMessage: "Governed recommendation",
+    description: "Label for the immutable deterministic amount beside the actual Mint quote",
+  },
+  recommendationAdjusted: {
+    id: "credit.quote.recommendationAdjusted",
+    defaultMessage: "{adjustment} vs recommendation · recommendation valid until {expires}",
+    description: "Difference between the actual Mint quote and the immutable governed recommendation without inferring its author",
+  },
+  recommendationMatched: {
+    id: "credit.quote.recommendationMatched",
+    defaultMessage: "Matches the Mint quote · recommendation valid until {expires}",
+    description: "Confirms that the actual Mint quote exactly matches the governed recommendation",
+  },
+  expires: {
+    id: "credit.quote.expires",
+    defaultMessage: "Recommendation valid until",
+    description: "Label for the governed recommendation expiry",
+  },
   allInCost: {
     id: "credit.quote.allInCost",
     defaultMessage: "All-in cost",
@@ -122,13 +150,13 @@ const messages = defineMessages({
   },
   feeDetails: {
     id: "credit.details.fee",
-    defaultMessage: "Fee calculation",
-    description: "Expandable section containing the whole-bill fee calculation",
+    defaultMessage: "Recommendation calculation",
+    description: "Expandable section containing the immutable deterministic recommendation calculation",
   },
   feeHint: {
     id: "credit.details.feeHint",
-    defaultMessage: "{fee} total",
-    description: "Compact total fee under the fee-calculation disclosure",
+    defaultMessage: "{fee} recommended fee",
+    description: "Compact deterministic fee under the recommendation-calculation disclosure",
   },
   calculationUnavailable: {
     id: "credit.fee.unavailable",
@@ -212,7 +240,11 @@ const messages = defineMessages({
     defaultMessage: "Total fee as a share of the bill amount",
     description: "Explanation of the all-in bill cost ratio",
   },
-  netOffer: { id: "credit.fee.netOffer", defaultMessage: "Offer amount", description: "Net amount offered after the whole-bill fee" },
+  netOffer: {
+    id: "credit.fee.netOffer",
+    defaultMessage: "Recommended offer",
+    description: "Net amount recommended after the whole-bill fee",
+  },
   netOfferHelp: {
     id: "credit.fee.netOfferHelp",
     defaultMessage: "Bill amount − total fee",
@@ -339,7 +371,15 @@ function useDecisionOutcome(decisionCase: DecisionCase) {
   };
 }
 
-function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
+function GovernedTerms({
+  decisionCase,
+  formatSat,
+  mintQuoteAmountSat,
+}: {
+  decisionCase: DecisionCase;
+  formatSat: (value: string) => string;
+  mintQuoteAmountSat?: string;
+}) {
   const intl = useIntl();
   const { result, snapshot } = decisionCase;
   const terms = result.terms;
@@ -374,29 +414,56 @@ function GovernedTerms({ decisionCase, formatSat }: { decisionCase: DecisionCase
   const hasInvoiceEvidence =
     invoice !== null && (decisionCase.submittedEvidence ?? []).some((evidence) => evidence.reference === invoice.reference);
   const invoiceMatches = invoice?.billAndClaimsConsistency === "match" && invoice.plausibility === "plausible";
+  const billSum = BigInt(terms.billSumSat);
+  const quotedAmount = mintQuoteAmountSat !== undefined && /^\d+$/.test(mintQuoteAmountSat) ? BigInt(mintQuoteAmountSat) : null;
+  const validQuotedAmount = quotedAmount !== null && quotedAmount > 0n && quotedAmount <= billSum ? quotedAmount : null;
+  const displayedAmount = validQuotedAmount ?? BigInt(terms.discountedSat);
+  const displayedFee = billSum - displayedAmount;
+  const displayedFeeRatioBps = Number((displayedFee * 10_000n + billSum - 1n) / billSum);
+  const recommendation = BigInt(terms.discountedSat);
+  const adjustment = validQuotedAmount === null ? null : validQuotedAmount - recommendation;
+  const formattedAdjustment =
+    adjustment === null ? null : adjustment >= 0n ? `+${formatSat(adjustment.toString())}` : `−${formatSat((-adjustment).toString())}`;
   return (
     <div className="flex flex-col gap-3">
       <div className="grid gap-4 rounded-lg border border-border bg-elevation-100 p-4 sm:grid-cols-3">
         <div>
-          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.discounted)}</div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{formatSat(terms.discountedSat)}</div>
+          <div className="text-xs font-medium text-muted-foreground">
+            {intl.formatMessage(validQuotedAmount === null ? messages.discounted : messages.mintQuoteAmount)}
+          </div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{formatSat(displayedAmount.toString())}</div>
         </div>
         <div>
           <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.allInCost)}</div>
           <div className="mt-1 text-lg font-semibold tabular-nums">
-            {intl.formatMessage(messages.ofBillAmount, { rate: percentFromBps(terms.feeRatioBps) })}
+            {intl.formatMessage(messages.ofBillAmount, { rate: percentFromBps(displayedFeeRatioBps) })}
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground">
             {intl.formatMessage(messages.allInCostDetail, {
-              fee: formatSat(terms.effectiveFeeSat),
+              fee: formatSat(displayedFee.toString()),
               tenor: terms.tenorDays,
             })}
           </div>
         </div>
-        <div>
-          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
-        </div>
+        {validQuotedAmount === null ? (
+          <div>
+            <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
+            <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
+          </div>
+        ) : (
+          <div>
+            <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.governedRecommendation)}</div>
+            <div className="mt-1 text-lg font-semibold tabular-nums">{formatSat(terms.discountedSat)}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              {adjustment === 0n
+                ? intl.formatMessage(messages.recommendationMatched, { expires: terms.offerExpiresOn })
+                : intl.formatMessage(messages.recommendationAdjusted, {
+                    adjustment: formattedAdjustment,
+                    expires: terms.offerExpiresOn,
+                  })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -647,7 +714,7 @@ function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCas
   );
 }
 
-export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionCase }) {
+export function CreditAssessmentCard({ decisionCase, mintQuoteAmountSat }: { decisionCase: DecisionCase; mintQuoteAmountSat?: string }) {
   const intl = useIntl();
   const formatSat = (value: string) => `${intl.formatNumber(Number(value))} sat`;
   const { snapshot, policyPack } = decisionCase;
@@ -680,7 +747,7 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
           {snapshot.isSynthetic && <Badge variant="outline">{intl.formatMessage(messages.synthetic)}</Badge>}
         </div>
 
-        <GovernedTerms decisionCase={decisionCase} formatSat={formatSat} />
+        <GovernedTerms decisionCase={decisionCase} formatSat={formatSat} mintQuoteAmountSat={mintQuoteAmountSat} />
       </div>
 
       {offerTerms !== null && (
