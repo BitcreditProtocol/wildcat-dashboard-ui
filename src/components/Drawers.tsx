@@ -45,6 +45,7 @@ export function BaseDrawer({ title, description = "", trigger, children, content
 
 type ConfirmDrawerProps = BaseDrawerProps & {
   cancelButtonText?: string;
+  cancelButtonDisabled?: boolean;
   submitButtonText?: string;
   submitButtonVariant?: VariantProps<typeof buttonVariants>["variant"];
   submitButtonDisabled?: boolean;
@@ -53,6 +54,7 @@ type ConfirmDrawerProps = BaseDrawerProps & {
 
 export function ConfirmDrawer({
   cancelButtonText,
+  cancelButtonDisabled = false,
   submitButtonText,
   submitButtonVariant,
   submitButtonDisabled = false,
@@ -88,7 +90,7 @@ export function ConfirmDrawer({
             {resolvedSubmitText}
           </Button>
           <DrawerClose asChild>
-            <Button className="w-full max-w-sm" variant="outline" size="lg">
+            <Button className="w-full max-w-sm" variant="outline" size="lg" disabled={cancelButtonDisabled}>
               {resolvedCancelText}
             </Button>
           </DrawerClose>

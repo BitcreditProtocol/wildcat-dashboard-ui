@@ -2,7 +2,7 @@ import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
-import { BaseDrawer } from "./Drawers";
+import { BaseDrawer, ConfirmDrawer } from "./Drawers";
 
 vi.mock("@bitcredit/ui-library", () => ({
   Button: (props: React.ComponentProps<"button">) => <button {...props} />,
@@ -54,5 +54,24 @@ describe("BaseDrawer", () => {
     expect(content?.className).toContain("[&>div]:overflow-hidden");
     expect(scrollSurface?.className).toContain("overflow-y-auto");
     expect(scrollSurface?.className).toContain("min-h-0");
+  });
+});
+
+describe("ConfirmDrawer", () => {
+  it("locks both actions while a confirmed operation is pending", () => {
+    mount = document.createElement("div");
+    document.body.appendChild(mount);
+    root = createRoot(mount);
+    act(() => {
+      root?.render(
+        <IntlProvider locale="en">
+          <ConfirmDrawer title="Confirm action" onSubmit={vi.fn()} submitButtonDisabled cancelButtonDisabled />
+        </IntlProvider>
+      );
+    });
+
+    const buttons = Array.from(mount.querySelectorAll("button"));
+    expect(buttons).toHaveLength(2);
+    expect(buttons.every((button) => button.disabled)).toBe(true);
   });
 });

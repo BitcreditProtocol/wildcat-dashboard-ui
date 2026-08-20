@@ -59,8 +59,12 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
         defaultMessage: "Review your inputs and confirm the offer",
       })}
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && isPending) return;
+        onOpenChange(nextOpen);
+      }}
       contentClassName="overflow-visible"
+      cancelButtonDisabled={isPending}
       submitButtonDisabled={validTtl === null || isPending}
       onSubmit={() => {
         if (selectedOffer === undefined || validTtl === null) {
