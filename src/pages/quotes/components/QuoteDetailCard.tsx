@@ -190,7 +190,8 @@ export function QuoteDetailCard({
                 <Text variant="label" className="w-32">
                   {intl.formatMessage({
                     id: "quotes.detail.discounted",
-                    defaultMessage: "Fee:",
+                    defaultMessage: "Discounted amount:",
+                    description: "Net amount the Mint offers for the bill after its fee",
                   })}
                 </Text>
                 <Currency value={quote.discounted} sourceCurrency="sat" className="text-lg font-bold" amountClassName="text-current" />
