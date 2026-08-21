@@ -276,6 +276,31 @@ const messages = defineMessages({
     description: "Whole-bill offer amount calculation",
   },
   product: { id: "credit.audit.product", defaultMessage: "Product", description: "Policy product label" },
+  creditProgram: {
+    id: "credit.audit.creditProgram",
+    defaultMessage: "Credit program",
+    description: "Mint-owned credit program identifier used to select the governed policy",
+  },
+  creditProgramVersion: {
+    id: "credit.audit.creditProgramVersion",
+    defaultMessage: "Program version",
+    description: "Immutable Mint credit program release bound to the quote",
+  },
+  creditProgramAssignment: {
+    id: "credit.audit.creditProgramAssignment",
+    defaultMessage: "Quote assignment",
+    description: "Digest binding the Mint quote and bill to the credit program",
+  },
+  creditProgramDigest: {
+    id: "credit.audit.creditProgramDigest",
+    defaultMessage: "Program digest",
+    description: "Digest of the immutable Mint credit program release",
+  },
+  legacyReadOnly: {
+    id: "credit.audit.legacyReadOnly",
+    defaultMessage: "Read-only legacy assessment. A fresh Mint credit-program assignment is required before any action.",
+    description: "Warning shown when an older governed assessment lacks the Mint quote-to-program binding required for action",
+  },
   policyFile: {
     id: "credit.audit.policyFile",
     defaultMessage: "Policy file",
@@ -743,6 +768,9 @@ export function CreditAssessmentCard({ decisionCase, mintQuoteAmountSat }: { dec
             <p className="mt-1 text-xs text-muted-foreground">
               {intl.formatMessage(messages.assessed, { asOf: snapshot.asOfDate, validThrough })}
             </p>
+            {decisionCase.mintQuoteId !== null && decisionCase.creditProgram === undefined && (
+              <p className="mt-2 text-xs font-medium text-amber-600 dark:text-amber-400">{intl.formatMessage(messages.legacyReadOnly)}</p>
+            )}
           </div>
           {snapshot.isSynthetic && <Badge variant="outline">{intl.formatMessage(messages.synthetic)}</Badge>}
         </div>
@@ -777,6 +805,22 @@ export function CreditAssessmentCard({ decisionCase, mintQuoteAmountSat }: { dec
         hint={`${policyPack.country} · ${words(policyPack.industry)} · ${decisionCase.policyFileName}`}
       >
         <dl className="flex flex-col gap-2">
+          {decisionCase.creditProgram !== undefined && decisionCase.creditProgramAssignment !== undefined && (
+            <>
+              <AuditRow label={intl.formatMessage(messages.creditProgram)}>{words(decisionCase.creditProgram.creditProgramId)}</AuditRow>
+              <AuditRow label={intl.formatMessage(messages.creditProgramVersion)}>
+                {decisionCase.creditProgram.creditProgramVersion}
+              </AuditRow>
+              <AuditRow label={intl.formatMessage(messages.creditProgramDigest)}>
+                <span title={decisionCase.creditProgram.creditProgramDigest}>{decisionCase.creditProgram.creditProgramDigest}</span>
+              </AuditRow>
+              <AuditRow label={intl.formatMessage(messages.creditProgramAssignment)}>
+                <span title={decisionCase.creditProgramAssignment.assignmentDigest}>
+                  {decisionCase.creditProgramAssignment.assignmentDigest}
+                </span>
+              </AuditRow>
+            </>
+          )}
           <AuditRow label={intl.formatMessage(messages.policyFile)}>{decisionCase.policyFileName}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.product)}>{words(policyPack.product)}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.policyVersion)}>{policyPack.policyPackVersion}</AuditRow>

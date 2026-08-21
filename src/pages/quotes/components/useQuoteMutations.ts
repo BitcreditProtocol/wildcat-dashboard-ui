@@ -30,6 +30,35 @@ export function governedOfferTtl(result: OfferFormResult, now = Date.now()): str
   return selectedExpiry.toISOString();
 }
 
+type ExpectedQuoteUpdate = { action: "Deny" } | { action: "Offer"; discounted: number; ttl: string };
+interface QuoteUpdateState {
+  status: string;
+  discounted?: number;
+  ttl?: string;
+}
+
+/** A dropped response is success only when the Mint now exposes the exact requested state. */
+export function isCommittedQuoteUpdate(quote: QuoteUpdateState, expected: ExpectedQuoteUpdate): boolean {
+  if (expected.action === "Deny") return quote.status === "Denied";
+  return (
+    quote.status === "Offered" &&
+    quote.discounted === expected.discounted &&
+    quote.ttl !== undefined &&
+    Date.parse(quote.ttl) === Date.parse(expected.ttl)
+  );
+}
+
+export async function reconcileCommittedQuoteUpdate(
+  readQuote: () => Promise<QuoteUpdateState>,
+  expected: ExpectedQuoteUpdate
+): Promise<boolean> {
+  try {
+    return isCommittedQuoteUpdate(await readQuote(), expected);
+  } catch {
+    return false;
+  }
+}
+
 export function useQuoteMutations(quoteId: string, billId: string) {
   const intl = useIntl();
   const queryClient = useQueryClient();
@@ -44,16 +73,6 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       denyToastRef.current = null;
     },
     onError: (error) => {
-      toast({
-        title: intl.formatMessage(
-          {
-            id: "quotes.toast.deny.error",
-            defaultMessage: "Error while denying quote: {error}",
-          },
-          { error: getApiErrorMessage(error) }
-        ),
-        variant: "error",
-      });
       logger.warn("Deny quote failed", error);
     },
     onSuccess: () => {
@@ -77,16 +96,6 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       offerToastRef.current = null;
     },
     onError: (error) => {
-      toast({
-        title: intl.formatMessage(
-          {
-            id: "quotes.toast.offer.error",
-            defaultMessage: "Error while offering quote: {error}",
-          },
-          { error: getApiErrorMessage(error) }
-        ),
-        variant: "error",
-      });
       logger.warn("Offer quote failed", error);
     },
     onSuccess: () => {
@@ -102,6 +111,25 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       });
     },
   });
+
+  const reconcileQuoteUpdate = async (expected: ExpectedQuoteUpdate): Promise<boolean> => {
+    const options = getQuoteOptions({ path: { qid: quoteId } });
+    const reconciled = await reconcileCommittedQuoteUpdate(async () => {
+      await queryClient.invalidateQueries({ queryKey: options.queryKey });
+      return queryClient.fetchQuery({ ...options, staleTime: 0 });
+    }, expected);
+    if (reconciled) {
+      toast({
+        title: intl.formatMessage({
+          id: "quotes.toast.update.reconciled",
+          defaultMessage: "The Mint had already applied the exact quote action. The dashboard is synchronized.",
+          description: "Success shown after an ambiguous Mint response is reconciled against the exact stored quote state",
+        }),
+        variant: "success",
+      });
+    }
+    return reconciled;
+  };
 
   const requestToPayMutation = useMutation({
     ...postEbillReqtopayMutation(),
@@ -161,6 +189,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       });
       return true;
     } catch {
+      if (await reconcileQuoteUpdate({ action: "Deny" })) return true;
       return false;
     }
   };
@@ -199,6 +228,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       });
       return true;
     } catch {
+      if (await reconcileQuoteUpdate({ action: "Offer", discounted: net_amount, ttl })) return true;
       return false;
     }
   };
