@@ -5,7 +5,10 @@ import {
   recordOperatorDecision,
   type OperatorCapability,
   type OperatorDecisionInput,
+  type SignedOfferAuthorization,
 } from "./record-operator-decision";
+
+vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: RequestInit) => fetch(path, init) }));
 
 const approver = { ready: true, operatorId: "operator-123", operatorRole: "approver" } satisfies OperatorCapability;
 const reviewer = { ready: true, operatorId: "reviewer-123", operatorRole: "reviewer" } satisfies OperatorCapability;
@@ -17,6 +20,18 @@ const command: OperatorDecisionInput = {
   reasonCode: "operator_confirmed_governed_terms",
   writtenBasis: "Reviewed the governed result and confirmed the proposed terms.",
 };
+const signedAuthorization = {
+  authorization: {
+    schemaVersion: "credit-authorization-v7",
+    mintQuoteId: "quote-1",
+    action: "request_to_mint",
+    synthetic: true,
+    terms: { discountedSat: "7734000", offerExpiresOn: "2026-08-23" },
+  },
+  authorizationDigest: `sha256:${"b".repeat(64)}`,
+  signatureAlgorithm: "Ed25519",
+  signature: "synthetic-signature",
+} satisfies SignedOfferAuthorization;
 
 function response(ok: boolean, status: number, body: unknown): Response {
   return { ok, status, json: () => Promise.resolve(body) } as Response;
@@ -62,18 +77,43 @@ describe("recordOperatorDecision", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("attributes the command to the capability without sending a browser credential", async () => {
-    const fetch = vi.fn().mockResolvedValue(response(true, 200, {}));
+  it("sends no browser credential or operator attribution", async () => {
+    const fetch = vi.fn().mockResolvedValue(response(true, 200, { signedAuthorization }));
     vi.stubGlobal("fetch", fetch);
 
-    await expect(recordOperatorDecision(command, approver)).resolves.toEqual({ ok: true });
+    await expect(recordOperatorDecision(command, approver)).resolves.toEqual({ ok: true, signedAuthorization });
     expect(fetch).toHaveBeenCalledWith(
       "/api/ai-credit/operator-decisions",
       expect.objectContaining({ headers: { "content-type": "application/json" } })
     );
     const request = fetch.mock.calls[0]?.[1] as RequestInit;
     if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
-    expect(JSON.parse(request.body)).toMatchObject({ operatorId: "operator-123", operatorRole: "approver" });
+    expect(JSON.parse(request.body)).not.toHaveProperty("operatorId");
+    expect(JSON.parse(request.body)).not.toHaveProperty("operatorRole");
+  });
+
+  it("fails closed when an Offer response has no valid signed authorization", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, {})));
+
+    await expect(recordOperatorDecision(command, approver)).resolves.toEqual({
+      ok: false,
+      error: "The AI Credit operator service returned an invalid offer authorization",
+    });
+  });
+
+  it("keeps return-for-information unsigned", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, {})));
+
+    await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, reviewer)).resolves.toEqual({ ok: true });
+  });
+
+  it("rejects any authorization field on a non-offer decision", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, { signedAuthorization: {} })));
+
+    await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, reviewer)).resolves.toEqual({
+      ok: false,
+      error: "The AI Credit operator service signed a non-offer decision",
+    });
   });
 
   it("returns the exact safe stale-case error", async () => {

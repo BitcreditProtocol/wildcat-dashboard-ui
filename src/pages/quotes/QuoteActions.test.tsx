@@ -5,7 +5,12 @@ import { IntlProvider } from "react-intl";
 import { QuoteActions } from "./QuoteActions";
 import type { OfferFormResult } from "./components/OfferFormDrawer";
 import type { DecisionCase } from "@/pages/credit/decision-types";
-import type { OperatorCapability } from "@/pages/credit/record-operator-decision";
+import type {
+  OperatorCapability,
+  OperatorDecisionInput,
+  OperatorDecisionSuccess,
+  SignedOfferAuthorization,
+} from "@/pages/credit/record-operator-decision";
 import type { InfoReply } from "@/generated/client/types.gen";
 import Big from "big.js";
 
@@ -22,9 +27,10 @@ interface MockQueryResult {
 const seenQueryOptions: MockQueryOptions[] = [];
 const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
 const mockInvalidateQueries = vi.fn();
-const mockRecordOperatorDecision = vi.fn<(input: unknown) => Promise<{ ok: true } | { ok: false; error: string }>>();
+const mockRecordOperatorDecision =
+  vi.fn<(input: OperatorDecisionInput) => Promise<OperatorDecisionSuccess | { ok: false; error: string }>>();
 const mockHandleDenyQuote = vi.fn<() => Promise<boolean>>();
-const mockHandleOfferQuote = vi.fn<(data: OfferFormResult) => Promise<boolean>>();
+const mockHandleOfferQuote = vi.fn<(authorization: SignedOfferAuthorization) => Promise<boolean>>();
 const mockHandleRequestToPay = vi.fn();
 const mockRemoveItem = vi.fn();
 let decisionCase: DecisionCase | undefined;
@@ -144,7 +150,7 @@ vi.mock("@/pages/credit/use-credit-assessment", () => ({
 vi.mock("@/pages/credit/record-operator-decision", () => ({
   operatorMayRecordDecision: (capability: OperatorCapability | undefined, action: string) =>
     capability?.operatorRole === "approver" || (capability?.operatorRole === "reviewer" && action === "return_for_information"),
-  recordOperatorDecision: (input: unknown) => mockRecordOperatorDecision(input),
+  recordOperatorDecision: (input: OperatorDecisionInput) => mockRecordOperatorDecision(input),
 }));
 
 vi.mock("@/pages/credit/use-operator-capability", () => ({
@@ -236,6 +242,19 @@ const offerData = {
   governedOfferExpiresAt: new Date("2099-09-02T23:59:59.999Z"),
 } satisfies OfferFormResult;
 
+const signedAuthorization = {
+  authorization: {
+    schemaVersion: "credit-authorization-v7",
+    mintQuoteId: "quote-1",
+    action: "request_to_mint",
+    synthetic: true,
+    terms: { discountedSat: "95", offerExpiresOn: "2099-09-02" },
+  },
+  authorizationDigest: `sha256:${"c".repeat(64)}`,
+  signatureAlgorithm: "Ed25519",
+  signature: "synthetic-signature",
+} satisfies SignedOfferAuthorization;
+
 function renderComponent(value = acceptedQuote) {
   const mount = document.createElement("div");
   document.body.appendChild(mount);
@@ -269,7 +288,13 @@ beforeEach(() => {
   operatorCapability = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
   operatorCapabilityError = null;
   creditAssessmentUnavailable = false;
-  mockRecordOperatorDecision.mockResolvedValue({ ok: true });
+  mockRecordOperatorDecision.mockImplementation((input) =>
+    Promise.resolve(
+      input.action === "confirm_proposed_quote" || input.action === "propose_adjustment_and_requote"
+        ? { ok: true, signedAuthorization }
+        : { ok: true }
+    )
+  );
   mockHandleDenyQuote.mockResolvedValue(true);
   mockHandleOfferQuote.mockResolvedValue(true);
   vi.stubGlobal("matchMedia", () => ({
@@ -422,7 +447,9 @@ describe("QuoteActions", () => {
 
   it("fails closed at final confirmation and lets the operator retry", async () => {
     decisionCase = governedOffer;
-    mockRecordOperatorDecision.mockResolvedValueOnce({ ok: false, error: "stale case" }).mockResolvedValueOnce({ ok: true });
+    mockRecordOperatorDecision
+      .mockResolvedValueOnce({ ok: false, error: "stale case" })
+      .mockResolvedValueOnce({ ok: true, signedAuthorization });
     renderComponent(pendingQuote);
     act(() => {
       offerFormSubmit?.(offerData);
@@ -442,7 +469,7 @@ describe("QuoteActions", () => {
     });
     expect(mockRecordOperatorDecision).toHaveBeenCalledTimes(2);
     expect(mockHandleOfferQuote).toHaveBeenCalledOnce();
-    expect(mockHandleOfferQuote).toHaveBeenCalledWith(offerData);
+    expect(mockHandleOfferQuote).toHaveBeenCalledWith(signedAuthorization);
     expect(offerConfirmationOpen).toBe(false);
   });
 
@@ -497,8 +524,8 @@ describe("QuoteActions", () => {
     });
     expect(mockRecordOperatorDecision).toHaveBeenCalledOnce();
     expect(mockRecordOperatorDecision).toHaveBeenCalledWith(offerData.governance);
-    expect(mockHandleOfferQuote).toHaveBeenNthCalledWith(1, offerData);
-    expect(mockHandleOfferQuote).toHaveBeenNthCalledWith(2, offerData);
+    expect(mockHandleOfferQuote).toHaveBeenNthCalledWith(1, signedAuthorization);
+    expect(mockHandleOfferQuote).toHaveBeenNthCalledWith(2, signedAuthorization);
     expect(mockRemoveItem).toHaveBeenCalledWith("offer-form-quote-1");
     expect(offerConfirmationOpen).toBe(false);
   });
@@ -541,7 +568,7 @@ describe("QuoteActions", () => {
 
   it("coalesces rapid final confirmations into one governance and Mint action", async () => {
     decisionCase = governedOffer;
-    let resolveRecord: ((result: { ok: true }) => void) | undefined;
+    let resolveRecord: ((result: OperatorDecisionSuccess) => void) | undefined;
     mockRecordOperatorDecision.mockReturnValue(
       new Promise((resolve) => {
         resolveRecord = resolve;
@@ -556,7 +583,7 @@ describe("QuoteActions", () => {
       offerConfirmationSubmit?.(offerData);
       offerConfirmationSubmit?.(offerData);
       expect(mockRecordOperatorDecision).toHaveBeenCalledOnce();
-      resolveRecord?.({ ok: true });
+      resolveRecord?.({ ok: true, signedAuthorization });
       await Promise.resolve();
     });
     expect(mockHandleOfferQuote).toHaveBeenCalledOnce();

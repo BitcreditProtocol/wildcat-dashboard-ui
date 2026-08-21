@@ -27,6 +27,15 @@ const vitestConfig = defineVitestConfig({
 // https://vite.dev/config/
 export default defineViteConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const adminTarget = env.VITE_BITCR_DEV_ADMIN_PROXY_TARGET || "http://127.0.0.1:4242";
+  const aiCreditProxy =
+    env.VITE_API_MOCKING_ENABLED === "true"
+      ? {
+          target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
+          // Explicit dev-only auth bypass; normal builds send the Keycloak bearer to Envoy.
+          headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
+        }
+      : adminTarget;
 
   const viteConfig = {
     plugins: [
@@ -64,28 +73,11 @@ export default defineViteConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        "/api/ai-credit/workbench-decisions": {
-          target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
-          headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
-        },
-        "/api/ai-credit/workbench-evidence": {
-          target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
-          headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
-        },
-        "/api/ai-credit/operator-decisions": {
-          target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
-          headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
-        },
-        "/api/ai-credit/operator-capability": {
-          target: env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
-          headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
-        },
-        // Borrower routes carry no operator credential.
-        "/api/ai-credit": env.VITE_BITCR_DEV_AI_CREDIT_PROXY_TARGET || "http://127.0.0.1:8787",
+        "/api/ai-credit": aiCreditProxy,
         // Whatever is serving the admin API locally, same-origin so no CORS is involved:
         // :4242 the BFF Envoy (real Keycloak token required), :4243 the admin aggregator directly
         // (no auth — Envoy is where auth lives), or the mint stub on :4242. Default is the BFF.
-        "/v1/admin": env.VITE_BITCR_DEV_ADMIN_PROXY_TARGET || "http://127.0.0.1:4242",
+        "/v1/admin": adminTarget,
       },
     },
   };

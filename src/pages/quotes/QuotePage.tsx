@@ -15,6 +15,7 @@ import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { authenticatedFetch } from "@/lib/api-client";
 import { type CreditEvidenceState, QuoteDocuments } from "./QuoteDocuments";
 import type { SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
@@ -247,7 +248,7 @@ function PageBody({ id }: { id: string }) {
     openedWindow.opener = null;
     setOpeningEvidenceReference(evidence.reference);
     try {
-      const response = await fetch("/api/ai-credit/workbench-evidence", {
+      const response = await authenticatedFetch("/api/ai-credit/workbench-evidence", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ caseId: creditEvidence.caseId, resultDigest: creditEvidence.resultDigest, evidence }),
