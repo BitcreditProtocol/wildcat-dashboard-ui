@@ -82,7 +82,7 @@ export function useQuoteDetail(id: string) {
     refetchInterval: (query) => {
       if (!shouldLoadMintOperation) return false;
       const progress = query.state.data;
-      return progress === undefined || progress.current.value < progress.target.value ? QUOTE_DETAIL_POLL_INTERVAL_MS : false;
+      return progress === undefined || progress.current < progress.target ? QUOTE_DETAIL_POLL_INTERVAL_MS : false;
     },
     refetchIntervalInBackground: true,
   });

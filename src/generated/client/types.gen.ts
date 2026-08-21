@@ -4,6 +4,36 @@ export type ClientOptions = {
     baseUrl: `${string}://opt` | (string & {});
 };
 
+export type AcceptorRiskAuthorityEvidence = {
+    schemaVersion: string;
+    keyId: string;
+    acceptorRef: string;
+    probabilityOfDefaultBps: number;
+    lossGivenDefaultBps: number;
+    evidenceState: string;
+    methodologyVersion: string;
+    assessedBy: string;
+    assessedAt: string;
+    validThrough: string;
+    evidenceRefs: Array<string>;
+    synthetic: boolean;
+};
+
+export type AcceptorRiskEvidence = {
+    schemaVersion: string;
+    evidenceId: string;
+    signedEvidence: SignedAcceptorRiskEvidence;
+    operatorId: string;
+    writtenBasisDigest: string;
+    recordedAt: string;
+    verifiedAt: string;
+};
+
+export type AcceptorRiskEvidenceRequest = {
+    signedEvidence: SignedAcceptorRiskEvidence;
+    writtenBasis: string;
+};
+
 /**
  * --------------------------- Reserve funding
  */
@@ -25,6 +55,20 @@ export type AddReserveStatus = 'Pending' | {
     };
 } | 'FundingMismatch';
 
+/**
+ * Admin quote details plus the immutable Mint-selected credit program binding.
+ *
+ * The fields are optional only so pre-binding quote records remain readable.
+ * Operator actions on an unbound quote are rejected by the quote service.
+ */
+export type AdminInfoReply = InfoReply & {
+    credit_program_version?: string | null;
+    credit_program_digest?: string | null;
+    credit_authorization_receipt?: null | CreditAuthorizationReceipt;
+    credit_evidence?: null | MintCreditEvidence;
+    credit_exposure_reservation?: null | CreditExposureReservation;
+};
+
 export type AlphaStateResponse = {
     state: SimpleAlphaState;
 };
@@ -38,6 +82,10 @@ export type AlphaStateResponse = {
 export type Amount = {
     value: number;
     unit: TupleUnit;
+};
+
+export type AuthorizedQuoteRequest = {
+    signedAuthorization: SignedCreditAuthorizationEnvelope;
 };
 
 export type BillAcceptanceStatus = {
@@ -297,6 +345,78 @@ export type Coverage = {
     eiou_collateral: number;
 };
 
+export type CreditAuthorizationEnvelope = {
+    schemaVersion: string;
+    keyId: string;
+    mintId: string;
+    mintQuoteId: string;
+    creditProgramVersion: string;
+    creditProgramDigest: string;
+    caseId: string;
+    billId: string;
+    billStateDigest: string;
+    holderRef: string;
+    acceptorRef: string;
+    decisionSnapshotDigest: string;
+    decisionResultDigest: string;
+    policyPackDigest: string;
+    policyPackVersion: string;
+    calculationVersion: string;
+    terms: CreditAuthorizationTerms;
+    operatorId: string;
+    issuedAt: string;
+    expiresAt: string;
+    nonce: string;
+    action: string;
+    synthetic: boolean;
+};
+
+export type CreditAuthorizationReceipt = {
+    receiptVersion: string;
+    operationId: string;
+    authorizationDigest: string;
+    caseId: string;
+    status: string;
+    mintId: string;
+    billId: string;
+    action: string;
+    effectId: string;
+    resultDigest: string;
+    completedAt: string;
+    synthetic: boolean;
+};
+
+/**
+ * Exact governed terms signed by AI Credit. Monetary values stay decimal strings so
+ * JavaScript and Rust verify the same bytes without an unsafe number conversion.
+ */
+export type CreditAuthorizationTerms = {
+    billSumSat: string;
+    discountedSat: string;
+    appliedDiscountSat: string;
+    operatingCostSat: string;
+    effectiveFeeSat: string;
+    endorsementExposureSat: string;
+    maturityDate: string;
+    offerExpiresOn: string;
+    tenorDays: number;
+    annualDiscountBps: number;
+    effectiveAnnualBps: number;
+    feeRatioBps: number;
+};
+
+export type CreditExposureReservation = {
+    reservationVersion: string;
+    reservationId: string;
+    mintId: string;
+    quoteId: string;
+    amountSat: string;
+    capacityEvidenceId: string;
+    state: string;
+    createdAt: string;
+    updatedAt: string;
+};
+
 /**
  * Currency Unit
  */
@@ -514,14 +634,52 @@ export type LightSignedBy = {
 
 export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc' | 'submitted_desc' | 'submitted_asc';
 
+export type MintCapacityAuthorityEvidence = {
+    schemaVersion: string;
+    keyId: string;
+    mintId: string;
+    existingExposureSat: string;
+    exposureLimitSat: string;
+    evidenceState: string;
+    methodologyVersion: string;
+    assessedBy: string;
+    assessedAt: string;
+    validThrough: string;
+    evidenceRefs: Array<string>;
+    synthetic: boolean;
+};
+
+export type MintCapacityEvidence = {
+    schemaVersion: string;
+    evidenceId: string;
+    signedEvidence: SignedMintCapacityEvidence;
+    operatorId: string;
+    writtenBasisDigest: string;
+    recordedAt: string;
+    verifiedAt: string;
+};
+
+export type MintCapacityEvidenceRequest = {
+    signedEvidence: SignedMintCapacityEvidence;
+    writtenBasis: string;
+};
+
+export type MintCreditEvidence = {
+    schemaVersion: string;
+    mintId: string;
+    acceptorRef: string;
+    acceptorRisk?: null | AcceptorRiskEvidence;
+    mintCapacity?: null | MintCapacityEvidence;
+};
+
 /**
  * --------------------------- Mint operation status
  */
 export type MintOperationStatus = {
     kid: Id;
     quote_id: string;
-    target: Amount;
-    current: Amount;
+    target: number;
+    current: number;
 };
 
 /**
@@ -639,9 +797,30 @@ export type ResyncBillPayload = {
     from_nostr?: boolean | null;
 };
 
+export type SignedAcceptorRiskEvidence = {
+    evidence: AcceptorRiskAuthorityEvidence;
+    evidenceDigest: string;
+    signatureAlgorithm: string;
+    signature: string;
+};
+
 export type SignedBy = {
     data: BillParticipant;
     signatory?: null | BillSignatory;
+};
+
+export type SignedCreditAuthorizationEnvelope = {
+    authorization: CreditAuthorizationEnvelope;
+    authorizationDigest: string;
+    signatureAlgorithm: string;
+    signature: string;
+};
+
+export type SignedMintCapacityEvidence = {
+    evidence: MintCapacityAuthorityEvidence;
+    evidenceDigest: string;
+    signatureAlgorithm: string;
+    signature: string;
 };
 
 /**
@@ -922,7 +1101,7 @@ export type GetQuoteResponses = {
     /**
      * Successful response
      */
-    200: InfoReply;
+    200: AdminInfoReply;
 };
 
 export type GetQuoteResponse = GetQuoteResponses[keyof GetQuoteResponses];
@@ -982,6 +1161,101 @@ export type ListQuotesResponses = {
 };
 
 export type ListQuotesResponse = ListQuotesResponses[keyof ListQuotesResponses];
+
+export type AuthorizeQuoteData = {
+    body: AuthorizedQuoteRequest;
+    path: {
+        /**
+         * The quote id
+         */
+        qid: string;
+    };
+    query?: never;
+    url: '/v1/admin/credit/quote/{qid}/authorization';
+};
+
+export type AuthorizeQuoteErrors = {
+    /**
+     * Invalid authorization
+     */
+    401: unknown;
+    /**
+     * Conflicting authorization or quote state
+     */
+    409: unknown;
+};
+
+export type AuthorizeQuoteResponses = {
+    /**
+     * Authorization executed or replayed
+     */
+    200: CreditAuthorizationReceipt;
+};
+
+export type AuthorizeQuoteResponse = AuthorizeQuoteResponses[keyof AuthorizeQuoteResponses];
+
+export type RecordAcceptorRiskEvidenceData = {
+    body: AcceptorRiskEvidenceRequest;
+    path: {
+        /**
+         * The quote whose acceptor owns the risk record
+         */
+        qid: string;
+    };
+    query?: never;
+    url: '/v1/admin/credit/quote/{qid}/acceptor-risk';
+};
+
+export type RecordAcceptorRiskEvidenceErrors = {
+    /**
+     * Invalid evidence
+     */
+    400: unknown;
+    /**
+     * Approver role required
+     */
+    403: unknown;
+    /**
+     * Quote not found
+     */
+    404: unknown;
+};
+
+export type RecordAcceptorRiskEvidenceResponses = {
+    /**
+     * Mint-owned acceptor risk evidence recorded
+     */
+    200: AcceptorRiskEvidence;
+};
+
+export type RecordAcceptorRiskEvidenceResponse = RecordAcceptorRiskEvidenceResponses[keyof RecordAcceptorRiskEvidenceResponses];
+
+export type RecordMintCapacityEvidenceData = {
+    body: MintCapacityEvidenceRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/credit/mint-capacity';
+};
+
+export type RecordMintCapacityEvidenceErrors = {
+    /**
+     * Invalid evidence
+     */
+    400: unknown;
+    /**
+     * Approver role required
+     */
+    403: unknown;
+};
+
+export type RecordMintCapacityEvidenceResponses = {
+    /**
+     * Mint-owned capacity evidence recorded
+     */
+    200: MintCapacityEvidence;
+};
+
+export type RecordMintCapacityEvidenceResponse = RecordMintCapacityEvidenceResponses[keyof RecordMintCapacityEvidenceResponses];
 
 export type GetSharedEbillHistoryData = {
     body?: never;

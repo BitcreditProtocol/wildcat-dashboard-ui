@@ -173,15 +173,15 @@ export function QuoteDetailCard({
     }
     if (
       mintOperationStatus?.quote_id !== quote.id ||
-      !Number.isFinite(mintOperationStatus.current.value) ||
-      !Number.isFinite(mintOperationStatus.target.value) ||
-      mintOperationStatus.current.value < 0 ||
-      mintOperationStatus.target.value <= 0
+      !Number.isFinite(mintOperationStatus.current) ||
+      !Number.isFinite(mintOperationStatus.target) ||
+      mintOperationStatus.current < 0 ||
+      mintOperationStatus.target <= 0
     ) {
       return { value: unavailable, state: "unavailable" as const };
     }
-    const current = mintOperationStatus.current.value;
-    const target = mintOperationStatus.target.value;
+    const current = mintOperationStatus.current;
+    const target = mintOperationStatus.target;
     const complete = target > 0 && current >= target;
     const values = { current: intl.formatNumber(current), target: intl.formatNumber(target) };
     return {

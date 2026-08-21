@@ -243,8 +243,8 @@ beforeEach(() => {
         data: {
           kid: "keyset-from-quote",
           quote_id: opts.queryKey[0].path?.qid,
-          target: { value: 80, unit: null },
-          current: { value: 40, unit: null },
+          target: 80,
+          current: 40,
         },
         isLoading: false,
         error: null,
