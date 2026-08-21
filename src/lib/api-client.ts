@@ -29,7 +29,7 @@ const abortedRequest = (request: Request): Request => {
   return new Request(request, { signal: controller.signal });
 };
 
-heyApiClient.interceptors.request.use(async (request) => {
+async function authorizeRequest(request: Request): Promise<Request> {
   // Local-only escape hatch (VITE_API_MOCKING_ENABLED=true, previously a dead flag): send the
   // request unauthenticated instead of aborting it and redirecting to a login. Without this every
   // /v1/admin call dies inside this interceptor before it reaches the network, so no local stub or
@@ -78,7 +78,14 @@ heyApiClient.interceptors.request.use(async (request) => {
   headers.set("Authorization", `Bearer ${token}`);
 
   return new Request(request, { headers });
-});
+}
+
+heyApiClient.interceptors.request.use(authorizeRequest);
+
+/** Same authenticated BFF boundary for the small hand-written AI Credit surface. */
+export async function authenticatedFetch(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(await authorizeRequest(new Request(new URL(path, env.apiBaseUrl), init)));
+}
 
 export const client = heyApiClient;
 export { sdk };

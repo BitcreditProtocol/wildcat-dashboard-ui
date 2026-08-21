@@ -4,6 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useCreditAssessmentForBill } from "./use-credit-assessment";
 
+vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: RequestInit) => fetch(path, init) }));
+
 type CreditAssessmentState = ReturnType<typeof useCreditAssessmentForBill>;
 
 let root: Root | null = null;
