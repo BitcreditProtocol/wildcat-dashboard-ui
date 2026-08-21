@@ -49,19 +49,19 @@ const GrossToNetDiscountForm = ({
   });
   const discountRateLabel = intl.formatMessage({
     id: "discountForm.discountRate",
-    defaultMessage: "Fee rate",
+    defaultMessage: "Minting fee rate",
   });
   const netAmountLabel = intl.formatMessage({
     id: "discountForm.netAmount",
-    defaultMessage: "Net amount",
+    defaultMessage: "Amount available for minting",
   });
   const annualDiscountLabel = intl.formatMessage({
     id: "discountForm.annualDiscount",
-    defaultMessage: "Annual fee",
+    defaultMessage: "Minting fee",
   });
   const grossAmountLabel = intl.formatMessage({
     id: "discountForm.grossAmount",
-    defaultMessage: "Gross amount",
+    defaultMessage: "Bill amount",
   });
 
   const { validateMinInteger, validateNetAmount } = createDiscountFormValidators({

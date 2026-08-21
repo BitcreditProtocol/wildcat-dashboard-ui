@@ -30,8 +30,12 @@ export interface SignedOfferAuthorization {
   [key: string]: unknown;
   authorization: {
     schemaVersion: "credit-authorization-v7";
+    keyId?: string;
+    mintId?: string;
     mintQuoteId: string;
+    billId?: string;
     action: "request_to_mint";
+    expiresAt?: string;
     synthetic: true;
     terms: {
       discountedSat: string;
@@ -44,6 +48,55 @@ export interface SignedOfferAuthorization {
   signature: string;
 }
 
+export interface VerifiedAuthorizationReceipt {
+  keyId: string;
+  mintId: string;
+  mintQuoteId: string;
+  billId: string;
+  action: "request_to_mint";
+  expiresAt: string;
+  authorizationDigest: string;
+}
+
+export interface DurableAuthorizationReceipt {
+  operationId: string;
+  status: string;
+  completedAt: string;
+  resultDigest: string;
+  effectId: string;
+  authorizationDigest: string;
+  mintId: string;
+  billId: string;
+  action: "request_to_mint";
+}
+
+/** The operator API may return older envelopes; only expose a receipt when every displayed binding is present. */
+export function verifiedAuthorizationReceiptOf(value: SignedOfferAuthorization): VerifiedAuthorizationReceipt | null {
+  const { authorization } = value;
+  if (
+    typeof authorization.keyId !== "string" ||
+    authorization.keyId.length === 0 ||
+    typeof authorization.mintId !== "string" ||
+    authorization.mintId.length === 0 ||
+    typeof authorization.billId !== "string" ||
+    authorization.billId.length === 0 ||
+    typeof authorization.expiresAt !== "string" ||
+    Number.isNaN(Date.parse(authorization.expiresAt))
+  ) {
+    return null;
+  }
+
+  return {
+    keyId: authorization.keyId,
+    mintId: authorization.mintId,
+    mintQuoteId: authorization.mintQuoteId,
+    billId: authorization.billId,
+    action: authorization.action,
+    expiresAt: authorization.expiresAt,
+    authorizationDigest: value.authorizationDigest,
+  };
+}
+
 export interface OperatorDecisionSuccess {
   ok: true;
   signedAuthorization?: SignedOfferAuthorization;
@@ -53,6 +106,49 @@ const FALLBACK_ERROR = "The AI Credit operator service rejected the request";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+/** Parses the persisted Mint receipt without depending on a generated client that may lag the backend schema. */
+export function durableAuthorizationReceiptFromQuote(
+  value: unknown,
+  expectedQuoteId: string,
+  expectedBillId: string
+): DurableAuthorizationReceipt | null {
+  if (!isRecord(value) || !isRecord(value.credit_authorization_receipt)) return null;
+  const receipt = value.credit_authorization_receipt;
+  const digestPattern = /^sha256:[0-9a-f]{64}$/u;
+  if (
+    receipt.receiptVersion !== "credit-authorization-receipt-v1" ||
+    typeof receipt.operationId !== "string" ||
+    !digestPattern.test(receipt.operationId) ||
+    typeof receipt.authorizationDigest !== "string" ||
+    !digestPattern.test(receipt.authorizationDigest) ||
+    typeof receipt.resultDigest !== "string" ||
+    !digestPattern.test(receipt.resultDigest) ||
+    typeof receipt.status !== "string" ||
+    receipt.status.length === 0 ||
+    typeof receipt.completedAt !== "string" ||
+    Number.isNaN(Date.parse(receipt.completedAt)) ||
+    receipt.effectId !== expectedQuoteId ||
+    receipt.billId !== expectedBillId ||
+    typeof receipt.mintId !== "string" ||
+    receipt.mintId.length === 0 ||
+    receipt.action !== "request_to_mint"
+  ) {
+    return null;
+  }
+
+  return {
+    operationId: receipt.operationId,
+    status: receipt.status,
+    completedAt: receipt.completedAt,
+    resultDigest: receipt.resultDigest,
+    effectId: receipt.effectId,
+    authorizationDigest: receipt.authorizationDigest,
+    mintId: receipt.mintId,
+    billId: receipt.billId,
+    action: receipt.action,
+  };
 }
 
 function safeMessage(value: unknown, fallback: string): string {

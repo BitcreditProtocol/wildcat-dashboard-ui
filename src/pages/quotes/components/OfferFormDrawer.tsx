@@ -231,7 +231,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
             <p className="px-4 pb-3 text-sm text-destructive" role="alert">
               <FormattedMessage
                 id="credit.offer.amountAboveMaximum"
-                defaultMessage="This amount is above the maximum that covers operating cost."
+                defaultMessage="This amount is above the maximum that covers reimbursement."
                 description="Validation message when an adjusted Mint offer is outside the safe governed range"
               />
             </p>

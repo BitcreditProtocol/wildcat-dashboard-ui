@@ -185,6 +185,69 @@ describe("parseDecisionCasesResponse", () => {
     expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase] });
   });
 
+  it("accepts unavailable Mint capacity values on a verification-blocked decision", () => {
+    const decisionCase = validCase();
+    const blockedCapacity = {
+      ...decisionCase,
+      snapshot: {
+        ...decisionCase.snapshot,
+        schemaVersion: "decision-input-snapshot-v9",
+        mintCapacity: {
+          ...decisionCase.snapshot.mintCapacity,
+          existingExposureSat: null,
+          exposureLimitSat: null,
+          evidenceState: "source_unavailable",
+        },
+      },
+      result: {
+        ...decisionCase.result,
+        assessmentStatus: "blocked_pending_verification",
+        recommendation: null,
+        terms: null,
+        calculationTrace: [],
+        reasonCodes: ["verification_mint_capacity_required"],
+        axes: decisionCase.result.axes.map((axis) =>
+          axis.axis === "mint_exposure_capacity"
+            ? { ...axis, status: "blocked", reasonCodes: ["verification_mint_capacity_required"] }
+            : axis
+        ),
+        assessmentTrace: decisionCase.result.assessmentTrace.map((step) =>
+          step.subject === "mint_exposure_capacity"
+            ? {
+                ...step,
+                outcome: "blocked",
+                reasonCode: "verification_mint_capacity_required",
+                observed: { existingExposureSat: "missing", exposureLimitSat: "missing" },
+              }
+            : step
+        ),
+        verificationRequests: [
+          {
+            code: "mint_capacity",
+            axis: "mint_exposure_capacity",
+            requiredItem: "Current Mint exposure and capacity snapshot",
+            reasonCode: "verification_mint_capacity_required",
+          },
+        ],
+      },
+    };
+
+    expect(parseDecisionCasesResponse({ cases: [blockedCapacity] })).toEqual({ cases: [blockedCapacity] });
+  });
+
+  it("keeps v8 Mint capacity non-null", () => {
+    const decisionCase = validCase();
+    const invalidLegacy = {
+      ...decisionCase,
+      snapshot: {
+        ...decisionCase.snapshot,
+        mintCapacity: { ...decisionCase.snapshot.mintCapacity, existingExposureSat: null },
+      },
+    };
+
+    expect(() => parseDecisionCasesResponse({ cases: [invalidLegacy] })).toThrow("invalid governed decision response");
+  });
+
   it("accepts the governed no-fit and verification-blocked result shapes", () => {
     const offer = validCase();
     const noFit = { ...offer, result: { ...offer.result, recommendation: "no_current_product_fit", terms: null } };

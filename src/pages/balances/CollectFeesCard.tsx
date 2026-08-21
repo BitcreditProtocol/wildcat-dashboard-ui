@@ -59,10 +59,7 @@ export function CollectFeesCard() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4 pt-2 pb-6 px-6">
         <p className="text-sm text-text-200">
-          <FormattedMessage
-            id="balances.collectFees.description"
-            defaultMessage="Current e-cash fees collectable as a wallet import token."
-          />
+          <FormattedMessage id="balances.collectFees.description" defaultMessage="Collected Minting fees ready for wallet import." />
         </p>
 
         <div className="rounded-md border border-divider-200 bg-elevation-100 p-4">

@@ -11,6 +11,7 @@ import type {
   OperatorDecisionInput,
   OperatorDecisionSuccess,
   SignedOfferAuthorization,
+  VerifiedAuthorizationReceipt,
 } from "@/pages/credit/record-operator-decision";
 import type { InfoReply } from "@/generated/client/types.gen";
 import Big from "big.js";
@@ -155,7 +156,8 @@ vi.mock("@/pages/credit/use-credit-assessment", () => ({
   }),
 }));
 
-vi.mock("@/pages/credit/record-operator-decision", () => ({
+vi.mock("@/pages/credit/record-operator-decision", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/pages/credit/record-operator-decision")>()),
   operatorMayRecordDecision: (capability: OperatorCapability | undefined, action: string) =>
     capability?.operatorRole === "approver" || (capability?.operatorRole === "reviewer" && action === "return_for_information"),
   recordOperatorDecision: (input: OperatorDecisionInput) => mockRecordOperatorDecision(input),
@@ -253,8 +255,12 @@ const offerData = {
 const signedAuthorization = {
   authorization: {
     schemaVersion: "credit-authorization-v7",
+    keyId: "synthetic-testnet-key-1",
+    mintId: "mint-demo",
     mintQuoteId: "quote-1",
+    billId: "bill-1",
     action: "request_to_mint",
+    expiresAt: "2099-09-02T23:59:59.999Z",
     synthetic: true,
     terms: { discountedSat: "95", offerExpiresOn: "2099-09-02" },
   },
@@ -263,7 +269,11 @@ const signedAuthorization = {
   signature: "synthetic-signature",
 } satisfies SignedOfferAuthorization;
 
-function renderComponent(value = acceptedQuote, historyBlocks?: BillHistoryBlock[]) {
+function renderComponent(
+  value = acceptedQuote,
+  historyBlocks?: BillHistoryBlock[],
+  onAuthorizationVerified?: (receipt: VerifiedAuthorizationReceipt) => void
+) {
   const mount = document.createElement("div");
   document.body.appendChild(mount);
   const mountRoot = createRoot(mount);
@@ -277,6 +287,7 @@ function renderComponent(value = acceptedQuote, historyBlocks?: BillHistoryBlock
           isMintComplete={false}
           requestedToPay={false}
           historyBlocks={historyBlocks}
+          onAuthorizationVerified={onAuthorizationVerified}
         />
       </IntlProvider>
     );
@@ -561,6 +572,31 @@ describe("QuoteActions", () => {
     expect(mockHandleOfferQuote).toHaveBeenCalledOnce();
     expect(mockHandleOfferQuote).toHaveBeenCalledWith(signedAuthorization);
     expect(offerConfirmationOpen).toBe(false);
+  });
+
+  it("publishes the verified receipt only after the Mint accepts the signed command", async () => {
+    decisionCase = governedOffer;
+    const onAuthorizationVerified = vi.fn<(receipt: VerifiedAuthorizationReceipt) => void>();
+    renderComponent(pendingQuote, undefined, onAuthorizationVerified);
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onAuthorizationVerified).toHaveBeenCalledWith({
+      keyId: "synthetic-testnet-key-1",
+      mintId: "mint-demo",
+      mintQuoteId: "quote-1",
+      billId: "bill-1",
+      action: "request_to_mint",
+      expiresAt: "2099-09-02T23:59:59.999Z",
+      authorizationDigest: `sha256:${"c".repeat(64)}`,
+    });
   });
 
   it("keeps an adjusted offer in confirmation when governed requote fails", async () => {

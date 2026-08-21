@@ -3,6 +3,7 @@ import {
   listEbillsOptions,
   getEbillHistoryOptions,
   getSharedEbillHistoryOptions,
+  getMintopStatusOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import type { InfoReply, ListEbillsResponse } from "@/generated/client/types.gen";
@@ -72,6 +73,19 @@ export function useQuoteDetail(id: string) {
   const ebill = ebillsQuery.data?.find((item) => item.id === billId);
   const effectiveQuoteStatus = getEffectiveQuoteStatus(quoteData?.status ?? "Pending", ebill);
   const billEndorsedToMint = effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled";
+  const shouldLoadMintOperation = effectiveQuoteStatus === "MintingEnabled";
+
+  const mintOperationQuery = useQuery({
+    ...getMintopStatusOptions({ path: { qid: id } }),
+    retry: 1,
+    enabled: shouldLoadMintOperation,
+    refetchInterval: (query) => {
+      if (!shouldLoadMintOperation) return false;
+      const progress = query.state.data;
+      return progress === undefined || progress.current.value < progress.target.value ? QUOTE_DETAIL_POLL_INTERVAL_MS : false;
+    },
+    refetchIntervalInBackground: true,
+  });
 
   const billHistoryQuery = useQuery({
     ...getEbillHistoryOptions({ path: { bid: billId ?? "" } }),
@@ -159,5 +173,7 @@ export function useQuoteDetail(id: string) {
     billAttachmentDocuments,
     requestToMintDocuments,
     billId,
+    mintOperationStatus: mintOperationQuery.data,
+    isMintOperationLoading: shouldLoadMintOperation && mintOperationQuery.isLoading,
   };
 }

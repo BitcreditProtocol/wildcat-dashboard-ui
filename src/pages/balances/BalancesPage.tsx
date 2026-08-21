@@ -280,14 +280,14 @@ function PageBodyWithDevSection() {
             chart={<EiouHistoryChart />}
           />
           <BalanceCard
-            title={<FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />}
+            title={<FormattedMessage id="balances.debitToken" defaultMessage="Debit balance" />}
             className="bg-purple-400"
             amount={balances.debit.amount}
             unit={balances.debit.unit}
             chart={<KeysetBalanceChart token="debit" />}
           />
           <BalanceCard
-            title={<FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />}
+            title={<FormattedMessage id="balances.creditToken" defaultMessage="Credit balance" />}
             className="bg-purple-200"
             amount={balances.credit.amount}
             unit={balances.credit.unit}
