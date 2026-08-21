@@ -15,7 +15,7 @@ import { useIntl } from "react-intl";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { buildMempoolTransactionUrl } from "@/utils/mempool";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
-import { operatorMayRecordDecision, recordOperatorDecision } from "@/pages/credit/record-operator-decision";
+import { operatorMayRecordDecision, recordOperatorDecision, type OperatorDecisionSuccess } from "@/pages/credit/record-operator-decision";
 import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
 
 interface QuoteActionsProps {
@@ -91,7 +91,7 @@ export function QuoteActions({
   const [returnInfoDrawerOpen, setReturnInfoDrawerOpen] = useState(false);
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
   const governanceInFlight = useRef(false);
-  const recordedGovernanceKey = useRef<string | undefined>(undefined);
+  const recordedGovernance = useRef<{ key: string; result: OperatorDecisionSuccess } | undefined>(undefined);
   const mintActionInFlight = useRef(false);
   const [isGovernancePending, setIsGovernancePending] = useState(false);
 
@@ -201,7 +201,7 @@ export function QuoteActions({
       variant: "error",
     });
   };
-  const recordGovernance = async (input: OfferFormResult["governance"]): Promise<boolean> => {
+  const recordGovernance = async (input: OfferFormResult["governance"]): Promise<OperatorDecisionSuccess | null> => {
     if (
       isCreditAssessmentUnavailable ||
       !hasQuoteBoundCreditProgram ||
@@ -215,25 +215,25 @@ export function QuoteActions({
           description: "Error shown when a stale operator drawer can no longer be bound to the current governed assessment",
         })
       );
-      return false;
+      return null;
     }
     if (!operatorMayRecordDecision(operatorCapability.capability, input.action)) {
       governanceFailed(roleUnavailableReason);
-      return false;
+      return null;
     }
     const inputKey = JSON.stringify(input);
-    if (recordedGovernanceKey.current === inputKey) return true;
-    if (governanceInFlight.current) return false;
+    if (recordedGovernance.current?.key === inputKey) return recordedGovernance.current.result;
+    if (governanceInFlight.current) return null;
     governanceInFlight.current = true;
     setIsGovernancePending(true);
     try {
       const recorded = await recordOperatorDecision(input, operatorCapability.capability);
-      if (recorded.ok) recordedGovernanceKey.current = inputKey;
+      if (recorded.ok) recordedGovernance.current = { key: inputKey, result: recorded };
       else governanceFailed(recorded.error);
-      return recorded.ok;
+      return recorded.ok ? recorded : null;
     } catch {
       governanceFailed("The AI Credit operator service is not reachable");
-      return false;
+      return null;
     } finally {
       governanceInFlight.current = false;
       setIsGovernancePending(false);
@@ -254,12 +254,12 @@ export function QuoteActions({
         reasonCode: confirmsNoFit ? "operator_confirmed_no_current_product_fit" : "operator_declined_governed_offer",
         writtenBasis,
       });
-      if (!recorded) return;
+      if (recorded === null) return;
       if (!(await handleDenyQuote())) {
         mintUpdateFailed();
         return;
       }
-      recordedGovernanceKey.current = undefined;
+      recordedGovernance.current = undefined;
       setDenyConfirmDrawerOpen(false);
     } finally {
       mintActionInFlight.current = false;
@@ -281,12 +281,12 @@ export function QuoteActions({
     mintActionInFlight.current = true;
     try {
       const recorded = await recordGovernance(finalData.governance);
-      if (!recorded) return;
-      if (!(await handleOfferQuote(finalData))) {
+      if (recorded?.signedAuthorization === undefined) return;
+      if (!(await handleOfferQuote(recorded.signedAuthorization))) {
         mintUpdateFailed();
         return;
       }
-      recordedGovernanceKey.current = undefined;
+      recordedGovernance.current = undefined;
       removeItem(`offer-form-${value.id}`);
       setOfferConfirmDrawerOpen(false);
     } finally {
@@ -304,8 +304,8 @@ export function QuoteActions({
       writtenBasis,
       requiredItems: requiredVerificationItems,
     });
-    if (!recorded) return;
-    recordedGovernanceKey.current = undefined;
+    if (recorded === null) return;
+    recordedGovernance.current = undefined;
     setReturnInfoDrawerOpen(false);
     void queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
     toast({
@@ -411,7 +411,6 @@ export function QuoteActions({
             onSubmit={(finalData) => {
               void submitGovernedOffer(finalData);
             }}
-            quoteId={value.id}
           />
 
           {showRequestToPayAction && (

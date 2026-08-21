@@ -1,11 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
 import { ConfirmDrawer } from "@/components/Drawers";
 import Big from "big.js";
 import type { OfferFormResult } from "./OfferFormDrawer";
-import { addYears } from "date-fns";
 import { useIntl } from "react-intl";
-import { DatePicker, Text } from "@bitcredit/ui-library";
-import type { DateRange } from "@bitcredit/ui-library";
+import { Text } from "@bitcredit/ui-library";
 import { useAmountFormatter } from "@/utils/amount-format";
 import { governedOfferTtl } from "./useQuoteMutations";
 
@@ -15,37 +12,20 @@ interface OfferConfirmationProps {
   onOpenChange: (open: boolean) => void;
   isPending?: boolean;
   onSubmit: (data: OfferFormResult) => void;
-  quoteId?: string;
 }
 
-export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending = false, onSubmit, quoteId }: OfferConfirmationProps) {
+export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending = false, onSubmit }: OfferConfirmationProps) {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
-  const [validUntilDateTime, setValidUntilDateTime] = useState<Date | undefined>(undefined);
-
-  const maxDate = useMemo(() => {
-    const oneYearFromNow = addYears(new Date(), 1);
-    const governedExpiry = offerFormData?.governedOfferExpiresAt;
-    return governedExpiry !== undefined && governedExpiry < oneYearFromNow ? governedExpiry : oneYearFromNow;
-  }, [offerFormData?.governedOfferExpiresAt]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    setValidUntilDateTime(offerFormData?.ttl.ttl);
-  }, [open, quoteId, offerFormData?.ttl.ttl]);
-
-  const handleDateTimeChange = (range: DateRange | undefined) => {
-    setValidUntilDateTime(range?.from);
-  };
 
   const effectiveDiscount =
     offerFormData && !offerFormData.discount.gross.value.eq(0)
       ? new Big(1).minus(offerFormData.discount.net.value.div(offerFormData.discount.gross.value))
       : undefined;
-  const selectedOffer = offerFormData && validUntilDateTime ? { ...offerFormData, ttl: { ttl: validUntilDateTime } } : undefined;
+  const selectedOffer =
+    offerFormData?.governedOfferExpiresAt === undefined
+      ? undefined
+      : { ...offerFormData, ttl: { ttl: offerFormData.governedOfferExpiresAt } };
   const validTtl = selectedOffer === undefined ? null : governedOfferTtl(selectedOffer);
 
   return (
@@ -117,17 +97,9 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
               defaultMessage: "Valid until:",
             })}
           </Text>
-          <div className="flex-1">
-            <DatePicker
-              className="max-w-full [&>div]:mx-auto [&>div]:w-full [&>div]:max-w-[430px]"
-              mode="single"
-              withTime
-              timeFormat="24h"
-              value={validUntilDateTime ? { from: validUntilDateTime } : undefined}
-              onChange={handleDateTimeChange}
-              disabled={[{ before: new Date() }, { after: maxDate }]}
-            />
-          </div>
+          <Text variant="caption" className="text-right">
+            {validTtl === null ? undefined : new Date(validTtl).toLocaleString()}
+          </Text>
         </div>
       </div>
     </ConfirmDrawer>
