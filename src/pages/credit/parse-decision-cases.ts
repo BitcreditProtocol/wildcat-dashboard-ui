@@ -287,7 +287,7 @@ function isCreditProgramAssignment(value: unknown): value is CreditProgramAssign
 function isSnapshot(value: unknown): value is DecisionCase["snapshot"] {
   return (
     isObject(value) &&
-    value.schemaVersion === "decision-input-snapshot-v8" &&
+    (value.schemaVersion === "decision-input-snapshot-v8" || value.schemaVersion === "decision-input-snapshot-v9") &&
     isDigest(value.snapshotDigest) &&
     isNonEmptyString(value.caseId) &&
     isNonEmptyString(value.applicantRef) &&
@@ -319,8 +319,12 @@ function isSnapshot(value: unknown): value is DecisionCase["snapshot"] {
     isEvidenceState(value.duplicateCheck.evidenceState) &&
     isEvidenceProvenance(value.duplicateCheck) &&
     isObject(value.mintCapacity) &&
-    isSatoshi(value.mintCapacity.existingExposureSat) &&
-    isSatoshi(value.mintCapacity.exposureLimitSat) &&
+    ((value.schemaVersion === "decision-input-snapshot-v8" &&
+      isSatoshi(value.mintCapacity.existingExposureSat) &&
+      isSatoshi(value.mintCapacity.exposureLimitSat)) ||
+      (value.schemaVersion === "decision-input-snapshot-v9" &&
+        (value.mintCapacity.existingExposureSat === null || isSatoshi(value.mintCapacity.existingExposureSat)) &&
+        (value.mintCapacity.exposureLimitSat === null || isSatoshi(value.mintCapacity.exposureLimitSat)))) &&
     isEvidenceState(value.mintCapacity.evidenceState) &&
     isEvidenceProvenance(value.mintCapacity)
   );

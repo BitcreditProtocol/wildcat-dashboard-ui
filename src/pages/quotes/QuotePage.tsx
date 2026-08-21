@@ -27,6 +27,7 @@ import type { InfoReply } from "@/generated/client/types.gen";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { QuoteCreditAssessment } from "@/pages/credit/QuoteCreditAssessment";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
+import { durableAuthorizationReceiptFromQuote, type VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
 
 interface LocationState {
   from?: string;
@@ -57,6 +58,7 @@ function PageBody({ id }: { id: string }) {
   const intl = useIntl();
   const [openingDocumentHash, setOpeningDocumentHash] = useState<string | null>(null);
   const [openingEvidenceReference, setOpeningEvidenceReference] = useState<string | null>(null);
+  const [signedAuthorizationReceipt, setSignedAuthorizationReceipt] = useState<VerifiedAuthorizationReceipt | null>(null);
 
   const blobUrlTimerRef = useRef<number | null>(null);
 
@@ -88,6 +90,8 @@ function PageBody({ id }: { id: string }) {
     billAttachmentDocuments,
     requestToMintDocuments,
     billId,
+    mintOperationStatus,
+    isMintOperationLoading,
   } = useQuoteDetail(id);
   const creditAssessment = useCreditAssessmentForBill(billId, id);
   const creditEvidence: CreditEvidenceState = creditAssessment.isLoading
@@ -294,45 +298,111 @@ function PageBody({ id }: { id: string }) {
     );
   }
 
+  const durableAuthorizationReceipt = durableAuthorizationReceiptFromQuote(quote, quote.id, bill.id);
+
   return (
     <div className="flex flex-col gap-4">
-      <QuoteDetailCard
-        quote={quote}
-        effectiveQuoteStatus={effectiveQuoteStatus}
-        ebillPaid={ebillPaid}
-        isMintComplete={isMintComplete}
-        isMintCompleteLoading={isMintCompleteLoading}
-        showPayment={showPayment}
-        rejectedToPay={rejectedToPay}
-        isInMempool={isInMempool}
-        requestedToPay={requestedToPay}
-      />
+      <section className="flex flex-col gap-4" id="minting-summary">
+        <div className="hidden print:block">
+          <h1 className="text-2xl font-semibold">
+            {intl.formatMessage({ id: "quotes.summary.title", defaultMessage: "Executive summary" })}
+          </h1>
+          <p className="text-xs text-muted-foreground">{quote.id}</p>
+        </div>
+        <QuoteDetailCard
+          quote={quote}
+          effectiveQuoteStatus={effectiveQuoteStatus}
+          ebillPaid={ebillPaid}
+          isMintComplete={isMintComplete}
+          isMintCompleteLoading={isMintCompleteLoading}
+          showPayment={showPayment}
+          rejectedToPay={rejectedToPay}
+          isInMempool={isInMempool}
+          requestedToPay={requestedToPay}
+          signedAuthorizationReceipt={signedAuthorizationReceipt}
+          durableAuthorizationReceipt={durableAuthorizationReceipt}
+          mintOperationStatus={mintOperationStatus}
+          isMintOperationLoading={isMintOperationLoading}
+          decisionSummary={
+            creditAssessment.decisionCase?.applicantConfirmation
+              ? {
+                  useOfFunds: creditAssessment.decisionCase.applicantConfirmation.useOfFunds,
+                  repaymentSource: creditAssessment.decisionCase.applicantConfirmation.repaymentSource,
+                  ...(creditAssessment.decisionCase.applicantConfirmation.acceptor &&
+                  creditAssessment.decisionCase.applicantConfirmation.acceptor !==
+                    creditAssessment.decisionCase.applicantConfirmation.repaymentSource
+                    ? { acceptor: creditAssessment.decisionCase.applicantConfirmation.acceptor }
+                    : {}),
+                  ...(creditAssessment.decisionCase.snapshot.invoice?.goodsDescription
+                    ? { goodsDescription: creditAssessment.decisionCase.snapshot.invoice.goodsDescription }
+                    : {}),
+                  readyForDecision: creditAssessment.decisionCase.result.assessmentStatus === "ready_for_decision",
+                  passedChecks: creditAssessment.decisionCase.result.axes.filter((axis) => axis.status === "pass").length,
+                  totalChecks: creditAssessment.decisionCase.result.axes.length,
+                  invoiceExtractedAndMatched:
+                    creditAssessment.decisionCase.snapshot.invoice !== null &&
+                    creditAssessment.decisionCase.snapshot.invoice.plausibility === "plausible" &&
+                    creditAssessment.decisionCase.snapshot.invoice.billAndClaimsConsistency === "match" &&
+                    (creditAssessment.decisionCase.submittedEvidence ?? []).some(
+                      (evidence) => evidence.reference === creditAssessment.decisionCase?.snapshot.invoice?.reference
+                    ) &&
+                    (creditAssessment.decisionCase.evidencePackets ?? []).some(
+                      (packet) =>
+                        packet.evidence.reference === creditAssessment.decisionCase?.snapshot.invoice?.reference &&
+                        packet.extraction !== undefined
+                    ),
+                  answersAffirmed: creditAssessment.decisionCase.applicantConfirmation.answersAffirmed,
+                  recourseAcknowledged: creditAssessment.decisionCase.applicantConfirmation.recourseAcknowledged,
+                  unresolvedContradictions: creditAssessment.decisionCase.snapshot.contradictions.length,
+                  underwritingEvidenceProvenance:
+                    creditAssessment.decisionCase.snapshot.acceptor.probabilityOfDefaultBps === null ||
+                    creditAssessment.decisionCase.snapshot.acceptor.lossGivenDefaultBps === null ||
+                    creditAssessment.decisionCase.snapshot.mintCapacity.existingExposureSat === null ||
+                    creditAssessment.decisionCase.snapshot.mintCapacity.exposureLimitSat === null ||
+                    creditAssessment.decisionCase.result.verificationRequests.some(
+                      (request) => request.axis === "acceptor_repayment_risk" || request.axis === "mint_exposure_capacity"
+                    )
+                      ? "unavailable"
+                      : creditAssessment.decisionCase.snapshot.isSynthetic
+                        ? "synthetic"
+                        : "mint_backed",
+                  hasMintPolicyAssignment:
+                    creditAssessment.decisionCase.creditProgram !== undefined &&
+                    creditAssessment.decisionCase.creditProgramAssignment !== undefined,
+                  billAcceptanceState: creditAssessment.decisionCase.snapshot.bill?.acceptanceState,
+                }
+              : undefined
+          }
+        />
 
-      <QuoteCreditAssessment
-        billId={bill.id}
-        mintQuoteId={quote.id}
-        mintQuoteAmountSat={"discounted" in quote ? String(quote.discounted) : undefined}
-      />
+        <QuoteCreditAssessment
+          billId={bill.id}
+          mintQuoteId={quote.id}
+          mintQuoteAmountSat={"discounted" in quote ? String(quote.discounted) : undefined}
+        />
+      </section>
 
-      <QuoteDocuments
-        billAttachments={billAttachmentDocuments}
-        requestToMintFiles={requestToMintDocuments}
-        creditEvidence={creditEvidence}
-        openingDocumentHash={openingDocumentHash}
-        openingEvidenceReference={openingEvidenceReference}
-        onOpenDocument={handleOpenDocument}
-        onOpenEvidence={handleOpenEvidence}
-      />
+      <div className="contents print:hidden">
+        <QuoteDocuments
+          billAttachments={billAttachmentDocuments}
+          requestToMintFiles={requestToMintDocuments}
+          creditEvidence={creditEvidence}
+          openingDocumentHash={openingDocumentHash}
+          openingEvidenceReference={openingEvidenceReference}
+          onOpenDocument={handleOpenDocument}
+          onOpenEvidence={handleOpenEvidence}
+        />
 
-      <QuoteActions
-        value={quote}
-        isFetching={isFetching}
-        ebillPaid={ebillPaid}
-        isMintComplete={isMintComplete}
-        requestedToPay={requestedToPay}
-        paymentDeadlineTs={paymentDeadlineTs}
-        timeOfRequestToPay={timeOfRequestToPay}
-      />
+        <QuoteActions
+          value={quote}
+          isFetching={isFetching}
+          ebillPaid={ebillPaid}
+          isMintComplete={isMintComplete}
+          requestedToPay={requestedToPay}
+          paymentDeadlineTs={paymentDeadlineTs}
+          timeOfRequestToPay={timeOfRequestToPay}
+          onAuthorizationVerified={setSignedAuthorizationReceipt}
+        />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -341,6 +411,7 @@ function PageBody({ id }: { id: string }) {
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
+        </div>
         </div>
       </div>
     </div>
@@ -421,7 +492,7 @@ export default function QuotePage() {
             <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
           </span>
         </Heading>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 print:hidden">
           <Button
             variant="outline"
             size="sm"

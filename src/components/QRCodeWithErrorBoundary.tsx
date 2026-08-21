@@ -197,15 +197,15 @@ export function FeeTokenQRCodeModal({ feeToken, size = 512 }: { feeToken: string
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const resolvedTitle = intl.formatMessage({
     id: "qrCode.feeToken.title",
-    defaultMessage: "Fee Token QR Code",
+    defaultMessage: "Minting fee QR code",
   });
   const resolvedTriggerLabel = intl.formatMessage({
     id: "qrCode.feeToken.triggerLabel",
-    defaultMessage: "Show QR code for fee token",
+    defaultMessage: "Show QR code for Minting fees",
   });
   const resolvedLabel = intl.formatMessage({
     id: "qrCode.feeToken.label",
-    defaultMessage: "Scan to use fee token",
+    defaultMessage: "Scan to import Minting fees",
   });
   const errorFallback = intl.formatMessage({
     id: "qrCode.error.generic",

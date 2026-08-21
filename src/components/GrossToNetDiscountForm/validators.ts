@@ -18,7 +18,7 @@ export function createDiscountFormValidators({
     if (value == null || value === "") {
       return intl.formatMessage({
         id: "discountForm.validation.net.required",
-        defaultMessage: "Net amount is required",
+        defaultMessage: "Amount available for minting is required",
       });
     }
 
@@ -26,14 +26,14 @@ export function createDiscountFormValidators({
     if (parsed === undefined || Number.isNaN(parsed)) {
       return intl.formatMessage({
         id: "discountForm.validation.net.invalid",
-        defaultMessage: "Net amount must be a valid number",
+        defaultMessage: "Amount available for minting must be a valid number",
       });
     }
     if (parsed < 1) {
       return intl.formatMessage(
         {
           id: "discountForm.validation.net.min",
-          defaultMessage: "Net amount must be at least {min}",
+          defaultMessage: "Amount available for minting must be at least {min}",
         },
         { min: 1 }
       );
@@ -41,7 +41,7 @@ export function createDiscountFormValidators({
     if (new Big(parsed).gt(grossValue)) {
       return intl.formatMessage({
         id: "discountForm.validation.net.maxGross",
-        defaultMessage: "Net amount cannot exceed gross amount",
+        defaultMessage: "Amount available for minting cannot exceed the bill amount",
       });
     }
 
