@@ -2,7 +2,13 @@ import Big from "big.js";
 import { describe, expect, it } from "vitest";
 
 import type { OfferFormResult } from "./OfferFormDrawer";
-import { governedOfferTtl, isCommittedQuoteUpdate, reconcileCommittedQuoteUpdate } from "./useQuoteMutations";
+import type { SignedOfferAuthorization } from "@/pages/credit/record-operator-decision";
+import {
+  expectedAuthorizedQuoteUpdate,
+  governedOfferTtl,
+  isCommittedQuoteUpdate,
+  reconcileCommittedQuoteUpdate,
+} from "./useQuoteMutations";
 
 const now = Date.parse("2026-08-11T09:00:00.000Z");
 const result = {
@@ -23,6 +29,30 @@ const result = {
   ttl: { ttl: new Date("2026-08-11T10:00:00.000Z") },
   governedOfferExpiresAt: new Date("2026-08-12T23:59:59.999Z"),
 } satisfies OfferFormResult;
+
+const signedAuthorization = {
+  authorization: {
+    schemaVersion: "credit-authorization-v7",
+    mintQuoteId: "quote-a",
+    action: "request_to_mint",
+    synthetic: true,
+    terms: { discountedSat: "7734000", offerExpiresOn: "2026-08-12" },
+  },
+  authorizationDigest: `sha256:${"b".repeat(64)}`,
+  signatureAlgorithm: "Ed25519",
+  signature: "synthetic-signature",
+} satisfies SignedOfferAuthorization;
+
+describe("expectedAuthorizedQuoteUpdate", () => {
+  it("derives reconciliation solely from the signed quote and terms", () => {
+    expect(expectedAuthorizedQuoteUpdate(signedAuthorization, "quote-a")).toEqual({
+      action: "Offer",
+      discounted: 7_734_000,
+      ttl: "2026-08-12T23:59:59.999Z",
+    });
+    expect(expectedAuthorizedQuoteUpdate(signedAuthorization, "another-quote")).toBeNull();
+  });
+});
 
 describe("governedOfferTtl", () => {
   it("posts the selected expiry unchanged when it is inside the governed period", () => {

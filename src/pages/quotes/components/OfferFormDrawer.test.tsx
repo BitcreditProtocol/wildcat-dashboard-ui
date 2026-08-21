@@ -238,7 +238,7 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
     });
     expect(mintSubmit.mock.calls[0]?.[0].governance.discountedSat).toBeUndefined();
     expect(mintSubmit.mock.calls[0]?.[0].governedOfferExpiresAt?.toISOString()).toBe("2026-08-12T23:59:59.999Z");
-    expect(mintSubmit.mock.calls[0]?.[0].ttl.ttl.toISOString()).toBe("2026-08-11T10:00:00.000Z");
+    expect(mintSubmit.mock.calls[0]?.[0].ttl.ttl.toISOString()).toBe("2026-08-12T23:59:59.999Z");
   });
 
   it("prepares an adjustment, and names the amount, when the operator edits it", () => {

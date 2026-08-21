@@ -7,11 +7,12 @@ import {
   getEbillOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
 import type { OfferFormResult } from "./OfferFormDrawer";
-import Big from "big.js";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { useRef } from "react";
 import { useIntl } from "react-intl";
 import { createLogger } from "@/lib/logger";
+import { authenticatedFetch } from "@/lib/api-client";
+import type { SignedOfferAuthorization } from "@/pages/credit/record-operator-decision";
 
 const logger = createLogger("quote-mutations");
 
@@ -46,6 +47,18 @@ export function isCommittedQuoteUpdate(quote: QuoteUpdateState, expected: Expect
     quote.ttl !== undefined &&
     Date.parse(quote.ttl) === Date.parse(expected.ttl)
   );
+}
+
+/** The signed terms, not editable dashboard state, define the exact Mint result to reconcile. */
+export function expectedAuthorizedQuoteUpdate(
+  signedAuthorization: SignedOfferAuthorization,
+  quoteId: string
+): Extract<ExpectedQuoteUpdate, { action: "Offer" }> | null {
+  if (signedAuthorization.authorization.mintQuoteId !== quoteId) return null;
+  const discounted = Number(signedAuthorization.authorization.terms.discountedSat);
+  const ttl = `${signedAuthorization.authorization.terms.offerExpiresOn}T23:59:59.999Z`;
+  if (!Number.isSafeInteger(discounted) || discounted <= 0 || Number.isNaN(Date.parse(ttl))) return null;
+  return { action: "Offer", discounted, ttl };
 }
 
 export async function reconcileCommittedQuoteUpdate(
@@ -90,7 +103,15 @@ export function useQuoteMutations(quoteId: string, billId: string) {
   });
 
   const offerQuote = useMutation({
-    ...updateQuoteMutation(),
+    mutationFn: async (signedAuthorization: SignedOfferAuthorization) => {
+      const response = await authenticatedFetch(`/v1/admin/credit/quote/${encodeURIComponent(quoteId)}/authorization`, {
+        body: JSON.stringify({ signedAuthorization }),
+        headers: { "content-type": "application/json" },
+        method: "PUT",
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) throw new Error(`Mint authorization command failed (${String(response.status)})`);
+    },
     onSettled: () => {
       offerToastRef.current?.dismiss();
       offerToastRef.current = null;
@@ -194,10 +215,10 @@ export function useQuoteMutations(quoteId: string, billId: string) {
     }
   };
 
-  const handleOfferQuote = async (result: OfferFormResult): Promise<boolean> => {
+  const handleOfferQuote = async (signedAuthorization: SignedOfferAuthorization): Promise<boolean> => {
     offerToastRef.current?.dismiss();
-    const ttl = governedOfferTtl(result);
-    if (ttl === null) {
+    const expected = expectedAuthorizedQuoteUpdate(signedAuthorization, quoteId);
+    if (expected === null) {
       toast({
         title: intl.formatMessage({
           id: "quotes.toast.offer.invalidExpiry",
@@ -215,20 +236,11 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       }),
       variant: "info",
     });
-    const net_amount = result.discount.net.value.round(0, Big.roundDown).toNumber();
-
     try {
-      await offerQuote.mutateAsync({
-        path: { qid: quoteId },
-        body: {
-          action: "Offer",
-          discounted: net_amount,
-          ttl,
-        },
-      });
+      await offerQuote.mutateAsync(signedAuthorization);
       return true;
     } catch {
-      if (await reconcileQuoteUpdate({ action: "Offer", discounted: net_amount, ttl })) return true;
+      if (await reconcileQuoteUpdate(expected)) return true;
       return false;
     }
   };

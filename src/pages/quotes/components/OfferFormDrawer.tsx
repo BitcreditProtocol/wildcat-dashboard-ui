@@ -40,8 +40,6 @@ interface OfferFormDrawerProps {
   children: ReactNode;
 }
 
-const ONE_HOUR_MS = 60 * 60 * 1000;
-
 export function OfferFormDrawer({ title, description, value, open, onOpenChange, onSubmit, children }: OfferFormDrawerProps) {
   const intl = useIntl();
   // The AI Credit assessment for this bill, from the same cached query the quote page already runs.
@@ -106,7 +104,6 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     setShowBasisError(!basisIsValid);
     if (!amountIsValid || !basisIsValid) return;
 
-    const ttl = new Date(Math.min(Date.now() + ONE_HOUR_MS, governedOfferExpiresAt.getTime()));
     const offered = offeredValue.toFixed(0);
     const isGovernedAmount = offered === governedTerms.discountedSat;
     const result: OfferFormResult = {
@@ -120,7 +117,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
         writtenBasis: trimmedBasis,
       },
       discount: values,
-      ttl: { ttl },
+      ttl: { ttl: governedOfferExpiresAt },
       governedOfferExpiresAt,
     };
 

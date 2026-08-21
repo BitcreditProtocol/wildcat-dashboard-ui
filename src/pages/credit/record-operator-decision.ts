@@ -1,3 +1,5 @@
+import { authenticatedFetch } from "@/lib/api-client";
+
 /** Records the governed operator judgement before the corresponding Mint action. */
 export type OperatorDecisionAction =
   | "confirm_proposed_quote"
@@ -24,6 +26,29 @@ export interface OperatorCapability {
   operatorRole: "reviewer" | "approver";
 }
 
+export interface SignedOfferAuthorization {
+  [key: string]: unknown;
+  authorization: {
+    schemaVersion: "credit-authorization-v7";
+    mintQuoteId: string;
+    action: "request_to_mint";
+    synthetic: true;
+    terms: {
+      discountedSat: string;
+      offerExpiresOn: string;
+    };
+    [key: string]: unknown;
+  };
+  authorizationDigest: string;
+  signatureAlgorithm: "Ed25519";
+  signature: string;
+}
+
+export interface OperatorDecisionSuccess {
+  ok: true;
+  signedAuthorization?: SignedOfferAuthorization;
+}
+
 const FALLBACK_ERROR = "The AI Credit operator service rejected the request";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -48,10 +73,41 @@ async function responseError(response: Response): Promise<string> {
   return safeMessage(isRecord(body) ? body.error : undefined, fallback);
 }
 
+function isSignedOfferAuthorization(value: unknown): value is SignedOfferAuthorization {
+  if (!isRecord(value) || !isRecord(value.authorization)) return false;
+  const { authorization } = value;
+  const { terms } = authorization;
+  if (!isRecord(terms)) return false;
+  const discountedSat = terms.discountedSat;
+  const offerExpiresOn = terms.offerExpiresOn;
+  if (
+    authorization.schemaVersion !== "credit-authorization-v7" ||
+    typeof authorization.mintQuoteId !== "string" ||
+    authorization.mintQuoteId.length === 0 ||
+    authorization.action !== "request_to_mint" ||
+    authorization.synthetic !== true ||
+    typeof discountedSat !== "string" ||
+    !/^[1-9][0-9]*$/u.test(discountedSat) ||
+    discountedSat.length > 16 ||
+    BigInt(discountedSat) > BigInt(Number.MAX_SAFE_INTEGER) ||
+    typeof offerExpiresOn !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/u.test(offerExpiresOn) ||
+    Number.isNaN(Date.parse(`${offerExpiresOn}T23:59:59.999Z`)) ||
+    typeof value.authorizationDigest !== "string" ||
+    !/^sha256:[0-9a-f]{64}$/u.test(value.authorizationDigest) ||
+    value.signatureAlgorithm !== "Ed25519" ||
+    typeof value.signature !== "string" ||
+    value.signature.length === 0
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export async function fetchOperatorCapability(): Promise<OperatorCapability> {
   let response: Response;
   try {
-    response = await fetch("/api/ai-credit/operator-capability", { signal: AbortSignal.timeout(10_000) });
+    response = await authenticatedFetch("/api/ai-credit/operator-capability", { signal: AbortSignal.timeout(10_000) });
   } catch {
     throw new Error("The AI Credit operator service is not reachable");
   }
@@ -79,23 +135,32 @@ export function operatorMayRecordDecision(capability: OperatorCapability | undef
 export async function recordOperatorDecision(
   input: OperatorDecisionInput,
   capability: OperatorCapability | undefined
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<OperatorDecisionSuccess | { ok: false; error: string }> {
   if (!operatorMayRecordDecision(capability, input.action) || capability === undefined) {
     return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
   }
   try {
-    const response = await fetch("/api/ai-credit/operator-decisions", {
+    const response = await authenticatedFetch("/api/ai-credit/operator-decisions", {
       body: JSON.stringify({
         ...input,
-        operatorId: capability.operatorId,
-        operatorRole: capability.operatorRole,
         requiredItems: input.requiredItems ?? [],
       }),
       headers: { "content-type": "application/json" },
       method: "POST",
       signal: AbortSignal.timeout(10_000),
     });
-    return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
+    if (!response.ok) return { ok: false, error: await responseError(response) };
+    const body: unknown = await response.json().catch(() => null);
+    const offerDecision = input.action === "confirm_proposed_quote" || input.action === "propose_adjustment_and_requote";
+    const carriesAuthorization = isRecord(body) && body.signedAuthorization !== undefined;
+    const authorization = isRecord(body) && isSignedOfferAuthorization(body.signedAuthorization) ? body.signedAuthorization : undefined;
+    if (offerDecision && authorization === undefined) {
+      return { ok: false, error: "The AI Credit operator service returned an invalid offer authorization" };
+    }
+    if (!offerDecision && carriesAuthorization) {
+      return { ok: false, error: "The AI Credit operator service signed a non-offer decision" };
+    }
+    return authorization === undefined ? { ok: true } : { ok: true, signedAuthorization: authorization };
   } catch {
     return { ok: false, error: "The AI Credit operator service is not reachable" };
   }
