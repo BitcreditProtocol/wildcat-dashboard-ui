@@ -129,6 +129,32 @@ export interface VerificationRequest {
   requiredItem: string;
 }
 
+/** Immutable Mint-owned product metadata selecting one exact governed policy pack. */
+export interface CreditProgram {
+  schemaVersion: "credit-program-v1";
+  creditProgramId: string;
+  creditProgramVersion: string;
+  creditProgramDigest: string;
+  isSynthetic: true;
+  country: string;
+  industry: string;
+  product: string;
+  policyPackVersion: string;
+  policyPackDigest: string;
+}
+
+/** The Mint's exact quote-and-bill binding to a credit-program release. */
+export interface CreditProgramAssignment {
+  schemaVersion: "mint-credit-program-selection-v1";
+  mintId: string;
+  mintQuoteId: string;
+  billId: string;
+  creditProgramVersion: string;
+  creditProgramDigest: string;
+  assignmentAuthority: "wildcat_mint_admin";
+  assignmentDigest: string;
+}
+
 export interface DecisionCase {
   /** Exact Mint quote this assessment governs; null only for read-only synthetic fixtures. */
   mintQuoteId: string | null;
@@ -178,6 +204,9 @@ export interface DecisionCase {
     calculationTrace: { step: string; formula: string; inputs: TraceValues; result: string }[];
   };
   resultDigest: string;
+  /** Absent only on legacy/synthetic fixtures that remain read-only. */
+  creditProgram?: CreditProgram;
+  creditProgramAssignment?: CreditProgramAssignment;
   submittedEvidence?: SubmittedEvidence[];
   evidencePackets?: EvidencePacket[];
   applicantConfirmation?: ApplicantConfirmation;

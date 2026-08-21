@@ -116,10 +116,20 @@ export function QuoteActions({
     defaultMessage: "Offer",
   });
   const showPendingActions = effectiveQuoteStatus === "Pending";
+  const hasQuoteBoundCreditProgram =
+    decisionCase?.mintQuoteId === value.id &&
+    decisionCase.creditProgram !== undefined &&
+    decisionCase.creditProgramAssignment !== undefined;
   const showGovernedOffer =
-    showPendingActions && !isCreditAssessmentUnavailable && decisionCase?.result.recommendation === "offer_available";
+    showPendingActions &&
+    hasQuoteBoundCreditProgram &&
+    !isCreditAssessmentUnavailable &&
+    decisionCase?.result.recommendation === "offer_available";
   const showGovernedReturn =
-    showPendingActions && !isCreditAssessmentUnavailable && decisionCase?.result.assessmentStatus === "blocked_pending_verification";
+    showPendingActions &&
+    hasQuoteBoundCreditProgram &&
+    !isCreditAssessmentUnavailable &&
+    decisionCase?.result.assessmentStatus === "blocked_pending_verification";
   const requiredVerificationItems = decisionCase?.result.verificationRequests?.map((request) => request.requiredItem) ?? [];
   const denyAction =
     decisionCase?.result.recommendation === "no_current_product_fit" ? "confirm_no_current_product_fit" : "decline_application";
@@ -139,16 +149,23 @@ export function QuoteActions({
         description: "Explanation shown when an operator action is unavailable for the current role",
       }));
   const denyGovernanceAvailable =
+    hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
     mayDeny &&
     decisionCase?.result.assessmentStatus === "ready_for_decision" &&
     (decisionCase.result.recommendation === "offer_available" || decisionCase.result.recommendation === "no_current_product_fit");
   const denyUnavailableReason = mayDeny
-    ? intl.formatMessage({
-        id: "quotes.actions.deny.unavailable",
-        defaultMessage: "Deny is unavailable until the governed assessment is ready.",
-        description: "Explanation shown when a quote cannot yet be denied because its governed credit assessment is incomplete",
-      })
+    ? hasQuoteBoundCreditProgram
+      ? intl.formatMessage({
+          id: "quotes.actions.deny.unavailable",
+          defaultMessage: "Deny is unavailable until the governed assessment is ready.",
+          description: "Explanation shown when a quote cannot yet be denied because its governed credit assessment is incomplete",
+        })
+      : intl.formatMessage({
+          id: "quotes.actions.creditProgram.unavailable",
+          defaultMessage: "A fresh Mint credit-program assignment is required before this quote can be acted on.",
+          description: "Explanation shown when an older assessment lacks the Mint-owned quote-to-program binding",
+        })
     : roleUnavailableReason;
   const showRequestToPayAction =
     (effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
@@ -177,8 +194,9 @@ export function QuoteActions({
     toast({
       title: intl.formatMessage({
         id: "quotes.toast.governance.mintUpdateFailed",
-        defaultMessage: "The decision was recorded, but the Mint was not updated. Your inputs were kept; retry the same action.",
-        description: "Error shown when governance succeeded but the corresponding Mint quote update failed",
+        defaultMessage:
+          "The decision was recorded, but the Mint outcome could not be confirmed. Your inputs were kept; check the quote and retry only if it is still pending.",
+        description: "Error shown when governance succeeded but the corresponding Mint quote outcome remains unknown",
       }),
       variant: "error",
     });
@@ -186,6 +204,7 @@ export function QuoteActions({
   const recordGovernance = async (input: OfferFormResult["governance"]): Promise<boolean> => {
     if (
       isCreditAssessmentUnavailable ||
+      !hasQuoteBoundCreditProgram ||
       input.caseId !== decisionCase?.snapshot.caseId ||
       input.decisionResultDigest !== decisionCase?.resultDigest
     ) {

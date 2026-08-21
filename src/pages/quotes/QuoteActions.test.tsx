@@ -178,7 +178,20 @@ const acceptedQuote = {
 const pendingQuote = { ...acceptedQuote, status: "Pending" } as InfoReply;
 
 const governedOffer = {
+  mintQuoteId: "quote-1",
   snapshot: { caseId: "case-offer", bill: { billId: "bill-1" } },
+  creditProgram: {
+    schemaVersion: "credit-program-v1",
+    creditProgramId: "gt_coffee_accepted_bill",
+    creditProgramVersion: "gt-coffee-program-v1",
+  },
+  creditProgramAssignment: {
+    schemaVersion: "mint-credit-program-selection-v1",
+    mintQuoteId: "quote-1",
+    billId: "bill-1",
+    creditProgramVersion: "gt-coffee-program-v1",
+    creditProgramDigest: `sha256:${"c".repeat(64)}`,
+  },
   result: { assessmentStatus: "ready_for_decision", recommendation: "offer_available", terms: { discountedSat: "95" } },
   resultDigest: `sha256:${"a".repeat(64)}`,
 } as unknown as DecisionCase;
@@ -364,6 +377,33 @@ describe("QuoteActions", () => {
     });
     expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+  });
+
+  it("keeps legacy quote-bound decisions read-only until the Mint program assignment is present", () => {
+    decisionCase = { ...governedOffer, creditProgram: undefined, creditProgramAssignment: undefined };
+    const page = renderComponent(pendingQuote);
+
+    const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
+    expect(denyButton?.disabled).toBe(true);
+    expect(denyButton?.title).toBe("A fresh Mint credit-program assignment is required before this quote can be acted on.");
+    expect(page.textContent).not.toContain("Offer quote");
+    expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
+  });
+
+  it("keeps a valid assessment for another quote read-only", () => {
+    const assignment = governedOffer.creditProgramAssignment;
+    if (assignment === undefined) throw new Error("Expected a quote-bound credit-program assignment");
+    decisionCase = {
+      ...governedOffer,
+      mintQuoteId: "quote-other",
+      creditProgramAssignment: { ...assignment, mintQuoteId: "quote-other" },
+    };
+    const page = renderComponent(pendingQuote);
+
+    const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
+    expect(denyButton?.disabled).toBe(true);
+    expect(page.textContent).not.toContain("Offer quote");
+    expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
   });
 
   it("does not send a stale confirmation after the governed assessment becomes unavailable", async () => {

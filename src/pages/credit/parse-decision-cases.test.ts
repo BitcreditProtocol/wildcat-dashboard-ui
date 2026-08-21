@@ -4,6 +4,8 @@ import { parseDecisionCasesResponse } from "./parse-decision-cases";
 const SNAPSHOT_DIGEST = `sha256:${"a".repeat(64)}`;
 const POLICY_DIGEST = `sha256:${"b".repeat(64)}`;
 const RESULT_DIGEST = `sha256:${"c".repeat(64)}`;
+const PROGRAM_DIGEST = `sha256:${"e".repeat(64)}`;
+const ASSIGNMENT_DIGEST = `sha256:${"f".repeat(64)}`;
 
 function validCase() {
   const axes = [
@@ -149,6 +151,28 @@ function validCase() {
       ],
     },
     resultDigest: RESULT_DIGEST,
+    creditProgram: {
+      schemaVersion: "credit-program-v1",
+      creditProgramId: "gt_coffee_accepted_bill",
+      creditProgramVersion: "gt-coffee-program-v1",
+      creditProgramDigest: PROGRAM_DIGEST,
+      isSynthetic: true,
+      country: "GT",
+      industry: "coffee_production",
+      product: "accepted_bill_discount",
+      policyPackVersion: "synthetic-guatemala-v11",
+      policyPackDigest: POLICY_DIGEST,
+    },
+    creditProgramAssignment: {
+      schemaVersion: "mint-credit-program-selection-v1",
+      mintId: "mint-a",
+      mintQuoteId: "quote-a",
+      billId: "bill-a",
+      creditProgramVersion: "gt-coffee-program-v1",
+      creditProgramDigest: PROGRAM_DIGEST,
+      assignmentAuthority: "wildcat_mint_admin",
+      assignmentDigest: ASSIGNMENT_DIGEST,
+    },
     submittedEvidence: [],
     evidencePackets: [],
   };
@@ -229,6 +253,22 @@ describe("parseDecisionCasesResponse", () => {
     ["reason-code array", () => ({ ...validCase(), result: { ...validCase().result, reasonCodes: [false] } })],
     ["verification-request array", () => ({ ...validCase(), result: { ...validCase().result, verificationRequests: null } })],
     ["submitted-evidence array", () => ({ ...validCase(), submittedEvidence: [{ reference: "missing-fields" }] })],
+    ["partial credit-program binding", () => ({ ...validCase(), creditProgramAssignment: undefined })],
+    [
+      "wrong credit-program quote binding",
+      () => ({ ...validCase(), creditProgramAssignment: { ...validCase().creditProgramAssignment, mintQuoteId: "quote-b" } }),
+    ],
+    [
+      "wrong credit-program policy binding",
+      () => ({ ...validCase(), creditProgram: { ...validCase().creditProgram, policyPackDigest: `sha256:${"9".repeat(64)}` } }),
+    ],
+    [
+      "wrong credit-program release digest",
+      () => ({
+        ...validCase(),
+        creditProgramAssignment: { ...validCase().creditProgramAssignment, creditProgramDigest: `sha256:${"8".repeat(64)}` },
+      }),
+    ],
     ["top-level cases array", () => ({ notCases: [] })],
   ])("rejects a malformed %s", (_label, makeCase) => {
     const candidate = makeCase();
@@ -243,5 +283,12 @@ describe("parseDecisionCasesResponse", () => {
       result: { ...decisionCase.result, snapshotDigest: `sha256:${"e".repeat(64)}` },
     };
     expect(() => parseDecisionCasesResponse({ cases: [mismatched] })).toThrow("invalid governed decision response");
+  });
+
+  it("keeps a legacy case readable only when both program provenance fields are absent", () => {
+    const { creditProgram: _program, creditProgramAssignment: _assignment, ...legacy } = validCase();
+    void _program;
+    void _assignment;
+    expect(parseDecisionCasesResponse({ cases: [legacy] })).toEqual({ cases: [legacy] });
   });
 });

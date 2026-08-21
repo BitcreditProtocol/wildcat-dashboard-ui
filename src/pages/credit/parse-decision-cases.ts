@@ -1,6 +1,8 @@
 import type {
   ApplicantConfirmation,
   ConfirmedClaims,
+  CreditProgram,
+  CreditProgramAssignment,
   DecisionBill,
   DecisionCase,
   DecisionInvoice,
@@ -251,6 +253,37 @@ function isVerificationRequest(value: unknown): value is VerificationRequest {
   );
 }
 
+function isCreditProgram(value: unknown): value is CreditProgram {
+  return (
+    isObject(value) &&
+    value.schemaVersion === "credit-program-v1" &&
+    isNonEmptyString(value.creditProgramId) &&
+    isNonEmptyString(value.creditProgramVersion) &&
+    isDigest(value.creditProgramDigest) &&
+    value.isSynthetic === true &&
+    isString(value.country) &&
+    /^[A-Z]{2}$/u.test(value.country) &&
+    isNonEmptyString(value.industry) &&
+    isNonEmptyString(value.product) &&
+    isNonEmptyString(value.policyPackVersion) &&
+    isDigest(value.policyPackDigest)
+  );
+}
+
+function isCreditProgramAssignment(value: unknown): value is CreditProgramAssignment {
+  return (
+    isObject(value) &&
+    value.schemaVersion === "mint-credit-program-selection-v1" &&
+    isNonEmptyString(value.mintId) &&
+    isNonEmptyString(value.mintQuoteId) &&
+    isNonEmptyString(value.billId) &&
+    isNonEmptyString(value.creditProgramVersion) &&
+    isDigest(value.creditProgramDigest) &&
+    value.assignmentAuthority === "wildcat_mint_admin" &&
+    isDigest(value.assignmentDigest)
+  );
+}
+
 function isSnapshot(value: unknown): value is DecisionCase["snapshot"] {
   return (
     isObject(value) &&
@@ -432,6 +465,34 @@ function hasMatchingDecisionBindings(value: JsonObject): boolean {
   );
 }
 
+function hasMatchingCreditProgramBindings(value: JsonObject): boolean {
+  if (value.creditProgram === undefined && value.creditProgramAssignment === undefined) return true;
+  const bill = isObject(value.snapshot) ? value.snapshot.bill : undefined;
+  if (
+    !isCreditProgram(value.creditProgram) ||
+    !isCreditProgramAssignment(value.creditProgramAssignment) ||
+    !isObject(value.snapshot) ||
+    !isObject(value.policyPack) ||
+    !isNonEmptyString(value.mintQuoteId) ||
+    !isDecisionBill(bill)
+  ) {
+    return false;
+  }
+  const { creditProgram, creditProgramAssignment, snapshot, policyPack } = value;
+  return (
+    creditProgram.country === snapshot.country &&
+    creditProgram.industry === snapshot.industry &&
+    creditProgram.product === snapshot.product &&
+    creditProgram.policyPackVersion === policyPack.policyPackVersion &&
+    creditProgram.policyPackDigest === policyPack.policyPackDigest &&
+    creditProgramAssignment.mintId === snapshot.mintId &&
+    creditProgramAssignment.mintQuoteId === value.mintQuoteId &&
+    creditProgramAssignment.billId === bill.billId &&
+    creditProgramAssignment.creditProgramVersion === creditProgram.creditProgramVersion &&
+    creditProgramAssignment.creditProgramDigest === creditProgram.creditProgramDigest
+  );
+}
+
 function isDecisionCase(value: unknown): value is DecisionCase {
   if (
     !isObject(value) ||
@@ -444,7 +505,8 @@ function isDecisionCase(value: unknown): value is DecisionCase {
     (value.submittedEvidence !== undefined && !isEvidenceArray(value.submittedEvidence)) ||
     (value.evidencePackets !== undefined && !isEvidencePacketArray(value.evidencePackets)) ||
     (value.applicantConfirmation !== undefined && !isApplicantConfirmation(value.applicantConfirmation)) ||
-    !hasMatchingDecisionBindings(value)
+    !hasMatchingDecisionBindings(value) ||
+    !hasMatchingCreditProgramBindings(value)
   ) {
     return false;
   }
