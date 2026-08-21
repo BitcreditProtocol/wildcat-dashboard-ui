@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { checkBillPayment, collectFeesToken, deleteDeniedMeltop, getAddReserveStatus, getBillsBalanceHistory, getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillHistory, getEbillPaymentactions, getEbillPaymentstatus, getEiouDepositStatus, getEiouHistory, getForeignBalance, getHealth, getIdentity, getKeysetInfo, getKeysetsBalance, getMintInfo, getMintopStatus, getOnchainHistory, getQuote, getSharedEbillHistory, listDeniedMeltops, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, patchEnableQuoteMinting, postAddReserve, postEbillReqtopay, postEiouDeposit, syncEbillChain, updateQuote } from '../sdk.gen';
-import type { CheckBillPaymentData, CollectFeesTokenData, CollectFeesTokenResponse, DeleteDeniedMeltopData, GetAddReserveStatusData, GetAddReserveStatusResponse, GetBillsBalanceHistoryData, GetBillsBalanceHistoryResponse, GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillHistoryData, GetEbillHistoryResponse, GetEbillPaymentactionsData, GetEbillPaymentactionsResponse, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetEiouDepositStatusData, GetEiouDepositStatusResponse, GetEiouHistoryData, GetEiouHistoryResponse, GetForeignBalanceData, GetForeignBalanceResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetKeysetsBalanceData, GetKeysetsBalanceResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetOnchainHistoryData, GetOnchainHistoryResponse, GetQuoteData, GetQuoteResponse, GetSharedEbillHistoryData, GetSharedEbillHistoryResponse, ListDeniedMeltopsData, ListDeniedMeltopsResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PatchEnableQuoteMintingData, PatchEnableQuoteMintingResponse, PostAddReserveData, PostAddReserveResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, PostEiouDepositData, PostEiouDepositResponse, SyncEbillChainData, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
+import { authorizeQuote, checkBillPayment, collectFeesToken, deleteDeniedMeltop, getAddReserveStatus, getBillsBalanceHistory, getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillHistory, getEbillPaymentactions, getEbillPaymentstatus, getEiouDepositStatus, getEiouHistory, getForeignBalance, getHealth, getIdentity, getKeysetInfo, getKeysetsBalance, getMintInfo, getMintopStatus, getOnchainHistory, getQuote, getSharedEbillHistory, listDeniedMeltops, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, patchEnableQuoteMinting, postAddReserve, postEbillReqtopay, postEiouDeposit, recordAcceptorRiskEvidence, recordMintCapacityEvidence, syncEbillChain, updateQuote } from '../sdk.gen';
+import type { AuthorizeQuoteData, AuthorizeQuoteResponse, CheckBillPaymentData, CollectFeesTokenData, CollectFeesTokenResponse, DeleteDeniedMeltopData, GetAddReserveStatusData, GetAddReserveStatusResponse, GetBillsBalanceHistoryData, GetBillsBalanceHistoryResponse, GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillHistoryData, GetEbillHistoryResponse, GetEbillPaymentactionsData, GetEbillPaymentactionsResponse, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetEiouDepositStatusData, GetEiouDepositStatusResponse, GetEiouHistoryData, GetEiouHistoryResponse, GetForeignBalanceData, GetForeignBalanceResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetKeysetsBalanceData, GetKeysetsBalanceResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetOnchainHistoryData, GetOnchainHistoryResponse, GetQuoteData, GetQuoteResponse, GetSharedEbillHistoryData, GetSharedEbillHistoryResponse, ListDeniedMeltopsData, ListDeniedMeltopsResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PatchEnableQuoteMintingData, PatchEnableQuoteMintingResponse, PostAddReserveData, PostAddReserveResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, PostEiouDepositData, PostEiouDepositResponse, RecordAcceptorRiskEvidenceData, RecordAcceptorRiskEvidenceResponse, RecordMintCapacityEvidenceData, RecordMintCapacityEvidenceResponse, SyncEbillChainData, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -254,6 +254,48 @@ export const listQuotesInfiniteOptions = (options?: Options<ListQuotesData>) => 
         queryKey: listQuotesInfiniteQueryKey(options)
     });
     return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const authorizeQuoteMutation = (options?: Partial<Options<AuthorizeQuoteData>>): UseMutationOptions<AuthorizeQuoteResponse, DefaultError, Options<AuthorizeQuoteData>> => {
+    const mutationOptions: UseMutationOptions<AuthorizeQuoteResponse, DefaultError, Options<AuthorizeQuoteData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await authorizeQuote({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const recordAcceptorRiskEvidenceMutation = (options?: Partial<Options<RecordAcceptorRiskEvidenceData>>): UseMutationOptions<RecordAcceptorRiskEvidenceResponse, DefaultError, Options<RecordAcceptorRiskEvidenceData>> => {
+    const mutationOptions: UseMutationOptions<RecordAcceptorRiskEvidenceResponse, DefaultError, Options<RecordAcceptorRiskEvidenceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await recordAcceptorRiskEvidence({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const recordMintCapacityEvidenceMutation = (options?: Partial<Options<RecordMintCapacityEvidenceData>>): UseMutationOptions<RecordMintCapacityEvidenceResponse, DefaultError, Options<RecordMintCapacityEvidenceData>> => {
+    const mutationOptions: UseMutationOptions<RecordMintCapacityEvidenceResponse, DefaultError, Options<RecordMintCapacityEvidenceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await recordMintCapacityEvidence({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
 };
 
 export const getSharedEbillHistoryQueryKey = (options: Options<GetSharedEbillHistoryData>) => createQueryKey('getSharedEbillHistory', options);

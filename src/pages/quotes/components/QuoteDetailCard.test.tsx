@@ -259,8 +259,8 @@ describe("QuoteDetailCard", () => {
         mintOperationStatus={{
           kid: keysetId,
           quote_id: "quote-1",
-          target: { value: 80_000_000, unit: null },
-          current: { value: 80_000_000, unit: null },
+          target: 80_000_000,
+          current: 80_000_000,
         }}
       />
     );
