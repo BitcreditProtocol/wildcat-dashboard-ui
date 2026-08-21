@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CollectFeesTokenData, CollectFeesTokenResponses, DeleteDeniedMeltopData, DeleteDeniedMeltopErrors, DeleteDeniedMeltopResponses, GetAddReserveStatusData, GetAddReserveStatusErrors, GetAddReserveStatusResponses, GetClowderAlphasData, GetClowderAlphasResponses, GetClowderBetasData, GetClowderBetasResponses, GetClowderForeignCoverageData, GetClowderForeignCoverageErrors, GetClowderForeignCoverageResponses, GetClowderInfoData, GetClowderInfoResponses, GetClowderLocalCoverageData, GetClowderLocalCoverageResponses, GetClowderMystatusData, GetClowderMystatusResponses, GetClowderStatusData, GetClowderStatusErrors, GetClowderStatusResponses, GetEbillAttachmentData, GetEbillAttachmentErrors, GetEbillAttachmentResponses, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsErrors, GetEbillEndorsementsResponses, GetEbillErrors, GetEbillFileFromRequestToMintData, GetEbillFileFromRequestToMintErrors, GetEbillFileFromRequestToMintResponses, GetEbillHistoryData, GetEbillHistoryErrors, GetEbillHistoryResponses, GetEbillPaymentactionsData, GetEbillPaymentactionsErrors, GetEbillPaymentactionsResponses, GetEbillPaymentstatusData, GetEbillPaymentstatusErrors, GetEbillPaymentstatusResponses, GetEbillResponses, GetHealthData, GetHealthResponses, GetIdentityData, GetIdentityResponses, GetKeysetInfoData, GetKeysetInfoErrors, GetKeysetInfoResponses, GetMintInfoData, GetMintInfoResponses, GetMintopStatusData, GetMintopStatusErrors, GetMintopStatusResponses, GetQuoteData, GetQuoteErrors, GetQuoteResponses, GetSharedEbillHistoryData, GetSharedEbillHistoryErrors, GetSharedEbillHistoryResponses, ListDeniedMeltopsData, ListDeniedMeltopsResponses, ListEbillsData, ListEbillsResponses, ListKeysetInfosData, ListKeysetInfosResponses, ListMintopsData, ListMintopsErrors, ListMintopsResponses, ListQuotesData, ListQuotesResponses, PatchEnableQuoteMintingData, PatchEnableQuoteMintingErrors, PatchEnableQuoteMintingResponses, PostAddReserveData, PostAddReserveResponses, PostEbillReqtopayData, PostEbillReqtopayErrors, PostEbillReqtopayResponses, SyncEbillChainData, SyncEbillChainErrors, SyncEbillChainResponses, UpdateQuoteData, UpdateQuoteErrors, UpdateQuoteResponses } from './types.gen';
+import type { AuthorizeQuoteData, AuthorizeQuoteErrors, AuthorizeQuoteResponses, CollectFeesTokenData, CollectFeesTokenResponses, DeleteDeniedMeltopData, DeleteDeniedMeltopErrors, DeleteDeniedMeltopResponses, GetAddReserveStatusData, GetAddReserveStatusErrors, GetAddReserveStatusResponses, GetClowderAlphasData, GetClowderAlphasResponses, GetClowderBetasData, GetClowderBetasResponses, GetClowderForeignCoverageData, GetClowderForeignCoverageErrors, GetClowderForeignCoverageResponses, GetClowderInfoData, GetClowderInfoResponses, GetClowderLocalCoverageData, GetClowderLocalCoverageResponses, GetClowderMystatusData, GetClowderMystatusResponses, GetClowderStatusData, GetClowderStatusErrors, GetClowderStatusResponses, GetEbillAttachmentData, GetEbillAttachmentErrors, GetEbillAttachmentResponses, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsErrors, GetEbillEndorsementsResponses, GetEbillErrors, GetEbillFileFromRequestToMintData, GetEbillFileFromRequestToMintErrors, GetEbillFileFromRequestToMintResponses, GetEbillHistoryData, GetEbillHistoryErrors, GetEbillHistoryResponses, GetEbillPaymentactionsData, GetEbillPaymentactionsErrors, GetEbillPaymentactionsResponses, GetEbillPaymentstatusData, GetEbillPaymentstatusErrors, GetEbillPaymentstatusResponses, GetEbillResponses, GetHealthData, GetHealthResponses, GetIdentityData, GetIdentityResponses, GetKeysetInfoData, GetKeysetInfoErrors, GetKeysetInfoResponses, GetMintInfoData, GetMintInfoResponses, GetMintopStatusData, GetMintopStatusErrors, GetMintopStatusResponses, GetQuoteData, GetQuoteErrors, GetQuoteResponses, GetSharedEbillHistoryData, GetSharedEbillHistoryErrors, GetSharedEbillHistoryResponses, ListDeniedMeltopsData, ListDeniedMeltopsResponses, ListEbillsData, ListEbillsResponses, ListKeysetInfosData, ListKeysetInfosResponses, ListMintopsData, ListMintopsErrors, ListMintopsResponses, ListQuotesData, ListQuotesResponses, PatchEnableQuoteMintingData, PatchEnableQuoteMintingErrors, PatchEnableQuoteMintingResponses, PostAddReserveData, PostAddReserveResponses, PostEbillReqtopayData, PostEbillReqtopayErrors, PostEbillReqtopayResponses, RecordAcceptorRiskEvidenceData, RecordAcceptorRiskEvidenceErrors, RecordAcceptorRiskEvidenceResponses, RecordMintCapacityEvidenceData, RecordMintCapacityEvidenceErrors, RecordMintCapacityEvidenceResponses, SyncEbillChainData, SyncEbillChainErrors, SyncEbillChainResponses, UpdateQuoteData, UpdateQuoteErrors, UpdateQuoteResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -42,6 +42,33 @@ export const updateQuote = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 export const listQuotes = <ThrowOnError extends boolean = false>(options?: Options<ListQuotesData, ThrowOnError>): RequestResult<ListQuotesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListQuotesResponses, unknown, ThrowOnError>({ url: '/v1/admin/credit/quote', ...options });
+
+export const authorizeQuote = <ThrowOnError extends boolean = false>(options: Options<AuthorizeQuoteData, ThrowOnError>): RequestResult<AuthorizeQuoteResponses, AuthorizeQuoteErrors, ThrowOnError> => (options.client ?? client).put<AuthorizeQuoteResponses, AuthorizeQuoteErrors, ThrowOnError>({
+    url: '/v1/admin/credit/quote/{qid}/authorization',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const recordAcceptorRiskEvidence = <ThrowOnError extends boolean = false>(options: Options<RecordAcceptorRiskEvidenceData, ThrowOnError>): RequestResult<RecordAcceptorRiskEvidenceResponses, RecordAcceptorRiskEvidenceErrors, ThrowOnError> => (options.client ?? client).put<RecordAcceptorRiskEvidenceResponses, RecordAcceptorRiskEvidenceErrors, ThrowOnError>({
+    url: '/v1/admin/credit/quote/{qid}/acceptor-risk',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const recordMintCapacityEvidence = <ThrowOnError extends boolean = false>(options: Options<RecordMintCapacityEvidenceData, ThrowOnError>): RequestResult<RecordMintCapacityEvidenceResponses, RecordMintCapacityEvidenceErrors, ThrowOnError> => (options.client ?? client).put<RecordMintCapacityEvidenceResponses, RecordMintCapacityEvidenceErrors, ThrowOnError>({
+    url: '/v1/admin/credit/mint-capacity',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 export const getSharedEbillHistory = <ThrowOnError extends boolean = false>(options: Options<GetSharedEbillHistoryData, ThrowOnError>): RequestResult<GetSharedEbillHistoryResponses, GetSharedEbillHistoryErrors, ThrowOnError> => (options.client ?? client).get<GetSharedEbillHistoryResponses, GetSharedEbillHistoryErrors, ThrowOnError>({ url: '/v1/admin/credit/quote/{qid}/ebill/history', ...options });
 

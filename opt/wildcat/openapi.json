@@ -225,7 +225,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InfoReply"
+                  "$ref": "#/components/schemas/AdminInfoReply"
                 }
               }
             }
@@ -431,6 +431,140 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/quote/{qid}/authorization": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "authorize_quote",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "The quote id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorizedQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authorization executed or replayed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditAuthorizationReceipt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid authorization"
+          },
+          "409": {
+            "description": "Conflicting authorization or quote state"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/quote/{qid}/acceptor-risk": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "record_acceptor_risk_evidence",
+        "parameters": [
+          {
+            "name": "qid",
+            "in": "path",
+            "description": "The quote whose acceptor owns the risk record",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptorRiskEvidenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Mint-owned acceptor risk evidence recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptorRiskEvidence"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid evidence"
+          },
+          "403": {
+            "description": "Approver role required"
+          },
+          "404": {
+            "description": "Quote not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/credit/mint-capacity": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "record_mint_capacity_evidence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MintCapacityEvidenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Mint-owned capacity evidence recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MintCapacityEvidence"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid evidence"
+          },
+          "403": {
+            "description": "Approver role required"
           }
         }
       }
@@ -1166,6 +1300,126 @@
   },
   "components": {
     "schemas": {
+      "AcceptorRiskAuthorityEvidence": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "keyId",
+          "acceptorRef",
+          "probabilityOfDefaultBps",
+          "lossGivenDefaultBps",
+          "evidenceState",
+          "methodologyVersion",
+          "assessedBy",
+          "assessedAt",
+          "validThrough",
+          "evidenceRefs",
+          "synthetic"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "acceptorRef": {
+            "type": "string"
+          },
+          "probabilityOfDefaultBps": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "lossGivenDefaultBps": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "evidenceState": {
+            "type": "string"
+          },
+          "methodologyVersion": {
+            "type": "string"
+          },
+          "assessedBy": {
+            "type": "string"
+          },
+          "assessedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "validThrough": {
+            "type": "string",
+            "format": "date"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AcceptorRiskEvidence": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "evidenceId",
+          "signedEvidence",
+          "operatorId",
+          "writtenBasisDigest",
+          "recordedAt",
+          "verifiedAt"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string"
+          },
+          "evidenceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "signedEvidence": {
+            "$ref": "#/components/schemas/SignedAcceptorRiskEvidence"
+          },
+          "operatorId": {
+            "type": "string"
+          },
+          "writtenBasisDigest": {
+            "type": "string"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AcceptorRiskEvidenceRequest": {
+        "type": "object",
+        "required": [
+          "signedEvidence",
+          "writtenBasis"
+        ],
+        "properties": {
+          "signedEvidence": {
+            "$ref": "#/components/schemas/SignedAcceptorRiskEvidence"
+          },
+          "writtenBasis": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "AddReserveRequest": {
         "type": "object",
         "description": "--------------------------- Reserve funding",
@@ -1244,6 +1498,61 @@
           }
         ]
       },
+      "AdminInfoReply": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/InfoReply"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "credit_program_version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "credit_program_digest": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "credit_authorization_receipt": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreditAuthorizationReceipt"
+                  }
+                ]
+              },
+              "credit_evidence": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MintCreditEvidence"
+                  }
+                ]
+              },
+              "credit_exposure_reservation": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreditExposureReservation"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Admin quote details plus the immutable Mint-selected credit program binding.\n\nThe fields are optional only so pre-binding quote records remain readable.\nOperator actions on an unbound quote are rejected by the quote service."
+      },
       "AlphaStateResponse": {
         "type": "object",
         "required": [
@@ -1272,6 +1581,18 @@
             "$ref": "#/components/schemas/TupleUnit"
           }
         }
+      },
+      "AuthorizedQuoteRequest": {
+        "type": "object",
+        "required": [
+          "signedAuthorization"
+        ],
+        "properties": {
+          "signedAuthorization": {
+            "$ref": "#/components/schemas/SignedCreditAuthorizationEnvelope"
+          }
+        },
+        "additionalProperties": false
       },
       "BillAcceptanceStatus": {
         "type": "object",
@@ -2296,6 +2617,276 @@
           }
         }
       },
+      "CreditAuthorizationEnvelope": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "keyId",
+          "mintId",
+          "mintQuoteId",
+          "creditProgramVersion",
+          "creditProgramDigest",
+          "caseId",
+          "billId",
+          "billStateDigest",
+          "holderRef",
+          "acceptorRef",
+          "decisionSnapshotDigest",
+          "decisionResultDigest",
+          "policyPackDigest",
+          "policyPackVersion",
+          "calculationVersion",
+          "terms",
+          "operatorId",
+          "issuedAt",
+          "expiresAt",
+          "nonce",
+          "action",
+          "synthetic"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "mintId": {
+            "type": "string"
+          },
+          "mintQuoteId": {
+            "type": "string"
+          },
+          "creditProgramVersion": {
+            "type": "string"
+          },
+          "creditProgramDigest": {
+            "type": "string"
+          },
+          "caseId": {
+            "type": "string"
+          },
+          "billId": {
+            "type": "string"
+          },
+          "billStateDigest": {
+            "type": "string"
+          },
+          "holderRef": {
+            "type": "string"
+          },
+          "acceptorRef": {
+            "type": "string"
+          },
+          "decisionSnapshotDigest": {
+            "type": "string"
+          },
+          "decisionResultDigest": {
+            "type": "string"
+          },
+          "policyPackDigest": {
+            "type": "string"
+          },
+          "policyPackVersion": {
+            "type": "string"
+          },
+          "calculationVersion": {
+            "type": "string"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/CreditAuthorizationTerms"
+          },
+          "operatorId": {
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "nonce": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreditAuthorizationReceipt": {
+        "type": "object",
+        "required": [
+          "receiptVersion",
+          "operationId",
+          "authorizationDigest",
+          "caseId",
+          "status",
+          "mintId",
+          "billId",
+          "action",
+          "effectId",
+          "resultDigest",
+          "completedAt",
+          "synthetic"
+        ],
+        "properties": {
+          "receiptVersion": {
+            "type": "string"
+          },
+          "operationId": {
+            "type": "string"
+          },
+          "authorizationDigest": {
+            "type": "string"
+          },
+          "caseId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mintId": {
+            "type": "string"
+          },
+          "billId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "effectId": {
+            "type": "string"
+          },
+          "resultDigest": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string"
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreditAuthorizationTerms": {
+        "type": "object",
+        "description": "Exact governed terms signed by AI Credit. Monetary values stay decimal strings so\nJavaScript and Rust verify the same bytes without an unsafe number conversion.",
+        "required": [
+          "billSumSat",
+          "discountedSat",
+          "appliedDiscountSat",
+          "operatingCostSat",
+          "effectiveFeeSat",
+          "endorsementExposureSat",
+          "maturityDate",
+          "offerExpiresOn",
+          "tenorDays",
+          "annualDiscountBps",
+          "effectiveAnnualBps",
+          "feeRatioBps"
+        ],
+        "properties": {
+          "billSumSat": {
+            "type": "string"
+          },
+          "discountedSat": {
+            "type": "string"
+          },
+          "appliedDiscountSat": {
+            "type": "string"
+          },
+          "operatingCostSat": {
+            "type": "string"
+          },
+          "effectiveFeeSat": {
+            "type": "string"
+          },
+          "endorsementExposureSat": {
+            "type": "string"
+          },
+          "maturityDate": {
+            "type": "string"
+          },
+          "offerExpiresOn": {
+            "type": "string"
+          },
+          "tenorDays": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "annualDiscountBps": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "effectiveAnnualBps": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "feeRatioBps": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreditExposureReservation": {
+        "type": "object",
+        "required": [
+          "reservationVersion",
+          "reservationId",
+          "mintId",
+          "quoteId",
+          "amountSat",
+          "capacityEvidenceId",
+          "state",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "reservationVersion": {
+            "type": "string"
+          },
+          "reservationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mintId": {
+            "type": "string"
+          },
+          "quoteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountSat": {
+            "type": "string"
+          },
+          "capacityEvidenceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "CurrencyUnit": {
         "oneOf": [
           {
@@ -3094,6 +3685,162 @@
           "submitted_asc"
         ]
       },
+      "MintCapacityAuthorityEvidence": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "keyId",
+          "mintId",
+          "existingExposureSat",
+          "exposureLimitSat",
+          "evidenceState",
+          "methodologyVersion",
+          "assessedBy",
+          "assessedAt",
+          "validThrough",
+          "evidenceRefs",
+          "synthetic"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "mintId": {
+            "type": "string"
+          },
+          "existingExposureSat": {
+            "type": "string"
+          },
+          "exposureLimitSat": {
+            "type": "string"
+          },
+          "evidenceState": {
+            "type": "string"
+          },
+          "methodologyVersion": {
+            "type": "string"
+          },
+          "assessedBy": {
+            "type": "string"
+          },
+          "assessedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "validThrough": {
+            "type": "string",
+            "format": "date"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MintCapacityEvidence": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "evidenceId",
+          "signedEvidence",
+          "operatorId",
+          "writtenBasisDigest",
+          "recordedAt",
+          "verifiedAt"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string"
+          },
+          "evidenceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "signedEvidence": {
+            "$ref": "#/components/schemas/SignedMintCapacityEvidence"
+          },
+          "operatorId": {
+            "type": "string"
+          },
+          "writtenBasisDigest": {
+            "type": "string"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MintCapacityEvidenceRequest": {
+        "type": "object",
+        "required": [
+          "signedEvidence",
+          "writtenBasis"
+        ],
+        "properties": {
+          "signedEvidence": {
+            "$ref": "#/components/schemas/SignedMintCapacityEvidence"
+          },
+          "writtenBasis": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MintCreditEvidence": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "mintId",
+          "acceptorRef"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string"
+          },
+          "mintId": {
+            "type": "string"
+          },
+          "acceptorRef": {
+            "type": "string"
+          },
+          "acceptorRisk": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AcceptorRiskEvidence"
+              }
+            ]
+          },
+          "mintCapacity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MintCapacityEvidence"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "MintOperationStatus": {
         "type": "object",
         "description": "--------------------------- Mint operation status",
@@ -3112,10 +3859,14 @@
             "format": "uuid"
           },
           "target": {
-            "$ref": "#/components/schemas/Amount"
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "current": {
-            "$ref": "#/components/schemas/Amount"
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -3465,6 +4216,30 @@
           }
         }
       },
+      "SignedAcceptorRiskEvidence": {
+        "type": "object",
+        "required": [
+          "evidence",
+          "evidenceDigest",
+          "signatureAlgorithm",
+          "signature"
+        ],
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/AcceptorRiskAuthorityEvidence"
+          },
+          "evidenceDigest": {
+            "type": "string"
+          },
+          "signatureAlgorithm": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "SignedBy": {
         "type": "object",
         "required": [
@@ -3485,6 +4260,54 @@
             ]
           }
         }
+      },
+      "SignedCreditAuthorizationEnvelope": {
+        "type": "object",
+        "required": [
+          "authorization",
+          "authorizationDigest",
+          "signatureAlgorithm",
+          "signature"
+        ],
+        "properties": {
+          "authorization": {
+            "$ref": "#/components/schemas/CreditAuthorizationEnvelope"
+          },
+          "authorizationDigest": {
+            "type": "string"
+          },
+          "signatureAlgorithm": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SignedMintCapacityEvidence": {
+        "type": "object",
+        "required": [
+          "evidence",
+          "evidenceDigest",
+          "signatureAlgorithm",
+          "signature"
+        ],
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/MintCapacityAuthorityEvidence"
+          },
+          "evidenceDigest": {
+            "type": "string"
+          },
+          "signatureAlgorithm": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       },
       "SimpleAlphaState": {
         "oneOf": [
