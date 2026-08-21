@@ -138,3 +138,31 @@
     --radius: 0.25rem;
   }
 }
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #minting-summary,
+  #minting-summary * {
+    visibility: visible !important;
+  }
+
+  #minting-summary {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    gap: 8px;
+    font-size: 10pt;
+  }
+
+  #minting-summary details,
+  #minting-summary [data-print-detail] {
+    display: none !important;
+  }
+}

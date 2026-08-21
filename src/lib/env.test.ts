@@ -76,7 +76,7 @@ describe("env runtime resolution", () => {
 
   it("uses the browser origin for a same-origin API preview", async () => {
     vi.stubEnv("VITE_API_BASE_URL", "/");
-    vi.stubEnv("VITE_KEYCLOAK_URL", "https://keycloak.example.com");
+    vi.stubEnv("VITE_KEYCLOAK_URL", "/");
     vi.stubEnv("VITE_KEYCLOAK_REALM", "realm");
     vi.stubEnv("VITE_KEYCLOAK_CLIENT_ID", "client");
     vi.stubGlobal("window", { location: { origin: "http://localhost:62009" } });
@@ -84,6 +84,7 @@ describe("env runtime resolution", () => {
     const env = await loadEnv();
 
     expect(env.apiBaseUrl).toBe("http://localhost:62009");
+    expect(env.keycloakUrl).toBe("http://localhost:62009");
   });
 
   it("handles SSR where window is undefined", async () => {

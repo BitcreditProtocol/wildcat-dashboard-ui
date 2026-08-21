@@ -166,10 +166,10 @@ describe("OfferFormDrawer", () => {
 
     expect(suggestedNets[suggestedNets.length - 1]).toBe("7734000");
     // And the operator can see what they are approving, against the guardrails it was measured on.
-    expect(container.textContent).toContain("Governed offer 7,734,000 sat");
-    expect(container.textContent).toContain("5.40% annual discount");
-    expect(container.textContent).toContain("6.88% annualized all-in cost (ceiling 15.00%)");
-    expect(container.textContent).toContain("3.33% of the bill sum (ceiling 30.00%)");
+    expect(container.textContent).toContain("Governed amount available for minting 7,734,000 sat");
+    expect(container.textContent).toContain("Minting fee 266,000 sat over 180 days");
+    expect(container.textContent).toContain("6.88% annualized fee rate (ceiling 15.00%)");
+    expect(container.textContent).toContain("3.33% of the bill amount (ceiling 30.00%)");
     expect(container.textContent).toContain("Offering less than this raises both figures");
     expect(container.textContent).toContain("Governed amount: 7734000 sat. Absolute maximum: 7950000 sat");
   });
@@ -287,7 +287,7 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
       netInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
-    expect(container.textContent).toContain("above the maximum that covers operating cost");
+    expect(container.textContent).toContain("above the maximum that covers reimbursement");
   });
 
   it("requires the operator's own written basis", () => {

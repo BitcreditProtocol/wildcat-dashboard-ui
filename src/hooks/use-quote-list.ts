@@ -449,7 +449,7 @@ export function useQuoteList(status?: QuoteStatus) {
       value: "active-fee-token" as const,
       label: intl.formatMessage({
         id: "quotes.filter.activeFeeToken",
-        defaultMessage: "Active fee token",
+        defaultMessage: "Fees ready to collect",
       }),
     },
     {

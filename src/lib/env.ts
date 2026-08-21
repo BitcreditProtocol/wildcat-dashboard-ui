@@ -45,14 +45,16 @@ const getRequiredEnvValue = <K extends (typeof requiredEnvKeys)[number]>(key: K)
 };
 
 const configuredApiBaseUrl = getRequiredEnvValue("VITE_API_BASE_URL");
+const configuredKeycloakUrl = getRequiredEnvValue("VITE_KEYCLOAK_URL");
+const browserOrigin = (configured: string) => (configured === "/" && typeof window !== "undefined" ? window.location.origin : configured);
 
 export const env = {
   devModeEnabled: fallbackEnv.DEV,
   // `/` keeps browser previews on their actual origin, including tools that expose Vite through
-  // a random proxy port. The Vite `/v1/admin` proxy still owns the upstream Mint address.
-  apiBaseUrl: configuredApiBaseUrl === "/" && typeof window !== "undefined" ? window.location.origin : configuredApiBaseUrl,
+  // a random proxy port. Vite still owns the upstream API and Keycloak addresses.
+  apiBaseUrl: browserOrigin(configuredApiBaseUrl),
   apiMocksEnabled: (getEnvValue("VITE_API_MOCKING_ENABLED") ?? "false") === "true",
-  keycloakUrl: getRequiredEnvValue("VITE_KEYCLOAK_URL"),
+  keycloakUrl: browserOrigin(configuredKeycloakUrl),
   keycloakRealm: getRequiredEnvValue("VITE_KEYCLOAK_REALM"),
   keycloakClientId: getRequiredEnvValue("VITE_KEYCLOAK_CLIENT_ID"),
   esploraBaseUrl: getEnvValue("VITE_ESPLORA_BASE_URL") ?? "https://esplora.minibill.tech",
