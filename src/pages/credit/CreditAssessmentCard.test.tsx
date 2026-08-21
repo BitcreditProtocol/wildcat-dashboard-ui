@@ -370,7 +370,35 @@ describe("CreditAssessmentCard", () => {
   });
 
   it("keeps application rationale and immutable policy provenance collapsed by default", () => {
-    render(<CreditAssessmentCard decisionCase={offerCase} />);
+    render(
+      <CreditAssessmentCard
+        decisionCase={{
+          ...offerCase,
+          creditProgram: {
+            schemaVersion: "credit-program-v1",
+            creditProgramId: "gt_coffee_accepted_bill",
+            creditProgramVersion: "synthetic-guatemala-program-v1",
+            creditProgramDigest: "sha256:program",
+            isSynthetic: true,
+            country: offerCase.policyPack.country,
+            industry: offerCase.policyPack.industry,
+            product: offerCase.policyPack.product,
+            policyPackVersion: offerCase.policyPack.policyPackVersion,
+            policyPackDigest: offerCase.policyPack.policyPackDigest,
+          },
+          creditProgramAssignment: {
+            schemaVersion: "mint-credit-program-selection-v1",
+            mintId: offerCase.snapshot.mintId,
+            mintQuoteId: "quote-a",
+            billId: offerCase.snapshot.bill?.billId ?? "bill-a",
+            creditProgramVersion: "synthetic-guatemala-program-v1",
+            creditProgramDigest: "sha256:program",
+            assignmentAuthority: "wildcat_mint_admin",
+            assignmentDigest: "sha256:assignment",
+          },
+        }}
+      />
+    );
 
     const disclosures = Array.from(container.querySelectorAll("details")).filter((details) =>
       ["Application & decision rationale", "Policy & audit trail"].some((label) =>
@@ -381,6 +409,10 @@ describe("CreditAssessmentCard", () => {
     expect(disclosures.every((details) => !details.open)).toBe(true);
     expect(disclosures[0]?.textContent).not.toContain("Repayment & recourse");
     expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
+    expect(container.textContent).toContain("Credit programGt coffee accepted bill");
+    expect(container.textContent).toContain("Program versionsynthetic-guatemala-program-v1");
+    expect(container.querySelector('[title="sha256:program"]')).not.toBeNull();
+    expect(container.querySelector('[title="sha256:assignment"]')).not.toBeNull();
     expect(container.textContent).toContain("Policy filesynthetic-guatemala-v7.json");
     expect(container.textContent).toContain("Calculation versiondeterministic-credit-core-v7");
     expect(container.textContent).toContain("Maximum effective annual cost15.00%");
@@ -389,6 +421,12 @@ describe("CreditAssessmentCard", () => {
     expect(container.querySelector('[title="sha256:result"]')).not.toBeNull();
     expect(container.textContent).toContain("Mintsynthetic-mint-guatemala");
     expect(container.querySelector('[title="sha256:snapshot"]')).not.toBeNull();
+  });
+
+  it("marks quote-bound legacy assessments as read-only", () => {
+    render(<CreditAssessmentCard decisionCase={{ ...offerCase, mintQuoteId: "legacy-quote" }} />);
+    expect(container.textContent).toContain("Read-only legacy assessment");
+    expect(container.textContent).toContain("fresh Mint credit-program assignment");
   });
 
   it("shows curated risk percentages and resulting exposure while retaining honest raw audit data", () => {
