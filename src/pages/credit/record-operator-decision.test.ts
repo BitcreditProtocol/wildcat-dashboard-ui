@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchOperatorCapability,
+  durableAuthorizationReceiptFromQuote,
   operatorMayRecordDecision,
   recordOperatorDecision,
   type OperatorCapability,
@@ -62,6 +63,42 @@ describe("operator capability", () => {
     expect(operatorMayRecordDecision(reviewer, "confirm_proposed_quote")).toBe(false);
     expect(operatorMayRecordDecision(approver, "propose_adjustment_and_requote")).toBe(true);
     expect(operatorMayRecordDecision(undefined, "return_for_information")).toBe(false);
+  });
+});
+
+describe("durable authorization receipt", () => {
+  const quote = {
+    credit_authorization_receipt: {
+      receiptVersion: "credit-authorization-receipt-v1",
+      operationId: `sha256:${"c".repeat(64)}`,
+      authorizationDigest: `sha256:${"d".repeat(64)}`,
+      status: "completed",
+      completedAt: "2026-08-21T12:06:00.000Z",
+      resultDigest: `sha256:${"e".repeat(64)}`,
+      effectId: "quote-1",
+      mintId: "mint-demo",
+      billId: "bill-1",
+      action: "request_to_mint",
+    },
+  };
+
+  it("parses only the durable fields returned by the Mint", () => {
+    expect(durableAuthorizationReceiptFromQuote(quote, "quote-1", "bill-1")).toEqual({
+      operationId: `sha256:${"c".repeat(64)}`,
+      authorizationDigest: `sha256:${"d".repeat(64)}`,
+      status: "completed",
+      completedAt: "2026-08-21T12:06:00.000Z",
+      resultDigest: `sha256:${"e".repeat(64)}`,
+      effectId: "quote-1",
+      mintId: "mint-demo",
+      billId: "bill-1",
+      action: "request_to_mint",
+    });
+  });
+
+  it("rejects a receipt bound to another quote or bill", () => {
+    expect(durableAuthorizationReceiptFromQuote(quote, "quote-2", "bill-1")).toBeNull();
+    expect(durableAuthorizationReceiptFromQuote(quote, "quote-1", "bill-2")).toBeNull();
   });
 });
 

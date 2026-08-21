@@ -115,9 +115,9 @@ describe("QRCodeWithErrorBoundary", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    const triggerButton = page.querySelector('button[aria-label="Show QR code for fee token"]');
+    const triggerButton = page.querySelector('button[aria-label="Show QR code for Minting fees"]');
     expect(triggerButton).not.toBeNull();
-    expect(page.textContent).toContain("Fee Token QR Code");
+    expect(page.textContent).toContain("Minting fee QR code");
   });
 
   it("keeps the fee-token drawer shell when QR rendering fails", () => {
@@ -127,10 +127,10 @@ describe("QRCodeWithErrorBoundary", () => {
     });
 
     const page = renderWithIntl(<FeeTokenQRCodeModal feeToken="fee-token-abc" />);
-    const triggerButton = page.querySelector('button[aria-label="Show QR code for fee token"]');
+    const triggerButton = page.querySelector('button[aria-label="Show QR code for Minting fees"]');
 
     expect(triggerButton).not.toBeNull();
-    expect(page.textContent).toContain("Fee Token QR Code");
+    expect(page.textContent).toContain("Minting fee QR code");
     expect(page.textContent).toContain("QR code cannot be generated");
     errorSpy.mockRestore();
   });

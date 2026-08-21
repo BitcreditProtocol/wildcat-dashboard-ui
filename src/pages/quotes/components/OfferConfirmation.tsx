@@ -57,7 +57,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
           <Text variant="label" className="w-48">
             {intl.formatMessage({
               id: "quotes.detail.discount.relative",
-              defaultMessage: "Effective fee (relative):",
+              defaultMessage: "Minting fee rate:",
             })}
           </Text>
           <Text variant="caption" className="text-right">
@@ -68,7 +68,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
           <Text variant="label" className="w-48">
             {intl.formatMessage({
               id: "quotes.detail.discount.absolute",
-              defaultMessage: "Effective fee (absolute):",
+              defaultMessage: "Minting fee:",
             })}
           </Text>
           <Text variant="caption" className="text-right">
@@ -82,7 +82,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
           <Text variant="label" className="w-48">
             {intl.formatMessage({
               id: "quotes.offer.netAmount",
-              defaultMessage: "Net amount:",
+              defaultMessage: "Amount available for minting:",
             })}
           </Text>
           <Text variant="caption" className="text-right">

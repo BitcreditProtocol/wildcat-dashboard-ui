@@ -160,6 +160,7 @@ export interface DecisionCase {
   mintQuoteId: string | null;
   policyFileName: string;
   snapshot: {
+    schemaVersion: "decision-input-snapshot-v8" | "decision-input-snapshot-v9";
     snapshotDigest: string;
     caseId: string;
     applicantRef: string;
@@ -180,7 +181,7 @@ export interface DecisionCase {
       validThrough: string;
     };
     duplicateCheck: { result: string; evidenceState: string; validThrough: string };
-    mintCapacity: { existingExposureSat: string; exposureLimitSat: string; evidenceState: string; validThrough: string };
+    mintCapacity: { existingExposureSat: string | null; exposureLimitSat: string | null; evidenceState: string; validThrough: string };
   };
   policyPack: {
     policyPackVersion: string;

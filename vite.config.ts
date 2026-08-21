@@ -1,8 +1,11 @@
 import path from "path";
+import { fileURLToPath } from "node:url";
 import { defineConfig as defineViteConfig, loadEnv, mergeConfig } from "vite";
 import { defineConfig as defineVitestConfig, configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const vitestConfig = defineVitestConfig({
   test: {
@@ -28,6 +31,8 @@ const vitestConfig = defineVitestConfig({
 export default defineViteConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const adminTarget = env.VITE_BITCR_DEV_ADMIN_PROXY_TARGET || "http://127.0.0.1:4242";
+  const keycloakTarget = env.VITE_BITCR_DEV_KEYCLOAK_PROXY_TARGET || "http://127.0.0.1:8080";
+  const keycloakProxy = { target: keycloakTarget, xfwd: true };
   const aiCreditProxy =
     env.VITE_API_MOCKING_ENABLED === "true"
       ? {
@@ -36,6 +41,12 @@ export default defineViteConfig(({ mode }) => {
           headers: { "x-ai-credit-operator-token": env.AI_CREDIT_OPERATOR_TOKEN || "" },
         }
       : adminTarget;
+  const proxy = {
+    "/api/ai-credit": aiCreditProxy,
+    "/v1/admin": adminTarget,
+    "/realms": keycloakProxy,
+    "/resources": keycloakProxy,
+  };
 
   const viteConfig = {
     plugins: [
@@ -68,18 +79,16 @@ export default defineViteConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        "@": path.resolve(rootDir, "./src"),
       },
     },
     server: {
-      proxy: {
-        "/api/ai-credit": aiCreditProxy,
-        // Whatever is serving the admin API locally, same-origin so no CORS is involved:
-        // :4242 the BFF Envoy (real Keycloak token required), :4243 the admin aggregator directly
-        // (no auth — Envoy is where auth lives), or the mint stub on :4242. Default is the BFF.
-        "/v1/admin": adminTarget,
-      },
+      // Whatever is serving the admin API locally, same-origin so no CORS is involved:
+      // :4242 the BFF Envoy (real Keycloak token required), :4243 the admin aggregator directly
+      // (no auth — Envoy is where auth lives), or the mint stub on :4242. Default is the BFF.
+      proxy,
     },
+    preview: { proxy },
   };
 
   return mergeConfig(viteConfig, vitestConfig);

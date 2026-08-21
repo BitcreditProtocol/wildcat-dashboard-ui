@@ -94,6 +94,9 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getSharedEbillHistoryOptions: ({ path }: { path: { qid: string } }) => ({
     queryKey: [{ _id: "getSharedEbillHistory", path }],
   }),
+  getMintopStatusOptions: ({ path }: { path: { qid: string } }) => ({
+    queryKey: [{ _id: "getMintopStatus", path }],
+  }),
   getMintInfoOptions: () => ({ queryKey: [{ _id: "getMintInfo" }] }),
   getEbillOptions: ({ path }: { path: { bid: string } }) => ({
     queryKey: [{ _id: "getEbill", path }],
@@ -102,6 +105,7 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
+let quoteStatus: "Accepted" | "MintingEnabled" = "Accepted";
 const quoteId = "97e45adf-fc86-4b30-9322-afae434c3287";
 const secondQuoteId = "87e45adf-fc86-4b30-9322-afae434c3288";
 const errorQuoteId = "77e45adf-fc86-4b30-9322-afae434c3289";
@@ -134,6 +138,7 @@ function renderPage(entry: string | { pathname: string; state?: Record<string, u
 
 beforeEach(() => {
   vi.clearAllMocks();
+  quoteStatus = "Accepted";
   if (root && container) {
     act(() => {
       root?.unmount();
@@ -164,11 +169,27 @@ beforeEach(() => {
   mockUseQuery.mockImplementation((opts: QueryOptions) => {
     const id = opts.queryKey[0]._id;
     if (id === "getQuote") {
+      const currentQuoteId = opts.queryKey[0].path?.qid ?? quoteId;
       return {
         data: {
-          id: opts.queryKey[0].path?.qid ?? quoteId,
-          status: "Accepted",
+          id: currentQuoteId,
+          status: quoteStatus,
           keyset_id: "keyset-from-quote",
+          ...(quoteStatus === "MintingEnabled" ? { discounted: 80, fee: { value: 20, unit: null } } : { discounted: 80 }),
+          credit_authorization_receipt: {
+            receiptVersion: "credit-authorization-receipt-v1",
+            operationId: `sha256:${"a".repeat(64)}`,
+            authorizationDigest: `sha256:${"b".repeat(64)}`,
+            caseId: "case-1",
+            status: "completed",
+            mintId: "mint-demo",
+            billId: "bill-1",
+            action: "request_to_mint",
+            effectId: currentQuoteId,
+            resultDigest: `sha256:${"c".repeat(64)}`,
+            completedAt: "2026-08-21T12:06:00.000Z",
+            synthetic: true,
+          },
           bill: {
             id: "bill-1",
             sum: 100,
@@ -217,6 +238,19 @@ beforeEach(() => {
       return { data: { complete: true }, isLoading: false, error: null };
     }
 
+    if (id === "getMintopStatus") {
+      return {
+        data: {
+          kid: "keyset-from-quote",
+          quote_id: opts.queryKey[0].path?.qid,
+          target: { value: 80, unit: null },
+          current: { value: 40, unit: null },
+        },
+        isLoading: false,
+        error: null,
+      };
+    }
+
     return {
       data: undefined,
       isLoading: false,
@@ -227,6 +261,23 @@ beforeEach(() => {
 });
 
 describe("QuotePage", () => {
+  it("provides a compact Executive summary", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    expect(page.querySelector("#minting-summary")).not.toBeNull();
+    expect(page.textContent).toContain("Execution receipt persisted");
+    expect(page.textContent).not.toContain("Print one-page summary");
+  });
+
+  it("loads real Treasury progress only for a minting-enabled quote", () => {
+    quoteStatus = "MintingEnabled";
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    const mintOperationQuery = mockUseQuery.mock.calls.find(([options]) => options.queryKey[0]._id === "getMintopStatus")?.[0];
+    expect(mintOperationQuery?.enabled).toBe(true);
+    expect(page.textContent).toContain("Mint operationIn progress · 40 / 80");
+  });
+
   it("shows back-to-keyset action when navigated from a keyset page", () => {
     const page = renderPage({
       pathname: `/quotes/${quoteId}`,

@@ -15,7 +15,13 @@ import { useIntl } from "react-intl";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { buildMempoolTransactionUrl } from "@/utils/mempool";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
-import { operatorMayRecordDecision, recordOperatorDecision, type OperatorDecisionSuccess } from "@/pages/credit/record-operator-decision";
+import {
+  operatorMayRecordDecision,
+  recordOperatorDecision,
+  verifiedAuthorizationReceiptOf,
+  type OperatorDecisionSuccess,
+  type VerifiedAuthorizationReceipt,
+} from "@/pages/credit/record-operator-decision";
 import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
 
 interface QuoteActionsProps {
@@ -26,6 +32,7 @@ interface QuoteActionsProps {
   requestedToPay: boolean;
   paymentDeadlineTs?: number | null;
   timeOfRequestToPay?: number | null;
+  onAuthorizationVerified?: (receipt: VerifiedAuthorizationReceipt) => void;
 }
 
 export function QuoteActions({
@@ -36,6 +43,7 @@ export function QuoteActions({
   requestedToPay,
   paymentDeadlineTs,
   timeOfRequestToPay,
+  onAuthorizationVerified,
 }: QuoteActionsProps) {
   const intl = useIntl();
   const queryClient = useQueryClient();
@@ -286,6 +294,8 @@ export function QuoteActions({
         mintUpdateFailed();
         return;
       }
+      const receipt = verifiedAuthorizationReceiptOf(recorded.signedAuthorization);
+      if (receipt !== null) onAuthorizationVerified?.(receipt);
       recordedGovernance.current = undefined;
       removeItem(`offer-form-${value.id}`);
       setOfferConfirmDrawerOpen(false);

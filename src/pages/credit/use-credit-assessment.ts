@@ -4,10 +4,9 @@ import type { DecisionCase } from "./decision-types";
 import { parseDecisionCasesResponse } from "./parse-decision-cases";
 
 /**
- * Evaluated AI Credit decisions through the dashboard's authenticated BFF.
- * Read-only and synthetic: the adapter re-evaluates fixture snapshots through the deterministic
- * core, and no model is invoked. A quote whose bill has no decision simply has none — the hook
- * returns undefined and the calling view renders nothing.
+ * Stored and evaluated AI Credit decisions through the dashboard's authenticated BFF. This read
+ * invokes no model; a submitted case may contain extraction produced earlier. A quote whose bill
+ * has no decision simply has none — the hook returns undefined and the calling view renders nothing.
  */
 export function useCreditAssessments() {
   return useQuery({

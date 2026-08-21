@@ -45,6 +45,7 @@ const caseFixture = (overrides: {
   mintQuoteId: "quote-1",
   policyFileName: "synthetic-guatemala-v7.json",
   snapshot: {
+    schemaVersion: "decision-input-snapshot-v8",
     snapshotDigest: "sha256:snapshot",
     caseId: overrides.caseId,
     applicantRef: "synthetic-applicant-a",
@@ -262,13 +263,13 @@ describe("CreditAssessmentCard", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
     // The amount to offer and its ttl — never "advance".
-    expect(container.textContent).toContain("Recommended offer");
+    expect(container.textContent).toContain("Recommended amount available for minting");
     expect(container.textContent).toContain("7,734,000 sat");
     expect(container.textContent).toContain("Recommendation valid until");
     expect(container.textContent).toContain("2026-08-12");
-    expect(container.textContent).toContain("All-in cost");
+    expect(container.textContent).toContain("Minting fee");
     expect(container.textContent).toContain("3.33% of bill amount");
-    expect(container.textContent).toContain("266,000 sat over 180 days");
+    expect(container.textContent).toContain("Minting fee266,000 sat3.33% of bill amount over 180 days");
     expect(container.textContent).toContain("Repayment & recourse");
     expect(container.textContent).toContain("Acceptor pays at maturity");
     expect(container.textContent).toContain("Assessed 2026-08-10 · evidence valid through 2026-11-08");
@@ -278,22 +279,23 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).not.toContain("advance");
   });
 
-  it("leads with adjusted Mint terms while retaining the immutable recommendation", () => {
+  it("shows one current Mint payout while retaining the recommendation in the calculation", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} mintQuoteAmountSat="7735000" />);
 
-    expect(container.textContent).toContain("Mint quote amount7,735,000 sat");
-    expect(container.textContent).toContain("All-in cost3.32% of bill amount265,000 sat over 180 days");
-    expect(container.textContent).toContain("Governed recommendation7,734,000 sat");
-    expect(container.textContent).toContain("+1,000 sat vs recommendation · recommendation valid until 2026-08-12");
+    const governedTerms = container.querySelector("div.grid.gap-4.rounded-lg")?.textContent;
+    expect(governedTerms).toContain("Minting fee265,000 sat3.32% of bill amount over 180 days");
+    expect(governedTerms).toContain("Amount available for minting7,735,000 sat");
+    expect(governedTerms).not.toContain("Recommended amount available for minting");
+    expect(governedTerms).toContain("Recommendation valid until2026-08-12");
     expect(container.textContent).toContain("Recommendation calculation266,000 sat recommended fee");
+    expect(container.textContent).toContain("8,000,000 sat − 266,000 sat = 7,734,000 sat");
   });
 
   it("ignores an invalid Mint amount instead of presenting incoherent actual terms", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} mintQuoteAmountSat="9000000" />);
 
-    expect(container.textContent).toContain("Recommended offer7,734,000 sat");
-    expect(container.textContent).not.toContain("Mint quote amount");
-    expect(container.textContent).not.toContain("vs recommendation");
+    expect(container.textContent).toContain("Recommended amount available for minting7,734,000 sat");
+    expect(container.textContent).not.toContain("Amount available for minting7,735,000 sat");
   });
 
   it("shows an invoice match only when the referenced invoice evidence is present", () => {
@@ -345,14 +347,16 @@ describe("CreditAssessmentCard", () => {
     expect(feeDisclosure?.textContent).toContain("Uncertainty marginSelected from the admissible evidence quality1.00%");
     expect(feeDisclosure?.textContent).toContain("Return objectiveMint’s target annual return1.00%");
     expect(feeDisclosure?.textContent).toContain("SubsidyPolicy subsidy, subtracted from the rate−0.00%");
-    expect(feeDisclosure?.textContent).toContain("Annual discount rateFunding + expected loss + uncertainty + return − subsidy5.40%");
+    expect(feeDisclosure?.textContent).toContain(
+      "Annualized Minting fee rateFunding + expected loss + uncertainty + return − subsidy5.40%"
+    );
     expect(feeDisclosure?.textContent).not.toContain("1.00% funding +");
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat × 5.40% × 180 / 360 = 216,000 sat");
-    expect(feeDisclosure?.textContent).toContain("Operating costFixed cost for this case50,000 sat");
-    expect(feeDisclosure?.textContent).toContain("216,000 sat + 50,000 sat operating cost = 266,000 sat");
+    expect(feeDisclosure?.textContent).toContain("ReimbursementFixed reimbursement for this case50,000 sat");
+    expect(feeDisclosure?.textContent).toContain("216,000 sat time-based fee + 50,000 sat reimbursement = 266,000 sat");
     expect(feeDisclosure?.textContent).toContain("266,000 sat ÷ 8,000,000 sat = 3.33%");
     expect(feeDisclosure?.textContent).toContain(
-      "Annualized all-in costComparison metric including the fixed operating cost266,000 sat ÷ (7,734,000 sat × 180 / 360) = 6.88%"
+      "Annualized Minting fee rateComparison metric including reimbursement266,000 sat ÷ (7,734,000 sat × 180 / 360) = 6.88%"
     );
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat − 266,000 sat = 7,734,000 sat");
     expect(feeDisclosure?.textContent).toContain("Repayment & recourse");
@@ -515,7 +519,7 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("Verification required");
     expect(container.textContent).toContain("No quote can be issued until the requested evidence is verified.");
     expect(container.textContent).toContain("Current governed acceptor PD and LGD");
-    expect(container.textContent).not.toContain("Recommended offer");
+    expect(container.textContent).not.toContain("Recommended amount available for minting");
   });
 
   it("shows no terms when policy finds no current product fit", () => {
@@ -524,10 +528,8 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("No current product fit");
     expect(container.textContent).toContain("No offer is available under the active policy.");
     expect(container.textContent).toContain("Effective annual cost 60.42% − 15.00% maximum = 45.42% over policy.");
-    expect(container.textContent).toContain(
-      "50,000 sat fixed operating cost on a 250,000 sat bill contributes to the 58,000 sat total fee."
-    );
-    expect(container.textContent).not.toContain("Recommended offer");
+    expect(container.textContent).toContain("50,000 sat reimbursement on a 250,000 sat bill contributes to the 58,000 sat Minting fee.");
+    expect(container.textContent).not.toContain("Recommended amount available for minting");
   });
 
   it("fails closed when a future recommendation is unreadable", () => {
@@ -535,7 +537,7 @@ describe("CreditAssessmentCard", () => {
     render(<CreditAssessmentCard decisionCase={unreadable} />);
 
     expect(container.textContent).toContain("Assessment unavailable");
-    expect(container.textContent).not.toContain("Recommended offer");
+    expect(container.textContent).not.toContain("Recommended amount available for minting");
   });
 });
 
@@ -559,8 +561,9 @@ describe("QuoteCreditAssessment", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-1" mintQuoteAmountSat="7735000" />);
 
-    expect(container.textContent).toContain("Mint quote amount7,735,000 sat");
-    expect(container.textContent).toContain("Governed recommendation7,734,000 sat");
+    const governedTerms = container.querySelector("div.grid.gap-4.rounded-lg")?.textContent;
+    expect(governedTerms).toContain("Amount available for minting7,735,000 sat");
+    expect(governedTerms).not.toContain("Recommended amount available for minting");
   });
 
   it("says so quietly when the adapter holds no decision for the bill", () => {

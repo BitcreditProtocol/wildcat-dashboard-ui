@@ -125,7 +125,7 @@ beforeEach(() => {
 });
 
 describe("QuoteDetailCard", () => {
-  it("distinguishes the discounted Mint payout from the fee", () => {
+  it("distinguishes the amount available for minting from the Minting fee", () => {
     const page = renderWithProviders(
       <QuoteDetailCard
         quote={baseQuote}
@@ -137,12 +137,138 @@ describe("QuoteDetailCard", () => {
         rejectedToPay={false}
         isInMempool={false}
         requestedToPay={false}
+        decisionSummary={{
+          useOfFunds: "Fertilizer and seasonal workers",
+          repaymentSource: "Coffee harvest sales",
+          acceptor: "Coffee cooperative",
+          goodsDescription: "Coffee crop inputs",
+          readyForDecision: true,
+          passedChecks: 6,
+          totalChecks: 6,
+          invoiceExtractedAndMatched: true,
+          answersAffirmed: true,
+          recourseAcknowledged: true,
+          unresolvedContradictions: 0,
+          underwritingEvidenceProvenance: "synthetic",
+          hasMintPolicyAssignment: true,
+          billAcceptanceState: "accepted",
+        }}
       />
     );
 
-    expect(page.textContent).toContain("Discounted amount:80,000,000sat");
-    expect(page.textContent).toContain("Effective fee (absolute):20,000,000sat");
+    expect(page.textContent).toContain("Amount available for minting80,000,000sat");
+    expect(page.textContent).toContain("Minting fee20,000,000sat");
+    expect(page.textContent).toContain("Use of proceedsFertilizer and seasonal workers");
+    expect(page.textContent).toContain("Repayment sourceCoffee harvest sales");
+    expect(page.textContent).toContain("Payer at maturityCoffee cooperative");
+    expect(page.textContent).toContain("Underlying tradeCoffee crop inputs");
+    expect(page.textContent).toContain("Ready for decision");
+    expect(page.textContent).toContain("Decision evidence");
+    expect(page.textContent).toContain("Synthetic underwriting inputs");
+    expect(page.textContent).toContain("Mint policy assigned");
+    expect(page.textContent).toContain("Automated checks");
+    expect(page.textContent).toContain("6/6 automated policy gates passed");
+    expect(page.textContent).toContain("Invoice data extracted and matched");
+    expect(page.textContent).toContain("Automated scan found no unresolved contradictions");
+    expect(page.textContent).toContain("Applicant attestations");
+    expect(page.textContent).toContain("Applicant affirmed the submitted answers");
+    expect(page.textContent).toContain("Applicant acknowledged full-bill recourse");
+    expect(page.textContent).toContain("Authorization & lifecycle");
+    expect(page.textContent).toContain("eBillAccepted");
+    expect(page.textContent).toContain("ApplicantAccepted quote");
+    expect(page.textContent).toContain("Mint operationUnavailable");
+    expect(page.textContent).toContain("Verification receipt unavailable");
+    expect(page.textContent).not.toContain("Invoice reviewed");
+    expect(page.querySelector('button[aria-label="Print summary"]')).not.toBeNull();
+    expect(page.textContent).toContain("Drawee:");
+    expect(page.textContent).toContain("Drawer:");
+    expect(page.textContent).toContain("Payee:");
+    expect(page.textContent?.match(/ParticipantDetailMock/g)).toHaveLength(3);
+    expect(page.textContent).not.toContain("Participants:");
+    expect(page.textContent).not.toContain("Accepted. Bill amount");
+    expect(page.textContent).not.toContain("Not requested");
+    expect(page.textContent).not.toContain("Reference & party details");
     expect(page.textContent).not.toContain("Fee:80,000,000sat");
+  });
+
+  it("shows the exact verified authorization receipt returned by the Mint command", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{ ...baseQuote, status: "Offered", ttl: "2099-09-02T23:59:59.999Z" }}
+        effectiveQuoteStatus="Offered"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        signedAuthorizationReceipt={{
+          keyId: "synthetic-testnet-key-1",
+          mintId: "mint-demo",
+          mintQuoteId: "quote-1",
+          billId: "bill-1",
+          action: "request_to_mint",
+          expiresAt: "2099-09-02T23:59:59.999Z",
+          authorizationDigest: `sha256:${"c".repeat(64)}`,
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("Signed command verified");
+    expect(page.textContent).toContain("AuthorizationSigned command verified");
+    expect(page.textContent).toContain("ApplicantAwaiting response");
+    expect(page.textContent).toContain("synthetic-testnet-key-1");
+    expect(page.textContent).toContain(`sha256:${"c".repeat(15)}…`);
+    expect(page.textContent).toContain("request_to_mint");
+    expect(page.textContent).toContain("mint-demo / bill-1 / quote-1");
+    expect(page.textContent).toMatch(/Expires2099-09-0[23] \d{2}:59/u);
+  });
+
+  it("shows the durable execution receipt and real Treasury minting progress after reload", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{ ...baseQuote, status: "MintingEnabled", fee: { value: 20_000_000, unit: null } }}
+        effectiveQuoteStatus="MintingEnabled"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        durableAuthorizationReceipt={{
+          operationId: `sha256:${"a".repeat(64)}`,
+          status: "completed",
+          completedAt: "2026-08-21T12:06:00.000Z",
+          resultDigest: `sha256:${"b".repeat(64)}`,
+          effectId: "quote-1",
+          authorizationDigest: `sha256:${"c".repeat(64)}`,
+          mintId: "mint-demo",
+          billId: "bill-1",
+          action: "request_to_mint",
+        }}
+        mintOperationStatus={{
+          kid: keysetId,
+          quote_id: "quote-1",
+          target: { value: 80_000_000, unit: null },
+          current: { value: 80_000_000, unit: null },
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("Execution receipt persisted");
+    expect(page.textContent).toContain("Authorizationcompleted");
+    expect(page.textContent).toContain("Mint operationComplete · 80,000,000 / 80,000,000");
+    expect(page.textContent).toContain(`Operation IDsha256:${"a".repeat(15)}…`);
+    expect(page.textContent).toContain("Execution statuscompleted");
+    expect(page.textContent).toContain("Completed at2026-08-21T12:06:00.000Z");
+    expect(page.textContent).toContain("Effect IDquote-1");
+    expect(page.textContent).toContain(`Authorization digestsha256:${"c".repeat(15)}…`);
+    expect(page.textContent).toContain(`Result digestsha256:${"b".repeat(15)}…`);
+    expect(page.textContent).toContain("Exact scoperequest_to_mintmint-demo / bill-1");
+    expect(page.textContent).not.toContain("Signing key");
+    expect(page.textContent).not.toContain("Expires");
   });
 
   it("renders primary sat values with secondary eur conversions when rates are available", async () => {

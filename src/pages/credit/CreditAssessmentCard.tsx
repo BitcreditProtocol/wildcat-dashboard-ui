@@ -55,28 +55,13 @@ const messages = defineMessages({
   unreadable: { id: "credit.outcome.unreadable", defaultMessage: "Unreadable", description: "Unreadable outcome badge" },
   discounted: {
     id: "credit.quote.discounted",
-    defaultMessage: "Recommended offer",
-    description: "Label for the whole-bill amount recommended by the deterministic core",
+    defaultMessage: "Recommended amount available for minting",
+    description: "Label for the net amount recommended by the deterministic core after fees",
   },
   mintQuoteAmount: {
     id: "credit.quote.mintQuoteAmount",
-    defaultMessage: "Mint quote amount",
-    description: "Label for the actual amount sent by the Mint after operator review",
-  },
-  governedRecommendation: {
-    id: "credit.quote.governedRecommendation",
-    defaultMessage: "Governed recommendation",
-    description: "Label for the immutable deterministic amount beside the actual Mint quote",
-  },
-  recommendationAdjusted: {
-    id: "credit.quote.recommendationAdjusted",
-    defaultMessage: "{adjustment} vs recommendation · recommendation valid until {expires}",
-    description: "Difference between the actual Mint quote and the immutable governed recommendation without inferring its author",
-  },
-  recommendationMatched: {
-    id: "credit.quote.recommendationMatched",
-    defaultMessage: "Matches the Mint quote · recommendation valid until {expires}",
-    description: "Confirms that the actual Mint quote exactly matches the governed recommendation",
+    defaultMessage: "Amount available for minting",
+    description: "Label for the net amount the Mint currently offers the bill holder after fees",
   },
   expires: {
     id: "credit.quote.expires",
@@ -85,27 +70,22 @@ const messages = defineMessages({
   },
   allInCost: {
     id: "credit.quote.allInCost",
-    defaultMessage: "All-in cost",
-    description: "Total cost of the offer including every fee component",
-  },
-  ofBillAmount: {
-    id: "credit.quote.ofBillAmount",
-    defaultMessage: "{rate} of bill amount",
-    description: "Total cost as a percentage of the bill face amount",
+    defaultMessage: "Minting fee",
+    description: "Total Minting fee including every fee component",
   },
   allInCostDetail: {
     id: "credit.quote.allInCostDetail",
-    defaultMessage: "{fee} over {tenor} days",
-    description: "Total fee and tenor beneath the all-in cost ratio",
+    defaultMessage: "{rate} of bill amount over {tenor} days",
+    description: "Minting fee ratio and tenor beneath the fee",
   },
   annualizedCost: {
     id: "credit.fee.annualizedCost",
-    defaultMessage: "Annualized all-in cost",
-    description: "Annualized all-in cost label",
+    defaultMessage: "Annualized Minting fee rate",
+    description: "Annualized Minting fee rate label",
   },
   annualizedCostHelp: {
     id: "credit.fee.annualizedCostHelp",
-    defaultMessage: "Comparison metric including the fixed operating cost",
+    defaultMessage: "Comparison metric including reimbursement",
     description: "Explanation of the annualized all-in cost",
   },
   repayment: {
@@ -165,8 +145,8 @@ const messages = defineMessages({
   },
   appliedDiscount: {
     id: "credit.fee.appliedDiscount",
-    defaultMessage: "Discount for {tenor} days",
-    description: "Applied discount component of the whole-bill fee",
+    defaultMessage: "Time-based fee for {tenor} days",
+    description: "Time-based component of the Minting fee",
   },
   fundingCost: { id: "credit.fee.fundingCost", defaultMessage: "Funding cost", description: "Pricing component label" },
   fundingCostHelp: {
@@ -205,8 +185,8 @@ const messages = defineMessages({
   },
   annualDiscount: {
     id: "credit.fee.annualDiscount",
-    defaultMessage: "Annual discount rate",
-    description: "Total annual discount rate label",
+    defaultMessage: "Annualized Minting fee rate",
+    description: "Annualized Minting fee rate label",
   },
   annualDiscountHelp: {
     id: "credit.fee.annualDiscountHelp",
@@ -218,21 +198,21 @@ const messages = defineMessages({
     defaultMessage: "Applied to the whole bill using a {dayCount}-day year",
     description: "Explanation of the tenor-adjusted discount",
   },
-  operatingCost: { id: "credit.fee.operatingCost", defaultMessage: "Operating cost", description: "Fixed operating cost label" },
+  operatingCost: { id: "credit.fee.operatingCost", defaultMessage: "Reimbursement", description: "Fixed reimbursement label" },
   operatingCostHelp: {
     id: "credit.fee.operatingCostHelp",
-    defaultMessage: "Fixed cost for this case",
-    description: "Explanation of the operating cost",
+    defaultMessage: "Fixed reimbursement for this case",
+    description: "Explanation of the reimbursement",
   },
-  totalFee: { id: "credit.fee.total", defaultMessage: "Total fee", description: "Whole-bill effective fee" },
+  totalFee: { id: "credit.fee.total", defaultMessage: "Minting fee", description: "Whole-bill Minting fee" },
   totalFeeHelp: {
     id: "credit.fee.totalHelp",
-    defaultMessage: "Discount + operating cost",
-    description: "Explanation of the total fee",
+    defaultMessage: "Time-based fee + reimbursement",
+    description: "Explanation of the Minting fee",
   },
   allInBillCost: {
     id: "credit.fee.allInBillCost",
-    defaultMessage: "All-in cost of bill",
+    defaultMessage: "Minting fee ratio",
     description: "All-in fee ratio label",
   },
   allInBillCostHelp: {
@@ -242,7 +222,7 @@ const messages = defineMessages({
   },
   netOffer: {
     id: "credit.fee.netOffer",
-    defaultMessage: "Recommended offer",
+    defaultMessage: "Amount available for minting",
     description: "Net amount recommended after the whole-bill fee",
   },
   netOfferHelp: {
@@ -257,7 +237,7 @@ const messages = defineMessages({
   },
   totalFeeEquation: {
     id: "credit.fee.totalFeeEquation",
-    defaultMessage: "{discount} + {cost} operating cost = {fee}",
+    defaultMessage: "{discount} time-based fee + {cost} reimbursement = {fee}",
     description: "Whole-bill total fee calculation",
   },
   feeRatioEquation: {
@@ -348,7 +328,7 @@ const messages = defineMessages({
   },
   noFitFixedCost: {
     id: "credit.quote.noFitFixedCost",
-    defaultMessage: "{cost} fixed operating cost on a {bill} bill contributes to the {fee} total fee.",
+    defaultMessage: "{cost} reimbursement on a {bill} bill contributes to the {fee} Minting fee.",
     description: "Exact fixed-cost driver from the deterministic no-fit calculation trace",
   },
   assessed: {
@@ -445,50 +425,29 @@ function GovernedTerms({
   const displayedAmount = validQuotedAmount ?? BigInt(terms.discountedSat);
   const displayedFee = billSum - displayedAmount;
   const displayedFeeRatioBps = Number((displayedFee * 10_000n + billSum - 1n) / billSum);
-  const recommendation = BigInt(terms.discountedSat);
-  const adjustment = validQuotedAmount === null ? null : validQuotedAmount - recommendation;
-  const formattedAdjustment =
-    adjustment === null ? null : adjustment >= 0n ? `+${formatSat(adjustment.toString())}` : `−${formatSat((-adjustment).toString())}`;
   return (
     <div className="flex flex-col gap-3">
       <div className="grid gap-4 rounded-lg border border-border bg-elevation-100 p-4 sm:grid-cols-3">
         <div>
-          <div className="text-xs font-medium text-muted-foreground">
-            {intl.formatMessage(validQuotedAmount === null ? messages.discounted : messages.mintQuoteAmount)}
-          </div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{formatSat(displayedAmount.toString())}</div>
-        </div>
-        <div>
           <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.allInCost)}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums">
-            {intl.formatMessage(messages.ofBillAmount, { rate: percentFromBps(displayedFeeRatioBps) })}
-          </div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{formatSat(displayedFee.toString())}</div>
           <div className="mt-0.5 text-xs text-muted-foreground">
             {intl.formatMessage(messages.allInCostDetail, {
-              fee: formatSat(displayedFee.toString()),
+              rate: percentFromBps(displayedFeeRatioBps),
               tenor: terms.tenorDays,
             })}
           </div>
         </div>
-        {validQuotedAmount === null ? (
-          <div>
-            <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
-            <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
+        <div>
+          <div className="text-xs font-medium text-muted-foreground">
+            {intl.formatMessage(validQuotedAmount === null ? messages.discounted : messages.mintQuoteAmount)}
           </div>
-        ) : (
-          <div>
-            <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.governedRecommendation)}</div>
-            <div className="mt-1 text-lg font-semibold tabular-nums">{formatSat(terms.discountedSat)}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              {adjustment === 0n
-                ? intl.formatMessage(messages.recommendationMatched, { expires: terms.offerExpiresOn })
-                : intl.formatMessage(messages.recommendationAdjusted, {
-                    adjustment: formattedAdjustment,
-                    expires: terms.offerExpiresOn,
-                  })}
-            </div>
-          </div>
-        )}
+          <div className="mt-1 text-lg font-semibold tabular-nums">{formatSat(displayedAmount.toString())}</div>
+        </div>
+        <div>
+          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -822,7 +781,7 @@ export function CreditAssessmentCard({ decisionCase, mintQuoteAmountSat }: { dec
             </>
           )}
           <AuditRow label={intl.formatMessage(messages.policyFile)}>{decisionCase.policyFileName}</AuditRow>
-          <AuditRow label={intl.formatMessage(messages.product)}>{words(policyPack.product)}</AuditRow>
+          <AuditRow label={intl.formatMessage(messages.product)}>{words(policyPack.product).replace(/\bdiscount\b/gi, "Minting")}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.policyVersion)}>{policyPack.policyPackVersion}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.calculationVersion)}>{policyPack.calculationVersion}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.annualLimit)}>{percentFromBps(policyPack.maximumEffectiveAnnualBps)}</AuditRow>

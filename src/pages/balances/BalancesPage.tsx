@@ -98,14 +98,14 @@ export function OtherBalanceChart() {
     credit: {
       label: intl.formatMessage({
         id: "balances.chart.creditToken",
-        defaultMessage: "Credit token",
+        defaultMessage: "Credit balance",
       }),
       color: "var(--color-chart-3)",
     },
     debit: {
       label: intl.formatMessage({
         id: "balances.chart.debitToken",
-        defaultMessage: "Debit token",
+        defaultMessage: "Debit balance",
       }),
       color: "var(--color-chart-4)",
     },
@@ -272,7 +272,7 @@ function PageBodyWithDevSection() {
           <Card className="bg-purple-200 text-text-on-tint">
             <CardHeader>
               <CardTitle className="text-text-on-tint">
-                <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
+                <FormattedMessage id="balances.creditToken" defaultMessage="Credit balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -282,7 +282,7 @@ function PageBodyWithDevSection() {
           <Card className="bg-purple-400 text-text-on-tint">
             <CardHeader>
               <CardTitle className="text-text-on-tint">
-                <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
+                <FormattedMessage id="balances.debitToken" defaultMessage="Debit balance" />
               </CardTitle>
             </CardHeader>
             <CardContent>
