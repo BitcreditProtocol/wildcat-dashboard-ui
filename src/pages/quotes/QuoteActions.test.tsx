@@ -486,6 +486,40 @@ describe("QuoteActions", () => {
     expect(offerConfirmationOpen).toBe(false);
   });
 
+  it("does not reach the Mint when signed terms differ from the confirmed offer", async () => {
+    decisionCase = governedOffer;
+    mockRecordOperatorDecision.mockResolvedValue({
+      ok: true,
+      signedAuthorization: {
+        ...signedAuthorization,
+        authorization: {
+          ...signedAuthorization.authorization,
+          terms: { ...signedAuthorization.authorization.terms, discountedSat: "94" },
+        },
+      },
+    });
+    renderComponent(pendingQuote);
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+    expect(offerConfirmationOpen).toBe(true);
+
+    mockRecordOperatorDecision.mockResolvedValue({ ok: true, signedAuthorization });
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenCalledTimes(2);
+    expect(mockHandleOfferQuote).toHaveBeenCalledWith(signedAuthorization);
+  });
+
   it("publishes the verified receipt only after the Mint accepts the signed command", async () => {
     decisionCase = governedOffer;
     const onAuthorizationVerified = vi.fn<(receipt: VerifiedAuthorizationReceipt) => void>();

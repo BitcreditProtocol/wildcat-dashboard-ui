@@ -514,7 +514,10 @@ export function QuoteDetailCard({
                 label={intl.formatMessage({ id: "quotes.lifecycle.quote", defaultMessage: "Quote" })}
                 value={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
                 state={
-                  effectiveQuoteStatus === "Denied" || effectiveQuoteStatus === "Rejected" || effectiveQuoteStatus === "Canceled"
+                  effectiveQuoteStatus === "Denied" ||
+                  effectiveQuoteStatus === "Rejected" ||
+                  effectiveQuoteStatus === "Canceled" ||
+                  effectiveQuoteStatus === "FailedEbillValidation"
                     ? "failed"
                     : "current"
                 }

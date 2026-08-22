@@ -26,6 +26,7 @@ import NotFoundPage from "@/pages/NotFoundPage";
 import { QuoteCreditAssessment } from "@/pages/credit/QuoteCreditAssessment";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import { durableAuthorizationReceiptFromQuote, type VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
+import { isQuotePollingCompleteStatus } from "@/utils/quote-status";
 
 interface LocationState {
   from?: string;
@@ -49,7 +50,6 @@ function Loader() {
 }
 
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
-const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 const QUOTE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function PageBody({ id }: { id: string }) {
@@ -439,7 +439,7 @@ export default function QuotePage() {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
       }
 
-      return QUOTE_POLLING_TERMINAL_STATUSES.has(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
+      return isQuotePollingCompleteStatus(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
     enabled: validQuoteId,

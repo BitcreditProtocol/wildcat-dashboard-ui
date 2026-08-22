@@ -1,13 +1,13 @@
 import { listQuotesInfiniteOptions, getQuoteOptions, listEbillsOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
-import type { BitcreditBill, BillInfo, InfoReply, LightInfo, ListSort } from "@/generated/client/types.gen";
-import { getEffectiveQuoteStatus } from "@/utils/quote-status";
+import type { BitcreditBill, BillInfo, InfoReply, InfoReplyDiscriminants, LightInfo, ListSort } from "@/generated/client/types.gen";
+import { getEffectiveQuoteStatus, isQuotePollingCompleteStatus } from "@/utils/quote-status";
 import { isBeforeUtcStartOfDate } from "@/utils/dates";
 import * as React from "react";
 import { useState } from "react";
 import { useIntl } from "react-intl";
 
-export type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "MintingEnabled";
+export type QuoteStatus = InfoReplyDiscriminants;
 
 type SortField = "status" | "sum" | "maturity" | "statusChange";
 type SortDirection = "asc" | "desc";
@@ -24,7 +24,6 @@ export const ALL_PAGE_SIZE_VALUE = "all";
 const ALL_PAGE_SIZE_LIMIT = 100_000;
 const RETRY_COUNT = 2;
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
-const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
 
 function isLightInfo(value: unknown): value is LightInfo {
@@ -210,7 +209,7 @@ export function useQuoteList(status?: QuoteStatus) {
       enabled: !!quote.id,
       refetchInterval: (query: { state: { data?: { status?: string } } }) => {
         const currentStatus = query.state.data?.status ?? quote.status;
-        return QUOTE_POLLING_TERMINAL_STATUSES.has(currentStatus) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
+        return isQuotePollingCompleteStatus(currentStatus) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
       },
       refetchIntervalInBackground: true,
     })),

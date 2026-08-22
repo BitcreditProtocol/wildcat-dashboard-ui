@@ -10,6 +10,11 @@ export const quoteStatusMessages = defineMessages({
   Canceled: { id: "quote.status.Canceled", defaultMessage: "Canceled" },
   Minting: { id: "quote.status.Minting", defaultMessage: "Minting" },
   MintingEnabled: { id: "quote.status.MintingEnabled", defaultMessage: "Minting enabled" },
+  FailedEbillValidation: {
+    id: "quote.status.FailedEbillValidation",
+    defaultMessage: "eBill validation failed",
+    description: "Terminal quote status when the Mint rejects the referenced eBill as invalid",
+  },
 });
 
 export const participantRoleMessages = defineMessages({

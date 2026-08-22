@@ -9,13 +9,13 @@ import {
 import type { BitcreditBill, InfoReply } from "@/generated/client/types.gen";
 import { getEbillMintCompleteQueryOptions, type EbillMintComplete } from "@/lib/ebill-mint-complete";
 import { doesBillMatchKeysetMaturity } from "@/utils/keyset";
+import { isQuotePollingCompleteStatus } from "@/utils/quote-status";
 
 const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
 const MINT_COMPLETE_POLL_INTERVAL_MS = 60_000;
 const MINT_COMPLETE_RETRY_COUNT = 3;
 const MINT_COMPLETE_RETRY_DELAY_MS = 30_000;
 
-const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 type QuoteDetailQueryResult = UseQueryResult<InfoReply>;
 type MintCompleteQueryResult = UseQueryResult<EbillMintComplete>;
 
@@ -50,7 +50,7 @@ export function useKeysetDetail(keysetId: string) {
       }),
       refetchInterval: (query: { state: { data?: { status?: string } } }) => {
         const currentStatus = query.state.data?.status ?? quote.status;
-        return QUOTE_POLLING_TERMINAL_STATUSES.has(currentStatus) ? false : KEYSET_DETAIL_POLL_INTERVAL_MS;
+        return isQuotePollingCompleteStatus(currentStatus) ? false : KEYSET_DETAIL_POLL_INTERVAL_MS;
       },
       refetchIntervalInBackground: true,
     })),
