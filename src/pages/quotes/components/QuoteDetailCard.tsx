@@ -40,6 +40,10 @@ interface QuoteDetailCardProps {
     underwritingEvidenceProvenance: "mint_backed" | "synthetic" | "unavailable";
     hasMintPolicyAssignment: boolean;
     billAcceptanceState?: string;
+    recommendedTerms?: {
+      mintingFee: number;
+      amountAvailableForMinting: number;
+    };
   };
 }
 
@@ -110,7 +114,9 @@ export function QuoteDetailCard({
   const intl = useIntl();
   const bill = quote.bill;
   const netProceeds = "discounted" in quote ? quote.discounted : null;
-  const mintingFee = netProceeds === null ? null : bill.sum - netProceeds;
+  const showingRecommendation = netProceeds === null && decisionSummary?.recommendedTerms !== undefined;
+  const displayedAmountAvailableForMinting = netProceeds ?? decisionSummary?.recommendedTerms?.amountAvailableForMinting ?? null;
+  const mintingFee = netProceeds === null ? (decisionSummary?.recommendedTerms?.mintingFee ?? null) : bill.sum - netProceeds;
   const mintingFeeRate = mintingFee === null || bill.sum === 0 ? null : `${((mintingFee / bill.sum) * 100).toFixed(4)}%`;
 
   const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
@@ -443,7 +449,13 @@ export function QuoteDetailCard({
           </div>
           <div className="border-b border-border px-5 py-4 lg:border-r lg:border-b-0">
             <div className="text-xs text-muted-foreground">
-              {intl.formatMessage({ id: "quotes.detail.discount.absolute", defaultMessage: "Minting fee" })}
+              {showingRecommendation
+                ? intl.formatMessage({
+                    id: "quotes.summary.recommendedMintingFee",
+                    defaultMessage: "Recommended Minting fee",
+                    description: "Governed recommended Minting fee before the Mint has issued terms",
+                  })
+                : intl.formatMessage({ id: "quotes.detail.discount.absolute", defaultMessage: "Minting fee" })}
             </div>
             {mintingFee !== null && mintingFeeRate !== null ? (
               <>
@@ -456,10 +468,21 @@ export function QuoteDetailCard({
           </div>
           <div className="border-r border-border px-5 py-4">
             <div className="text-xs text-muted-foreground">
-              {intl.formatMessage({ id: "quotes.detail.discounted", defaultMessage: "Amount available for minting" })}
+              {showingRecommendation
+                ? intl.formatMessage({
+                    id: "quotes.summary.recommendedAmountAvailable",
+                    defaultMessage: "Recommended amount available for minting",
+                    description: "Governed recommended amount before the Mint has issued terms",
+                  })
+                : intl.formatMessage({ id: "quotes.detail.discounted", defaultMessage: "Amount available for minting" })}
             </div>
-            {netProceeds !== null ? (
-              <Currency value={netProceeds} sourceCurrency="sat" className="mt-1 text-xl font-semibold" amountClassName="text-current" />
+            {displayedAmountAvailableForMinting !== null ? (
+              <Currency
+                value={displayedAmountAvailableForMinting}
+                sourceCurrency="sat"
+                className="mt-1 text-xl font-semibold"
+                amountClassName="text-current"
+              />
             ) : (
               <div className="mt-1 text-xl font-semibold">—</div>
             )}
