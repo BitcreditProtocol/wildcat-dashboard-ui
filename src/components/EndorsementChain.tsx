@@ -109,7 +109,7 @@ export function EndorsementChain({ historyBlocks, isLoading, maturityDate }: End
   const eventCount = events.length;
 
   return (
-    <Card>
+    <Card id="bill-history" className="scroll-mt-4">
       <CardHeader className="p-0">
         <button
           type="button"

@@ -72,6 +72,7 @@ describe("QuoteDocuments", () => {
     );
 
     expect(page.textContent).toContain("Documents & evidence");
+    expect(page.querySelector("#documents-and-evidence")).not.toBeNull();
     expect(page.textContent).toContain("1 bill file · No submitted credit evidence");
     expect(page.textContent).toContain("Show details");
     expect(page.textContent).not.toContain("invoice.pdf");

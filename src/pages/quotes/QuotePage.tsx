@@ -373,6 +373,9 @@ function PageBody({ id }: { id: string }) {
                         recommendedTerms: {
                           mintingFee: Number(creditAssessment.decisionCase.result.terms.effectiveFeeSat),
                           amountAvailableForMinting: Number(creditAssessment.decisionCase.result.terms.discountedSat),
+                          feeRatioBps: creditAssessment.decisionCase.result.terms.feeRatioBps,
+                          tenorDays: creditAssessment.decisionCase.result.terms.tenorDays,
+                          offerExpiresOn: creditAssessment.decisionCase.result.terms.offerExpiresOn,
                         },
                       }
                     : {}),

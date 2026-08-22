@@ -553,6 +553,9 @@ describe("QuoteCreditAssessment", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
+    const details = container.querySelector("details");
+    expect(details?.open).toBe(false);
+    expect(details?.querySelector("summary")?.textContent).toBe("Full governed assessment");
     expect(container.textContent).toContain("Governed credit decision");
     expect(container.textContent).toContain("7,734,000 sat");
   });

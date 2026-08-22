@@ -43,6 +43,9 @@ interface QuoteDetailCardProps {
     recommendedTerms?: {
       mintingFee: number;
       amountAvailableForMinting: number;
+      feeRatioBps: number;
+      tenorDays: number;
+      offerExpiresOn: string;
     };
   };
 }
@@ -117,7 +120,22 @@ export function QuoteDetailCard({
   const showingRecommendation = netProceeds === null && decisionSummary?.recommendedTerms !== undefined;
   const displayedAmountAvailableForMinting = netProceeds ?? decisionSummary?.recommendedTerms?.amountAvailableForMinting ?? null;
   const mintingFee = netProceeds === null ? (decisionSummary?.recommendedTerms?.mintingFee ?? null) : bill.sum - netProceeds;
-  const mintingFeeRate = mintingFee === null || bill.sum === 0 ? null : `${((mintingFee / bill.sum) * 100).toFixed(4)}%`;
+  const mintingFeeRate =
+    mintingFee === null || bill.sum === 0
+      ? null
+      : showingRecommendation && decisionSummary?.recommendedTerms
+        ? intl.formatMessage(
+            {
+              id: "quotes.summary.recommendedFeeContext",
+              defaultMessage: "{rate}% of bill over {days} days",
+              description: "Fee ratio and tenor for the governed recommended Minting fee",
+            },
+            {
+              rate: intl.formatNumber(decisionSummary.recommendedTerms.feeRatioBps / 100, { maximumFractionDigits: 2 }),
+              days: decisionSummary.recommendedTerms.tenorDays,
+            }
+          )
+        : `${((mintingFee / bill.sum) * 100).toFixed(4)}%`;
 
   const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
   const maturityLabel = maturityDate
@@ -429,6 +447,29 @@ export function QuoteDetailCard({
                   </ul>
                 </div>
               </div>
+              <nav className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs" aria-label="Decision proof">
+                <a className="font-medium text-primary underline-offset-4 hover:underline" href="#documents-and-evidence">
+                  {intl.formatMessage({
+                    id: "quotes.summary.reviewEvidence",
+                    defaultMessage: "Review source evidence",
+                    description: "Link from the executive summary to the source documents and extracted evidence",
+                  })}
+                </a>
+                <a className="font-medium text-primary underline-offset-4 hover:underline" href="#bill-history">
+                  {intl.formatMessage({
+                    id: "quotes.summary.reviewBillHistory",
+                    defaultMessage: "Review bill history",
+                    description: "Link from the executive summary to the signed eBill history",
+                  })}
+                </a>
+                <a className="font-medium text-primary underline-offset-4 hover:underline" href="#full-governed-assessment">
+                  {intl.formatMessage({
+                    id: "quotes.summary.reviewAssessment",
+                    defaultMessage: "Open full assessment",
+                    description: "Link from the executive summary to the detailed governed assessment",
+                  })}
+                </a>
+              </nav>
             </section>
           </div>
         ) : (
@@ -477,12 +518,26 @@ export function QuoteDetailCard({
                 : intl.formatMessage({ id: "quotes.detail.discounted", defaultMessage: "Amount available for minting" })}
             </div>
             {displayedAmountAvailableForMinting !== null ? (
-              <Currency
-                value={displayedAmountAvailableForMinting}
-                sourceCurrency="sat"
-                className="mt-1 text-xl font-semibold"
-                amountClassName="text-current"
-              />
+              <>
+                <Currency
+                  value={displayedAmountAvailableForMinting}
+                  sourceCurrency="sat"
+                  className="mt-1 text-xl font-semibold"
+                  amountClassName="text-current"
+                />
+                {showingRecommendation && decisionSummary?.recommendedTerms && (
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {intl.formatMessage(
+                      {
+                        id: "quotes.summary.recommendationValidUntil",
+                        defaultMessage: "Valid until {date}",
+                        description: "Expiry date of the governed recommended terms",
+                      },
+                      { date: decisionSummary.recommendedTerms.offerExpiresOn }
+                    )}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="mt-1 text-xl font-semibold">—</div>
             )}

@@ -178,6 +178,9 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("ApplicantAccepted quote");
     expect(page.textContent).toContain("Mint operationUnavailable");
     expect(page.textContent).toContain("Verification receipt unavailable");
+    expect(page.querySelector('a[href="#documents-and-evidence"]')?.textContent).toBe("Review source evidence");
+    expect(page.querySelector('a[href="#bill-history"]')?.textContent).toBe("Review bill history");
+    expect(page.querySelector('a[href="#full-governed-assessment"]')?.textContent).toBe("Open full assessment");
     expect(page.textContent).not.toContain("Invoice reviewed");
     expect(page.querySelector('button[aria-label="Print summary"]')).not.toBeNull();
     expect(page.textContent).toContain("Drawee:");
@@ -221,13 +224,21 @@ describe("QuoteDetailCard", () => {
           unresolvedContradictions: 0,
           underwritingEvidenceProvenance: "synthetic",
           hasMintPolicyAssignment: true,
-          recommendedTerms: { mintingFee: 272_000, amountAvailableForMinting: 7_928_000 },
+          recommendedTerms: {
+            mintingFee: 272_000,
+            amountAvailableForMinting: 7_928_000,
+            feeRatioBps: 332,
+            tenorDays: 180,
+            offerExpiresOn: "2026-08-24",
+          },
         }}
       />
     );
 
     expect(page.textContent).toContain("Recommended Minting fee272,000sat");
+    expect(page.textContent).toContain("3.32% of bill over 180 days");
     expect(page.textContent).toContain("Recommended amount available for minting7,928,000sat");
+    expect(page.textContent).toContain("Valid until 2026-08-24");
   });
 
   it("shows the exact verified authorization receipt returned by the Mint command", () => {
