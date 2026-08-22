@@ -619,21 +619,21 @@ describe("CreditAssessmentBadge", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
-    expect(container.textContent).toBe("AI Credit: offer available");
+    expect(container.textContent).toBe("Ready for decision");
   });
 
   it("shows verification rather than an outcome while blocked", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [blockedCase] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
-    expect(container.textContent).toBe("AI Credit: verify");
+    expect(container.textContent).toBe("Verification required");
   });
 
-  it("leaves unassessed quotes exactly as they were", () => {
+  it("keeps the normal pending label for unassessed quotes", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="bitcrt-a-real-bill" mintQuoteId="quote-1" />);
 
-    expect(container.textContent).toBe("");
+    expect(container.textContent).toBe("Pending");
   });
 
   it("never lets an unreadable payload look like a refusal", () => {
@@ -641,6 +641,6 @@ describe("CreditAssessmentBadge", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [strange] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
-    expect(container.textContent).toBe("AI Credit: unreadable");
+    expect(container.textContent).toBe("Assessment unavailable");
   });
 });
