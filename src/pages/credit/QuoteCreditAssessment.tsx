@@ -25,6 +25,11 @@ const messages = defineMessages({
     defaultMessage: "No AI Credit assessment for this bill.",
     description: "Shown when the adapter answered but has no decision for this bill",
   },
+  fullAssessment: {
+    id: "credit.quoteCard.fullAssessment",
+    defaultMessage: "Full governed assessment",
+    description: "Collapsed heading for the detailed governed credit assessment below the executive summary",
+  },
 });
 
 export function QuoteCreditAssessment({
@@ -48,7 +53,14 @@ export function QuoteCreditAssessment({
     );
   }
   if (error === null && decisionCase !== undefined) {
-    return <CreditAssessmentCard decisionCase={decisionCase} mintQuoteAmountSat={mintQuoteAmountSat} />;
+    return (
+      <details id="full-governed-assessment" className="scroll-mt-4 rounded-lg border border-border print:hidden">
+        <summary className="cursor-pointer px-5 py-4 text-sm font-semibold">{intl.formatMessage(messages.fullAssessment)}</summary>
+        <div className="border-t border-border p-4">
+          <CreditAssessmentCard decisionCase={decisionCase} mintQuoteAmountSat={mintQuoteAmountSat} />
+        </div>
+      </details>
+    );
   }
   if (error === null && isAbsent) return <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.absent)}</p>;
   return (
