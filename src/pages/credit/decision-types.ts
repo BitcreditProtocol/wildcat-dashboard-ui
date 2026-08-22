@@ -205,9 +205,16 @@ export interface DecisionCase {
       lossGivenDefaultBps: number | null;
       evidenceState: string;
       validThrough: string;
+      evidenceRefs?: string[];
     };
     duplicateCheck: { result: string; evidenceState: string; validThrough: string };
-    mintCapacity: { existingExposureSat: string | null; exposureLimitSat: string | null; evidenceState: string; validThrough: string };
+    mintCapacity: {
+      existingExposureSat: string | null;
+      exposureLimitSat: string | null;
+      evidenceState: string;
+      validThrough: string;
+      evidenceRefs?: string[];
+    };
   };
   policyPack: {
     policyPackVersion: string;
