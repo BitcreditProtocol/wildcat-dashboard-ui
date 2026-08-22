@@ -185,6 +185,59 @@ describe("parseDecisionCasesResponse", () => {
     expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase] });
   });
 
+  it("accepts owner-bound v10 verification requests and rejects incomplete ownership", () => {
+    const oneCase = validCase();
+    const blocked = {
+      ...oneCase,
+      result: {
+        ...oneCase.result,
+        schemaVersion: "decision-result-v10",
+        assessmentStatus: "blocked_pending_verification",
+        recommendation: null,
+        terms: null,
+        axes: oneCase.result.axes.map((axis, index) =>
+          index === 1
+            ? { ...axis, status: "blocked", reasonCodes: ["verification_acceptor_loss_parameters_required"] }
+            : { ...axis, status: "not_assessed", reasonCodes: [] }
+        ),
+        verificationRequests: [
+          {
+            code: "acceptor",
+            axis: "acceptor_repayment_risk",
+            requiredItem: "Current governed acceptor risk assessment",
+            reasonCode: "verification_acceptor_loss_parameters_required",
+            owner: "mint_risk",
+            resolutionAction: "record_acceptor_risk_assessment",
+          },
+        ],
+        reasonCodes: ["verification_acceptor_loss_parameters_required"],
+        assessmentTrace: [
+          {
+            ruleId: "acceptor",
+            subject: "acceptor_repayment_risk",
+            outcome: "blocked",
+            reasonCode: "verification_acceptor_loss_parameters_required",
+            observed: { present: false },
+            policy: { required: true },
+            effect: { assessmentStatus: "blocked_pending_verification" },
+          },
+        ],
+        calculationTrace: [],
+      },
+    };
+    expect(parseDecisionCasesResponse({ cases: [blocked] }).cases).toHaveLength(1);
+    expect(() =>
+      parseDecisionCasesResponse({
+        cases: [
+          {
+            ...blocked,
+            result: { ...blocked.result, verificationRequests: [{ ...blocked.result.verificationRequests[0], owner: undefined }] },
+          },
+        ],
+      })
+    ).toThrow();
+  });
+
   it("accepts unavailable Mint capacity values on a verification-blocked decision", () => {
     const decisionCase = validCase();
     const blockedCapacity = {

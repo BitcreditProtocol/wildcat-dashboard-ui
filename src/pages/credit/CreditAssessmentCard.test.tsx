@@ -200,7 +200,14 @@ const blockedCase = caseFixture({
   assessmentStatus: "blocked_pending_verification",
   recommendation: null,
   terms: null,
-  verificationRequests: [{ code: "acceptor", axis: "acceptor_repayment_risk", requiredItem: "Current governed acceptor PD and LGD" }],
+  verificationRequests: [
+    {
+      code: "acceptor",
+      axis: "acceptor_repayment_risk",
+      requiredItem: "Current governed acceptor PD and LGD",
+      reasonCode: "verification_acceptor_loss_parameters_required",
+    },
+  ],
   axes: passingAxes.map((finding) => ({ ...finding, status: "blocked" as const })),
   assessmentTrace: [],
 });
