@@ -8,11 +8,6 @@ import { ApplicantClaims, InvoiceEvidence } from "./CaseEvidence";
 import { percentFromBps, words, type DecisionCase } from "./decision-types";
 
 const messages = defineMessages({
-  eyebrow: {
-    id: "credit.card.eyebrow",
-    defaultMessage: "Governed credit decision",
-    description: "Eyebrow above the deterministic credit decision",
-  },
   synthetic: { id: "credit.synthetic", defaultMessage: "Synthetic", description: "Badge marking synthetic fixture data" },
   outcomeVerification: {
     id: "credit.outcome.verification",
@@ -716,10 +711,7 @@ export function CreditAssessmentCard({ decisionCase, mintQuoteAmountSat }: { dec
       <div className="flex flex-col gap-4 p-5">
         <div className="flex items-start gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-              {intl.formatMessage(messages.eyebrow)}
-            </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-xl">{outcome.title}</CardTitle>
               {outcome.badge}
             </div>
