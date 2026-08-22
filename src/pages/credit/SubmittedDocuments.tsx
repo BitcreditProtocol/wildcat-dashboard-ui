@@ -42,8 +42,8 @@ const messages = defineMessages({
   warning: {
     id: "credit.evidencePacket.warning",
     defaultMessage:
-      "Synthetic/testnet only. A server digest identifies the received bytes; it does not prove who issued them, whether their contents are true, or legal enforceability.",
-    description: "Warning about the limits of evidence digests in the prototype",
+      "Machine extraction surfaces source-backed statements for review. It does not establish authenticity, truth, legal effect, or creditworthiness.",
+    description: "Plain-language boundary for machine-extracted evidence statements",
   },
   origin: { id: "credit.evidencePacket.origin", defaultMessage: "Origin", description: "Label for evidence origin" },
   originBill: {
@@ -101,8 +101,13 @@ const messages = defineMessages({
   },
   extractionAvailable: {
     id: "credit.evidencePacket.extractionAvailable",
-    defaultMessage: "Extraction available",
-    description: "Status for a supporting document with extracted fields that are not used by the governed invoice assessment",
+    defaultMessage: "Analyzed",
+    description: "Status for a document with source-backed extracted claims",
+  },
+  analysisPending: {
+    id: "credit.evidencePacket.analysisPending",
+    defaultMessage: "Analyzing…",
+    description: "Status while the evidence service analyzes a document",
   },
   supporting: {
     id: "credit.evidencePacket.supporting",
@@ -127,22 +132,17 @@ const messages = defineMessages({
   },
   extractedFields: {
     id: "credit.evidencePacket.extractedFields",
-    defaultMessage: "Extracted claims",
-    description: "Heading for source-cited claims proposed by an extraction adapter",
+    defaultMessage: "What this document says",
+    description: "Heading for the concise source-backed statements extracted from any document type",
   },
   lineItems: {
     id: "credit.evidencePacket.lineItems",
     defaultMessage: "{count, plural, one {# line item} other {# line items}}",
     description: "Disclosure heading for extracted invoice line items",
   },
-  citations: {
-    id: "credit.evidencePacket.citations",
-    defaultMessage: "Source citations ({count})",
-    description: "Disclosure for exact document snippets supporting extracted fields",
-  },
   technical: {
     id: "credit.evidencePacket.technical",
-    defaultMessage: "Technical provenance",
+    defaultMessage: "Audit details",
     description: "Disclosure for evidence receipt, digest, parser, and model-route metadata",
   },
   extractedAt: {
@@ -150,15 +150,10 @@ const messages = defineMessages({
     defaultMessage: "Extracted at",
     description: "Label for the extraction timestamp",
   },
-  extractionHeading: {
-    id: "credit.evidencePacket.extractionHeading",
-    defaultMessage: "Automated extraction proposal",
-    description: "Heading for model-proposed invoice fields and their citations",
-  },
   extractionWarning: {
     id: "credit.evidencePacket.extractionWarning",
-    defaultMessage: "Proposed text only. It is not a verification, risk finding, price, or authorization.",
-    description: "Warning that automated extraction has no decision authority",
+    defaultMessage: "Machine-extracted from the cited source text; not independently verified.",
+    description: "Compact warning that extracted statements have no independent authority",
   },
   extractionUnavailable: {
     id: "credit.evidencePacket.extractionUnavailable",
@@ -169,6 +164,31 @@ const messages = defineMessages({
     id: "credit.evidencePacket.supportingUnavailable",
     defaultMessage: "No extraction proposal. This supporting document was not used by the current governed assessment.",
     description: "Explanation for supporting evidence without extraction that is outside the current governed assessment",
+  },
+  decisionRelevance: {
+    id: "credit.evidencePacket.decisionRelevance",
+    defaultMessage: "How it is used",
+    description: "Heading explaining whether a document affects the current governed assessment",
+  },
+  governedUse: {
+    id: "credit.evidencePacket.governedUse",
+    defaultMessage: "This document feeds the governed invoice-to-eBill checks shown below.",
+    description: "Explanation for evidence used by the current governed decision",
+  },
+  supportingUse: {
+    id: "credit.evidencePacket.supportingUse",
+    defaultMessage: "Available to the operator for context. It does not affect the current automated decision.",
+    description: "Explanation for supporting evidence outside current governed decision rules",
+  },
+  pendingAnalysis: {
+    id: "credit.evidencePacket.pendingAnalysis",
+    defaultMessage: "Document analysis is in progress. The original PDF remains available for review.",
+    description: "Non-blocking message while generic document analysis runs",
+  },
+  source: {
+    id: "credit.evidencePacket.source",
+    defaultMessage: "Show source · page {page}",
+    description: "Disclosure to reveal the exact source text behind an extracted claim",
   },
   parser: { id: "credit.evidencePacket.parser", defaultMessage: "Parser", description: "Label for evidence parser version" },
   extraction: {
@@ -186,11 +206,6 @@ const messages = defineMessages({
     id: "credit.evidencePacket.derivative",
     defaultMessage: "Text derivative",
     description: "Label for the parsed text derivative digest",
-  },
-  pageCitation: {
-    id: "credit.evidencePacket.pageCitation",
-    defaultMessage: "Page {page}: “{snippet}”",
-    description: "Exact document snippet supporting a proposed field",
   },
   invoiceNumber: { id: "credit.evidencePacket.field.invoiceNumber", defaultMessage: "Invoice", description: "Invoice-number field label" },
   seller: { id: "credit.evidencePacket.field.seller", defaultMessage: "Seller", description: "Invoice seller field label" },
@@ -278,13 +293,40 @@ function invoiceClaimGroups(extraction: NonNullable<EvidencePacket["extraction"]
   ];
 }
 
-function ClaimGrid({ claims }: { claims: readonly EvidenceClaim[] }) {
+function documentClaimGroups(analysis: NonNullable<EvidencePacket["analysis"]>): EvidenceClaimGroup[] {
+  return [
+    {
+      id: "document-analysis",
+      claims: analysis.analysis.claims.map((claim, index) => ({
+        id: `${claim.kind}-${String(index)}`,
+        label: claim.label,
+        value: claim.value,
+        citations: [claim.citation],
+      })),
+    },
+  ];
+}
+
+function claimGroupsFor(packet: EvidencePacket | undefined, intl: IntlShape): EvidenceClaimGroup[] {
+  if (packet?.analysis !== undefined) return documentClaimGroups(packet.analysis);
+  return packet?.extraction === undefined ? [] : invoiceClaimGroups(packet.extraction, intl);
+}
+
+function ClaimGrid({ claims, intl }: { claims: readonly EvidenceClaim[]; intl: IntlShape }) {
   return (
     <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
       {claims.map((claim) => (
         <div key={claim.id} className="min-w-0 rounded-md bg-elevation-100 p-3">
           <dt className="text-xs text-muted-foreground">{claim.label}</dt>
           <dd className="mt-1 break-words font-medium">{claim.value}</dd>
+          {claim.citations.map((citation, index) => (
+            <details key={`${claim.id}-source-${String(index)}`} className="mt-3 border-t border-border pt-2 text-xs">
+              <summary className="cursor-pointer text-muted-foreground">
+                {intl.formatMessage(messages.source, { page: citation.page })}
+              </summary>
+              <p className="mt-2 whitespace-pre-wrap text-muted-foreground">“{citation.exactSnippet}”</p>
+            </details>
+          ))}
         </div>
       ))}
     </dl>
@@ -311,11 +353,9 @@ export function SubmittedDocuments({
   const citedClaimCount = evidencePackets.reduce(
     (count, packet) =>
       count +
-      (packet.extraction
-        ? invoiceClaimGroups(packet.extraction, intl)
-            .flatMap((group) => group.claims)
-            .filter((claim) => claim.citations.length > 0).length
-        : 0),
+      claimGroupsFor(packet, intl)
+        .flatMap((group) => group.claims)
+        .filter((claim) => claim.citations.length > 0).length,
     0
   );
 
@@ -353,9 +393,9 @@ export function SubmittedDocuments({
             candidate.evidence.origin === evidence.origin
         );
         const extraction = packet?.extraction;
-        const claimGroups = extraction ? invoiceClaimGroups(extraction, intl) : [];
-        const claims = claimGroups.flatMap((group) => group.claims);
-        const citations = claims.flatMap((claim) => claim.citations.map((citation) => ({ claim, citation })));
+        const analysis = packet?.analysis;
+        const claimGroups = claimGroupsFor(packet, intl);
+        const documentType = analysis?.analysis.documentType?.value;
         const isDecisionEvidence = invoiceAssessment?.reference === evidence.reference;
         const isMatched =
           isDecisionEvidence &&
@@ -370,17 +410,30 @@ export function SubmittedDocuments({
               ? extraction === undefined
                 ? messages.humanReview
                 : messages.verificationRequired
-              : extraction === undefined
-                ? messages.supporting
-                : messages.extractionAvailable;
+              : analysis !== undefined || extraction !== undefined
+                ? messages.extractionAvailable
+                : packet.analysisStatus === "pending"
+                  ? messages.analysisPending
+                  : messages.supporting;
         return (
           <article key={`${evidence.reference}:${evidence.origin}`} className="overflow-hidden rounded-lg border border-divider-200">
             <header className="flex min-w-0 flex-col gap-3 border-b border-border bg-elevation-100 p-4 sm:flex-row sm:items-center">
-              <div className="flex min-w-0 flex-1 items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-start gap-2">
                 <FileText className="size-4 shrink-0 text-muted-foreground" />
-                <TruncatedTextPopover text={displayEvidenceLabel(evidence.label)} className="min-w-0 font-medium" />
+                <div className="min-w-0">
+                  <TruncatedTextPopover text={displayEvidenceLabel(evidence.label)} className="min-w-0 font-medium" />
+                  {documentType !== undefined && <p className="mt-0.5 text-xs text-muted-foreground">{documentType}</p>}
+                </div>
               </div>
-              <Badge variant={isMatched ? "success" : packet === undefined || isDecisionEvidence ? "pending" : "outline"}>
+              <Badge
+                variant={
+                  isMatched
+                    ? "success"
+                    : packet === undefined || isDecisionEvidence || packet.analysisStatus === "pending"
+                      ? "pending"
+                      : "outline"
+                }
+              >
                 {intl.formatMessage(reviewStatus)}
               </Badge>
               {packet !== undefined && onOpenEvidence !== undefined && (
@@ -400,6 +453,12 @@ export function SubmittedDocuments({
                   {intl.formatMessage(messages.clientBillWarning)}
                 </p>
               )}
+              <section className="rounded-md bg-elevation-100 p-3">
+                <h4 className="font-medium">{intl.formatMessage(messages.decisionRelevance)}</h4>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {intl.formatMessage(isDecisionEvidence ? messages.governedUse : messages.supportingUse)}
+                </p>
+              </section>
               {isDecisionEvidence && invoiceAssessment && (
                 <section>
                   <h4 className="mb-2 font-medium">{intl.formatMessage(messages.decisionChecks)}</h4>
@@ -419,11 +478,14 @@ export function SubmittedDocuments({
                   </dl>
                 </section>
               )}
-              {extraction === undefined ? (
+              {packet?.analysisStatus === "pending" && analysis === undefined && (
+                <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.pendingAnalysis)}</p>
+              )}
+              {claimGroups.length === 0 && packet?.analysisStatus !== "pending" ? (
                 <p className="text-sm text-muted-foreground">
                   {intl.formatMessage(isDecisionEvidence ? messages.extractionUnavailable : messages.supportingUnavailable)}
                 </p>
-              ) : (
+              ) : claimGroups.length > 0 ? (
                 <section>
                   <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                     <h4 className="font-medium">{intl.formatMessage(messages.extractedFields)}</h4>
@@ -435,34 +497,16 @@ export function SubmittedDocuments({
                         <details key={group.id} className="rounded-md border border-border">
                           <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{group.label}</summary>
                           <div className="border-t border-border p-3">
-                            <ClaimGrid claims={group.claims} />
+                            <ClaimGrid claims={group.claims} intl={intl} />
                           </div>
                         </details>
                       ) : (
-                        <ClaimGrid key={group.id} claims={group.claims} />
+                        <ClaimGrid key={group.id} claims={group.claims} intl={intl} />
                       )
                     )}
                   </div>
-                  <details className="mt-3 rounded-md border border-border">
-                    <summary className="cursor-pointer px-3 py-2 text-xs font-medium">
-                      {intl.formatMessage(messages.citations, { count: citations.length })}
-                    </summary>
-                    <ul className="space-y-3 border-t border-border p-3 text-xs">
-                      {citations.map(({ claim, citation }, index) => (
-                        <li key={`${claim.id}:citation:${String(index)}`}>
-                          <span className="font-medium">{claim.label}</span>
-                          <p className="whitespace-pre-wrap text-muted-foreground">
-                            {intl.formatMessage(messages.pageCitation, {
-                              page: citation.page,
-                              snippet: citation.exactSnippet,
-                            })}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
                 </section>
-              )}
+              ) : null}
               <details className="rounded-md border border-border">
                 <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{intl.formatMessage(messages.technical)}</summary>
                 <dl className="grid gap-3 border-t border-border p-3 text-xs sm:grid-cols-2">
@@ -484,16 +528,16 @@ export function SubmittedDocuments({
                     </dt>
                     <dd className="break-all font-mono">{evidence.contentDigest}</dd>
                   </div>
-                  {extraction && (
+                  {(analysis ?? extraction) && (
                     <>
                       {(
                         [
-                          [messages.extraction, extraction.schemaVersion],
-                          [messages.parser, extraction.parserVersion],
-                          [messages.model, extraction.modelId],
-                          [messages.prompt, extraction.promptVersion],
-                          [messages.extractedAt, extraction.extractedAt],
-                          [messages.derivative, extraction.derivativeDigest],
+                          [messages.extraction, (analysis ?? extraction)?.schemaVersion ?? ""],
+                          [messages.parser, (analysis ?? extraction)?.parserVersion ?? ""],
+                          [messages.model, (analysis ?? extraction)?.modelId ?? ""],
+                          [messages.prompt, (analysis ?? extraction)?.promptVersion ?? ""],
+                          [messages.extractedAt, (analysis ?? extraction)?.extractedAt ?? ""],
+                          [messages.derivative, (analysis ?? extraction)?.derivativeDigest ?? ""],
                         ] as const
                       ).map(([label, value]) => (
                         <div key={label.id} className={label === messages.derivative ? "sm:col-span-2" : undefined}>

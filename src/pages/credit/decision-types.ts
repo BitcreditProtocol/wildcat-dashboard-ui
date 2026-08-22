@@ -98,10 +98,33 @@ export interface ProposedEvidenceField {
   citation: EvidenceCitation;
 }
 
+export type EvidenceClaimKind = "party" | "identifier" | "date" | "amount" | "asset" | "obligation" | "status" | "description" | "other";
+
+export interface EvidenceDocumentAnalysis {
+  schemaVersion: "evidence-document-analysis-v1";
+  evidence: SubmittedEvidence;
+  derivativeDigest: string;
+  parserVersion: string;
+  promptVersion: "evidence-document-analysis-v1";
+  modelId: string;
+  extractedAt: string;
+  analysis: {
+    documentType: ProposedEvidenceField | null;
+    claims: {
+      kind: EvidenceClaimKind;
+      label: string;
+      value: string;
+      citation: EvidenceCitation;
+    }[];
+  };
+}
+
 export interface EvidencePacket {
   evidence: SubmittedEvidence;
   status: "quarantined";
   byteLength: number;
+  analysisStatus?: "pending" | "available";
+  analysis?: EvidenceDocumentAnalysis;
   extraction?: {
     schemaVersion: "invoice-extraction-proposal-v1";
     derivativeDigest: string;
