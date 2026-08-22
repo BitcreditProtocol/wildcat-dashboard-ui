@@ -27,17 +27,16 @@ export interface OperatorCapability {
   operatorRole: "reviewer" | "approver";
 }
 
-export interface MintRiskAssessmentInput {
+export interface MintAuthorityEvidenceInput {
   mintQuoteId: string;
   billId: string;
   caseId: string;
   decisionResultDigest: string;
-  probabilityOfDefaultBps: number;
-  lossGivenDefaultBps: number;
-  sourceReference: string;
-  validThrough: string;
+  signedEvidence: Record<string, unknown>;
   writtenBasis: string;
 }
+
+export type MintRiskAssessmentInput = MintAuthorityEvidenceInput;
 
 export interface SignedOfferAuthorization {
   [key: string]: unknown;
@@ -257,11 +256,26 @@ export async function recordMintRiskAssessment(
   input: MintRiskAssessmentInput,
   capability: OperatorCapability | undefined
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  return recordMintAuthorityEvidence(input, capability, `/v1/admin/credit/quote/${encodeURIComponent(input.mintQuoteId)}/acceptor-risk`);
+}
+
+export async function recordMintCapacityAssessment(
+  input: MintAuthorityEvidenceInput,
+  capability: OperatorCapability | undefined
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  return recordMintAuthorityEvidence(input, capability, "/v1/admin/credit/mint-capacity");
+}
+
+async function recordMintAuthorityEvidence(
+  input: MintAuthorityEvidenceInput,
+  capability: OperatorCapability | undefined,
+  endpoint: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
   if (capability?.operatorRole !== "approver") return { ok: false, error: "A ready Mint approver capability is required for this action" };
   try {
-    const { mintQuoteId, billId, caseId, decisionResultDigest, ...riskEvidence } = input;
-    const mintResponse = await authenticatedFetch(`/v1/admin/credit/quote/${encodeURIComponent(mintQuoteId)}/acceptor-risk`, {
-      body: JSON.stringify(riskEvidence),
+    const { billId, caseId, decisionResultDigest } = input;
+    const mintResponse = await authenticatedFetch(endpoint, {
+      body: JSON.stringify({ signedEvidence: input.signedEvidence, writtenBasis: input.writtenBasis }),
       headers: { "content-type": "application/json" },
       method: "PUT",
       signal: AbortSignal.timeout(15_000),
@@ -280,7 +294,7 @@ export async function recordMintRiskAssessment(
 }
 
 export async function retryOperatorVerificationSources(
-  input: Pick<MintRiskAssessmentInput, "billId" | "caseId" | "decisionResultDigest">,
+  input: Pick<MintAuthorityEvidenceInput, "billId" | "caseId" | "decisionResultDigest">,
   capability: OperatorCapability | undefined
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (capability === undefined) return { ok: false, error: "A ready AI Credit operator capability is required for this action" };

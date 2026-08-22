@@ -18,6 +18,7 @@ import { buildMempoolTransactionUrl } from "@/utils/mempool";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import {
   operatorMayRecordDecision,
+  recordMintCapacityAssessment,
   recordMintRiskAssessment,
   retryOperatorVerificationSources,
   recordOperatorDecision,
@@ -102,6 +103,7 @@ export function QuoteActions({
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false);
   const [returnInfoDrawerOpen, setReturnInfoDrawerOpen] = useState(false);
   const [riskAssessmentDrawerOpen, setRiskAssessmentDrawerOpen] = useState(false);
+  const [capacityAssessmentDrawerOpen, setCapacityAssessmentDrawerOpen] = useState(false);
   const [unableToAssessDrawerOpen, setUnableToAssessDrawerOpen] = useState(false);
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
   const governanceInFlight = useRef(false);
@@ -152,9 +154,14 @@ export function QuoteActions({
     decisionCase?.result.verificationRequests?.some(
       (request) => request.owner === "mint_risk" && request.resolutionAction === "record_acceptor_risk_assessment"
     ) ?? false;
+  const hasMintCapacityRequest =
+    decisionCase?.result.verificationRequests?.some(
+      (request) => request.axis === "mint_exposure_capacity" && request.resolutionAction === "refresh_mint_capacity"
+    ) ?? false;
   const hasSourceRefreshRequest =
-    decisionCase?.result.verificationRequests?.some((request) => request.owner === "mint_operations" || request.owner === "system") ??
-    false;
+    decisionCase?.result.verificationRequests?.some(
+      (request) => request.owner === "system" || (request.owner === "mint_operations" && request.axis !== "mint_exposure_capacity")
+    ) ?? false;
   const denyAction =
     decisionCase?.result.recommendation === "no_current_product_fit" ? "confirm_no_current_product_fit" : "decline_application";
   const mayDeny = operatorMayRecordDecision(operatorCapability.capability, denyAction);
@@ -397,6 +404,38 @@ export function QuoteActions({
       setIsGovernancePending(false);
     }
   };
+  const submitMintCapacityAssessment = async (capacity: MintRiskAssessmentFormValue) => {
+    if (decisionCase === undefined || operatorCapability.capability === undefined) return;
+    setIsGovernancePending(true);
+    try {
+      const result = await recordMintCapacityAssessment(
+        {
+          mintQuoteId: value.id,
+          billId,
+          caseId: decisionCase.snapshot.caseId,
+          decisionResultDigest: decisionCase.resultDigest,
+          ...capacity,
+        },
+        operatorCapability.capability
+      );
+      if (!result.ok) {
+        governanceFailed(result.error);
+        return;
+      }
+      setCapacityAssessmentDrawerOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
+      toast({
+        title: intl.formatMessage({
+          id: "quotes.toast.mintCapacity.recorded",
+          defaultMessage: "Mint capacity evidence recorded. The case was re-evaluated.",
+          description: "Success message after signed Mint capacity evidence triggers a new governed assessment",
+        }),
+        variant: "success",
+      });
+    } finally {
+      setIsGovernancePending(false);
+    }
+  };
   const submitUnableToAssess = async (writtenBasis: string) => {
     if (decisionCase?.result.assessmentStatus !== "blocked_pending_verification" || requiredVerificationItems.length === 0) return;
     const recorded = await recordGovernance({
@@ -541,6 +580,28 @@ export function QuoteActions({
                   id: "quotes.actions.mintRisk.button",
                   defaultMessage: "Add Mint risk assessment",
                   description: "Action for resolving a Mint-owned acceptor risk requirement",
+                })}
+              </Button>
+            </MintRiskAssessmentDrawer>
+          )}
+
+          {showGovernedResolution && hasMintCapacityRequest && (
+            <MintRiskAssessmentDrawer
+              kind="capacity"
+              open={capacityAssessmentDrawerOpen}
+              onOpenChange={setCapacityAssessmentDrawerOpen}
+              isPending={isGovernancePending}
+              onSubmit={(value) => void submitMintCapacityAssessment(value)}
+            >
+              <Button
+                className="flex-1 max-w-sm"
+                disabled={isFetching || isGovernancePending || !mayRecordMintRisk}
+                title={mayRecordMintRisk ? undefined : roleUnavailableReason}
+              >
+                {intl.formatMessage({
+                  id: "quotes.actions.mintCapacity.button",
+                  defaultMessage: "Add Mint capacity snapshot",
+                  description: "Action for resolving a Mint-owned capacity requirement",
                 })}
               </Button>
             </MintRiskAssessmentDrawer>

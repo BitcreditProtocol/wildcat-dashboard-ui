@@ -370,6 +370,13 @@ function PageBody({ id }: { id: string }) {
                       : creditAssessment.decisionCase.snapshot.isSynthetic
                         ? "synthetic"
                         : "mint_backed",
+                  underwritingAuthoritySignaturesVerified:
+                    creditAssessment.decisionCase.snapshot.acceptor.evidenceRefs?.some((reference) =>
+                      reference.startsWith("authority-signature:sha256:")
+                    ) === true &&
+                    creditAssessment.decisionCase.snapshot.mintCapacity.evidenceRefs?.some((reference) =>
+                      reference.startsWith("authority-signature:sha256:")
+                    ) === true,
                   hasMintPolicyAssignment:
                     creditAssessment.decisionCase.creditProgram !== undefined &&
                     creditAssessment.decisionCase.creditProgramAssignment !== undefined,

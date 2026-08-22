@@ -152,6 +152,7 @@ describe("QuoteDetailCard", () => {
           recourseAcknowledged: true,
           unresolvedContradictions: 0,
           underwritingEvidenceProvenance: "synthetic",
+          underwritingAuthoritySignaturesVerified: true,
           hasMintPolicyAssignment: true,
           billAcceptanceState: "accepted",
         }}
@@ -167,6 +168,7 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("Ready for decision");
     expect(page.textContent).toContain("Decision evidence");
     expect(page.textContent).toContain("Synthetic underwriting inputs");
+    expect(page.textContent).toContain("Authority signatures verified");
     expect(page.textContent).toContain("Mint policy assigned");
     expect(page.textContent).toContain("Automated checks");
     expect(page.textContent).toContain("6 passed · 0 failed · 0 not assessed");
@@ -194,6 +196,39 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).not.toContain("Not requested");
     expect(page.textContent).not.toContain("Reference & party details");
     expect(page.textContent).not.toContain("Fee:80,000,000sat");
+  });
+
+  it("shows the quote-bound exposure reservation returned by the Mint", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{
+          ...baseQuote,
+          credit_exposure_reservation: {
+            reservationVersion: "credit-exposure-reservation-v1",
+            reservationId: "11111111-1111-4111-8111-111111111111",
+            mintId: "local-wildcat",
+            quoteId: baseQuote.id,
+            amountSat: "80000000",
+            capacityEvidenceId: "22222222-2222-4222-8222-222222222222",
+            state: "committed",
+            createdAt: "2026-08-21T10:00:00Z",
+            updatedAt: "2026-08-21T10:05:00Z",
+          },
+        }}
+        effectiveQuoteStatus="Accepted"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+      />
+    );
+
+    expect(page.textContent).toContain("Capacity committed");
+    expect(page.textContent).toContain("Exposure amount80,000,000sat");
+    expect(page.textContent).toContain("Capacity evidence: 22222222-2222-4222…");
   });
 
   it("shows governed recommended terms while the Mint quote is pending", () => {
@@ -227,6 +262,7 @@ describe("QuoteDetailCard", () => {
           recourseAcknowledged: true,
           unresolvedContradictions: 0,
           underwritingEvidenceProvenance: "synthetic",
+          underwritingAuthoritySignaturesVerified: false,
           hasMintPolicyAssignment: true,
           recommendedTerms: {
             mintingFee: 272_000,

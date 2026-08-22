@@ -5,14 +5,14 @@ import { Currency } from "@/components/Currency";
 import { getQuoteStatusVariant } from "@/utils/quote-status";
 import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
-import type { InfoReply, MintOperationStatus } from "@/generated/client/types.gen";
+import type { AdminInfoReply, MintOperationStatus } from "@/generated/client/types.gen";
 import type { DurableAuthorizationReceipt, VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
 import { CircleAlert, CircleCheck, Clock3, Printer } from "lucide-react";
 import type { PropsWithChildren } from "react";
 import { useIntl } from "react-intl";
 
 interface QuoteDetailCardProps {
-  quote: InfoReply;
+  quote: AdminInfoReply;
   effectiveQuoteStatus: string;
   ebillPaid: boolean;
   isMintComplete: boolean;
@@ -40,6 +40,7 @@ interface QuoteDetailCardProps {
     recourseAcknowledged: boolean;
     unresolvedContradictions: number;
     underwritingEvidenceProvenance: "mint_backed" | "synthetic" | "unavailable";
+    underwritingAuthoritySignaturesVerified: boolean;
     hasMintPolicyAssignment: boolean;
     billAcceptanceState?: string;
     recommendedTerms?: {
@@ -138,6 +139,12 @@ export function QuoteDetailCard({
             }
           )
         : `${((mintingFee / bill.sum) * 100).toFixed(4)}%`;
+  const exposureReservation =
+    quote.credit_exposure_reservation?.quoteId === quote.id &&
+    /^(0|[1-9][0-9]*)$/u.test(quote.credit_exposure_reservation.amountSat) &&
+    ["reserved", "committed", "released"].includes(quote.credit_exposure_reservation.state)
+      ? quote.credit_exposure_reservation
+      : null;
 
   const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
   const maturityLabel = maturityDate
@@ -350,6 +357,19 @@ export function QuoteDetailCard({
                         id: "quotes.summary.mintPolicyMissing",
                         defaultMessage: "No Mint policy assignment",
                         description: "Badge warning that the assessment is not assigned to this quote by the Mint",
+                      })}
+                </Badge>
+                <Badge variant={decisionSummary.underwritingAuthoritySignaturesVerified ? "success" : "pending"}>
+                  {decisionSummary.underwritingAuthoritySignaturesVerified
+                    ? intl.formatMessage({
+                        id: "quotes.summary.authoritySignaturesVerified",
+                        defaultMessage: "Authority signatures verified",
+                        description: "Badge confirming independent signature verification for risk and capacity evidence",
+                      })
+                    : intl.formatMessage({
+                        id: "quotes.summary.authoritySignaturesUnavailable",
+                        defaultMessage: "Authority signatures unavailable",
+                        description: "Badge warning that risk or capacity evidence lacks a verified external authority signature",
                       })}
                 </Badge>
               </div>
@@ -629,6 +649,39 @@ export function QuoteDetailCard({
                 state={mintOperationStage.state}
               />
             </ol>
+
+            {exposureReservation !== null && (
+              <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/20 px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={exposureReservation.state === "released" ? "outline" : "success"}>
+                    {intl.formatMessage(
+                      {
+                        id: "quotes.capacity.state",
+                        defaultMessage: "Capacity {state}",
+                        description: "State of the quote-bound Mint exposure reservation",
+                      },
+                      { state: exposureReservation.state }
+                    )}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {intl.formatMessage({
+                      id: "quotes.capacity.amount",
+                      defaultMessage: "Exposure amount",
+                      description: "Label for the amount controlled by the Mint exposure reservation",
+                    })}
+                  </span>
+                  <Currency value={Number(exposureReservation.amountSat)} sourceCurrency="sat" />
+                </div>
+                <span className="truncate font-mono text-muted-foreground" title={exposureReservation.capacityEvidenceId}>
+                  {intl.formatMessage({
+                    id: "quotes.capacity.evidence",
+                    defaultMessage: "Capacity evidence",
+                    description: "Label for the authority evidence record controlling an exposure reservation",
+                  })}
+                  : {exposureReservation.capacityEvidenceId.slice(0, 18)}…
+                </span>
+              </div>
+            )}
 
             {hasDurableReceipt ? (
               <dl className="grid gap-x-5 gap-y-3 border-t border-border pt-4 text-xs sm:grid-cols-2 lg:grid-cols-4">

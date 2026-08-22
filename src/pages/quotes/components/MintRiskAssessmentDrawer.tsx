@@ -2,146 +2,141 @@ import { ConfirmDrawer } from "@/components/Drawers";
 import { useState, type ReactNode } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
-export interface MintRiskAssessmentFormValue {
-  probabilityOfDefaultBps: number;
-  lossGivenDefaultBps: number;
-  sourceReference: string;
-  validThrough: string;
+export interface MintAuthorityEvidenceFormValue {
+  signedEvidence: Record<string, unknown>;
   writtenBasis: string;
+}
+
+export type MintRiskAssessmentFormValue = MintAuthorityEvidenceFormValue;
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function MintRiskAssessmentDrawer({
   open,
   onOpenChange,
   isPending,
+  kind = "risk",
   onSubmit,
   children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isPending: boolean;
-  onSubmit: (value: MintRiskAssessmentFormValue) => void;
+  kind?: "risk" | "capacity";
+  onSubmit: (value: MintAuthorityEvidenceFormValue) => void;
   children: ReactNode;
 }) {
   const intl = useIntl();
-  const [pd, setPd] = useState("");
-  const [lgd, setLgd] = useState("");
-  const [sourceReference, setSourceReference] = useState("");
-  const [validThrough, setValidThrough] = useState("");
+  const [signedEvidence, setSignedEvidence] = useState<Record<string, unknown>>();
+  const [fileName, setFileName] = useState("");
+  const [fileError, setFileError] = useState("");
   const [writtenBasis, setWrittenBasis] = useState("");
-  const pdNumber = Number(pd);
-  const lgdNumber = Number(lgd);
-  const valid =
-    pd !== "" &&
-    lgd !== "" &&
-    Number.isFinite(pdNumber) &&
-    Number.isFinite(lgdNumber) &&
-    pdNumber >= 0 &&
-    pdNumber <= 100 &&
-    lgdNumber >= 0 &&
-    lgdNumber <= 100 &&
-    sourceReference.trim().length > 0 &&
-    validThrough !== "" &&
-    writtenBasis.trim().length >= 20;
+  const authority = signedEvidence?.evidence;
+  const authoritySummary = record(authority)
+    ? [authority.assessedBy, authority.validThrough, authority.keyId].filter((value): value is string => typeof value === "string")
+    : [];
+  const valid = signedEvidence !== undefined && writtenBasis.trim().length >= 20;
+  const copy =
+    kind === "risk"
+      ? {
+          title: intl.formatMessage({
+            id: "quotes.mintRisk.title",
+            defaultMessage: "Import signed risk assessment",
+            description: "Title of the external signed acceptor risk assessment import form",
+          }),
+          description: intl.formatMessage({
+            id: "quotes.mintRisk.description",
+            defaultMessage:
+              "Import an Ed25519-signed assessment from an approved risk authority. The Mint verifies its signature, acceptor binding, method and validity before re-evaluating the case.",
+            description: "Explanation of the signed risk authority import workflow",
+          }),
+          submit: intl.formatMessage({
+            id: "quotes.mintRisk.submit",
+            defaultMessage: "Verify, import and re-evaluate",
+            description: "Submit button for an externally signed risk assessment",
+          }),
+        }
+      : {
+          title: intl.formatMessage({
+            id: "quotes.mintCapacity.title",
+            defaultMessage: "Import signed capacity snapshot",
+            description: "Title of the external signed Mint capacity snapshot import form",
+          }),
+          description: intl.formatMessage({
+            id: "quotes.mintCapacity.description",
+            defaultMessage:
+              "Import an Ed25519-signed snapshot from the approved capacity authority. The Mint verifies its signature, Mint binding, method and validity before re-evaluating the case.",
+            description: "Explanation of the signed capacity authority import workflow",
+          }),
+          submit: intl.formatMessage({
+            id: "quotes.mintCapacity.submit",
+            defaultMessage: "Verify, import and re-evaluate",
+            description: "Submit button for an externally signed capacity snapshot",
+          }),
+        };
 
   return (
     <ConfirmDrawer
-      title={intl.formatMessage({
-        id: "quotes.mintRisk.title",
-        defaultMessage: "Record Mint risk assessment",
-        description: "Title of the Mint-owned acceptor risk assessment form",
-      })}
-      description={intl.formatMessage({
-        id: "quotes.mintRisk.description",
-        defaultMessage:
-          "Record the Mint's current, source-referenced acceptor risk values. Saving creates a new governed snapshot and automatically re-evaluates the case.",
-        description: "Explanation of the Mint-owned risk resolution workflow",
-      })}
+      title={copy.title}
+      description={copy.description}
       open={open}
       onOpenChange={onOpenChange}
-      onSubmit={() =>
-        onSubmit({
-          probabilityOfDefaultBps: Math.round(pdNumber * 100),
-          lossGivenDefaultBps: Math.round(lgdNumber * 100),
-          sourceReference: sourceReference.trim(),
-          validThrough,
-          writtenBasis: writtenBasis.trim(),
-        })
-      }
+      onSubmit={() => signedEvidence !== undefined && onSubmit({ signedEvidence, writtenBasis: writtenBasis.trim() })}
       cancelButtonDisabled={isPending}
       submitButtonDisabled={isPending || !valid}
-      submitButtonText={intl.formatMessage({
-        id: "quotes.mintRisk.submit",
-        defaultMessage: "Save and re-evaluate",
-        description: "Submit button for a Mint-owned risk assessment",
-      })}
+      submitButtonText={copy.submit}
       trigger={children}
     >
-      <div className="grid gap-4 px-4 sm:grid-cols-2">
-        <label className="grid gap-1 text-sm">
-          <span>
-            <FormattedMessage id="quotes.mintRisk.pd" defaultMessage="Probability of default (%)" description="Mint risk PD input label" />
-          </span>
-          <input
-            className="rounded-md border border-input bg-background px-3 py-2"
-            type="number"
-            min="0"
-            max="100"
-            step="0.01"
-            value={pd}
-            onChange={(event) => setPd(event.target.value)}
-          />
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span>
-            <FormattedMessage id="quotes.mintRisk.lgd" defaultMessage="Loss given default (%)" description="Mint risk LGD input label" />
-          </span>
-          <input
-            className="rounded-md border border-input bg-background px-3 py-2"
-            type="number"
-            min="0"
-            max="100"
-            step="0.01"
-            value={lgd}
-            onChange={(event) => setLgd(event.target.value)}
-          />
-        </label>
-        <label className="grid gap-1 text-sm sm:col-span-2">
+      <div className="grid gap-4 px-4">
+        <label className="grid gap-2 text-sm">
           <span>
             <FormattedMessage
-              id="quotes.mintRisk.source"
-              defaultMessage="Source reference"
-              description="Mint risk source reference input label"
+              id="quotes.mintRisk.signedFile"
+              defaultMessage="Signed authority record (.json)"
+              description="Signed Mint authority JSON file input label"
             />
           </span>
           <input
             className="rounded-md border border-input bg-background px-3 py-2"
-            maxLength={200}
-            value={sourceReference}
-            onChange={(event) => setSourceReference(event.target.value)}
-            placeholder={intl.formatMessage({
-              id: "quotes.mintRisk.source.placeholder",
-              defaultMessage: "risk-file-2026-08",
-              description: "Example Mint risk source reference",
-            })}
+            type="file"
+            accept="application/json,.json"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              setSignedEvidence(undefined);
+              setFileName(file?.name ?? "");
+              setFileError("");
+              if (file === undefined) return;
+              void file
+                .text()
+                .then((text) => JSON.parse(text) as unknown)
+                .then((value) => {
+                  if (!record(value) || !record(value.evidence) || typeof value.evidenceDigest !== "string") {
+                    throw new Error("invalid record");
+                  }
+                  setSignedEvidence(value);
+                })
+                .catch(() =>
+                  setFileError(
+                    intl.formatMessage({
+                      id: "quotes.mintRisk.signedFile.invalid",
+                      defaultMessage: "This is not a readable signed authority record.",
+                      description: "Error shown for an invalid signed risk authority JSON file",
+                    })
+                  )
+                );
+            }}
           />
+          {fileName !== "" && <span className="text-xs text-muted-foreground">{fileName}</span>}
+          {fileError !== "" && <span className="text-xs text-destructive">{fileError}</span>}
         </label>
+        {authoritySummary.length > 0 && (
+          <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            {authoritySummary.join(" · ")}
+          </p>
+        )}
         <label className="grid gap-1 text-sm">
-          <span>
-            <FormattedMessage
-              id="quotes.mintRisk.validThrough"
-              defaultMessage="Valid through"
-              description="Mint risk validity date input label"
-            />
-          </span>
-          <input
-            className="rounded-md border border-input bg-background px-3 py-2"
-            type="date"
-            value={validThrough}
-            onChange={(event) => setValidThrough(event.target.value)}
-          />
-        </label>
-        <label className="grid gap-1 text-sm sm:col-span-2">
           <span>
             <FormattedMessage
               id="quotes.mintRisk.basis"
@@ -161,11 +156,11 @@ export function MintRiskAssessmentDrawer({
             })}
           />
         </label>
-        <p className="text-xs text-muted-foreground sm:col-span-2">
+        <p className="text-xs text-muted-foreground">
           <FormattedMessage
             id="quotes.mintRisk.syntheticNotice"
-            defaultMessage="Synthetic/testnet only. Values are recorded with source, assessor, validity and a digest of the written basis."
-            description="Trust-boundary notice for local Mint risk evidence"
+            defaultMessage="The browser does not establish trust. The Mint verifies the signature and configured authority; testnet records remain visibly synthetic."
+            description="Trust-boundary notice for signed Mint risk evidence"
           />
         </p>
       </div>

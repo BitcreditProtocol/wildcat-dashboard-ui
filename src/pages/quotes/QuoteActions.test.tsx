@@ -7,6 +7,7 @@ import type { OfferFormResult } from "./components/OfferFormDrawer";
 import type { DecisionCase } from "@/pages/credit/decision-types";
 import type {
   MintRiskAssessmentInput,
+  MintAuthorityEvidenceInput,
   OperatorCapability,
   OperatorDecisionInput,
   OperatorDecisionSuccess,
@@ -35,6 +36,10 @@ const mockRecordMintRiskAssessment =
   vi.fn<
     (input: MintRiskAssessmentInput, capability: OperatorCapability | undefined) => Promise<{ ok: true } | { ok: false; error: string }>
   >();
+const mockRecordMintCapacityAssessment =
+  vi.fn<
+    (input: MintAuthorityEvidenceInput, capability: OperatorCapability | undefined) => Promise<{ ok: true } | { ok: false; error: string }>
+  >();
 const mockRetryOperatorVerificationSources =
   vi.fn<
     (
@@ -56,15 +61,8 @@ let returnInfoSubmit: ((writtenBasis: string) => void) | undefined;
 let returnInfoOpen = false;
 let returnInfoOpenChange: ((open: boolean) => void) | undefined;
 let closeUnableSubmit: ((writtenBasis: string) => void) | undefined;
-let mintRiskSubmit:
-  | ((value: {
-      probabilityOfDefaultBps: number;
-      lossGivenDefaultBps: number;
-      sourceReference: string;
-      validThrough: string;
-      writtenBasis: string;
-    }) => void)
-  | undefined;
+let mintRiskSubmit: ((value: { signedEvidence: Record<string, unknown>; writtenBasis: string }) => void) | undefined;
+let mintCapacitySubmit: ((value: { signedEvidence: Record<string, unknown>; writtenBasis: string }) => void) | undefined;
 let operatorCapability: OperatorCapability | undefined = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
 let operatorCapabilityError: string | null = null;
 let creditAssessmentUnavailable = false;
@@ -125,8 +123,17 @@ vi.mock("./components/DenyConfirmDrawer", () => ({
 }));
 
 vi.mock("./components/MintRiskAssessmentDrawer", () => ({
-  MintRiskAssessmentDrawer: ({ children, onSubmit }: { children: ReactNode; onSubmit: typeof mintRiskSubmit }) => {
-    mintRiskSubmit = onSubmit;
+  MintRiskAssessmentDrawer: ({
+    children,
+    kind = "risk",
+    onSubmit,
+  }: {
+    children: ReactNode;
+    kind?: "risk" | "capacity";
+    onSubmit: typeof mintRiskSubmit;
+  }) => {
+    if (kind === "capacity") mintCapacitySubmit = onSubmit;
+    else mintRiskSubmit = onSubmit;
     return children;
   },
 }));
@@ -186,6 +193,8 @@ vi.mock("@/pages/credit/record-operator-decision", async (importOriginal) => ({
   recordOperatorDecision: (input: OperatorDecisionInput) => mockRecordOperatorDecision(input),
   recordMintRiskAssessment: (input: MintRiskAssessmentInput, capability: OperatorCapability | undefined) =>
     mockRecordMintRiskAssessment(input, capability),
+  recordMintCapacityAssessment: (input: MintAuthorityEvidenceInput, capability: OperatorCapability | undefined) =>
+    mockRecordMintCapacityAssessment(input, capability),
   retryOperatorVerificationSources: (
     input: Pick<MintRiskAssessmentInput, "billId" | "caseId" | "decisionResultDigest">,
     capability: OperatorCapability | undefined
@@ -293,6 +302,23 @@ const governedMintRiskVerification = {
   },
 } as unknown as DecisionCase;
 
+const governedMintCapacityVerification = {
+  ...governedVerification,
+  result: {
+    ...governedVerification.result,
+    verificationRequests: [
+      {
+        code: "mint_capacity",
+        axis: "mint_exposure_capacity",
+        requiredItem: "Current Mint exposure and capacity snapshot",
+        reasonCode: "verification_mint_capacity_required",
+        owner: "mint_operations",
+        resolutionAction: "refresh_mint_capacity",
+      },
+    ],
+  },
+} as unknown as DecisionCase;
+
 const offerData = {
   governance: {
     billId: "bill-1",
@@ -368,6 +394,7 @@ beforeEach(() => {
   returnInfoOpenChange = undefined;
   closeUnableSubmit = undefined;
   mintRiskSubmit = undefined;
+  mintCapacitySubmit = undefined;
   operatorCapability = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
   operatorCapabilityError = null;
   creditAssessmentUnavailable = false;
@@ -381,6 +408,7 @@ beforeEach(() => {
   mockHandleDenyQuote.mockResolvedValue(true);
   mockHandleOfferQuote.mockResolvedValue(true);
   mockRecordMintRiskAssessment.mockResolvedValue({ ok: true });
+  mockRecordMintCapacityAssessment.mockResolvedValue({ ok: true });
   mockRetryOperatorVerificationSources.mockResolvedValue({ ok: true });
   vi.stubGlobal("matchMedia", () => ({
     matches: false,
@@ -829,21 +857,30 @@ describe("QuoteActions", () => {
 
     await act(async () => {
       mintRiskSubmit?.({
-        probabilityOfDefaultBps: 600,
-        lossGivenDefaultBps: 4_000,
-        sourceReference: "risk-register-2026-08",
-        validThrough: "2026-11-20",
+        signedEvidence: {
+          evidence: { acceptorRef: "acceptor-1", keyId: "risk-authority-v1" },
+          evidenceDigest: `sha256:${"b".repeat(64)}`,
+          signatureAlgorithm: "Ed25519",
+          signature: "signed-by-risk-authority",
+        },
         writtenBasis: "Current risk register entry reviewed against the approved methodology.",
       });
       await Promise.resolve();
     });
     expect(mockRecordMintRiskAssessment).toHaveBeenCalledWith(
-      expect.objectContaining({
+      {
+        mintQuoteId: pendingQuote.id,
         billId: "bill-1",
         caseId: "case-offer",
-        probabilityOfDefaultBps: 600,
-        lossGivenDefaultBps: 4_000,
-      }),
+        decisionResultDigest: governedMintRiskVerification.resultDigest,
+        signedEvidence: {
+          evidence: { acceptorRef: "acceptor-1", keyId: "risk-authority-v1" },
+          evidenceDigest: `sha256:${"b".repeat(64)}`,
+          signatureAlgorithm: "Ed25519",
+          signature: "signed-by-risk-authority",
+        },
+        writtenBasis: "Current risk register entry reviewed against the approved methodology.",
+      },
       operatorCapability
     );
 
@@ -859,5 +896,38 @@ describe("QuoteActions", () => {
       })
     );
     expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
+  });
+
+  it("imports a signed Mint capacity snapshot instead of offering a blind retry", async () => {
+    decisionCase = governedMintCapacityVerification;
+    const page = renderComponent(pendingQuote);
+
+    expect(page.textContent).toContain("Add Mint capacity snapshot");
+    expect(page.textContent).not.toContain("Retry Mint source checks");
+
+    const signedEvidence = {
+      evidence: { mintId: "mint-demo", keyId: "capacity-authority-v1" },
+      evidenceDigest: `sha256:${"c".repeat(64)}`,
+      signatureAlgorithm: "Ed25519",
+      signature: "signed-by-capacity-authority",
+    };
+    await act(async () => {
+      mintCapacitySubmit?.({
+        signedEvidence,
+        writtenBasis: "Current capacity ledger snapshot reviewed for this offer cycle.",
+      });
+      await Promise.resolve();
+    });
+    expect(mockRecordMintCapacityAssessment).toHaveBeenCalledWith(
+      {
+        mintQuoteId: pendingQuote.id,
+        billId: "bill-1",
+        caseId: "case-offer",
+        decisionResultDigest: governedMintCapacityVerification.resultDigest,
+        signedEvidence,
+        writtenBasis: "Current capacity ledger snapshot reviewed for this offer cycle.",
+      },
+      operatorCapability
+    );
   });
 });
