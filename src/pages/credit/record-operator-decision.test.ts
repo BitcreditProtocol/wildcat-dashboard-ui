@@ -3,6 +3,7 @@ import {
   fetchOperatorCapability,
   durableAuthorizationReceiptFromQuote,
   operatorMayRecordDecision,
+  recordMintCapacityAssessment,
   recordMintRiskAssessment,
   recordOperatorDecision,
   signedAuthorizationMatchesOffer,
@@ -74,10 +75,12 @@ describe("Mint-owned risk evidence", () => {
     billId: "bill-1",
     caseId: "case-1",
     decisionResultDigest: `sha256:${"a".repeat(64)}`,
-    probabilityOfDefaultBps: 600,
-    lossGivenDefaultBps: 4_000,
-    sourceReference: "risk-register-2026-08",
-    validThrough: "2026-11-20",
+    signedEvidence: {
+      evidence: { acceptorRef: "acceptor-1", keyId: "risk-authority-v1" },
+      evidenceDigest: `sha256:${"b".repeat(64)}`,
+      signatureAlgorithm: "Ed25519",
+      signature: "signed-by-risk-authority",
+    },
     writtenBasis: "Reviewed against the current Mint-owned testnet risk register.",
   };
 
@@ -95,10 +98,7 @@ describe("Mint-owned risk evidence", () => {
       expect.objectContaining({
         method: "PUT",
         body: JSON.stringify({
-          probabilityOfDefaultBps: 600,
-          lossGivenDefaultBps: 4_000,
-          sourceReference: "risk-register-2026-08",
-          validThrough: "2026-11-20",
+          signedEvidence: risk.signedEvidence,
           writtenBasis: "Reviewed against the current Mint-owned testnet risk register.",
         }),
       })
@@ -135,6 +135,41 @@ describe("Mint-owned risk evidence", () => {
       error: "A ready Mint approver capability is required for this action",
     });
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("Mint-owned capacity evidence", () => {
+  const capacity = {
+    mintQuoteId: "quote-1",
+    billId: "bill-1",
+    caseId: "case-1",
+    decisionResultDigest: `sha256:${"a".repeat(64)}`,
+    signedEvidence: {
+      evidence: { mintId: "mint-demo", keyId: "capacity-authority-v1" },
+      evidenceDigest: `sha256:${"c".repeat(64)}`,
+      signatureAlgorithm: "Ed25519",
+      signature: "signed-by-capacity-authority",
+    },
+    writtenBasis: "Current Mint capacity ledger snapshot supplied by the approved authority.",
+  };
+
+  it("records the signed snapshot at the Mint before re-evaluating AI Credit", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(response(true, 200, {}))
+      .mockResolvedValueOnce(response(true, 200, {}));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(recordMintCapacityAssessment(capacity, approver)).resolves.toEqual({ ok: true });
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/v1/admin/credit/mint-capacity",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({ signedEvidence: capacity.signedEvidence, writtenBasis: capacity.writtenBasis }),
+      })
+    );
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
 

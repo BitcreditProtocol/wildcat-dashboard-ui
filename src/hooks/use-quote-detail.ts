@@ -6,7 +6,7 @@ import {
   getMintopStatusOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
-import type { InfoReply, ListEbillsResponse } from "@/generated/client/types.gen";
+import type { AdminInfoReply, ListEbillsResponse } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus, isQuotePollingCompleteStatus } from "@/utils/quote-status";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
 
@@ -44,7 +44,7 @@ export function useQuoteDetail(id: string) {
       path: { qid: id },
     }),
     retry: 1,
-    refetchInterval: (query: { state: { data?: InfoReply } }) => {
+    refetchInterval: (query: { state: { data?: AdminInfoReply } }) => {
       const status = query.state.data?.status;
       if (!status) {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
