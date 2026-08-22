@@ -150,6 +150,9 @@ export interface VerificationRequest {
   code: string;
   axis: string;
   requiredItem: string;
+  reasonCode: string;
+  owner?: "applicant" | "mint_risk" | "mint_operations" | "system";
+  resolutionAction?: "request_applicant_information" | "record_acceptor_risk_assessment" | "refresh_mint_capacity" | "retry_system_check";
 }
 
 /** Immutable Mint-owned product metadata selecting one exact governed policy pack. */
