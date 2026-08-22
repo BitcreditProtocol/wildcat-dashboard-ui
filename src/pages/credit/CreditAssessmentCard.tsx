@@ -46,6 +46,26 @@ const messages = defineMessages({
   },
   withinPolicy: { id: "credit.outcome.withinPolicy", defaultMessage: "Within policy", description: "Offer outcome badge" },
   blocked: { id: "credit.outcome.blocked", defaultMessage: "Blocked", description: "Verification outcome badge" },
+  ownerApplicant: {
+    id: "credit.verification.owner.applicant",
+    defaultMessage: "Owner: applicant · request supporting information",
+    description: "Resolution owner and action for applicant-owned verification",
+  },
+  ownerMintRisk: {
+    id: "credit.verification.owner.mintRisk",
+    defaultMessage: "Owner: Mint risk · record a current risk assessment",
+    description: "Resolution owner and action for Mint risk verification",
+  },
+  ownerMintOperations: {
+    id: "credit.verification.owner.mintOperations",
+    defaultMessage: "Owner: Mint operations · refresh the Mint source",
+    description: "Resolution owner and action for Mint operations verification",
+  },
+  ownerSystem: {
+    id: "credit.verification.owner.system",
+    defaultMessage: "Owner: system · retry the source check",
+    description: "Resolution owner and action for system verification",
+  },
   noOffer: { id: "credit.outcome.noOffer", defaultMessage: "No offer", description: "No-fit outcome badge" },
   unreadable: { id: "credit.outcome.unreadable", defaultMessage: "Unreadable", description: "Unreadable outcome badge" },
   discounted: {
@@ -394,7 +414,20 @@ function GovernedTerms({
             <p className="font-medium text-signal-alert">{intl.formatMessage(messages.verification)}</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
               {result.verificationRequests.map((request) => (
-                <li key={request.code}>{request.requiredItem}</li>
+                <li key={request.code}>
+                  <span>{request.requiredItem}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {intl.formatMessage(
+                      request.owner === "applicant"
+                        ? messages.ownerApplicant
+                        : request.owner === "mint_risk"
+                          ? messages.ownerMintRisk
+                          : request.owner === "mint_operations"
+                            ? messages.ownerMintOperations
+                            : messages.ownerSystem
+                    )}
+                  </span>
+                </li>
               ))}
             </ul>
           </>

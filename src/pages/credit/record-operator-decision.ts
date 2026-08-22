@@ -6,7 +6,8 @@ export type OperatorDecisionAction =
   | "confirm_no_current_product_fit"
   | "decline_application"
   | "propose_adjustment_and_requote"
-  | "return_for_information";
+  | "return_for_information"
+  | "close_unable_to_assess";
 
 export interface OperatorDecisionInput {
   billId: string;
@@ -24,6 +25,17 @@ export interface OperatorCapability {
   ready: true;
   operatorId: string;
   operatorRole: "reviewer" | "approver";
+}
+
+export interface MintRiskAssessmentInput {
+  billId: string;
+  caseId: string;
+  decisionResultDigest: string;
+  probabilityOfDefaultBps: number;
+  lossGivenDefaultBps: number;
+  sourceReference: string;
+  validThrough: string;
+  writtenBasis: string;
 }
 
 export interface SignedOfferAuthorization {
@@ -238,6 +250,42 @@ export async function fetchOperatorCapability(): Promise<OperatorCapability> {
 export function operatorMayRecordDecision(capability: OperatorCapability | undefined, action: OperatorDecisionAction): boolean {
   if (capability === undefined) return false;
   return capability.operatorRole === "approver" || action === "return_for_information";
+}
+
+export async function recordMintRiskAssessment(
+  input: MintRiskAssessmentInput,
+  capability: OperatorCapability | undefined
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (capability === undefined) return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
+  try {
+    const response = await authenticatedFetch("/api/ai-credit/operator-verifications", {
+      body: JSON.stringify({ ...input, action: "record_acceptor_risk_assessment" }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+      signal: AbortSignal.timeout(15_000),
+    });
+    return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
+  } catch {
+    return { ok: false, error: "The AI Credit operator service is not reachable" };
+  }
+}
+
+export async function retryOperatorVerificationSources(
+  input: Pick<MintRiskAssessmentInput, "billId" | "caseId" | "decisionResultDigest">,
+  capability: OperatorCapability | undefined
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (capability === undefined) return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
+  try {
+    const response = await authenticatedFetch("/api/ai-credit/operator-verifications", {
+      body: JSON.stringify({ ...input, action: "retry_current_sources" }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+      signal: AbortSignal.timeout(15_000),
+    });
+    return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
+  } catch {
+    return { ok: false, error: "The AI Credit operator service is not reachable" };
+  }
 }
 
 export async function recordOperatorDecision(

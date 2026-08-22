@@ -6,6 +6,7 @@ import { QuoteActions } from "./QuoteActions";
 import type { OfferFormResult } from "./components/OfferFormDrawer";
 import type { DecisionCase } from "@/pages/credit/decision-types";
 import type {
+  MintRiskAssessmentInput,
   OperatorCapability,
   OperatorDecisionInput,
   OperatorDecisionSuccess,
@@ -30,6 +31,17 @@ const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
 const mockInvalidateQueries = vi.fn();
 const mockRecordOperatorDecision =
   vi.fn<(input: OperatorDecisionInput) => Promise<OperatorDecisionSuccess | { ok: false; error: string }>>();
+const mockRecordMintRiskAssessment =
+  vi.fn<
+    (input: MintRiskAssessmentInput, capability: OperatorCapability | undefined) => Promise<{ ok: true } | { ok: false; error: string }>
+  >();
+const mockRetryOperatorVerificationSources =
+  vi.fn<
+    (
+      input: Pick<MintRiskAssessmentInput, "billId" | "caseId" | "decisionResultDigest">,
+      capability: OperatorCapability | undefined
+    ) => Promise<{ ok: true } | { ok: false; error: string }>
+  >();
 const mockHandleDenyQuote = vi.fn<() => Promise<boolean>>();
 const mockHandleOfferQuote = vi.fn<(authorization: SignedOfferAuthorization) => Promise<boolean>>();
 const mockHandleRequestToPay = vi.fn();
@@ -43,6 +55,16 @@ let denySubmit: ((writtenBasis: string) => void) | undefined;
 let returnInfoSubmit: ((writtenBasis: string) => void) | undefined;
 let returnInfoOpen = false;
 let returnInfoOpenChange: ((open: boolean) => void) | undefined;
+let closeUnableSubmit: ((writtenBasis: string) => void) | undefined;
+let mintRiskSubmit:
+  | ((value: {
+      probabilityOfDefaultBps: number;
+      lossGivenDefaultBps: number;
+      sourceReference: string;
+      validThrough: string;
+      writtenBasis: string;
+    }) => void)
+  | undefined;
 let operatorCapability: OperatorCapability | undefined = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
 let operatorCapabilityError: string | null = null;
 let creditAssessmentUnavailable = false;
@@ -84,7 +106,7 @@ vi.mock("./components/DenyConfirmDrawer", () => ({
     open,
   }: {
     children: ReactNode;
-    mode?: "deny" | "return_for_information";
+    mode?: "deny" | "return_for_information" | "close_unable_to_assess";
     onSubmit: (writtenBasis: string) => void;
     onOpenChange: (open: boolean) => void;
     open: boolean;
@@ -93,9 +115,18 @@ vi.mock("./components/DenyConfirmDrawer", () => ({
       returnInfoSubmit = onSubmit;
       returnInfoOpenChange = onOpenChange;
       returnInfoOpen = open;
+    } else if (mode === "close_unable_to_assess") {
+      closeUnableSubmit = onSubmit;
     } else {
       denySubmit = onSubmit;
     }
+    return children;
+  },
+}));
+
+vi.mock("./components/MintRiskAssessmentDrawer", () => ({
+  MintRiskAssessmentDrawer: ({ children, onSubmit }: { children: ReactNode; onSubmit: typeof mintRiskSubmit }) => {
+    mintRiskSubmit = onSubmit;
     return children;
   },
 }));
@@ -153,6 +184,12 @@ vi.mock("@/pages/credit/record-operator-decision", async (importOriginal) => ({
   operatorMayRecordDecision: (capability: OperatorCapability | undefined, action: string) =>
     capability?.operatorRole === "approver" || (capability?.operatorRole === "reviewer" && action === "return_for_information"),
   recordOperatorDecision: (input: OperatorDecisionInput) => mockRecordOperatorDecision(input),
+  recordMintRiskAssessment: (input: MintRiskAssessmentInput, capability: OperatorCapability | undefined) =>
+    mockRecordMintRiskAssessment(input, capability),
+  retryOperatorVerificationSources: (
+    input: Pick<MintRiskAssessmentInput, "billId" | "caseId" | "decisionResultDigest">,
+    capability: OperatorCapability | undefined
+  ) => mockRetryOperatorVerificationSources(input, capability),
 }));
 
 vi.mock("@/pages/credit/use-operator-capability", () => ({
@@ -219,8 +256,39 @@ const governedVerification = {
     recommendation: null,
     terms: null,
     verificationRequests: [
-      { code: "invoice_delivery", axis: "transaction_integrity", requiredItem: "Signed delivery receipt" },
-      { code: "acceptor_financials", axis: "acceptor_repayment_risk", requiredItem: "Current acceptor financials" },
+      {
+        code: "invoice_delivery",
+        axis: "transaction_integrity",
+        requiredItem: "Signed delivery receipt",
+        reasonCode: "verification_invoice_delivery_required",
+        owner: "applicant",
+        resolutionAction: "request_applicant_information",
+      },
+      {
+        code: "acceptor_financials",
+        axis: "acceptor_repayment_risk",
+        requiredItem: "Current acceptor financials",
+        reasonCode: "verification_acceptor_financials_required",
+        owner: "applicant",
+        resolutionAction: "request_applicant_information",
+      },
+    ],
+  },
+} as unknown as DecisionCase;
+
+const governedMintRiskVerification = {
+  ...governedVerification,
+  result: {
+    ...governedVerification.result,
+    verificationRequests: [
+      {
+        code: "acceptor",
+        axis: "acceptor_repayment_risk",
+        requiredItem: "Current governed acceptor probability of default and loss given default",
+        reasonCode: "verification_acceptor_loss_parameters_required",
+        owner: "mint_risk",
+        resolutionAction: "record_acceptor_risk_assessment",
+      },
     ],
   },
 } as unknown as DecisionCase;
@@ -298,6 +366,8 @@ beforeEach(() => {
   returnInfoSubmit = undefined;
   returnInfoOpen = false;
   returnInfoOpenChange = undefined;
+  closeUnableSubmit = undefined;
+  mintRiskSubmit = undefined;
   operatorCapability = { ready: true, operatorId: "operator-123", operatorRole: "approver" };
   operatorCapabilityError = null;
   creditAssessmentUnavailable = false;
@@ -310,6 +380,8 @@ beforeEach(() => {
   );
   mockHandleDenyQuote.mockResolvedValue(true);
   mockHandleOfferQuote.mockResolvedValue(true);
+  mockRecordMintRiskAssessment.mockResolvedValue({ ok: true });
+  mockRetryOperatorVerificationSources.mockResolvedValue({ ok: true });
   vi.stubGlobal("matchMedia", () => ({
     matches: false,
     media: "",
@@ -354,7 +426,7 @@ describe("QuoteActions", () => {
       button.textContent?.includes("Record required information")
     );
 
-    expect(denyButton?.disabled).toBe(true);
+    expect(denyButton).toBeUndefined();
     expect(returnButton?.disabled).toBe(false);
   });
 
@@ -715,8 +787,7 @@ describe("QuoteActions", () => {
     const page = renderComponent(pendingQuote);
     const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
 
-    expect(denyButton?.disabled).toBe(true);
-    expect(denyButton?.title).toBe("Deny is unavailable until the governed assessment is ready.");
+    expect(denyButton).toBeUndefined();
     expect(page.textContent).not.toContain("Offer");
     expect(page.textContent).toContain("Record required information");
 
@@ -746,5 +817,47 @@ describe("QuoteActions", () => {
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();
     expect(returnInfoOpen).toBe(false);
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["ai-credit", "decisions"] });
+  });
+
+  it("routes Mint-owned risk work internally and can close the unresolved case", async () => {
+    decisionCase = governedMintRiskVerification;
+    const page = renderComponent(pendingQuote);
+
+    expect(page.textContent).toContain("Add Mint risk assessment");
+    expect(page.textContent).not.toContain("Record required information");
+    expect(page.textContent).toContain("Close — unable to assess");
+
+    await act(async () => {
+      mintRiskSubmit?.({
+        probabilityOfDefaultBps: 600,
+        lossGivenDefaultBps: 4_000,
+        sourceReference: "risk-register-2026-08",
+        validThrough: "2026-11-20",
+        writtenBasis: "Current risk register entry reviewed against the approved methodology.",
+      });
+      await Promise.resolve();
+    });
+    expect(mockRecordMintRiskAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        billId: "bill-1",
+        caseId: "case-offer",
+        probabilityOfDefaultBps: 600,
+        lossGivenDefaultBps: 4_000,
+      }),
+      operatorCapability
+    );
+
+    await act(async () => {
+      closeUnableSubmit?.("The Mint could not obtain the evidence needed for an informed decision.");
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "close_unable_to_assess",
+        reasonCode: "operator_closed_unable_to_assess",
+        requiredItems: ["Current governed acceptor probability of default and loss given default"],
+      })
+    );
+    expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
   });
 });

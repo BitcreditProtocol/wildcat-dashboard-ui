@@ -144,6 +144,8 @@ describe("QuoteDetailCard", () => {
           goodsDescription: "Coffee crop inputs",
           readyForDecision: true,
           passedChecks: 6,
+          failedChecks: 0,
+          notAssessedChecks: 0,
           totalChecks: 6,
           invoiceExtractedAndMatched: true,
           answersAffirmed: true,
@@ -167,7 +169,7 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("Synthetic underwriting inputs");
     expect(page.textContent).toContain("Mint policy assigned");
     expect(page.textContent).toContain("Automated checks");
-    expect(page.textContent).toContain("6/6 automated policy gates passed");
+    expect(page.textContent).toContain("6 passed · 0 failed · 0 not assessed");
     expect(page.textContent).toContain("Invoice data extracted and matched");
     expect(page.textContent).toContain("Automated scan found no unresolved contradictions");
     expect(page.textContent).toContain("Applicant attestations");
@@ -217,6 +219,8 @@ describe("QuoteDetailCard", () => {
           repaymentSource: "Coffee sales",
           readyForDecision: true,
           passedChecks: 6,
+          failedChecks: 0,
+          notAssessedChecks: 0,
           totalChecks: 6,
           invoiceExtractedAndMatched: true,
           answersAffirmed: true,

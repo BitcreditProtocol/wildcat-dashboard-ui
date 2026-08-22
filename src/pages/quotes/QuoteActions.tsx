@@ -6,6 +6,7 @@ import { getEbillOptions, getMintInfoOptions } from "@/generated/client/@tanstac
 import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen";
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer";
 import { DenyConfirmDrawer } from "./components/DenyConfirmDrawer";
+import { MintRiskAssessmentDrawer, type MintRiskAssessmentFormValue } from "./components/MintRiskAssessmentDrawer";
 import { removeItem } from "@/utils/local-storage";
 import { PaymentRequestCard } from "./components/PaymentRequestCard";
 import { OfferConfirmation } from "./components/OfferConfirmation";
@@ -17,6 +18,8 @@ import { buildMempoolTransactionUrl } from "@/utils/mempool";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import {
   operatorMayRecordDecision,
+  recordMintRiskAssessment,
+  retryOperatorVerificationSources,
   recordOperatorDecision,
   signedAuthorizationMatchesOffer,
   verifiedAuthorizationReceiptOf,
@@ -98,6 +101,8 @@ export function QuoteActions({
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false);
   const [denyConfirmDrawerOpen, setDenyConfirmDrawerOpen] = useState(false);
   const [returnInfoDrawerOpen, setReturnInfoDrawerOpen] = useState(false);
+  const [riskAssessmentDrawerOpen, setRiskAssessmentDrawerOpen] = useState(false);
+  const [unableToAssessDrawerOpen, setUnableToAssessDrawerOpen] = useState(false);
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
   const governanceInFlight = useRef(false);
   const recordedGovernance = useRef<{ key: string; result: OperatorDecisionSuccess } | undefined>(undefined);
@@ -134,17 +139,28 @@ export function QuoteActions({
     hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
     decisionCase?.result.recommendation === "offer_available";
-  const showGovernedReturn =
+  const showGovernedResolution =
     showPendingActions &&
     hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
     decisionCase?.result.assessmentStatus === "blocked_pending_verification";
   const requiredVerificationItems = decisionCase?.result.verificationRequests?.map((request) => request.requiredItem) ?? [];
+  const applicantVerificationItems =
+    decisionCase?.result.verificationRequests?.filter((request) => request.owner === "applicant").map((request) => request.requiredItem) ??
+    [];
+  const hasMintRiskRequest =
+    decisionCase?.result.verificationRequests?.some(
+      (request) => request.owner === "mint_risk" && request.resolutionAction === "record_acceptor_risk_assessment"
+    ) ?? false;
+  const hasSourceRefreshRequest =
+    decisionCase?.result.verificationRequests?.some((request) => request.owner === "mint_operations" || request.owner === "system") ??
+    false;
   const denyAction =
     decisionCase?.result.recommendation === "no_current_product_fit" ? "confirm_no_current_product_fit" : "decline_application";
   const mayDeny = operatorMayRecordDecision(operatorCapability.capability, denyAction);
   const mayOffer = operatorMayRecordDecision(operatorCapability.capability, "confirm_proposed_quote");
   const mayReturn = operatorMayRecordDecision(operatorCapability.capability, "return_for_information");
+  const mayCloseUnableToAssess = operatorMayRecordDecision(operatorCapability.capability, "close_unable_to_assess");
   const roleUnavailableReason = operatorCapability.isLoading
     ? intl.formatMessage({
         id: "quotes.actions.role.checking",
@@ -325,7 +341,7 @@ export function QuoteActions({
     }
   };
   const submitGovernedReturn = async (writtenBasis: string) => {
-    if (decisionCase?.result.assessmentStatus !== "blocked_pending_verification" || requiredVerificationItems.length === 0) return;
+    if (decisionCase?.result.assessmentStatus !== "blocked_pending_verification" || applicantVerificationItems.length === 0) return;
     const recorded = await recordGovernance({
       billId,
       caseId: decisionCase.snapshot.caseId,
@@ -333,7 +349,7 @@ export function QuoteActions({
       action: "return_for_information",
       reasonCode: "operator_returned_for_information",
       writtenBasis,
-      requiredItems: requiredVerificationItems,
+      requiredItems: applicantVerificationItems,
     });
     if (recorded === null) return;
     recordedGovernance.current = undefined;
@@ -348,12 +364,88 @@ export function QuoteActions({
       variant: "success",
     });
   };
+  const submitMintRiskAssessment = async (value: MintRiskAssessmentFormValue) => {
+    if (decisionCase === undefined || operatorCapability.capability === undefined) return;
+    setIsGovernancePending(true);
+    try {
+      const result = await recordMintRiskAssessment(
+        {
+          billId,
+          caseId: decisionCase.snapshot.caseId,
+          decisionResultDigest: decisionCase.resultDigest,
+          ...value,
+        },
+        operatorCapability.capability
+      );
+      if (!result.ok) {
+        governanceFailed(result.error);
+        return;
+      }
+      setRiskAssessmentDrawerOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
+      toast({
+        title: intl.formatMessage({
+          id: "quotes.toast.mintRisk.recorded",
+          defaultMessage: "Mint risk evidence recorded. The case was re-evaluated.",
+          description: "Success message after Mint-owned risk evidence triggers a new governed assessment",
+        }),
+        variant: "success",
+      });
+    } finally {
+      setIsGovernancePending(false);
+    }
+  };
+  const submitUnableToAssess = async (writtenBasis: string) => {
+    if (decisionCase?.result.assessmentStatus !== "blocked_pending_verification" || requiredVerificationItems.length === 0) return;
+    const recorded = await recordGovernance({
+      billId,
+      caseId: decisionCase.snapshot.caseId,
+      decisionResultDigest: decisionCase.resultDigest,
+      action: "close_unable_to_assess",
+      reasonCode: "operator_closed_unable_to_assess",
+      writtenBasis,
+      requiredItems: requiredVerificationItems,
+    });
+    if (recorded === null) return;
+    if (!(await handleDenyQuote())) {
+      mintUpdateFailed();
+      return;
+    }
+    recordedGovernance.current = undefined;
+    setUnableToAssessDrawerOpen(false);
+    void queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
+  };
+  const retryVerificationSources = async () => {
+    if (decisionCase === undefined) return;
+    setIsGovernancePending(true);
+    try {
+      const result = await retryOperatorVerificationSources(
+        { billId, caseId: decisionCase.snapshot.caseId, decisionResultDigest: decisionCase.resultDigest },
+        operatorCapability.capability
+      );
+      if (!result.ok) {
+        governanceFailed(result.error);
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
+      toast({
+        title: intl.formatMessage({
+          id: "quotes.toast.verificationSources.refreshed",
+          defaultMessage: "Current Mint sources checked. Review the updated assessment.",
+          description: "Success message after retrying Mint-owned source checks",
+        }),
+        variant: "success",
+      });
+    } finally {
+      setIsGovernancePending(false);
+    }
+  };
 
   return (
     <>
       {showPendingActions || showRequestToPayAction ? (
         <div className="flex items-center gap-2">
-          {showPendingActions && (
+          {showPendingActions && decisionCase?.result.assessmentStatus === "ready_for_decision" && (
             <DenyConfirmDrawer
               title={denyTitle}
               open={denyConfirmDrawerOpen}
@@ -400,7 +492,7 @@ export function QuoteActions({
             </OfferFormDrawer>
           )}
 
-          {showGovernedReturn && (
+          {showGovernedResolution && applicantVerificationItems.length > 0 && (
             <DenyConfirmDrawer
               title={intl.formatMessage({
                 id: "quotes.actions.returnForInformation.title",
@@ -408,7 +500,7 @@ export function QuoteActions({
                 description: "Confirmation title for recording required verification information",
               })}
               mode="return_for_information"
-              requiredItems={requiredVerificationItems}
+              requiredItems={applicantVerificationItems}
               open={returnInfoDrawerOpen}
               onOpenChange={setReturnInfoDrawerOpen}
               isPending={isGovernancePending}
@@ -418,7 +510,7 @@ export function QuoteActions({
             >
               <Button
                 className="flex-1 max-w-sm"
-                disabled={isFetching || isGovernancePending || requiredVerificationItems.length === 0 || !mayReturn}
+                disabled={isFetching || isGovernancePending || !mayReturn}
                 title={mayReturn ? undefined : roleUnavailableReason}
                 variant="outline"
               >
@@ -426,6 +518,69 @@ export function QuoteActions({
                   id: "quotes.actions.returnForInformation.button",
                   defaultMessage: "Record required information",
                   description: "Action that records required verification information without claiming applicant delivery",
+                })}
+              </Button>
+            </DenyConfirmDrawer>
+          )}
+
+          {showGovernedResolution && hasMintRiskRequest && (
+            <MintRiskAssessmentDrawer
+              open={riskAssessmentDrawerOpen}
+              onOpenChange={setRiskAssessmentDrawerOpen}
+              isPending={isGovernancePending}
+              onSubmit={(value) => void submitMintRiskAssessment(value)}
+            >
+              <Button
+                className="flex-1 max-w-sm"
+                disabled={isFetching || isGovernancePending || operatorCapability.capability === undefined}
+              >
+                {intl.formatMessage({
+                  id: "quotes.actions.mintRisk.button",
+                  defaultMessage: "Add Mint risk assessment",
+                  description: "Action for resolving a Mint-owned acceptor risk requirement",
+                })}
+              </Button>
+            </MintRiskAssessmentDrawer>
+          )}
+
+          {showGovernedResolution && hasSourceRefreshRequest && (
+            <Button
+              className="flex-1 max-w-sm"
+              disabled={isFetching || isGovernancePending || operatorCapability.capability === undefined}
+              onClick={() => void retryVerificationSources()}
+              variant="outline"
+            >
+              {intl.formatMessage({
+                id: "quotes.actions.verificationSources.retry",
+                defaultMessage: "Retry Mint source checks",
+                description: "Action that re-reads Mint-owned capacity or system sources and re-evaluates the case",
+              })}
+            </Button>
+          )}
+
+          {showGovernedResolution && (
+            <DenyConfirmDrawer
+              title={intl.formatMessage({
+                id: "quotes.actions.unableToAssess.title",
+                defaultMessage: "Close as unable to assess",
+                description: "Title for terminal closure when required evidence cannot be obtained",
+              })}
+              mode="close_unable_to_assess"
+              requiredItems={requiredVerificationItems}
+              open={unableToAssessDrawerOpen}
+              onOpenChange={setUnableToAssessDrawerOpen}
+              isPending={isGovernancePending || denyQuote.isPending}
+              onSubmit={(writtenBasis) => void submitUnableToAssess(writtenBasis)}
+            >
+              <Button
+                className="flex-1 max-w-sm"
+                disabled={isFetching || isGovernancePending || denyQuote.isPending || !mayCloseUnableToAssess}
+                variant="destructive"
+              >
+                {intl.formatMessage({
+                  id: "quotes.actions.unableToAssess.button",
+                  defaultMessage: "Close — unable to assess",
+                  description: "Terminal action for a case with unresolved evidence",
                 })}
               </Button>
             </DenyConfirmDrawer>

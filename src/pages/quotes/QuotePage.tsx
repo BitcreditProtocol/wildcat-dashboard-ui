@@ -338,6 +338,10 @@ function PageBody({ id }: { id: string }) {
                     : {}),
                   readyForDecision: creditAssessment.decisionCase.result.assessmentStatus === "ready_for_decision",
                   passedChecks: creditAssessment.decisionCase.result.axes.filter((axis) => axis.status === "pass").length,
+                  failedChecks: creditAssessment.decisionCase.result.axes.filter((axis) => axis.status === "fail").length,
+                  notAssessedChecks: creditAssessment.decisionCase.result.axes.filter(
+                    (axis) => axis.status === "blocked" || axis.status === "not_assessed"
+                  ).length,
                   totalChecks: creditAssessment.decisionCase.result.axes.length,
                   invoiceExtractedAndMatched:
                     creditAssessment.decisionCase.snapshot.invoice !== null &&

@@ -292,7 +292,17 @@ function isVerificationRequest(value: unknown): value is VerificationRequest {
     isNonEmptyString(value.code) &&
     ASSESSMENT_AXES.some((axis) => axis === value.axis) &&
     isNonEmptyString(value.requiredItem) &&
-    isNonEmptyString(value.reasonCode)
+    isNonEmptyString(value.reasonCode) &&
+    (value.owner === undefined ||
+      value.owner === "applicant" ||
+      value.owner === "mint_risk" ||
+      value.owner === "mint_operations" ||
+      value.owner === "system") &&
+    (value.resolutionAction === undefined ||
+      value.resolutionAction === "request_applicant_information" ||
+      value.resolutionAction === "record_acceptor_risk_assessment" ||
+      value.resolutionAction === "refresh_mint_capacity" ||
+      value.resolutionAction === "retry_system_check")
   );
 }
 
@@ -407,7 +417,7 @@ function hasCoherentTraceBindings(
 function isResult(value: unknown): value is DecisionCase["result"] {
   if (
     !isObject(value) ||
-    value.schemaVersion !== "decision-result-v9" ||
+    (value.schemaVersion !== "decision-result-v9" && value.schemaVersion !== "decision-result-v10") ||
     !isDigest(value.snapshotDigest) ||
     !isNonEmptyString(value.mintId) ||
     !isDigest(value.policyPackDigest) ||
@@ -450,6 +460,13 @@ function isResult(value: unknown): value is DecisionCase["result"] {
         isTraceValues(item.inputs) &&
         isNonEmptyString(item.result)
     )
+  ) {
+    return false;
+  }
+
+  if (
+    value.schemaVersion === "decision-result-v10" &&
+    value.verificationRequests.some((request) => request.owner === undefined || request.resolutionAction === undefined)
   ) {
     return false;
   }
