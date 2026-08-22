@@ -32,6 +32,8 @@ interface QuoteDetailCardProps {
     goodsDescription?: string;
     readyForDecision: boolean;
     passedChecks: number;
+    failedChecks: number;
+    notAssessedChecks: number;
     totalChecks: number;
     invoiceExtractedAndMatched: boolean;
     answersAffirmed: boolean;
@@ -361,14 +363,18 @@ export function QuoteDetailCard({
                     })}
                   </h4>
                   <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                    <VerificationLine ok={decisionSummary.passedChecks === decisionSummary.totalChecks}>
+                    <VerificationLine ok={decisionSummary.notAssessedChecks === 0 && decisionSummary.failedChecks === 0}>
                       {intl.formatMessage(
                         {
                           id: "quotes.summary.checks",
-                          defaultMessage: "{passed}/{total} automated policy gates passed",
-                          description: "Count of deterministic credit policy gates that passed",
+                          defaultMessage: "{passed} passed · {failed} failed · {notAssessed} not assessed",
+                          description: "Separate counts for completed, failed and evidence-blocked deterministic policy gates",
                         },
-                        { passed: decisionSummary.passedChecks, total: decisionSummary.totalChecks }
+                        {
+                          passed: decisionSummary.passedChecks,
+                          failed: decisionSummary.failedChecks,
+                          notAssessed: decisionSummary.notAssessedChecks,
+                        }
                       )}
                     </VerificationLine>
                     <VerificationLine ok={decisionSummary.invoiceExtractedAndMatched}>

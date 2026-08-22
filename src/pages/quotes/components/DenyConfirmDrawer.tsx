@@ -4,7 +4,7 @@ import { useIntl } from "react-intl";
 
 interface DenyConfirmDrawerProps {
   title: string;
-  mode?: "deny" | "return_for_information";
+  mode?: "deny" | "return_for_information" | "close_unable_to_assess";
   requiredItems?: readonly string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,6 +27,7 @@ export function DenyConfirmDrawer({
   const [writtenBasis, setWrittenBasis] = useState("");
   const trimmedBasis = writtenBasis.trim();
   const isReturn = mode === "return_for_information";
+  const isUnableToAssess = mode === "close_unable_to_assess";
   const fieldId = `${mode}-written-basis`;
   return (
     <ConfirmDrawer
@@ -39,10 +40,17 @@ export function DenyConfirmDrawer({
                 "Record the verification items from the governed assessment. Applicant status is delivered separately and is not confirmed here.",
               description: "Confirmation description that records required information without claiming applicant delivery",
             })
-          : intl.formatMessage({
-              id: "quotes.deny.description",
-              defaultMessage: "Are you sure you want to deny this quote? This action cannot be undone.",
-            })
+          : isUnableToAssess
+            ? intl.formatMessage({
+                id: "quotes.unableToAssess.description",
+                defaultMessage:
+                  "Close this case because the Mint cannot obtain the evidence needed for an informed decision. This is not a credit-risk denial, but the quote will be denied and no minting can occur.",
+                description: "Explanation of the terminal unable-to-assess outcome",
+              })
+            : intl.formatMessage({
+                id: "quotes.deny.description",
+                defaultMessage: "Are you sure you want to deny this quote? This action cannot be undone.",
+              })
       }
       open={open}
       onOpenChange={(nextOpen) => {
@@ -60,16 +68,22 @@ export function DenyConfirmDrawer({
               defaultMessage: "Record required information",
               description: "Confirmation button that records required information without claiming applicant delivery",
             })
-          : intl.formatMessage({
-              id: "quotes.deny.confirmButton",
-              defaultMessage: "Yes, deny quote",
-            })
+          : isUnableToAssess
+            ? intl.formatMessage({
+                id: "quotes.unableToAssess.confirmButton",
+                defaultMessage: "Close case and deny minting",
+                description: "Terminal action for an unresolved case that cannot be assessed",
+              })
+            : intl.formatMessage({
+                id: "quotes.deny.confirmButton",
+                defaultMessage: "Yes, deny quote",
+              })
       }
       submitButtonVariant={isReturn ? "default" : "destructive"}
       trigger={children}
     >
       <div className="px-4">
-        {isReturn && requiredItems.length > 0 && (
+        {(isReturn || isUnableToAssess) && requiredItems.length > 0 && (
           <div className="mb-4 rounded-md border border-input p-3">
             <p className="mb-2 text-sm font-medium">
               {intl.formatMessage({
