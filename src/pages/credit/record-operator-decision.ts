@@ -28,6 +28,7 @@ export interface OperatorCapability {
 }
 
 export interface MintRiskAssessmentInput {
+  mintQuoteId: string;
   billId: string;
   caseId: string;
   decisionResultDigest: string;
@@ -256,17 +257,25 @@ export async function recordMintRiskAssessment(
   input: MintRiskAssessmentInput,
   capability: OperatorCapability | undefined
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (capability === undefined) return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
+  if (capability?.operatorRole !== "approver") return { ok: false, error: "A ready Mint approver capability is required for this action" };
   try {
-    const response = await authenticatedFetch("/api/ai-credit/operator-verifications", {
-      body: JSON.stringify({ ...input, action: "record_acceptor_risk_assessment" }),
+    const { mintQuoteId, billId, caseId, decisionResultDigest, ...riskEvidence } = input;
+    const mintResponse = await authenticatedFetch(`/v1/admin/credit/quote/${encodeURIComponent(mintQuoteId)}/acceptor-risk`, {
+      body: JSON.stringify(riskEvidence),
+      headers: { "content-type": "application/json" },
+      method: "PUT",
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!mintResponse.ok) return { ok: false, error: await responseError(mintResponse) };
+    const refreshResponse = await authenticatedFetch("/api/ai-credit/operator-verifications", {
+      body: JSON.stringify({ billId, caseId, decisionResultDigest, action: "retry_current_sources" }),
       headers: { "content-type": "application/json" },
       method: "POST",
       signal: AbortSignal.timeout(15_000),
     });
-    return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
+    return refreshResponse.ok ? { ok: true } : { ok: false, error: await responseError(refreshResponse) };
   } catch {
-    return { ok: false, error: "The AI Credit operator service is not reachable" };
+    return { ok: false, error: "The Mint evidence authority or AI Credit operator service is not reachable" };
   }
 }
 

@@ -3,6 +3,7 @@ import {
   fetchOperatorCapability,
   durableAuthorizationReceiptFromQuote,
   operatorMayRecordDecision,
+  recordMintRiskAssessment,
   recordOperatorDecision,
   signedAuthorizationMatchesOffer,
   type OperatorCapability,
@@ -64,6 +65,76 @@ describe("operator capability", () => {
     expect(operatorMayRecordDecision(reviewer, "confirm_proposed_quote")).toBe(false);
     expect(operatorMayRecordDecision(approver, "propose_adjustment_and_requote")).toBe(true);
     expect(operatorMayRecordDecision(undefined, "return_for_information")).toBe(false);
+  });
+});
+
+describe("Mint-owned risk evidence", () => {
+  const risk = {
+    mintQuoteId: "quote-1",
+    billId: "bill-1",
+    caseId: "case-1",
+    decisionResultDigest: `sha256:${"a".repeat(64)}`,
+    probabilityOfDefaultBps: 600,
+    lossGivenDefaultBps: 4_000,
+    sourceReference: "risk-register-2026-08",
+    validThrough: "2026-11-20",
+    writtenBasis: "Reviewed against the current Mint-owned testnet risk register.",
+  };
+
+  it("records evidence at the Mint before asking AI Credit to refresh", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(response(true, 200, {}))
+      .mockResolvedValueOnce(response(true, 200, {}));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(recordMintRiskAssessment(risk, approver)).resolves.toEqual({ ok: true });
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/v1/admin/credit/quote/quote-1/acceptor-risk",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({
+          probabilityOfDefaultBps: 600,
+          lossGivenDefaultBps: 4_000,
+          sourceReference: "risk-register-2026-08",
+          validThrough: "2026-11-20",
+          writtenBasis: "Reviewed against the current Mint-owned testnet risk register.",
+        }),
+      })
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/ai-credit/operator-verifications",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          billId: "bill-1",
+          caseId: "case-1",
+          decisionResultDigest: `sha256:${"a".repeat(64)}`,
+          action: "retry_current_sources",
+        }),
+      })
+    );
+  });
+
+  it("does not refresh AI Credit when the Mint rejects the evidence", async () => {
+    const fetch = vi.fn().mockResolvedValue(response(false, 400, { error: "invalid evidence" }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(recordMintRiskAssessment(risk, approver)).resolves.toEqual({ ok: false, error: "invalid evidence" });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps Mint evidence writes approver-only", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(recordMintRiskAssessment(risk, reviewer)).resolves.toEqual({
+      ok: false,
+      error: "A ready Mint approver capability is required for this action",
+    });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
 

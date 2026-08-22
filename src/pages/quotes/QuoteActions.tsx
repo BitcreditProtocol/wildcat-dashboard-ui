@@ -161,6 +161,7 @@ export function QuoteActions({
   const mayOffer = operatorMayRecordDecision(operatorCapability.capability, "confirm_proposed_quote");
   const mayReturn = operatorMayRecordDecision(operatorCapability.capability, "return_for_information");
   const mayCloseUnableToAssess = operatorMayRecordDecision(operatorCapability.capability, "close_unable_to_assess");
+  const mayRecordMintRisk = operatorCapability.capability?.operatorRole === "approver";
   const roleUnavailableReason = operatorCapability.isLoading
     ? intl.formatMessage({
         id: "quotes.actions.role.checking",
@@ -364,16 +365,17 @@ export function QuoteActions({
       variant: "success",
     });
   };
-  const submitMintRiskAssessment = async (value: MintRiskAssessmentFormValue) => {
+  const submitMintRiskAssessment = async (risk: MintRiskAssessmentFormValue) => {
     if (decisionCase === undefined || operatorCapability.capability === undefined) return;
     setIsGovernancePending(true);
     try {
       const result = await recordMintRiskAssessment(
         {
+          mintQuoteId: value.id,
           billId,
           caseId: decisionCase.snapshot.caseId,
           decisionResultDigest: decisionCase.resultDigest,
-          ...value,
+          ...risk,
         },
         operatorCapability.capability
       );
@@ -532,7 +534,8 @@ export function QuoteActions({
             >
               <Button
                 className="flex-1 max-w-sm"
-                disabled={isFetching || isGovernancePending || operatorCapability.capability === undefined}
+                disabled={isFetching || isGovernancePending || !mayRecordMintRisk}
+                title={mayRecordMintRisk ? undefined : roleUnavailableReason}
               >
                 {intl.formatMessage({
                   id: "quotes.actions.mintRisk.button",
