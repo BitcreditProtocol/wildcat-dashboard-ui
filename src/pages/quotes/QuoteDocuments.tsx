@@ -248,7 +248,7 @@ export function QuoteDocuments({
           : intl.formatMessage(messages.evidenceCount, { count: creditEvidence.submittedEvidence.length });
 
   return (
-    <Card>
+    <Card id="documents-and-evidence" className="scroll-mt-4">
       <CardHeader className="p-0">
         <button
           type="button"
