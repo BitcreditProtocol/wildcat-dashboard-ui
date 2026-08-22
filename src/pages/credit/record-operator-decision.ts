@@ -102,6 +102,18 @@ export interface OperatorDecisionSuccess {
   signedAuthorization?: SignedOfferAuthorization;
 }
 
+export function signedAuthorizationMatchesOffer(
+  value: SignedOfferAuthorization,
+  expected: { mintQuoteId: string; billId: string; discountedSat: string; offerExpiresOn: string }
+): boolean {
+  return (
+    value.authorization.mintQuoteId === expected.mintQuoteId &&
+    value.authorization.billId === expected.billId &&
+    value.authorization.terms.discountedSat === expected.discountedSat &&
+    value.authorization.terms.offerExpiresOn === expected.offerExpiresOn
+  );
+}
+
 const FALLBACK_ERROR = "The AI Credit operator service rejected the request";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
