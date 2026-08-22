@@ -600,6 +600,8 @@
   "quotes.summary.print": "Print summary",
   "quotes.summary.purpose": "Use of proceeds",
   "quotes.summary.ready": "Ready for decision",
+  "quotes.summary.recommendedAmountAvailable": "Recommended amount available for minting",
+  "quotes.summary.recommendedMintingFee": "Recommended Minting fee",
   "quotes.summary.recourseAcknowledged": "Applicant acknowledged full-bill recourse",
   "quotes.summary.recourseRequired": "Applicant recourse acknowledgment required",
   "quotes.summary.repayment": "Repayment source",

@@ -191,6 +191,45 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).not.toContain("Fee:80,000,000sat");
   });
 
+  it("shows governed recommended terms while the Mint quote is pending", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{
+          id: baseQuote.id,
+          bill: baseQuote.bill,
+          submitted: "2026-08-21T10:00:00.000Z",
+          suggested_expiration: "2026-08-23T23:59:59.999Z",
+          status: "Pending",
+        }}
+        effectiveQuoteStatus="Pending"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        decisionSummary={{
+          useOfFunds: "Fertilizer",
+          repaymentSource: "Coffee sales",
+          readyForDecision: true,
+          passedChecks: 6,
+          totalChecks: 6,
+          invoiceExtractedAndMatched: true,
+          answersAffirmed: true,
+          recourseAcknowledged: true,
+          unresolvedContradictions: 0,
+          underwritingEvidenceProvenance: "synthetic",
+          hasMintPolicyAssignment: true,
+          recommendedTerms: { mintingFee: 272_000, amountAvailableForMinting: 7_928_000 },
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("Recommended Minting fee272,000sat");
+    expect(page.textContent).toContain("Recommended amount available for minting7,928,000sat");
+  });
+
   it("shows the exact verified authorization receipt returned by the Mint command", () => {
     const page = renderWithProviders(
       <QuoteDetailCard

@@ -368,6 +368,14 @@ function PageBody({ id }: { id: string }) {
                     creditAssessment.decisionCase.creditProgram !== undefined &&
                     creditAssessment.decisionCase.creditProgramAssignment !== undefined,
                   billAcceptanceState: creditAssessment.decisionCase.snapshot.bill?.acceptanceState,
+                  ...(creditAssessment.decisionCase.result.terms
+                    ? {
+                        recommendedTerms: {
+                          mintingFee: Number(creditAssessment.decisionCase.result.terms.effectiveFeeSat),
+                          amountAvailableForMinting: Number(creditAssessment.decisionCase.result.terms.discountedSat),
+                        },
+                      }
+                    : {}),
                 }
               : undefined
           }
