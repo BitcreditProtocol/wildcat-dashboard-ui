@@ -4,6 +4,7 @@ import {
   durableAuthorizationReceiptFromQuote,
   operatorMayRecordDecision,
   recordOperatorDecision,
+  signedAuthorizationMatchesOffer,
   type OperatorCapability,
   type OperatorDecisionInput,
   type SignedOfferAuthorization,
@@ -158,5 +159,21 @@ describe("recordOperatorDecision", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(false, 409, { error })));
 
     await expect(recordOperatorDecision(command, approver)).resolves.toEqual({ ok: false, error });
+  });
+});
+
+describe("signed offer binding", () => {
+  const expected = { mintQuoteId: "quote-1", billId: "bill-1", discountedSat: "7734000", offerExpiresOn: "2026-08-23" };
+  const boundAuthorization = {
+    ...signedAuthorization,
+    authorization: { ...signedAuthorization.authorization, billId: "bill-1" },
+  };
+
+  it("requires the exact quote, bill, amount and expiry confirmed by the operator", () => {
+    expect(signedAuthorizationMatchesOffer(boundAuthorization, expected)).toBe(true);
+    expect(signedAuthorizationMatchesOffer(boundAuthorization, { ...expected, mintQuoteId: "quote-2" })).toBe(false);
+    expect(signedAuthorizationMatchesOffer(boundAuthorization, { ...expected, billId: "bill-2" })).toBe(false);
+    expect(signedAuthorizationMatchesOffer(boundAuthorization, { ...expected, discountedSat: "1" })).toBe(false);
+    expect(signedAuthorizationMatchesOffer(boundAuthorization, { ...expected, offerExpiresOn: "2026-08-24" })).toBe(false);
   });
 });

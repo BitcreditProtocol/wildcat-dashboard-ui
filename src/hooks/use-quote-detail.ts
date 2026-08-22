@@ -7,7 +7,7 @@ import {
 } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuery } from "@tanstack/react-query";
 import type { InfoReply, ListEbillsResponse } from "@/generated/client/types.gen";
-import { getEffectiveQuoteStatus } from "@/utils/quote-status";
+import { getEffectiveQuoteStatus, isQuotePollingCompleteStatus } from "@/utils/quote-status";
 import { getEbillMintCompleteQueryOptions } from "@/lib/ebill-mint-complete";
 
 export interface QuoteDocument {
@@ -19,7 +19,6 @@ export interface QuoteDocument {
 
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
 const QUOTE_DETAIL_POLL_INTERVAL_MS = 10_000;
-const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 
 function getDocumentNameFromUrl(fileUrl: string) {
   try {
@@ -51,7 +50,7 @@ export function useQuoteDetail(id: string) {
         return QUOTE_STATUS_POLL_INTERVAL_MS;
       }
 
-      return QUOTE_POLLING_TERMINAL_STATUSES.has(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
+      return isQuotePollingCompleteStatus(status) ? false : QUOTE_STATUS_POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: true,
   });

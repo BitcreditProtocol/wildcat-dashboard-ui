@@ -19,6 +19,7 @@ import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment
 import {
   operatorMayRecordDecision,
   recordOperatorDecision,
+  signedAuthorizationMatchesOffer,
   verifiedAuthorizationReceiptOf,
   type OperatorDecisionSuccess,
   type VerifiedAuthorizationReceipt,
@@ -305,6 +306,26 @@ export function QuoteActions({
     try {
       const recorded = await recordGovernance(finalData.governance);
       if (recorded?.signedAuthorization === undefined) return;
+      const offerExpiresOn = finalData.governedOfferExpiresAt?.toISOString().slice(0, 10);
+      if (
+        offerExpiresOn === undefined ||
+        !signedAuthorizationMatchesOffer(recorded.signedAuthorization, {
+          mintQuoteId: value.id,
+          billId,
+          discountedSat: finalData.discount.net.value.round(0, 0).toFixed(0),
+          offerExpiresOn,
+        })
+      ) {
+        recordedGovernance.current = undefined;
+        governanceFailed(
+          intl.formatMessage({
+            id: "quotes.toast.governance.authorizationMismatch",
+            defaultMessage: "The signed authorization does not match the offer you confirmed",
+            description: "Fail-closed error when signed credit terms differ from the operator-confirmed quote, bill, amount or expiry",
+          })
+        );
+        return;
+      }
       if (!(await handleOfferQuote(recorded.signedAuthorization))) {
         mintUpdateFailed();
         return;
