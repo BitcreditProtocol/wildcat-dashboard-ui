@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { EvidencePacket, SubmittedEvidence } from "@/pages/credit/decision-types";
+import type { DecisionInvoice, EvidencePacket, SubmittedEvidence, VerificationRequest } from "@/pages/credit/decision-types";
 import { SubmittedDocuments } from "@/pages/credit/SubmittedDocuments";
 import { AppIcon, Button, Card, CardContent, CardHeader, CardTitle, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -17,6 +17,8 @@ export type CreditEvidenceState =
       resultDigest: string;
       submittedEvidence: readonly SubmittedEvidence[];
       evidencePackets: readonly EvidencePacket[];
+      invoiceAssessment: DecisionInvoice | null;
+      verificationRequests: readonly VerificationRequest[];
     };
 
 interface QuoteDocumentsProps {
@@ -120,6 +122,11 @@ const messages = defineMessages({
     defaultMessage: "No submitted credit evidence is recorded for this assessment. This is not an adverse finding.",
     description: "Non-adverse empty state for an assessment without submitted evidence",
   },
+  sourceFiles: {
+    id: "quotes.documentsAndEvidence.sourceFiles",
+    defaultMessage: "Source files from the eBill and Mint request ({count})",
+    description: "Collapsed technical source-file disclosure below the operator evidence review",
+  },
 });
 
 function DocumentGroup({
@@ -220,6 +227,8 @@ function CreditEvidence({
     <SubmittedDocuments
       submittedEvidence={state.submittedEvidence}
       evidencePackets={state.evidencePackets}
+      invoiceAssessment={state.invoiceAssessment}
+      verificationRequests={state.verificationRequests}
       openingEvidenceReference={openingEvidenceReference}
       onOpenEvidence={onOpenEvidence}
     />
@@ -270,28 +279,31 @@ export function QuoteDocuments({
       </CardHeader>
 
       {isExpanded && (
-        <CardContent className="space-y-5 border-t border-border pt-5">
+        <CardContent className="space-y-4 border-t border-border pt-5">
+          <CreditEvidence state={creditEvidence} openingEvidenceReference={openingEvidenceReference} onOpenEvidence={onOpenEvidence} />
           {billFileCount === 0 ? (
-            <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.noBillFiles)}</p>
+            <p className="border-t border-border pt-4 text-sm text-muted-foreground">{intl.formatMessage(messages.noBillFiles)}</p>
           ) : (
-            <>
-              <DocumentGroup
-                title={intl.formatMessage(messages.billAttachments)}
-                documents={billAttachments}
-                openingDocumentHash={openingDocumentHash}
-                onOpenDocument={onOpenDocument}
-              />
-              <DocumentGroup
-                title={intl.formatMessage(messages.requestToMintFiles)}
-                documents={requestToMintFiles}
-                openingDocumentHash={openingDocumentHash}
-                onOpenDocument={onOpenDocument}
-              />
-            </>
+            <details className="rounded-lg border border-border bg-elevation-100">
+              <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+                {intl.formatMessage(messages.sourceFiles, { count: billFileCount })}
+              </summary>
+              <div className="space-y-4 border-t border-border p-4">
+                <DocumentGroup
+                  title={intl.formatMessage(messages.billAttachments)}
+                  documents={billAttachments}
+                  openingDocumentHash={openingDocumentHash}
+                  onOpenDocument={onOpenDocument}
+                />
+                <DocumentGroup
+                  title={intl.formatMessage(messages.requestToMintFiles)}
+                  documents={requestToMintFiles}
+                  openingDocumentHash={openingDocumentHash}
+                  onOpenDocument={onOpenDocument}
+                />
+              </div>
+            </details>
           )}
-          <div className="border-t border-border pt-5">
-            <CreditEvidence state={creditEvidence} openingEvidenceReference={openingEvidenceReference} onOpenEvidence={onOpenEvidence} />
-          </div>
         </CardContent>
       )}
     </Card>

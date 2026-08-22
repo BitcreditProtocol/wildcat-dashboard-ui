@@ -106,6 +106,8 @@ function PageBody({ id }: { id: string }) {
               resultDigest: creditAssessment.decisionCase.resultDigest,
               submittedEvidence: creditAssessment.decisionCase.submittedEvidence ?? [],
               evidencePackets: creditAssessment.decisionCase.evidencePackets ?? [],
+              invoiceAssessment: creditAssessment.decisionCase.snapshot.invoice,
+              verificationRequests: creditAssessment.decisionCase.result.verificationRequests,
             };
 
   if (error) {

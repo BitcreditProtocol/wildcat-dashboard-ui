@@ -63,6 +63,8 @@ describe("QuoteDocuments", () => {
           resultDigest: "sha256:result",
           submittedEvidence: [],
           evidencePackets: [],
+          invoiceAssessment: null,
+          verificationRequests: [],
         }}
         openingDocumentHash={null}
         openingEvidenceReference={null}
@@ -181,6 +183,8 @@ describe("QuoteDocuments", () => {
             },
           ],
           evidencePackets: [],
+          invoiceAssessment: null,
+          verificationRequests: [],
         }}
         openingDocumentHash={null}
         openingEvidenceReference={null}
@@ -192,7 +196,7 @@ describe("QuoteDocuments", () => {
     act(() => {
       page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(page.textContent).toContain("Credit evidence");
+    expect(page.textContent).toContain("Evidence review");
     expect(page.textContent).toContain("invoice.pdf");
     expect(page.textContent).toContain("Applicant upload");
     expect(page.textContent).toContain("No current server receipt");
@@ -217,6 +221,8 @@ describe("QuoteDocuments", () => {
           resultDigest: "sha256:result",
           submittedEvidence: [evidence],
           evidencePackets: [{ evidence, status: "quarantined", byteLength: 42 }],
+          invoiceAssessment: null,
+          verificationRequests: [],
         }}
         openingDocumentHash={null}
         openingEvidenceReference={null}
@@ -235,5 +241,91 @@ describe("QuoteDocuments", () => {
       await Promise.resolve();
     });
     expect(onOpenEvidence).toHaveBeenCalledWith(evidence);
+    expect(page.textContent).toContain("Supporting document");
+    expect(page.textContent).toContain("This supporting document was not used by the governed invoice assessment");
+    expect(page.textContent).not.toContain("Human review is required");
+  });
+
+  it("puts governed matches and extracted values ahead of technical provenance", () => {
+    const evidence = {
+      reference: "sha256:invoice",
+      label: "commercial-invoice.pdf",
+      contentDigest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      origin: "bill_attachment" as const,
+    };
+    const citation = { page: 1, exactSnippet: "Invoice: DEMO-42" };
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
+          submittedEvidence: [evidence],
+          evidencePackets: [
+            {
+              evidence,
+              status: "quarantined",
+              byteLength: 831,
+              extraction: {
+                schemaVersion: "invoice-extraction-proposal-v1",
+                derivativeDigest: "sha256:derivative",
+                parserVersion: "parser-v1",
+                promptVersion: "prompt-v1",
+                modelId: "model-route",
+                extractedAt: "2026-08-22T10:00:00.000Z",
+                proposal: {
+                  invoiceNumber: { value: "DEMO-42", citation },
+                  seller: null,
+                  buyer: null,
+                  issueDate: null,
+                  goodsDescription: { value: "Coffee crop inputs", citation },
+                  transactionReference: null,
+                  currency: { value: "SAT", citation },
+                  totalSat: { value: "8100000", citation },
+                  lineItems: [],
+                },
+              },
+            },
+          ],
+          invoiceAssessment: {
+            reference: evidence.reference,
+            invoiceNumber: "DEMO-42",
+            goodsDescription: "Coffee crop inputs",
+            sellerRef: "seller",
+            buyerRef: "buyer",
+            issueDate: "2026-08-22",
+            totalSat: "8100000",
+            plausibility: "plausible",
+            billAndClaimsConsistency: "match",
+            evidenceState: "corroborated",
+            methodologyVersion: "invoice-review-v1",
+            assessedBy: "credit_evidence_gateway",
+            validThrough: "2026-11-20",
+          },
+          verificationRequests: [],
+        }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
+      />
+    );
+
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(page.textContent).toContain("Bill and claims matched");
+    expect(page.textContent).toContain("4 cited fields");
+    expect(page.textContent).toContain("InvoiceDEMO-42");
+    expect(page.textContent).toContain("Total8,100,000 sat");
+    expect(page.textContent).toContain("PlausibilityPlausible");
+    expect(page.textContent).toContain("Bill and claims consistencyMatch");
+    const technical = Array.from(page.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("Technical provenance")
+    );
+    expect(technical?.open).toBe(false);
   });
 });

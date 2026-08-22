@@ -503,7 +503,7 @@ describe("CreditAssessmentCard", () => {
       <SubmittedDocuments submittedEvidence={withDocuments.submittedEvidence ?? []} evidencePackets={withDocuments.evidencePackets ?? []} />
     );
 
-    expect(container.textContent).toContain("Credit evidence");
+    expect(container.textContent).toContain("Evidence review");
     // The uuid core appends to a stored file name is not shown to the operator.
     expect(container.textContent).toContain("goods-invoice.pdf");
     expect(container.textContent).not.toContain("0f4d1c22");
