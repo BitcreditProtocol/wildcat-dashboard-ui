@@ -12,11 +12,6 @@ import { percentFromBps, type DecisionCase, type DecisionTerms } from "./decisio
  */
 
 const messages = defineMessages({
-  heading: {
-    id: "credit.guidance.heading",
-    defaultMessage: "AI Credit assessment",
-    description: "Heading of the governed-offer guidance inside the offer drawer",
-  },
   governed: {
     id: "credit.guidance.governed",
     defaultMessage: "Governed amount available for minting {discounted} — the form opens on this amount.",
@@ -43,7 +38,6 @@ export function GovernedOfferGuidance({ policyPack, terms }: { policyPack: Decis
   // bolted on from another product. Same px-4 as the form immediately below it.
   return (
     <div className="flex flex-col gap-1 px-4 pb-4 text-xs">
-      <span className="text-[11px] uppercase tracking-widest text-muted-foreground">{intl.formatMessage(messages.heading)}</span>
       <span className="font-medium">{intl.formatMessage(messages.governed, { discounted: formatSat(terms.discountedSat) })}</span>
       <span className="text-muted-foreground">
         {intl.formatMessage(messages.measured, {

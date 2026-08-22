@@ -239,14 +239,7 @@ export function QuoteDetailCard({
         <header className="border-b border-border bg-elevation-100 px-6 py-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <Text variant="caption" className="uppercase tracking-[0.18em]">
-                {intl.formatMessage({
-                  id: "quotes.summary.executiveHeading",
-                  defaultMessage: "Executive summary",
-                  description: "Heading for the concise executive view of a minting case",
-                })}
-              </Text>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">
+              <h2 className="text-xl font-semibold tracking-tight">
                 {decisionSummary?.readyForDecision
                   ? intl.formatMessage({ id: "quotes.summary.decisionReadyTitle", defaultMessage: "Decision-ready business case" })
                   : intl.formatMessage({ id: "quotes.summary.verificationTitle", defaultMessage: "Business case requires verification" })}
