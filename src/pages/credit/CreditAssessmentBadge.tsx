@@ -11,30 +11,31 @@ import { useCreditAssessmentForBill } from "./use-credit-assessment";
 const messages = defineMessages({
   verification: {
     id: "credit.badge.verification",
-    defaultMessage: "AI Credit: verify",
+    defaultMessage: "Verification required",
     description: "List-row badge when the assessment is blocked pending verification",
   },
   offer: {
     id: "credit.badge.offer",
-    defaultMessage: "AI Credit: offer available",
+    defaultMessage: "Ready for decision",
     description: "List-row badge when governed code can offer",
   },
   noFit: {
     id: "credit.badge.noFit",
-    defaultMessage: "AI Credit: no fit",
+    defaultMessage: "No product fit",
     description: "List-row badge when policy produced no terms",
   },
   unknown: {
     id: "credit.badge.unknown",
-    defaultMessage: "AI Credit: unreadable",
+    defaultMessage: "Assessment unavailable",
     description: "List-row badge when the payload does not match this build",
   },
+  pending: { id: "quote.status.Pending", defaultMessage: "Pending" },
 });
 
 export function CreditAssessmentBadge({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
   const intl = useIntl();
   const { decisionCase } = useCreditAssessmentForBill(billId, mintQuoteId);
-  if (decisionCase === undefined) return null;
+  if (decisionCase === undefined) return <Badge variant="default">{intl.formatMessage(messages.pending)}</Badge>;
 
   const { result } = decisionCase;
   if (result.assessmentStatus === "blocked_pending_verification") {
