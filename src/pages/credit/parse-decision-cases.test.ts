@@ -339,6 +339,57 @@ describe("parseDecisionCasesResponse", () => {
     expect(() => parseDecisionCasesResponse(response)).toThrow("invalid governed decision response");
   });
 
+  it("accepts a source-bound generic evidence analysis and rejects a mismatched one", () => {
+    const evidence = {
+      reference: `sha256:${"a".repeat(64)}`,
+      label: "contract.pdf",
+      contentDigest: `sha256:${"a".repeat(64)}`,
+      origin: "applicant_upload" as const,
+    };
+    const analysis = {
+      schemaVersion: "evidence-document-analysis-v1" as const,
+      evidence,
+      derivativeDigest: `sha256:${"b".repeat(64)}`,
+      parserVersion: "poppler-text-v1",
+      promptVersion: "evidence-document-analysis-v1" as const,
+      modelId: "gpt-5.6-luna",
+      extractedAt: "2026-08-22T12:00:00.000Z",
+      analysis: {
+        documentType: { value: "Purchase agreement", citation: { page: 1, exactSnippet: "Purchase agreement" } },
+        claims: [
+          {
+            kind: "obligation",
+            label: "Delivery obligation",
+            value: "Deliver 400 bags",
+            citation: { page: 2, exactSnippet: "Supplier shall Deliver 400 bags" },
+          },
+        ],
+      },
+    };
+    const decisionCase = validCase();
+    const withAnalysis = {
+      ...decisionCase,
+      submittedEvidence: [evidence],
+      evidencePackets: [{ evidence, status: "quarantined", byteLength: 1024, analysisStatus: "available", analysis }],
+    };
+    expect(parseDecisionCasesResponse({ cases: [withAnalysis] })).toEqual({ cases: [withAnalysis] });
+    expect(() =>
+      parseDecisionCasesResponse({
+        cases: [
+          {
+            ...withAnalysis,
+            evidencePackets: [
+              {
+                ...withAnalysis.evidencePackets[0],
+                analysis: { ...analysis, evidence: { ...evidence, reference: `sha256:${"c".repeat(64)}` } },
+              },
+            ],
+          },
+        ],
+      })
+    ).toThrow("invalid governed decision response");
+  });
+
   it("rejects valid-looking digests when result, snapshot and policy bindings disagree", () => {
     const decisionCase = validCase();
     const mismatched = {

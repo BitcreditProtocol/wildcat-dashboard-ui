@@ -246,6 +246,81 @@ describe("QuoteDocuments", () => {
     expect(page.textContent).not.toContain("Human review is required");
   });
 
+  it("renders arbitrary source-backed document claims without invoice-specific layout", () => {
+    const evidence = {
+      reference: `sha256:${"a".repeat(64)}`,
+      label: "shipping-confirmation.pdf",
+      contentDigest: `sha256:${"a".repeat(64)}`,
+      origin: "applicant_upload" as const,
+    };
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
+          submittedEvidence: [evidence],
+          evidencePackets: [
+            {
+              evidence,
+              status: "quarantined",
+              byteLength: 2_048,
+              analysisStatus: "available",
+              analysis: {
+                schemaVersion: "evidence-document-analysis-v1",
+                evidence,
+                derivativeDigest: `sha256:${"b".repeat(64)}`,
+                parserVersion: "poppler-text-v1",
+                promptVersion: "evidence-document-analysis-v1",
+                modelId: "gpt-5.6-luna",
+                extractedAt: "2026-08-22T12:00:00.000Z",
+                analysis: {
+                  documentType: {
+                    value: "Shipping confirmation",
+                    citation: { page: 1, exactSnippet: "Shipping confirmation" },
+                  },
+                  claims: [
+                    {
+                      kind: "status",
+                      label: "Shipment status",
+                      value: "Loaded for export",
+                      citation: { page: 1, exactSnippet: "Status: Loaded for export" },
+                    },
+                    {
+                      kind: "identifier",
+                      label: "Container",
+                      value: "GT-COFFEE-42",
+                      citation: { page: 2, exactSnippet: "Container GT-COFFEE-42" },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+          invoiceAssessment: null,
+          verificationRequests: [],
+        }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
+      />
+    );
+
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(page.textContent).toContain("Shipping confirmation");
+    expect(page.textContent).toContain("Analyzed");
+    expect(page.textContent).toContain("Shipment statusLoaded for export");
+    expect(page.textContent).toContain("ContainerGT-COFFEE-42");
+    expect(page.textContent).toContain("Show source · page 2");
+    expect(page.textContent).toContain("It does not affect the current automated decision");
+    expect(page.textContent).not.toContain("Invoice matched to eBill");
+  });
+
   it("puts governed matches and extracted values ahead of technical provenance", () => {
     const evidence = {
       reference: "sha256:invoice",
@@ -332,7 +407,7 @@ describe("QuoteDocuments", () => {
     expect(lineItems?.open).toBe(false);
     expect(lineItems?.textContent).toContain("Coffee crop inputs · 8,000,000 sat");
     const technical = Array.from(page.querySelectorAll("details")).find((details) =>
-      details.querySelector("summary")?.textContent?.includes("Technical provenance")
+      details.querySelector("summary")?.textContent?.includes("Audit details")
     );
     expect(technical?.open).toBe(false);
   });

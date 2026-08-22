@@ -44,6 +44,7 @@ const EVIDENCE_STATES = new Set([
   "source_unavailable",
   "withdrawn",
 ]);
+const EVIDENCE_CLAIM_KINDS = new Set(["party", "identifier", "date", "amount", "asset", "obligation", "status", "description", "other"]);
 
 const isObject = (value: unknown): value is JsonObject => typeof value === "object" && value !== null && !Array.isArray(value);
 const isString = (value: unknown): value is string => typeof value === "string";
@@ -191,6 +192,39 @@ function isProposedEvidenceField(value: unknown): value is ProposedEvidenceField
 
 const isNullableEvidenceField = (value: unknown): value is ProposedEvidenceField | null => value === null || isProposedEvidenceField(value);
 
+function isEvidenceDocumentAnalysis(value: unknown, evidence: SubmittedEvidence): boolean {
+  if (
+    !isObject(value) ||
+    value.schemaVersion !== "evidence-document-analysis-v1" ||
+    !isSubmittedEvidence(value.evidence) ||
+    value.evidence.reference !== evidence.reference ||
+    value.evidence.contentDigest !== evidence.contentDigest ||
+    value.evidence.origin !== evidence.origin ||
+    !isDigest(value.derivativeDigest) ||
+    !isNonEmptyString(value.parserVersion) ||
+    value.promptVersion !== "evidence-document-analysis-v1" ||
+    !isNonEmptyString(value.modelId) ||
+    !isDateTime(value.extractedAt) ||
+    !isObject(value.analysis) ||
+    !isNullableEvidenceField(value.analysis.documentType) ||
+    !Array.isArray(value.analysis.claims) ||
+    value.analysis.claims.length > 12
+  ) {
+    return false;
+  }
+  return value.analysis.claims.every(
+    (claim) =>
+      isObject(claim) &&
+      isString(claim.kind) &&
+      EVIDENCE_CLAIM_KINDS.has(claim.kind) &&
+      isNonEmptyString(claim.label) &&
+      claim.label.length <= 80 &&
+      isNonEmptyString(claim.value) &&
+      claim.value.length <= 500 &&
+      isEvidenceCitation(claim.citation)
+  );
+}
+
 function isEvidencePacket(value: unknown): value is EvidencePacket {
   if (
     !isObject(value) ||
@@ -198,6 +232,15 @@ function isEvidencePacket(value: unknown): value is EvidencePacket {
     value.status !== "quarantined" ||
     !isPositiveInteger(value.byteLength) ||
     value.byteLength > 10 * 1024 * 1024
+  ) {
+    return false;
+  }
+  if (value.analysisStatus !== undefined && value.analysisStatus !== "pending" && value.analysisStatus !== "available") {
+    return false;
+  }
+  if (
+    (value.analysisStatus === "available") !== (value.analysis !== undefined) ||
+    (value.analysis !== undefined && !isEvidenceDocumentAnalysis(value.analysis, value.evidence))
   ) {
     return false;
   }
