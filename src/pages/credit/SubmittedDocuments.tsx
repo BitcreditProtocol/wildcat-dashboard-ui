@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { FileText } from "lucide-react";
-import { defineMessages, useIntl } from "react-intl";
+import { defineMessages, type IntlShape, useIntl } from "react-intl";
 import {
   displayEvidenceLabel,
   words,
@@ -21,8 +21,8 @@ const messages = defineMessages({
   summary: {
     id: "credit.submittedEvidence.summary",
     defaultMessage:
-      "{documents, plural, one {# submitted document} other {# submitted documents}} · {fields, plural, one {# cited field} other {# cited fields}}",
-    description: "Compact count of documents and source-cited extracted fields",
+      "{documents, plural, one {# submitted document} other {# submitted documents}} · {claims, plural, one {# cited claim} other {# cited claims}}",
+    description: "Compact count of documents and source-cited extracted claims",
   },
   clear: {
     id: "credit.submittedEvidence.clear",
@@ -63,7 +63,8 @@ const messages = defineMessages({
   },
   clientBillWarning: {
     id: "credit.evidencePacket.clientBillWarning",
-    defaultMessage: "The server matched these bytes to a browser-supplied digest; it did not establish a signed bill or revision binding.",
+    defaultMessage:
+      "Attachment integrity only: these exact bytes were found in this Mint quote's bill attachments. The document itself is not signed or bound to a signed eBill revision.",
     description: "Warning about browser-asserted bill attachment provenance",
   },
   digest: { id: "credit.evidencePacket.digest", defaultMessage: "Server digest", description: "Label for server-computed evidence digest" },
@@ -85,8 +86,8 @@ const messages = defineMessages({
   },
   matched: {
     id: "credit.evidencePacket.matched",
-    defaultMessage: "Bill and claims matched",
-    description: "Evidence status when the decision snapshot records a plausible invoice consistent with bill and claims",
+    defaultMessage: "Invoice matched to eBill",
+    description: "Evidence status when the decision snapshot records a plausible invoice consistent with the eBill",
   },
   verificationRequired: {
     id: "credit.evidencePacket.verificationRequired",
@@ -116,8 +117,8 @@ const messages = defineMessages({
   plausibility: { id: "credit.evidencePacket.plausibility", defaultMessage: "Plausibility", description: "Invoice plausibility label" },
   consistency: {
     id: "credit.evidencePacket.consistency",
-    defaultMessage: "Bill and claims consistency",
-    description: "Invoice consistency label",
+    defaultMessage: "Invoice and eBill consistency",
+    description: "Invoice-to-eBill consistency label",
   },
   evidenceState: {
     id: "credit.evidencePacket.evidenceState",
@@ -126,8 +127,13 @@ const messages = defineMessages({
   },
   extractedFields: {
     id: "credit.evidencePacket.extractedFields",
-    defaultMessage: "Extracted fields",
-    description: "Heading for model-proposed fields",
+    defaultMessage: "Extracted claims",
+    description: "Heading for source-cited claims proposed by an extraction adapter",
+  },
+  lineItems: {
+    id: "credit.evidencePacket.lineItems",
+    defaultMessage: "{count, plural, one {# line item} other {# line items}}",
+    description: "Disclosure heading for extracted invoice line items",
   },
   citations: {
     id: "credit.evidencePacket.citations",
@@ -161,8 +167,8 @@ const messages = defineMessages({
   },
   supportingUnavailable: {
     id: "credit.evidencePacket.supportingUnavailable",
-    defaultMessage: "No extraction proposal. This supporting document was not used by the governed invoice assessment.",
-    description: "Explanation for supporting evidence without extraction that is outside the governed invoice assessment",
+    defaultMessage: "No extraction proposal. This supporting document was not used by the current governed assessment.",
+    description: "Explanation for supporting evidence without extraction that is outside the current governed assessment",
   },
   parser: { id: "credit.evidencePacket.parser", defaultMessage: "Parser", description: "Label for evidence parser version" },
   extraction: {
@@ -209,9 +215,25 @@ function originMessage(origin: SubmittedEvidence["origin"]) {
   return messages.originUpload;
 }
 
-function proposedFields(
-  extraction: NonNullable<EvidencePacket["extraction"]>
-): { label: keyof typeof messages; value: string; citation: ProposedEvidenceField["citation"] }[] {
+interface EvidenceClaim {
+  id: string;
+  label: string;
+  value: string;
+  citations: readonly ProposedEvidenceField["citation"][];
+}
+
+interface EvidenceClaimGroup {
+  id: string;
+  label?: string;
+  collapsed?: boolean;
+  claims: readonly EvidenceClaim[];
+}
+
+function formatSat(value: string, locale: string): string {
+  return /^\d+$/u.test(value) ? `${new Intl.NumberFormat(locale).format(BigInt(value))} sat` : value;
+}
+
+function invoiceClaimGroups(extraction: NonNullable<EvidencePacket["extraction"]>, intl: IntlShape): EvidenceClaimGroup[] {
   const { proposal } = extraction;
   const fields = [
     ["invoiceNumber", proposal.invoiceNumber],
@@ -223,22 +245,50 @@ function proposedFields(
     ["currency", proposal.currency],
     ["total", proposal.totalSat],
   ] as const;
+  const claims = fields.flatMap(([label, field]) =>
+    field === null
+      ? []
+      : [
+          {
+            id: label,
+            label: intl.formatMessage(messages[label]),
+            value: label === "total" ? formatSat(field.value, intl.locale) : field.value,
+            citations: [field.citation],
+          },
+        ]
+  );
+  const lineItems = proposal.lineItems.map((line, index) => ({
+    id: `line-item-${String(index)}`,
+    label: intl.formatMessage(messages.lineItem),
+    value: `${line.description} · ${formatSat(line.amountSat, intl.locale)}`,
+    citations: [line.citation],
+  }));
   return [
-    ...fields.flatMap(([label, field]) => (field === null ? [] : [{ label, value: field.value, citation: field.citation }])),
-    ...proposal.lineItems.map((line) => ({
-      label: "lineItem" as const,
-      value: `${line.description} · ${line.amountSat} sat`,
-      citation: line.citation,
-    })),
+    { id: "invoice", claims },
+    ...(lineItems.length === 0
+      ? []
+      : [
+          {
+            id: "line-items",
+            label: intl.formatMessage(messages.lineItems, { count: lineItems.length }),
+            collapsed: true,
+            claims: lineItems,
+          },
+        ]),
   ];
 }
 
-function displayFieldValue(field: ReturnType<typeof proposedFields>[number], locale: string): string {
-  const formatSat = (value: string) => (/^\d+$/.test(value) ? `${new Intl.NumberFormat(locale).format(BigInt(value))} sat` : value);
-  if (field.label === "total") return formatSat(field.value);
-  if (field.label !== "lineItem") return field.value;
-  const parts = /^(.*) · (\d+) sat$/.exec(field.value);
-  return parts ? `${parts[1]} · ${formatSat(parts[2])}` : field.value;
+function ClaimGrid({ claims }: { claims: readonly EvidenceClaim[] }) {
+  return (
+    <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      {claims.map((claim) => (
+        <div key={claim.id} className="min-w-0 rounded-md bg-elevation-100 p-3">
+          <dt className="text-xs text-muted-foreground">{claim.label}</dt>
+          <dd className="mt-1 break-words font-medium">{claim.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 export function SubmittedDocuments({
@@ -258,8 +308,14 @@ export function SubmittedDocuments({
 }) {
   const intl = useIntl();
   if (submittedEvidence.length === 0) return null;
-  const citedFieldCount = evidencePackets.reduce(
-    (count, packet) => count + (packet.extraction ? proposedFields(packet.extraction).length : 0),
+  const citedClaimCount = evidencePackets.reduce(
+    (count, packet) =>
+      count +
+      (packet.extraction
+        ? invoiceClaimGroups(packet.extraction, intl)
+            .flatMap((group) => group.claims)
+            .filter((claim) => claim.citations.length > 0).length
+        : 0),
     0
   );
 
@@ -269,7 +325,7 @@ export function SubmittedDocuments({
         <div>
           <h3 className="text-base font-semibold">{intl.formatMessage(messages.heading)}</h3>
           <p className="text-xs text-muted-foreground">
-            {intl.formatMessage(messages.summary, { documents: submittedEvidence.length, fields: citedFieldCount })}
+            {intl.formatMessage(messages.summary, { documents: submittedEvidence.length, claims: citedClaimCount })}
           </p>
         </div>
         <Badge variant={verificationRequests.length === 0 ? "success" : "pending"}>
@@ -288,6 +344,7 @@ export function SubmittedDocuments({
           </ul>
         </div>
       )}
+      <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.warning)}</p>
       {submittedEvidence.map((evidence) => {
         const packet = evidencePackets.find(
           (candidate) =>
@@ -296,7 +353,9 @@ export function SubmittedDocuments({
             candidate.evidence.origin === evidence.origin
         );
         const extraction = packet?.extraction;
-        const fields = extraction ? proposedFields(extraction) : [];
+        const claimGroups = extraction ? invoiceClaimGroups(extraction, intl) : [];
+        const claims = claimGroups.flatMap((group) => group.claims);
+        const citations = claims.flatMap((claim) => claim.citations.map((citation) => ({ claim, citation })));
         const isDecisionEvidence = invoiceAssessment?.reference === evidence.reference;
         const isMatched =
           isDecisionEvidence &&
@@ -370,26 +429,32 @@ export function SubmittedDocuments({
                     <h4 className="font-medium">{intl.formatMessage(messages.extractedFields)}</h4>
                     <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.extractionWarning)}</p>
                   </div>
-                  <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {fields.map((field, index) => (
-                      <div key={`${field.label}:${String(index)}`} className="min-w-0 rounded-md bg-elevation-100 p-3">
-                        <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages[field.label])}</dt>
-                        <dd className="mt-1 break-words font-medium">{displayFieldValue(field, intl.locale)}</dd>
-                      </div>
-                    ))}
-                  </dl>
+                  <div className="space-y-2">
+                    {claimGroups.map((group) =>
+                      group.collapsed ? (
+                        <details key={group.id} className="rounded-md border border-border">
+                          <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{group.label}</summary>
+                          <div className="border-t border-border p-3">
+                            <ClaimGrid claims={group.claims} />
+                          </div>
+                        </details>
+                      ) : (
+                        <ClaimGrid key={group.id} claims={group.claims} />
+                      )
+                    )}
+                  </div>
                   <details className="mt-3 rounded-md border border-border">
                     <summary className="cursor-pointer px-3 py-2 text-xs font-medium">
-                      {intl.formatMessage(messages.citations, { count: fields.length })}
+                      {intl.formatMessage(messages.citations, { count: citations.length })}
                     </summary>
                     <ul className="space-y-3 border-t border-border p-3 text-xs">
-                      {fields.map((field, index) => (
-                        <li key={`${field.label}:citation:${String(index)}`}>
-                          <span className="font-medium">{intl.formatMessage(messages[field.label])}</span>
+                      {citations.map(({ claim, citation }, index) => (
+                        <li key={`${claim.id}:citation:${String(index)}`}>
+                          <span className="font-medium">{claim.label}</span>
                           <p className="whitespace-pre-wrap text-muted-foreground">
                             {intl.formatMessage(messages.pageCitation, {
-                              page: field.citation.page,
-                              snippet: field.citation.exactSnippet,
+                              page: citation.page,
+                              snippet: citation.exactSnippet,
                             })}
                           </p>
                         </li>
@@ -440,7 +505,6 @@ export function SubmittedDocuments({
                   )}
                 </dl>
               </details>
-              <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.warning)}</p>
             </div>
           </article>
         );

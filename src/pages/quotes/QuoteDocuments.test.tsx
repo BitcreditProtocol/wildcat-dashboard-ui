@@ -246,7 +246,7 @@ describe("QuoteDocuments", () => {
     });
     expect(onOpenEvidence).toHaveBeenCalledWith(evidence);
     expect(page.textContent).toContain("Supporting document");
-    expect(page.textContent).toContain("This supporting document was not used by the governed invoice assessment");
+    expect(page.textContent).toContain("This supporting document was not used by the current governed assessment");
     expect(page.textContent).not.toContain("Human review is required");
   });
 
@@ -288,7 +288,10 @@ describe("QuoteDocuments", () => {
                   transactionReference: null,
                   currency: { value: "SAT", citation },
                   totalSat: { value: "8100000", citation },
-                  lineItems: [],
+                  lineItems: [
+                    { description: "Coffee crop inputs", amountSat: "8000000", citation },
+                    { description: "Harvest labour", amountSat: "100000", citation },
+                  ],
                 },
               },
             },
@@ -321,12 +324,17 @@ describe("QuoteDocuments", () => {
       page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(page.textContent).toContain("Bill and claims matched");
-    expect(page.textContent).toContain("4 cited fields");
+    expect(page.textContent).toContain("Invoice matched to eBill");
+    expect(page.textContent).toContain("6 cited claims");
     expect(page.textContent).toContain("InvoiceDEMO-42");
     expect(page.textContent).toContain("Total8,100,000 sat");
     expect(page.textContent).toContain("PlausibilityPlausible");
-    expect(page.textContent).toContain("Bill and claims consistencyMatch");
+    expect(page.textContent).toContain("Invoice and eBill consistencyMatch");
+    const lineItems = Array.from(page.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("2 line items")
+    );
+    expect(lineItems?.open).toBe(false);
+    expect(lineItems?.textContent).toContain("Coffee crop inputs · 8,000,000 sat");
     const technical = Array.from(page.querySelectorAll("details")).find((details) =>
       details.querySelector("summary")?.textContent?.includes("Technical provenance")
     );
