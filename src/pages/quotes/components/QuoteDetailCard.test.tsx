@@ -165,26 +165,23 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("Repayment sourceCoffee harvest sales");
     expect(page.textContent).toContain("Payer at maturityCoffee cooperative");
     expect(page.textContent).toContain("Underlying tradeCoffee crop inputs");
-    expect(page.textContent).toContain("Ready for decision");
-    expect(page.textContent).toContain("Decision evidence");
-    expect(page.textContent).toContain("Synthetic underwriting inputs");
-    expect(page.textContent).toContain("Authority signatures verified");
-    expect(page.textContent).toContain("Mint policy assigned");
-    expect(page.textContent).toContain("Automated checks");
-    expect(page.textContent).toContain("6 passed · 0 failed · 0 not assessed");
-    expect(page.textContent).toContain("Invoice data extracted and matched");
-    expect(page.textContent).toContain("Automated scan found no unresolved contradictions");
-    expect(page.textContent).toContain("Applicant attestations");
-    expect(page.textContent).toContain("Applicant affirmed the submitted answers");
-    expect(page.textContent).toContain("Applicant acknowledged full-bill recourse");
-    expect(page.textContent).toContain("Authorization & lifecycle");
+    expect(page.textContent).toContain("Minting caseAccepted");
+    expect(page.textContent).toContain("Decision statusDecision phase complete");
+    expect(page.textContent).toContain("This case is no longer awaiting an operator decision. Evidence remains available for audit.");
+    expect(page.textContent).toContain("Synthetic testnet inputs");
+    expect(page.textContent).not.toContain("Ready for decision");
+    expect(page.textContent).not.toContain("Decision evidence");
+    expect(page.textContent).not.toContain("Automated checks");
+    expect(page.textContent).not.toContain("Applicant attestations");
+    expect(page.textContent).toContain("Audit & lifecycle");
     expect(page.textContent).toContain("eBillAccepted");
     expect(page.textContent).toContain("ApplicantAccepted quote");
     expect(page.textContent).toContain("Mint operationUnavailable");
-    expect(page.textContent).toContain("Verification receipt unavailable");
-    expect(page.querySelector('a[href="#documents-and-evidence"]')?.textContent).toBe("Review source evidence");
-    expect(page.querySelector('a[href="#bill-history"]')?.textContent).toBe("Review bill history");
-    expect(page.querySelector('a[href="#full-governed-assessment"]')?.textContent).toBe("Open full assessment");
+    expect(page.textContent).toContain("No authorization receipt");
+    expect(page.querySelector('a[href="#documents-and-evidence"]')?.textContent).toBe("Review evidence");
+    expect(page.querySelector('a[href="#bill-history"]')).toBeNull();
+    expect(page.querySelector('a[href="#full-governed-assessment"]')).toBeNull();
+    expect(page.querySelector("details")?.open).toBe(false);
     expect(page.textContent).not.toContain("Invoice reviewed");
     expect(page.querySelector('button[aria-label="Print summary"]')).not.toBeNull();
     expect(page.textContent).toContain("Drawee:");
@@ -279,6 +276,8 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("3.32% of bill over 180 days");
     expect(page.textContent).toContain("Recommended amount available for minting7,928,000sat");
     expect(page.textContent).toContain("Valid until 2026-08-24");
+    expect(page.textContent).toContain("Decision statusReady for decision");
+    expect(page.textContent).toContain("6/6 policy checks passed. Evidence and applicant declarations are complete.");
   });
 
   it("shows the exact verified authorization receipt returned by the Mint command", () => {
@@ -305,7 +304,7 @@ describe("QuoteDetailCard", () => {
       />
     );
 
-    expect(page.textContent).toContain("Signed command verified");
+    expect(page.textContent).toContain("Authorization verified");
     expect(page.textContent).toContain("AuthorizationSigned command verified");
     expect(page.textContent).toContain("ApplicantAwaiting response");
     expect(page.textContent).toContain("synthetic-testnet-key-1");
@@ -347,7 +346,7 @@ describe("QuoteDetailCard", () => {
       />
     );
 
-    expect(page.textContent).toContain("Execution receipt persisted");
+    expect(page.textContent).toContain("Audit receipt saved");
     expect(page.textContent).toContain("Authorizationcompleted");
     expect(page.textContent).toContain("Mint operationComplete · 80,000,000 / 80,000,000");
     expect(page.textContent).toContain(`Operation IDsha256:${"a".repeat(15)}…`);

@@ -265,7 +265,7 @@ describe("QuotePage", () => {
     const page = renderPage(`/quotes/${quoteId}`);
 
     expect(page.querySelector("#minting-summary")).not.toBeNull();
-    expect(page.textContent).toContain("Execution receipt persisted");
+    expect(page.textContent).toContain("Audit receipt saved");
     expect(page.textContent).not.toContain("Print one-page summary");
   });
 
