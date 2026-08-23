@@ -56,7 +56,10 @@ describe("operator capability", () => {
   });
 
   it("accepts only the exact ready capability shape", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, approver)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-capability-v1", ...approver }))
+    );
 
     await expect(fetchOperatorCapability()).resolves.toEqual(approver);
   });
@@ -222,7 +225,9 @@ describe("recordOperatorDecision", () => {
   });
 
   it("sends no browser credential or operator attribution", async () => {
-    const fetch = vi.fn().mockResolvedValue(response(true, 200, { signedAuthorization }));
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1", signedAuthorization }));
     vi.stubGlobal("fetch", fetch);
 
     await expect(recordOperatorDecision(command, approver)).resolves.toEqual({ ok: true, signedAuthorization });
@@ -237,7 +242,7 @@ describe("recordOperatorDecision", () => {
   });
 
   it("fails closed when an Offer response has no valid signed authorization", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, {})));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1" })));
 
     await expect(recordOperatorDecision(command, approver)).resolves.toEqual({
       ok: false,
@@ -246,13 +251,16 @@ describe("recordOperatorDecision", () => {
   });
 
   it("keeps return-for-information unsigned", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, {})));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1" })));
 
     await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, reviewer)).resolves.toEqual({ ok: true });
   });
 
   it("rejects any authorization field on a non-offer decision", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, { signedAuthorization: {} })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1", signedAuthorization: {} }))
+    );
 
     await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, reviewer)).resolves.toEqual({
       ok: false,

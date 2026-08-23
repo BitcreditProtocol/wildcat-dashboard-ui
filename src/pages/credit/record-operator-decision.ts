@@ -236,6 +236,7 @@ export async function fetchOperatorCapability(): Promise<OperatorCapability> {
   const body: unknown = await response.json().catch(() => null);
   if (
     !isRecord(body) ||
+    body.schemaVersion !== "ai-credit-operator-capability-v1" ||
     body.ready !== true ||
     typeof body.operatorId !== "string" ||
     body.operatorId.trim().length === 0 ||
@@ -330,9 +331,12 @@ export async function recordOperatorDecision(
     });
     if (!response.ok) return { ok: false, error: await responseError(response) };
     const body: unknown = await response.json().catch(() => null);
+    if (!isRecord(body) || body.schemaVersion !== "ai-credit-operator-decision-response-v1") {
+      return { ok: false, error: "The AI Credit operator service returned an invalid decision response" };
+    }
     const offerDecision = input.action === "confirm_proposed_quote" || input.action === "propose_adjustment_and_requote";
-    const carriesAuthorization = isRecord(body) && body.signedAuthorization !== undefined;
-    const authorization = isRecord(body) && isSignedOfferAuthorization(body.signedAuthorization) ? body.signedAuthorization : undefined;
+    const carriesAuthorization = body.signedAuthorization !== undefined;
+    const authorization = isSignedOfferAuthorization(body.signedAuthorization) ? body.signedAuthorization : undefined;
     if (offerDecision && authorization === undefined) {
       return { ok: false, error: "The AI Credit operator service returned an invalid offer authorization" };
     }
