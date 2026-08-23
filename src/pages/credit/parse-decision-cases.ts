@@ -578,7 +578,7 @@ function isDecisionCase(value: unknown): value is DecisionCase {
 }
 
 export function parseDecisionCasesResponse(value: unknown): DecisionCasesResponse {
-  if (!isObject(value) || !isArrayOf(value.cases, isDecisionCase)) {
+  if (!isObject(value) || value.schemaVersion !== "ai-credit-workbench-decisions-v1" || !isArrayOf(value.cases, isDecisionCase)) {
     throw new Error("AI Credit returned an invalid governed decision response");
   }
   return { cases: value.cases };
