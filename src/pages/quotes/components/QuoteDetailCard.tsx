@@ -7,8 +7,7 @@ import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
 import type { AdminInfoReply, MintOperationStatus } from "@/generated/client/types.gen";
 import type { DurableAuthorizationReceipt, VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
-import { CircleAlert, CircleCheck, Clock3, Printer } from "lucide-react";
-import type { PropsWithChildren } from "react";
+import { ChevronDown, CircleAlert, CircleCheck, Clock3, Printer } from "lucide-react";
 import { useIntl } from "react-intl";
 
 interface QuoteDetailCardProps {
@@ -58,16 +57,6 @@ const formatLocalDateTime = (date: Date): string => {
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
-
-function VerificationLine({ ok, children }: PropsWithChildren<{ ok: boolean }>) {
-  const Icon = ok ? CircleCheck : CircleAlert;
-  return (
-    <li className="flex items-start gap-2 text-sm">
-      <Icon className={`mt-0.5 size-4 shrink-0 ${ok ? "text-signal-success" : "text-signal-alert"}`} aria-hidden="true" />
-      <span>{children}</span>
-    </li>
-  );
-}
 
 function LifecycleStage({
   label,
@@ -241,6 +230,14 @@ export function QuoteDetailCard({
   const hasDurableReceipt = durableAuthorizationReceipt !== null && durableAuthorizationReceipt !== undefined;
   const hasSignedVerification = signedAuthorizationReceipt !== null && signedAuthorizationReceipt !== undefined;
   const durableExecutionCompleted = durableAuthorizationReceipt?.status === "completed";
+  const showDecisionStatus = effectiveQuoteStatus === "Pending" && decisionSummary !== undefined;
+  const decisionPhaseComplete = effectiveQuoteStatus !== "Pending";
+  const positiveDecisionOutcome = ["Offered", "Accepted", "MintingEnabled"].includes(effectiveQuoteStatus);
+  const summaryStatusVariant = showDecisionStatus
+    ? decisionSummary.readyForDecision
+      ? "success"
+      : "pending"
+    : getQuoteStatusVariant(effectiveQuoteStatus);
 
   return (
     <Card className="overflow-hidden">
@@ -249,9 +246,7 @@ export function QuoteDetailCard({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-xl font-semibold tracking-tight">
-                {decisionSummary?.readyForDecision
-                  ? intl.formatMessage({ id: "quotes.summary.decisionReadyTitle", defaultMessage: "Decision-ready business case" })
-                  : intl.formatMessage({ id: "quotes.summary.verificationTitle", defaultMessage: "Business case requires verification" })}
+                {intl.formatMessage({ id: "quotes.summary.caseTitle", defaultMessage: "Minting case" })}
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -266,16 +261,13 @@ export function QuoteDetailCard({
               >
                 <Printer className="size-4" aria-hidden="true" />
               </Button>
-              <Badge variant={getQuoteStatusVariant(effectiveQuoteStatus)}>
-                {intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
-              </Badge>
-              {decisionSummary && (
-                <Badge variant={decisionSummary.readyForDecision ? "success" : "pending"}>
-                  {decisionSummary.readyForDecision
+              <Badge variant={summaryStatusVariant}>
+                {showDecisionStatus
+                  ? decisionSummary.readyForDecision
                     ? intl.formatMessage({ id: "quotes.summary.ready", defaultMessage: "Ready for decision" })
-                    : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" })}
-                </Badge>
-              )}
+                    : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" })
+                  : intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
+              </Badge>
             </div>
           </div>
         </header>
@@ -321,174 +313,100 @@ export function QuoteDetailCard({
             <section className="border-t border-border bg-elevation-100 px-6 py-5 lg:border-t-0 lg:border-l">
               <h3 className="text-sm font-semibold">
                 {intl.formatMessage({
-                  id: "quotes.summary.decisionEvidence",
-                  defaultMessage: "Decision evidence",
-                  description: "Heading for evidence and attestations used by the automated credit assessment",
+                  id: "quotes.summary.decisionStatus",
+                  defaultMessage: "Decision status",
+                  description: "Heading for the compact operator decision status",
                 })}
               </h3>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Badge variant={decisionSummary.underwritingEvidenceProvenance === "mint_backed" ? "success" : "outline"}>
-                  {decisionSummary.underwritingEvidenceProvenance === "mint_backed"
-                    ? intl.formatMessage({
-                        id: "quotes.summary.mintBackedEvidence",
-                        defaultMessage: "Mint-backed underwriting evidence",
-                        description: "Badge stating that risk and capacity data came from admissible authoritative sources",
-                      })
-                    : decisionSummary.underwritingEvidenceProvenance === "synthetic"
+              <div className="mt-4 flex items-start gap-3">
+                {positiveDecisionOutcome || (!decisionPhaseComplete && decisionSummary.readyForDecision) ? (
+                  <CircleCheck className="mt-0.5 size-5 shrink-0 text-signal-success" aria-hidden="true" />
+                ) : (
+                  <CircleAlert className="mt-0.5 size-5 shrink-0 text-signal-alert" aria-hidden="true" />
+                )}
+                <div>
+                  <p className="text-sm font-semibold">
+                    {decisionPhaseComplete
                       ? intl.formatMessage({
-                          id: "quotes.summary.syntheticInputs",
-                          defaultMessage: "Synthetic underwriting inputs",
-                          description: "Badge stating that risk and capacity inputs are synthetic and not production evidence",
+                          id: "quotes.summary.decisionPhaseComplete",
+                          defaultMessage: "Decision phase complete",
+                          description: "Compact status after a quote is no longer awaiting a Mint operator decision",
+                        })
+                      : decisionSummary.readyForDecision
+                        ? intl.formatMessage({ id: "quotes.summary.ready", defaultMessage: "Ready for decision" })
+                        : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" })}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {decisionPhaseComplete
+                      ? intl.formatMessage({
+                          id: "quotes.summary.decisionPhaseCompleteExplanation",
+                          defaultMessage: "This case is no longer awaiting an operator decision. Evidence remains available for audit.",
+                          description: "Compact explanation after a quote leaves the operator decision phase",
+                        })
+                      : decisionSummary.readyForDecision
+                        ? intl.formatMessage(
+                            {
+                              id: "quotes.summary.readyExplanation",
+                              defaultMessage: "{passed}/{total} policy checks passed. Evidence and applicant declarations are complete.",
+                              description: "Compact explanation that a governed case is ready for an operator decision",
+                            },
+                            { passed: decisionSummary.passedChecks, total: decisionSummary.totalChecks }
+                          )
+                        : intl.formatMessage(
+                            {
+                              id: "quotes.summary.verificationExplanation",
+                              defaultMessage: "{passed}/{total} policy checks passed. {count} items still require verification.",
+                              description: "Compact explanation that a governed case still needs verification",
+                            },
+                            {
+                              passed: decisionSummary.passedChecks,
+                              total: decisionSummary.totalChecks,
+                              count: decisionSummary.failedChecks + decisionSummary.notAssessedChecks,
+                            }
+                          )}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Badge
+                  variant={
+                    decisionSummary.underwritingEvidenceProvenance === "mint_backed" &&
+                    decisionSummary.underwritingAuthoritySignaturesVerified &&
+                    decisionSummary.hasMintPolicyAssignment
+                      ? "success"
+                      : decisionSummary.underwritingEvidenceProvenance === "synthetic"
+                        ? "outline"
+                        : "pending"
+                  }
+                >
+                  {decisionSummary.underwritingEvidenceProvenance === "synthetic"
+                    ? intl.formatMessage({
+                        id: "quotes.summary.syntheticInputs",
+                        defaultMessage: "Synthetic testnet inputs",
+                        description: "Badge stating that risk and capacity inputs are synthetic testnet data",
+                      })
+                    : decisionSummary.underwritingEvidenceProvenance === "mint_backed" &&
+                        decisionSummary.underwritingAuthoritySignaturesVerified &&
+                        decisionSummary.hasMintPolicyAssignment
+                      ? intl.formatMessage({
+                          id: "quotes.summary.verifiedMintSources",
+                          defaultMessage: "Verified Mint sources",
+                          description: "Badge stating that policy, risk and capacity records are bound and signature-verified",
                         })
                       : intl.formatMessage({
                           id: "quotes.summary.mintEvidenceUnavailable",
-                          defaultMessage: "Underwriting evidence unavailable",
-                          description: "Badge warning that admissible risk or Mint capacity evidence is unavailable",
+                          defaultMessage: "Underwriting evidence incomplete",
+                          description: "Badge warning that admissible or verified Mint underwriting evidence is incomplete",
                         })}
                 </Badge>
-                <Badge variant={decisionSummary.hasMintPolicyAssignment ? "success" : "pending"}>
-                  {decisionSummary.hasMintPolicyAssignment
-                    ? intl.formatMessage({
-                        id: "quotes.summary.mintPolicyAssigned",
-                        defaultMessage: "Mint policy assigned",
-                        description: "Badge confirming that the Mint assigned the governed policy to this exact quote",
-                      })
-                    : intl.formatMessage({
-                        id: "quotes.summary.mintPolicyMissing",
-                        defaultMessage: "No Mint policy assignment",
-                        description: "Badge warning that the assessment is not assigned to this quote by the Mint",
-                      })}
-                </Badge>
-                <Badge variant={decisionSummary.underwritingAuthoritySignaturesVerified ? "success" : "pending"}>
-                  {decisionSummary.underwritingAuthoritySignaturesVerified
-                    ? intl.formatMessage({
-                        id: "quotes.summary.authoritySignaturesVerified",
-                        defaultMessage: "Authority signatures verified",
-                        description: "Badge confirming independent signature verification for risk and capacity evidence",
-                      })
-                    : intl.formatMessage({
-                        id: "quotes.summary.authoritySignaturesUnavailable",
-                        defaultMessage: "Authority signatures unavailable",
-                        description: "Badge warning that risk or capacity evidence lacks a verified external authority signature",
-                      })}
-                </Badge>
-              </div>
-              <div className="mt-5 grid gap-5">
-                <div>
-                  <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.summary.automatedChecks",
-                      defaultMessage: "Automated checks",
-                      description: "Heading for checks performed by the deterministic credit policy engine",
-                    })}
-                  </h4>
-                  <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                    <VerificationLine ok={decisionSummary.notAssessedChecks === 0 && decisionSummary.failedChecks === 0}>
-                      {intl.formatMessage(
-                        {
-                          id: "quotes.summary.checks",
-                          defaultMessage: "{passed} passed · {failed} failed · {notAssessed} not assessed",
-                          description: "Separate counts for completed, failed and evidence-blocked deterministic policy gates",
-                        },
-                        {
-                          passed: decisionSummary.passedChecks,
-                          failed: decisionSummary.failedChecks,
-                          notAssessed: decisionSummary.notAssessedChecks,
-                        }
-                      )}
-                    </VerificationLine>
-                    <VerificationLine ok={decisionSummary.invoiceExtractedAndMatched}>
-                      {decisionSummary.invoiceExtractedAndMatched
-                        ? intl.formatMessage({
-                            id: "quotes.summary.invoiceVerified",
-                            defaultMessage: "Invoice data extracted and matched",
-                            description: "Automated result when submitted invoice data was extracted and matched to the bill and claims",
-                          })
-                        : intl.formatMessage({
-                            id: "quotes.summary.invoiceReview",
-                            defaultMessage: "Invoice extraction or match required",
-                            description: "Warning when invoice data has not been extracted or matched to the bill and claims",
-                          })}
-                    </VerificationLine>
-                    <VerificationLine ok={decisionSummary.unresolvedContradictions === 0}>
-                      {decisionSummary.unresolvedContradictions === 0
-                        ? intl.formatMessage({
-                            id: "quotes.summary.noContradictions",
-                            defaultMessage: "Automated scan found no unresolved contradictions",
-                            description: "Automated result when the decision snapshot contains no unresolved contradictions",
-                          })
-                        : intl.formatMessage(
-                            {
-                              id: "quotes.summary.contradictions",
-                              defaultMessage: "{count} unresolved contradictions",
-                              description: "Number of unresolved contradictions in the decision snapshot",
-                            },
-                            { count: decisionSummary.unresolvedContradictions }
-                          )}
-                    </VerificationLine>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.summary.applicantAttestations",
-                      defaultMessage: "Applicant attestations",
-                      description: "Heading for statements affirmed by the applicant rather than independently verified facts",
-                    })}
-                  </h4>
-                  <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                    <VerificationLine ok={decisionSummary.answersAffirmed}>
-                      {decisionSummary.answersAffirmed
-                        ? intl.formatMessage({
-                            id: "quotes.summary.applicantConfirmed",
-                            defaultMessage: "Applicant affirmed the submitted answers",
-                            description: "Attestation that the applicant affirmed their submitted answers",
-                          })
-                        : intl.formatMessage({
-                            id: "quotes.summary.applicantUnconfirmed",
-                            defaultMessage: "Applicant affirmation required",
-                            description: "Warning that the applicant has not affirmed their submitted answers",
-                          })}
-                    </VerificationLine>
-                    <VerificationLine ok={decisionSummary.recourseAcknowledged}>
-                      {decisionSummary.recourseAcknowledged
-                        ? intl.formatMessage({
-                            id: "quotes.summary.recourseAcknowledged",
-                            defaultMessage: "Applicant acknowledged full-bill recourse",
-                            description: "Attestation that the applicant acknowledged full-bill recourse",
-                          })
-                        : intl.formatMessage({
-                            id: "quotes.summary.recourseRequired",
-                            defaultMessage: "Applicant recourse acknowledgment required",
-                            description: "Warning that the applicant has not acknowledged full-bill recourse",
-                          })}
-                    </VerificationLine>
-                  </ul>
-                </div>
-              </div>
-              <nav className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs" aria-label="Decision proof">
-                <a className="font-medium text-primary underline-offset-4 hover:underline" href="#documents-and-evidence">
+                <a className="text-sm font-medium text-primary underline-offset-4 hover:underline" href="#documents-and-evidence">
                   {intl.formatMessage({
                     id: "quotes.summary.reviewEvidence",
-                    defaultMessage: "Review source evidence",
-                    description: "Link from the executive summary to the source documents and extracted evidence",
+                    defaultMessage: "Review evidence",
+                    description: "Link from the executive summary to source documents and extracted evidence",
                   })}
                 </a>
-                <a className="font-medium text-primary underline-offset-4 hover:underline" href="#bill-history">
-                  {intl.formatMessage({
-                    id: "quotes.summary.reviewBillHistory",
-                    defaultMessage: "Review bill history",
-                    description: "Link from the executive summary to the signed eBill history",
-                  })}
-                </a>
-                <a className="font-medium text-primary underline-offset-4 hover:underline" href="#full-governed-assessment">
-                  {intl.formatMessage({
-                    id: "quotes.summary.reviewAssessment",
-                    defaultMessage: "Open full assessment",
-                    description: "Link from the executive summary to the detailed governed assessment",
-                  })}
-                </a>
-              </nav>
+              </div>
             </section>
           </div>
         ) : (
@@ -570,254 +488,259 @@ export function QuoteDetailCard({
           </div>
         </section>
 
-        <section className="border-t border-border px-6 py-5">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold">
-                {intl.formatMessage({
-                  id: "quotes.lifecycle.title",
-                  defaultMessage: "Authorization & lifecycle",
-                  description: "Heading for the distinct bill, quote, authorization, applicant and Mint operation stages",
-                })}
-              </h3>
+        <details className="group border-t border-border">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 marker:hidden">
+            <span className="text-sm font-semibold">
+              {intl.formatMessage({
+                id: "quotes.lifecycle.auditTitle",
+                defaultMessage: "Audit & lifecycle",
+                description: "Collapsed heading for authorization receipts and lifecycle details",
+              })}
+            </span>
+            <span className="flex items-center gap-2">
               <Badge variant={durableExecutionCompleted || hasSignedVerification ? "success" : "outline"}>
                 {hasDurableReceipt
                   ? intl.formatMessage({
                       id: "quotes.authorization.executionPersisted",
-                      defaultMessage: "Execution receipt persisted",
+                      defaultMessage: "Audit receipt saved",
                       description: "Badge when the Mint exposes a durable authorization execution receipt",
                     })
                   : hasSignedVerification
                     ? intl.formatMessage({
                         id: "quotes.authorization.signedVerified",
-                        defaultMessage: "Signed command verified",
+                        defaultMessage: "Authorization verified",
                         description: "Badge shown after the Mint accepts the signed authorization command in this session",
                       })
                     : intl.formatMessage({
                         id: "quotes.authorization.unavailable",
-                        defaultMessage: "Verification receipt unavailable",
+                        defaultMessage: "No authorization receipt",
                         description: "Badge when neither a signed command nor durable execution receipt is available",
                       })}
               </Badge>
-            </div>
+              <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+            </span>
+          </summary>
 
-            <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <LifecycleStage
-                label={intl.formatMessage({ id: "quotes.lifecycle.bill", defaultMessage: "eBill" })}
-                value={billStage.value}
-                state={billStage.state}
-              />
-              <LifecycleStage
-                label={intl.formatMessage({ id: "quotes.lifecycle.quote", defaultMessage: "Quote" })}
-                value={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
-                state={
-                  effectiveQuoteStatus === "Denied" ||
-                  effectiveQuoteStatus === "Rejected" ||
-                  effectiveQuoteStatus === "Canceled" ||
-                  effectiveQuoteStatus === "FailedEbillValidation"
-                    ? "failed"
-                    : "current"
-                }
-              />
-              <LifecycleStage
-                label={intl.formatMessage({ id: "quotes.lifecycle.authorization", defaultMessage: "Authorization" })}
-                value={
-                  hasDurableReceipt
-                    ? durableAuthorizationReceipt.status
-                    : hasSignedVerification
-                      ? intl.formatMessage({
-                          id: "quotes.lifecycle.signedVerified",
-                          defaultMessage: "Signed command verified",
-                          description: "Authorization lifecycle value for a signed command verified in the current session",
-                        })
-                      : unavailable
-                }
-                state={durableExecutionCompleted || hasSignedVerification ? "complete" : hasDurableReceipt ? "current" : "unavailable"}
-              />
-              <LifecycleStage
-                label={intl.formatMessage({ id: "quotes.lifecycle.applicant", defaultMessage: "Applicant" })}
-                value={applicantStage.value}
-                state={applicantStage.state}
-              />
-              <LifecycleStage
-                label={intl.formatMessage({
-                  id: "quotes.lifecycle.mintOperation",
-                  defaultMessage: "Mint operation",
-                  description: "Lifecycle stage for Treasury minting progress",
-                })}
-                value={mintOperationStage.value}
-                state={mintOperationStage.state}
-              />
-            </ol>
-
-            {exposureReservation !== null && (
-              <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/20 px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={exposureReservation.state === "released" ? "outline" : "success"}>
-                    {intl.formatMessage(
-                      {
-                        id: "quotes.capacity.state",
-                        defaultMessage: "Capacity {state}",
-                        description: "State of the quote-bound Mint exposure reservation",
-                      },
-                      { state: exposureReservation.state }
-                    )}
-                  </Badge>
-                  <span className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.capacity.amount",
-                      defaultMessage: "Exposure amount",
-                      description: "Label for the amount controlled by the Mint exposure reservation",
-                    })}
-                  </span>
-                  <Currency value={Number(exposureReservation.amountSat)} sourceCurrency="sat" />
-                </div>
-                <span className="truncate font-mono text-muted-foreground" title={exposureReservation.capacityEvidenceId}>
-                  {intl.formatMessage({
-                    id: "quotes.capacity.evidence",
-                    defaultMessage: "Capacity evidence",
-                    description: "Label for the authority evidence record controlling an exposure reservation",
+          <div className="border-t border-border px-6 py-5">
+            <div className="flex flex-col gap-4">
+              <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <LifecycleStage
+                  label={intl.formatMessage({ id: "quotes.lifecycle.bill", defaultMessage: "eBill" })}
+                  value={billStage.value}
+                  state={billStage.state}
+                />
+                <LifecycleStage
+                  label={intl.formatMessage({ id: "quotes.lifecycle.quote", defaultMessage: "Quote" })}
+                  value={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
+                  state={
+                    effectiveQuoteStatus === "Denied" ||
+                    effectiveQuoteStatus === "Rejected" ||
+                    effectiveQuoteStatus === "Canceled" ||
+                    effectiveQuoteStatus === "FailedEbillValidation"
+                      ? "failed"
+                      : "current"
+                  }
+                />
+                <LifecycleStage
+                  label={intl.formatMessage({ id: "quotes.lifecycle.authorization", defaultMessage: "Authorization" })}
+                  value={
+                    hasDurableReceipt
+                      ? durableAuthorizationReceipt.status
+                      : hasSignedVerification
+                        ? intl.formatMessage({
+                            id: "quotes.lifecycle.signedVerified",
+                            defaultMessage: "Signed command verified",
+                            description: "Authorization lifecycle value for a signed command verified in the current session",
+                          })
+                        : unavailable
+                  }
+                  state={durableExecutionCompleted || hasSignedVerification ? "complete" : hasDurableReceipt ? "current" : "unavailable"}
+                />
+                <LifecycleStage
+                  label={intl.formatMessage({ id: "quotes.lifecycle.applicant", defaultMessage: "Applicant" })}
+                  value={applicantStage.value}
+                  state={applicantStage.state}
+                />
+                <LifecycleStage
+                  label={intl.formatMessage({
+                    id: "quotes.lifecycle.mintOperation",
+                    defaultMessage: "Mint operation",
+                    description: "Lifecycle stage for Treasury minting progress",
                   })}
-                  : {exposureReservation.capacityEvidenceId.slice(0, 18)}…
-                </span>
-              </div>
-            )}
+                  value={mintOperationStage.value}
+                  state={mintOperationStage.state}
+                />
+              </ol>
 
-            {hasDurableReceipt ? (
-              <dl className="grid gap-x-5 gap-y-3 border-t border-border pt-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <dt className="text-muted-foreground">
+              {exposureReservation !== null && (
+                <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/20 px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={exposureReservation.state === "released" ? "outline" : "success"}>
+                      {intl.formatMessage(
+                        {
+                          id: "quotes.capacity.state",
+                          defaultMessage: "Capacity {state}",
+                          description: "State of the quote-bound Mint exposure reservation",
+                        },
+                        { state: exposureReservation.state }
+                      )}
+                    </Badge>
+                    <span className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.capacity.amount",
+                        defaultMessage: "Exposure amount",
+                        description: "Label for the amount controlled by the Mint exposure reservation",
+                      })}
+                    </span>
+                    <Currency value={Number(exposureReservation.amountSat)} sourceCurrency="sat" />
+                  </div>
+                  <span className="truncate font-mono text-muted-foreground" title={exposureReservation.capacityEvidenceId}>
                     {intl.formatMessage({
-                      id: "quotes.authorization.operationId",
-                      defaultMessage: "Operation ID",
-                      description: "Label for the durable Mint authorization operation identifier",
+                      id: "quotes.capacity.evidence",
+                      defaultMessage: "Capacity evidence",
+                      description: "Label for the authority evidence record controlling an exposure reservation",
                     })}
-                  </dt>
-                  <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.operationId}>
-                    {durableAuthorizationReceipt.operationId.slice(0, 22)}…
-                  </dd>
+                    : {exposureReservation.capacityEvidenceId.slice(0, 18)}…
+                  </span>
                 </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.status",
-                      defaultMessage: "Execution status",
-                      description: "Label for the durable Mint authorization execution status",
-                    })}
-                  </dt>
-                  <dd className="mt-1 font-medium">{durableAuthorizationReceipt.status}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.completedAt",
-                      defaultMessage: "Completed at",
-                      description: "Label for the exact completion timestamp in a durable authorization receipt",
-                    })}
-                  </dt>
-                  <dd className="mt-1 break-all font-mono">{durableAuthorizationReceipt.completedAt}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.effectId",
-                      defaultMessage: "Effect ID",
-                      description: "Label for the quote effect identifier in a durable authorization receipt",
-                    })}
-                  </dt>
-                  <dd className="mt-1 break-all font-mono">{durableAuthorizationReceipt.effectId}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.digest",
-                      defaultMessage: "Authorization digest",
-                      description: "Label for the digest binding the signed authorization",
-                    })}
-                  </dt>
-                  <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.authorizationDigest}>
-                    {durableAuthorizationReceipt.authorizationDigest.slice(0, 22)}…
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.resultDigest",
-                      defaultMessage: "Result digest",
-                      description: "Label for the digest binding the persisted Mint result",
-                    })}
-                  </dt>
-                  <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.resultDigest}>
-                    {durableAuthorizationReceipt.resultDigest.slice(0, 22)}…
-                  </dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.scope",
-                      defaultMessage: "Exact scope",
-                      description: "Label for the Mint, bill and action bound by an authorization",
-                    })}
-                  </dt>
-                  <dd className="mt-1 break-all font-mono">
-                    {durableAuthorizationReceipt.action}
-                    <br />
-                    {durableAuthorizationReceipt.mintId} / {durableAuthorizationReceipt.billId}
-                  </dd>
-                </div>
-              </dl>
-            ) : hasSignedVerification ? (
-              <dl className="grid gap-x-5 gap-y-3 border-t border-border pt-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.keyId",
-                      defaultMessage: "Signing key",
-                      description: "Label for the key identifier on a signed authorization command",
-                    })}
-                  </dt>
-                  <dd className="mt-1 break-all font-mono">{signedAuthorizationReceipt.keyId}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.digest",
-                      defaultMessage: "Authorization digest",
-                      description: "Label for the digest binding the signed authorization",
-                    })}
-                  </dt>
-                  <dd className="mt-1 font-mono" title={signedAuthorizationReceipt.authorizationDigest}>
-                    {signedAuthorizationReceipt.authorizationDigest.slice(0, 22)}…
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.scope",
-                      defaultMessage: "Exact scope",
-                      description: "Label for the Mint, bill and action bound by an authorization",
-                    })}
-                  </dt>
-                  <dd className="mt-1 break-all font-mono">
-                    {signedAuthorizationReceipt.action}
-                    <br />
-                    {signedAuthorizationReceipt.mintId} / {signedAuthorizationReceipt.billId} / {signedAuthorizationReceipt.mintQuoteId}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.authorization.expiry",
-                      defaultMessage: "Expires",
-                      description: "Label for the signed command expiry timestamp",
-                    })}
-                  </dt>
-                  <dd className="mt-1 tabular-nums">{formatLocalDateTime(new Date(signedAuthorizationReceipt.expiresAt))}</dd>
-                </div>
-              </dl>
-            ) : null}
+              )}
+
+              {hasDurableReceipt ? (
+                <dl className="grid gap-x-5 gap-y-3 border-t border-border pt-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.operationId",
+                        defaultMessage: "Operation ID",
+                        description: "Label for the durable Mint authorization operation identifier",
+                      })}
+                    </dt>
+                    <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.operationId}>
+                      {durableAuthorizationReceipt.operationId.slice(0, 22)}…
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.status",
+                        defaultMessage: "Execution status",
+                        description: "Label for the durable Mint authorization execution status",
+                      })}
+                    </dt>
+                    <dd className="mt-1 font-medium">{durableAuthorizationReceipt.status}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.completedAt",
+                        defaultMessage: "Completed at",
+                        description: "Label for the exact completion timestamp in a durable authorization receipt",
+                      })}
+                    </dt>
+                    <dd className="mt-1 break-all font-mono">{durableAuthorizationReceipt.completedAt}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.effectId",
+                        defaultMessage: "Effect ID",
+                        description: "Label for the quote effect identifier in a durable authorization receipt",
+                      })}
+                    </dt>
+                    <dd className="mt-1 break-all font-mono">{durableAuthorizationReceipt.effectId}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.digest",
+                        defaultMessage: "Authorization digest",
+                        description: "Label for the digest binding the signed authorization",
+                      })}
+                    </dt>
+                    <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.authorizationDigest}>
+                      {durableAuthorizationReceipt.authorizationDigest.slice(0, 22)}…
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.resultDigest",
+                        defaultMessage: "Result digest",
+                        description: "Label for the digest binding the persisted Mint result",
+                      })}
+                    </dt>
+                    <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.resultDigest}>
+                      {durableAuthorizationReceipt.resultDigest.slice(0, 22)}…
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.scope",
+                        defaultMessage: "Exact scope",
+                        description: "Label for the Mint, bill and action bound by an authorization",
+                      })}
+                    </dt>
+                    <dd className="mt-1 break-all font-mono">
+                      {durableAuthorizationReceipt.action}
+                      <br />
+                      {durableAuthorizationReceipt.mintId} / {durableAuthorizationReceipt.billId}
+                    </dd>
+                  </div>
+                </dl>
+              ) : hasSignedVerification ? (
+                <dl className="grid gap-x-5 gap-y-3 border-t border-border pt-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.keyId",
+                        defaultMessage: "Signing key",
+                        description: "Label for the key identifier on a signed authorization command",
+                      })}
+                    </dt>
+                    <dd className="mt-1 break-all font-mono">{signedAuthorizationReceipt.keyId}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.digest",
+                        defaultMessage: "Authorization digest",
+                        description: "Label for the digest binding the signed authorization",
+                      })}
+                    </dt>
+                    <dd className="mt-1 font-mono" title={signedAuthorizationReceipt.authorizationDigest}>
+                      {signedAuthorizationReceipt.authorizationDigest.slice(0, 22)}…
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.scope",
+                        defaultMessage: "Exact scope",
+                        description: "Label for the Mint, bill and action bound by an authorization",
+                      })}
+                    </dt>
+                    <dd className="mt-1 break-all font-mono">
+                      {signedAuthorizationReceipt.action}
+                      <br />
+                      {signedAuthorizationReceipt.mintId} / {signedAuthorizationReceipt.billId} / {signedAuthorizationReceipt.mintQuoteId}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {intl.formatMessage({
+                        id: "quotes.authorization.expiry",
+                        defaultMessage: "Expires",
+                        description: "Label for the signed command expiry timestamp",
+                      })}
+                    </dt>
+                    <dd className="mt-1 tabular-nums">{formatLocalDateTime(new Date(signedAuthorizationReceipt.expiresAt))}</dd>
+                  </div>
+                </dl>
+              ) : null}
+            </div>
           </div>
-        </section>
+        </details>
 
         <footer className="flex flex-col gap-4 border-t border-border px-6 py-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
