@@ -495,7 +495,6 @@
   "quotes.breadcrumb": "Quotes",
   "quotes.calendar.selectDate": "Select date",
   "quotes.capacity.amount": "Exposure amount",
-  "quotes.capacity.evidence": "Capacity evidence",
   "quotes.capacity.state": "Capacity {state}",
   "quotes.card.error.billInfo": "Error loading bill information",
   "quotes.card.error.description": "Quote {id} is unavailable. {message}",

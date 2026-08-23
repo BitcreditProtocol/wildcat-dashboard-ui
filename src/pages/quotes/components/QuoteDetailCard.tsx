@@ -573,35 +573,25 @@ export function QuoteDetailCard({
               </ol>
 
               {exposureReservation !== null && (
-                <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/20 px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={exposureReservation.state === "released" ? "outline" : "success"}>
-                      {intl.formatMessage(
-                        {
-                          id: "quotes.capacity.state",
-                          defaultMessage: "Capacity {state}",
-                          description: "State of the quote-bound Mint exposure reservation",
-                        },
-                        { state: exposureReservation.state }
-                      )}
-                    </Badge>
-                    <span className="text-muted-foreground">
-                      {intl.formatMessage({
-                        id: "quotes.capacity.amount",
-                        defaultMessage: "Exposure amount",
-                        description: "Label for the amount controlled by the Mint exposure reservation",
-                      })}
-                    </span>
-                    <Currency value={Number(exposureReservation.amountSat)} sourceCurrency="sat" />
-                  </div>
-                  <span className="truncate font-mono text-muted-foreground" title={exposureReservation.capacityEvidenceId}>
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-3 text-xs">
+                  <Badge variant={exposureReservation.state === "released" ? "outline" : "success"}>
+                    {intl.formatMessage(
+                      {
+                        id: "quotes.capacity.state",
+                        defaultMessage: "Capacity {state}",
+                        description: "State of the quote-bound Mint exposure reservation",
+                      },
+                      { state: exposureReservation.state }
+                    )}
+                  </Badge>
+                  <span className="text-muted-foreground">
                     {intl.formatMessage({
-                      id: "quotes.capacity.evidence",
-                      defaultMessage: "Capacity evidence",
-                      description: "Label for the authority evidence record controlling an exposure reservation",
+                      id: "quotes.capacity.amount",
+                      defaultMessage: "Exposure amount",
+                      description: "Label for the amount controlled by the Mint exposure reservation",
                     })}
-                    : {exposureReservation.capacityEvidenceId.slice(0, 18)}…
                   </span>
+                  <Currency value={Number(exposureReservation.amountSat)} sourceCurrency="sat" />
                 </div>
               )}
 

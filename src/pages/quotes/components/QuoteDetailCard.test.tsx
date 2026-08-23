@@ -225,7 +225,8 @@ describe("QuoteDetailCard", () => {
 
     expect(page.textContent).toContain("Capacity committed");
     expect(page.textContent).toContain("Exposure amount80,000,000sat");
-    expect(page.textContent).toContain("Capacity evidence: 22222222-2222-4222…");
+    expect(page.textContent).not.toContain("Capacity evidence");
+    expect(page.textContent).not.toContain("22222222-2222-4222-8222-222222222222");
   });
 
   it("shows governed recommended terms while the Mint quote is pending", () => {
