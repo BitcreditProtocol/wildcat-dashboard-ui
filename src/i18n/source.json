@@ -529,7 +529,6 @@
   "quotes.breadcrumb": "Quotes",
   "quotes.calendar.selectDate": "Select date",
   "quotes.capacity.amount": "Exposure amount",
-  "quotes.capacity.evidence": "Capacity evidence",
   "quotes.capacity.state": "Capacity {state}",
   "quotes.card.billId": "Bill ID:",
   "quotes.card.error.billInfo": "Error loading bill information",
