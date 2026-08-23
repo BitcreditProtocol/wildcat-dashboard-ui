@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { parseDecisionCasesResponse } from "./parse-decision-cases";
+import { parseDecisionCasesResponse as parseVersionedDecisionCasesResponse } from "./parse-decision-cases";
 
 const SNAPSHOT_DIGEST = `sha256:${"a".repeat(64)}`;
 const POLICY_DIGEST = `sha256:${"b".repeat(64)}`;
 const RESULT_DIGEST = `sha256:${"c".repeat(64)}`;
 const PROGRAM_DIGEST = `sha256:${"e".repeat(64)}`;
 const ASSIGNMENT_DIGEST = `sha256:${"f".repeat(64)}`;
+
+function parseDecisionCasesResponse(value: unknown) {
+  return parseVersionedDecisionCasesResponse(
+    typeof value === "object" && value !== null && "cases" in value
+      ? { schemaVersion: "ai-credit-workbench-decisions-v1", ...value }
+      : value
+  );
+}
 
 function validCase() {
   const axes = [
@@ -180,9 +188,15 @@ function validCase() {
 
 describe("parseDecisionCasesResponse", () => {
   it("accepts an empty response and a fully bound governed offer", () => {
-    expect(parseDecisionCasesResponse({ cases: [] })).toEqual({ cases: [] });
+    expect(parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v1", cases: [] })).toEqual({ cases: [] });
     const decisionCase = validCase();
-    expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase] });
+    expect(parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v1", cases: [decisionCase] })).toEqual({
+      cases: [decisionCase],
+    });
+    expect(() => parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v2", cases: [] })).toThrow(
+      "invalid governed decision response"
+    );
+    expect(() => parseVersionedDecisionCasesResponse({ cases: [] })).toThrow("invalid governed decision response");
   });
 
   it("accepts owner-bound v10 verification requests and rejects incomplete ownership", () => {
