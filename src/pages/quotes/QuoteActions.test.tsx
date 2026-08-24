@@ -15,11 +15,13 @@ import type {
   VerifiedAuthorizationReceipt,
 } from "@/pages/credit/record-operator-decision";
 import type { InfoReply } from "@/generated/client/types.gen";
+import { ApiError } from "@/lib/api-error";
 import Big from "big.js";
 
 interface MockQueryOptions {
   queryKey: [{ _id: string; path?: { bid: string } }];
   enabled?: boolean;
+  refetchInterval?: (query: { state: MockQueryResult }) => number | false;
 }
 
 interface MockQueryResult {
@@ -624,6 +626,28 @@ describe("QuoteActions", () => {
 
     expect(link).not.toBeNull();
     expect(seenQueryOptions[1]?.enabled).toBe(true);
+  });
+
+  it.each([
+    ["Pending", false],
+    ["Offered", false],
+    ["Accepted", true],
+    ["MintingEnabled", true],
+  ] as const)("loads Mint-owned eBill detail for a %s quote: %s", (status, expected) => {
+    renderComponent({ ...acceptedQuote, status } as InfoReply);
+
+    const options = seenQueryOptions.find((one) => one.queryKey[0]._id === "getEbill");
+    expect(options?.enabled).toBe(expected);
+  });
+
+  it("keeps polling through an eBill handoff 404 until payment is visible", () => {
+    renderComponent(acceptedQuote);
+    const poll = seenQueryOptions.find((one) => one.queryKey[0]._id === "getEbill")?.refetchInterval;
+
+    expect(poll?.({ state: { data: undefined, error: new ApiError("Not found", { status: 404 }) } })).toBe(10_000);
+    expect(poll?.({ state: { data: { status: { payment: { paid: false } } }, error: null } })).toBe(10_000);
+    expect(poll?.({ state: { data: { status: { payment: { paid: true } } }, error: null } })).toBe(false);
+    expect(poll?.({ state: { data: undefined, error: new ApiError("Unavailable", { status: 503 }) } })).toBe(false);
   });
 
   it("records nothing when the operator cancels the final offer confirmation", () => {
