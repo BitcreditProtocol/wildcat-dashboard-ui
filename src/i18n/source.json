@@ -182,7 +182,7 @@
   "credit.humanReview.differentOperator": "This must be handled by someone other than the original decision operator.",
   "credit.humanReview.done": "Completed",
   "credit.humanReview.inReview": "In review",
-  "credit.humanReview.reassess": "Correction or reassessment required",
+  "credit.humanReview.reassess": "Correction required",
   "credit.humanReview.requested": "Waiting for reviewer",
   "credit.humanReview.resolution": "Review result",
   "credit.humanReview.started": "Second review started",
