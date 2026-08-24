@@ -183,6 +183,10 @@ function validCase() {
     },
     submittedEvidence: [],
     evidencePackets: [],
+    availableMaterialEvidence: [
+      { kind: "bill_state", reference: `sha256:${"d".repeat(64)}` },
+      { kind: "submitted_document", reference: "invoice-a", label: "commercial-invoice.pdf" },
+    ],
   };
 }
 
@@ -420,6 +424,13 @@ describe("parseDecisionCasesResponse", () => {
     ["reason-code array", () => ({ ...validCase(), result: { ...validCase().result, reasonCodes: [false] } })],
     ["verification-request array", () => ({ ...validCase(), result: { ...validCase().result, verificationRequests: null } })],
     ["submitted-evidence array", () => ({ ...validCase(), submittedEvidence: [{ reference: "missing-fields" }] })],
+    [
+      "material-evidence array",
+      () => ({
+        ...validCase(),
+        availableMaterialEvidence: [{ kind: "bill_state", reference: `sha256:${"d".repeat(64)}`, label: "internal label" }],
+      }),
+    ],
     ["partial credit-program binding", () => ({ ...validCase(), creditProgramAssignment: undefined })],
     [
       "wrong credit-program quote binding",

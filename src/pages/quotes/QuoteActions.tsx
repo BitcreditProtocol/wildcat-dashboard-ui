@@ -29,6 +29,7 @@ import {
 } from "@/pages/credit/record-operator-decision";
 import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
 import { ApplicantHumanReviewCard } from "@/pages/credit/ApplicantHumanReviewCard";
+import type { OperatorMaterialEvidenceSelection } from "@/pages/credit/decision-types";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -165,6 +166,8 @@ export function QuoteActions({
     ) ?? false;
   const denyAction =
     decisionCase?.result.recommendation === "no_current_product_fit" ? "confirm_no_current_product_fit" : "decline_application";
+  const declineMaterialEvidenceOptions = denyAction === "decline_application" ? (decisionCase?.availableMaterialEvidence ?? []) : [];
+  const hasRequiredDeclineEvidence = denyAction !== "decline_application" || declineMaterialEvidenceOptions.length > 0;
   const mayDeny = operatorMayRecordDecision(operatorCapability.capability, denyAction);
   const mayOffer = operatorMayRecordDecision(operatorCapability.capability, "confirm_proposed_quote");
   const mayReturn = operatorMayRecordDecision(operatorCapability.capability, "return_for_information");
@@ -186,21 +189,28 @@ export function QuoteActions({
     hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
     mayDeny &&
+    hasRequiredDeclineEvidence &&
     decisionCase?.result.assessmentStatus === "ready_for_decision" &&
     (decisionCase.result.recommendation === "offer_available" || decisionCase.result.recommendation === "no_current_product_fit");
-  const denyUnavailableReason = mayDeny
-    ? hasQuoteBoundCreditProgram
+  const denyUnavailableReason = !mayDeny
+    ? roleUnavailableReason
+    : !hasRequiredDeclineEvidence
       ? intl.formatMessage({
-          id: "quotes.actions.deny.unavailable",
-          defaultMessage: "Deny is unavailable until the governed assessment is ready.",
-          description: "Explanation shown when a quote cannot yet be denied because its governed credit assessment is incomplete",
+          id: "quotes.actions.deny.evidenceUnavailable",
+          defaultMessage: "Deny is unavailable because the governed case has no current evidence the operator can cite.",
+          description: "Explanation when a discretionary decline cannot be recorded without server-listed material evidence",
         })
-      : intl.formatMessage({
-          id: "quotes.actions.creditProgram.unavailable",
-          defaultMessage: "A fresh Mint credit-program assignment is required before this quote can be acted on.",
-          description: "Explanation shown when an older assessment lacks the Mint-owned quote-to-program binding",
-        })
-    : roleUnavailableReason;
+      : hasQuoteBoundCreditProgram
+        ? intl.formatMessage({
+            id: "quotes.actions.deny.unavailable",
+            defaultMessage: "Deny is unavailable until the governed assessment is ready.",
+            description: "Explanation shown when a quote cannot yet be denied because its governed credit assessment is incomplete",
+          })
+        : intl.formatMessage({
+            id: "quotes.actions.creditProgram.unavailable",
+            defaultMessage: "A fresh Mint credit-program assignment is required before this quote can be acted on.",
+            description: "Explanation shown when an older assessment lacks the Mint-owned quote-to-program binding",
+          });
   const showRequestToPayAction =
     (effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
     "keyset_id" in value &&
@@ -273,7 +283,7 @@ export function QuoteActions({
       setIsGovernancePending(false);
     }
   };
-  const submitGovernedDeny = async (writtenBasis: string) => {
+  const submitGovernedDeny = async (writtenBasis: string, materialEvidence: OperatorMaterialEvidenceSelection[]) => {
     if (decisionCase === undefined || mintActionInFlight.current) return;
     const recommendation = decisionCase.result.recommendation;
     if (recommendation !== "offer_available" && recommendation !== "no_current_product_fit") return;
@@ -287,6 +297,7 @@ export function QuoteActions({
         action: confirmsNoFit ? "confirm_no_current_product_fit" : "decline_application",
         reasonCode: confirmsNoFit ? "operator_confirmed_no_current_product_fit" : "operator_declined_governed_offer",
         writtenBasis,
+        materialEvidence: confirmsNoFit ? [] : materialEvidence,
       });
       if (recorded === null) return;
       if (!(await handleDenyQuote())) {
@@ -490,14 +501,16 @@ export function QuoteActions({
           {showPendingActions && decisionCase?.result.assessmentStatus === "ready_for_decision" && (
             <DenyConfirmDrawer
               title={denyTitle}
+              materialEvidenceOptions={declineMaterialEvidenceOptions}
               open={denyConfirmDrawerOpen}
+              requireMaterialEvidence={denyAction === "decline_application"}
               onOpenChange={(open) => {
                 if (!open && denyQuote.isPending) return;
                 setDenyConfirmDrawerOpen(open);
               }}
               isPending={isGovernancePending || denyQuote.isPending}
-              onSubmit={(writtenBasis) => {
-                void submitGovernedDeny(writtenBasis);
+              onSubmit={(writtenBasis, materialEvidence) => {
+                void submitGovernedDeny(writtenBasis, materialEvidence);
               }}
             >
               <Button
