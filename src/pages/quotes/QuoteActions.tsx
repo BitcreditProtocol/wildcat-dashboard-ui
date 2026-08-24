@@ -15,6 +15,7 @@ import { governedOfferTtl, useQuoteMutations } from "./components/useQuoteMutati
 import { useIntl } from "react-intl";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { buildMempoolTransactionUrl } from "@/utils/mempool";
+import { ApiError } from "@/lib/api-error";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import {
   operatorMayRecordDecision,
@@ -58,13 +59,14 @@ export function QuoteActions({
   const { decisionCase, isUnavailable: isCreditAssessmentUnavailable } = useCreditAssessmentForBill(billId, value.id);
   const operatorCapability = useOperatorCapability();
   const EBILL_DETAIL_POLL_INTERVAL_MS = 10_000;
+  const shouldLoadEbillDetail = value.status === "Accepted" || value.status === "MintingEnabled";
   const ebillQuery = useQuery({
     ...getEbillOptions({ path: { bid: billId } }),
     retry: 1,
-    enabled: !!billId,
+    enabled: shouldLoadEbillDetail,
     refetchInterval: (query) => {
       if (query.state.error) {
-        return false;
+        return query.state.error instanceof ApiError && query.state.error.status === 404 ? EBILL_DETAIL_POLL_INTERVAL_MS : false;
       }
 
       return query.state.data?.status?.payment?.paid ? false : EBILL_DETAIL_POLL_INTERVAL_MS;
