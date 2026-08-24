@@ -77,6 +77,23 @@ export interface ApplicantHumanReviewRecord {
   statusChangedAt: string;
 }
 
+export type ApplicantMaterialEvidenceKind =
+  | "bill_state"
+  | "applicant_confirmation"
+  | "submitted_document"
+  | "acceptor_risk"
+  | "duplicate_check"
+  | "mint_capacity";
+
+export interface ApplicantMaterialEvidence {
+  kind: ApplicantMaterialEvidenceKind;
+  reference: string;
+  /** Server-owned display name; only submitted documents may carry one. */
+  label?: string;
+}
+
+export type OperatorMaterialEvidenceSelection = Pick<ApplicantMaterialEvidence, "kind" | "reference">;
+
 export interface DecisionTerms {
   /** What the acceptor owes at maturity — `BillInfo.sum` in the quote API. */
   billSumSat: string;
@@ -264,6 +281,8 @@ export interface DecisionCase {
   submittedEvidence?: SubmittedEvidence[];
   evidencePackets?: EvidencePacket[];
   applicantConfirmation?: ApplicantConfirmation;
+  /** Server-listed evidence an operator may select for a discretionary decline. */
+  availableMaterialEvidence?: ApplicantMaterialEvidence[];
   applicantHumanReview?: ApplicantHumanReviewRecord;
 }
 
