@@ -199,6 +199,43 @@ describe("parseDecisionCasesResponse", () => {
     expect(() => parseVersionedDecisionCasesResponse({ cases: [] })).toThrow("invalid governed decision response");
   });
 
+  it("accepts only a second-review request bound to the displayed decision", () => {
+    const decisionCase = validCase();
+    const applicantHumanReview = {
+      request: {
+        schemaVersion: "applicant-human-review-request-v1",
+        requestId: "2798c386-935b-4f5e-a2ea-a5323454de0a",
+        caseId: decisionCase.snapshot.caseId,
+        applicantRef: decisionCase.snapshot.applicantRef,
+        contestedDecisionResultDigest: decisionCase.resultDigest,
+        statement: "Please have another operator review the invoice evidence.",
+        requestedAt: "2026-08-24T12:00:00.000Z",
+        synthetic: true,
+      },
+      status: "requested",
+      reviewer: null,
+      resolution: null,
+      writtenBasis: null,
+      statusChangedAt: "2026-08-24T12:00:00.000Z",
+    } as const;
+    expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, applicantHumanReview }] })).toEqual({
+      cases: [{ ...decisionCase, applicantHumanReview }],
+    });
+    expect(() =>
+      parseDecisionCasesResponse({
+        cases: [
+          {
+            ...decisionCase,
+            applicantHumanReview: {
+              ...applicantHumanReview,
+              request: { ...applicantHumanReview.request, contestedDecisionResultDigest: `sha256:${"f".repeat(64)}` },
+            },
+          },
+        ],
+      })
+    ).toThrow("invalid governed decision response");
+  });
+
   it("accepts owner-bound v10 verification requests and rejects incomplete ownership", () => {
     const oneCase = validCase();
     const blocked = {

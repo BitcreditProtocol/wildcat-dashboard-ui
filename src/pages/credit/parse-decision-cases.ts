@@ -1,5 +1,6 @@
 import type {
   ApplicantConfirmation,
+  ApplicantHumanReviewRecord,
   ConfirmedClaims,
   CreditProgram,
   CreditProgramAssignment,
@@ -503,6 +504,36 @@ function isEvidencePacketArray(value: unknown): value is EvidencePacket[] {
   return isArrayOf(value, isEvidencePacket) && value.length <= 8;
 }
 
+function isApplicantHumanReview(value: unknown): value is ApplicantHumanReviewRecord {
+  if (
+    !isObject(value) ||
+    (value.status !== "requested" && value.status !== "in_review" && value.status !== "completed") ||
+    !isObject(value.request) ||
+    value.request.schemaVersion !== "applicant-human-review-request-v1" ||
+    !isNonEmptyString(value.request.requestId) ||
+    !isNonEmptyString(value.request.caseId) ||
+    !isNonEmptyString(value.request.applicantRef) ||
+    !isDigest(value.request.contestedDecisionResultDigest) ||
+    !isNonEmptyString(value.request.statement) ||
+    !isDateTime(value.request.requestedAt) ||
+    value.request.synthetic !== true ||
+    !isDateTime(value.statusChangedAt)
+  ) {
+    return false;
+  }
+  const hasReviewer =
+    isObject(value.reviewer) &&
+    isNonEmptyString(value.reviewer.reviewerId) &&
+    (value.reviewer.reviewerRole === "reviewer" || value.reviewer.reviewerRole === "approver");
+  if (value.status === "requested") return value.reviewer === null && value.resolution === null && value.writtenBasis === null;
+  if (value.status === "in_review") return hasReviewer && value.resolution === null && value.writtenBasis === null;
+  return (
+    hasReviewer &&
+    (value.resolution === "decision_upheld" || value.resolution === "correction_or_reassessment_required") &&
+    isNonEmptyString(value.writtenBasis)
+  );
+}
+
 function hasMatchingDecisionBindings(value: JsonObject): boolean {
   if (!isObject(value.snapshot) || !isObject(value.policyPack) || !isObject(value.result)) return false;
   const { snapshot, policyPack, result } = value;
@@ -569,6 +600,11 @@ function isDecisionCase(value: unknown): value is DecisionCase {
     (value.submittedEvidence !== undefined && !isEvidenceArray(value.submittedEvidence)) ||
     (value.evidencePackets !== undefined && !isEvidencePacketArray(value.evidencePackets)) ||
     (value.applicantConfirmation !== undefined && !isApplicantConfirmation(value.applicantConfirmation)) ||
+    (value.applicantHumanReview !== undefined && !isApplicantHumanReview(value.applicantHumanReview)) ||
+    (isObject(value.applicantHumanReview) &&
+      isObject(value.snapshot) &&
+      (value.applicantHumanReview.request.caseId !== value.snapshot.caseId ||
+        value.applicantHumanReview.request.contestedDecisionResultDigest !== value.resultDigest)) ||
     !hasMatchingDecisionBindings(value) ||
     !hasMatchingCreditProgramBindings(value)
   ) {

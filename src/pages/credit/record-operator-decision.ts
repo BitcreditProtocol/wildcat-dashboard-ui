@@ -27,6 +27,16 @@ export interface OperatorCapability {
   operatorRole: "reviewer" | "approver";
 }
 
+export interface ApplicantHumanReviewUpdateInput {
+  billId: string;
+  caseId: string;
+  requestId: string;
+  contestedDecisionResultDigest: string;
+  action: "begin_review" | "complete_review";
+  resolution?: "decision_upheld" | "correction_or_reassessment_required";
+  writtenBasis?: string;
+}
+
 export interface MintAuthorityEvidenceInput {
   mintQuoteId: string;
   billId: string;
@@ -305,6 +315,24 @@ export async function retryOperatorVerificationSources(
       headers: { "content-type": "application/json" },
       method: "POST",
       signal: AbortSignal.timeout(15_000),
+    });
+    return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
+  } catch {
+    return { ok: false, error: "The AI Credit operator service is not reachable" };
+  }
+}
+
+export async function recordApplicantHumanReviewUpdate(
+  input: ApplicantHumanReviewUpdateInput,
+  capability: OperatorCapability | undefined
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (capability === undefined) return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
+  try {
+    const response = await authenticatedFetch("/api/ai-credit/operator-human-review-updates", {
+      body: JSON.stringify(input),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+      signal: AbortSignal.timeout(10_000),
     });
     return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
   } catch {

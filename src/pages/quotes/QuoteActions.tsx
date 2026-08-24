@@ -29,6 +29,7 @@ import {
   type VerifiedAuthorizationReceipt,
 } from "@/pages/credit/record-operator-decision";
 import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
+import { ApplicantHumanReviewCard } from "@/pages/credit/ApplicantHumanReviewCard";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -694,6 +695,10 @@ export function QuoteActions({
           )}
         </div>
       ) : null}
+
+      {decisionCase?.applicantHumanReview === undefined ? null : (
+        <ApplicantHumanReviewCard billId={billId} capability={operatorCapability.capability} review={decisionCase.applicantHumanReview} />
+      )}
 
       {(requestedToPayEff || historyRequest) && (
         <PaymentRequestCard
