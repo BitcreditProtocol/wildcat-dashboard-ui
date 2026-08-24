@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { AppIcon, Button, toast } from "@bitcredit/ui-library";
@@ -133,7 +133,20 @@ export function QuoteActions({
     id: "quotes.actions.offer.button",
     defaultMessage: "Offer",
   });
-  const showPendingActions = effectiveQuoteStatus === "Pending" && decisionCase?.applicantHumanReview === undefined;
+  const hasApplicantHumanReview = decisionCase?.applicantHumanReview !== undefined;
+  const showPendingActions = effectiveQuoteStatus === "Pending" && !hasApplicantHumanReview;
+  useEffect(() => {
+    if (!hasApplicantHumanReview) return;
+    recordedGovernance.current = undefined;
+    setOfferFormData(undefined);
+    setOfferFormDrawerOpen(false);
+    setOfferConfirmDrawerOpen(false);
+    setDenyConfirmDrawerOpen(false);
+    setReturnInfoDrawerOpen(false);
+    setRiskAssessmentDrawerOpen(false);
+    setCapacityAssessmentDrawerOpen(false);
+    setUnableToAssessDrawerOpen(false);
+  }, [hasApplicantHumanReview]);
   const hasQuoteBoundCreditProgram =
     decisionCase?.mintQuoteId === value.id &&
     decisionCase.creditProgram !== undefined &&
@@ -249,7 +262,7 @@ export function QuoteActions({
     if (
       isCreditAssessmentUnavailable ||
       !hasQuoteBoundCreditProgram ||
-      decisionCase?.applicantHumanReview !== undefined ||
+      hasApplicantHumanReview ||
       input.caseId !== decisionCase?.snapshot.caseId ||
       input.decisionResultDigest !== decisionCase?.resultDigest
     ) {
