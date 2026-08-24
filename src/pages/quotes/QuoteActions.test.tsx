@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { QuoteActions } from "./QuoteActions";
 import type { OfferFormResult } from "./components/OfferFormDrawer";
-import type { DecisionCase, OperatorMaterialEvidenceSelection } from "@/pages/credit/decision-types";
+import type { ApplicantHumanReviewRecord, DecisionCase, OperatorMaterialEvidenceSelection } from "@/pages/credit/decision-types";
 import type {
   MintRiskAssessmentInput,
   MintAuthorityEvidenceInput,
@@ -439,6 +439,39 @@ beforeEach(() => {
 });
 
 describe("QuoteActions", () => {
+  it.each([
+    ["requested", null],
+    ["in_review", null],
+    ["completed", "correction_or_reassessment_required"],
+    ["completed", "decision_upheld"],
+  ] as const)("keeps a %s applicant review read-only", (status, resolution) => {
+    const applicantHumanReview: ApplicantHumanReviewRecord = {
+      request: {
+        schemaVersion: "applicant-human-review-request-v1",
+        requestId: "review-1",
+        caseId: "case-offer",
+        applicantRef: "applicant-1",
+        contestedDecisionResultDigest: `sha256:${"a".repeat(64)}`,
+        statement: "Please have another operator review this decision.",
+        requestedAt: "2026-08-25T08:00:00.000Z",
+        synthetic: true,
+      },
+      status,
+      reviewer: status === "requested" ? null : { reviewerId: "reviewer-123", reviewerRole: "reviewer" },
+      resolution,
+      writtenBasis: resolution === null ? null : "Independent review completed with an attributable basis.",
+      statusChangedAt: "2026-08-25T09:00:00.000Z",
+    };
+    decisionCase = { ...governedOffer, applicantHumanReview };
+
+    const page = renderComponent(pendingQuote);
+    const actions = Array.from(page.querySelectorAll("button")).map((button) => button.textContent);
+
+    expect(actions).not.toContain("Offer");
+    expect(actions).not.toContain("Deny");
+    expect(page.textContent).toContain("Applicant requested a second review");
+  });
+
   it("disables governed decisions and exposes the capability error when the handshake fails", () => {
     decisionCase = governedOffer;
     operatorCapability = undefined;
