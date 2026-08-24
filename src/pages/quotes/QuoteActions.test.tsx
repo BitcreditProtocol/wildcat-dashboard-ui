@@ -327,6 +327,29 @@ const governedMintCapacityVerification = {
   },
 } as unknown as DecisionCase;
 
+function humanReview(
+  status: ApplicantHumanReviewRecord["status"],
+  resolution: ApplicantHumanReviewRecord["resolution"]
+): ApplicantHumanReviewRecord {
+  return {
+    request: {
+      schemaVersion: "applicant-human-review-request-v1",
+      requestId: "review-1",
+      caseId: "case-offer",
+      applicantRef: "applicant-1",
+      contestedDecisionResultDigest: `sha256:${"a".repeat(64)}`,
+      statement: "Please have another operator review this decision.",
+      requestedAt: "2026-08-25T08:00:00.000Z",
+      synthetic: true,
+    },
+    status,
+    reviewer: status === "requested" ? null : { reviewerId: "reviewer-123", reviewerRole: "reviewer" },
+    resolution,
+    writtenBasis: resolution === null ? null : "Independent review completed with an attributable basis.",
+    statusChangedAt: "2026-08-25T09:00:00.000Z",
+  };
+}
+
 const offerData = {
   governance: {
     billId: "bill-1",
@@ -384,6 +407,17 @@ function renderComponent(value = acceptedQuote, onAuthorizationVerified?: (recei
   root = mountRoot;
   container = mount;
   return mount;
+}
+
+function rerenderComponent(value = acceptedQuote) {
+  if (root === null) throw new Error("Quote actions are not mounted");
+  act(() => {
+    root?.render(
+      <IntlProvider locale="en">
+        <QuoteActions value={value} isFetching={false} ebillPaid={false} isMintComplete={false} requestedToPay={false} />
+      </IntlProvider>
+    );
+  });
 }
 
 beforeEach(() => {
@@ -445,24 +479,7 @@ describe("QuoteActions", () => {
     ["completed", "correction_or_reassessment_required"],
     ["completed", "decision_upheld"],
   ] as const)("keeps a %s applicant review read-only", (status, resolution) => {
-    const applicantHumanReview: ApplicantHumanReviewRecord = {
-      request: {
-        schemaVersion: "applicant-human-review-request-v1",
-        requestId: "review-1",
-        caseId: "case-offer",
-        applicantRef: "applicant-1",
-        contestedDecisionResultDigest: `sha256:${"a".repeat(64)}`,
-        statement: "Please have another operator review this decision.",
-        requestedAt: "2026-08-25T08:00:00.000Z",
-        synthetic: true,
-      },
-      status,
-      reviewer: status === "requested" ? null : { reviewerId: "reviewer-123", reviewerRole: "reviewer" },
-      resolution,
-      writtenBasis: resolution === null ? null : "Independent review completed with an attributable basis.",
-      statusChangedAt: "2026-08-25T09:00:00.000Z",
-    };
-    decisionCase = { ...governedOffer, applicantHumanReview };
+    decisionCase = { ...governedOffer, applicantHumanReview: humanReview(status, resolution) };
 
     const page = renderComponent(pendingQuote);
     const actions = Array.from(page.querySelectorAll("button")).map((button) => button.textContent);
@@ -470,6 +487,38 @@ describe("QuoteActions", () => {
     expect(actions).not.toContain("Offer");
     expect(actions).not.toContain("Deny");
     expect(page.textContent).toContain("Applicant requested a second review");
+  });
+
+  it("clears cached governance before a same-case correction can reopen actions", async () => {
+    decisionCase = governedOffer;
+    mockHandleOfferQuote.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    renderComponent(pendingQuote);
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenCalledOnce();
+    expect(offerConfirmationOpen).toBe(true);
+
+    decisionCase = { ...governedOffer, applicantHumanReview: humanReview("completed", "correction_or_reassessment_required") };
+    rerenderComponent(pendingQuote);
+    decisionCase = governedOffer;
+    rerenderComponent(pendingQuote);
+    expect(offerConfirmationOpen).toBe(false);
+
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+
+    expect(mockRecordOperatorDecision).toHaveBeenCalledTimes(2);
+    expect(mockHandleOfferQuote).toHaveBeenCalledTimes(2);
   });
 
   it("disables governed decisions and exposes the capability error when the handshake fails", () => {
