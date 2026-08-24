@@ -57,6 +57,26 @@ export interface ApplicantConfirmation {
   recourseAcknowledged: boolean;
 }
 
+export type ApplicantHumanReviewResolution = "decision_upheld" | "correction_or_reassessment_required";
+
+export interface ApplicantHumanReviewRecord {
+  request: {
+    schemaVersion: "applicant-human-review-request-v1";
+    requestId: string;
+    caseId: string;
+    applicantRef: string;
+    contestedDecisionResultDigest: string;
+    statement: string;
+    requestedAt: string;
+    synthetic: true;
+  };
+  status: "requested" | "in_review" | "completed";
+  reviewer: { reviewerId: string; reviewerRole: "reviewer" | "approver" } | null;
+  resolution: ApplicantHumanReviewResolution | null;
+  writtenBasis: string | null;
+  statusChangedAt: string;
+}
+
 export interface DecisionTerms {
   /** What the acceptor owes at maturity — `BillInfo.sum` in the quote API. */
   billSumSat: string;
@@ -244,6 +264,7 @@ export interface DecisionCase {
   submittedEvidence?: SubmittedEvidence[];
   evidencePackets?: EvidencePacket[];
   applicantConfirmation?: ApplicantConfirmation;
+  applicantHumanReview?: ApplicantHumanReviewRecord;
 }
 
 /** Domain codes are rendered as humanized English, matching the rest of this synthetic view. */
