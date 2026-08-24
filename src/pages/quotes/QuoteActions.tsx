@@ -109,6 +109,7 @@ export function QuoteActions({
   const [unableToAssessDrawerOpen, setUnableToAssessDrawerOpen] = useState(false);
   const [requestToPayConfirmDrawerOpen, setRequestToPayConfirmDrawerOpen] = useState(false);
   const governanceInFlight = useRef(false);
+  const governanceGeneration = useRef(0);
   const recordedGovernance = useRef<{ key: string; result: OperatorDecisionSuccess } | undefined>(undefined);
   const mintActionInFlight = useRef(false);
   const [isGovernancePending, setIsGovernancePending] = useState(false);
@@ -137,6 +138,7 @@ export function QuoteActions({
   const showPendingActions = effectiveQuoteStatus === "Pending" && !hasApplicantHumanReview;
   useEffect(() => {
     if (!hasApplicantHumanReview) return;
+    governanceGeneration.current += 1;
     recordedGovernance.current = undefined;
     setOfferFormData(undefined);
     setOfferFormDrawerOpen(false);
@@ -284,8 +286,10 @@ export function QuoteActions({
     if (governanceInFlight.current) return null;
     governanceInFlight.current = true;
     setIsGovernancePending(true);
+    const generation = governanceGeneration.current;
     try {
       const recorded = await recordOperatorDecision(input, operatorCapability.capability);
+      if (generation !== governanceGeneration.current) return null;
       if (recorded.ok) recordedGovernance.current = { key: inputKey, result: recorded };
       else governanceFailed(recorded.error);
       return recorded.ok ? recorded : null;
