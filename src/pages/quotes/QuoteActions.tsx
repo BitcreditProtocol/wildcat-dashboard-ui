@@ -148,7 +148,7 @@ export function QuoteActions({
     id: "quotes.actions.offer.button",
     defaultMessage: "Offer",
   });
-  const showPendingActions = effectiveQuoteStatus === "Pending";
+  const showPendingActions = effectiveQuoteStatus === "Pending" && decisionCase?.applicantHumanReview === undefined;
   const hasQuoteBoundCreditProgram =
     decisionCase?.mintQuoteId === value.id &&
     decisionCase.creditProgram !== undefined &&
@@ -264,6 +264,7 @@ export function QuoteActions({
     if (
       isCreditAssessmentUnavailable ||
       !hasQuoteBoundCreditProgram ||
+      decisionCase?.applicantHumanReview !== undefined ||
       input.caseId !== decisionCase?.snapshot.caseId ||
       input.decisionResultDigest !== decisionCase?.resultDigest
     ) {
