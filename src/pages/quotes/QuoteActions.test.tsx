@@ -521,6 +521,34 @@ describe("QuoteActions", () => {
     expect(mockHandleOfferQuote).toHaveBeenCalledTimes(2);
   });
 
+  it("does not reach the Mint when applicant review starts during governance", async () => {
+    decisionCase = governedOffer;
+    let resolveRecord: ((result: OperatorDecisionSuccess) => void) | undefined;
+    mockRecordOperatorDecision.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRecord = resolve;
+      })
+    );
+    renderComponent(pendingQuote);
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+    expect(offerConfirmationOpen).toBe(true);
+    act(() => {
+      offerConfirmationSubmit?.(offerData);
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenCalledOnce();
+
+    decisionCase = { ...governedOffer, applicantHumanReview: humanReview("in_review", null) };
+    rerenderComponent(pendingQuote);
+    await act(async () => {
+      resolveRecord?.({ ok: true, signedAuthorization });
+      await Promise.resolve();
+    });
+
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+  });
+
   it("disables governed decisions and exposes the capability error when the handshake fails", () => {
     decisionCase = governedOffer;
     operatorCapability = undefined;
