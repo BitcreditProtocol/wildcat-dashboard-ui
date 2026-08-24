@@ -994,6 +994,71 @@
         }
       }
     },
+    "/v1/admin/clowder/add_reserve/{rid}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_add_reserve_status",
+        "parameters": [
+          {
+            "name": "rid",
+            "in": "path",
+            "description": "the add_reserve request id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddReserveResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "add_reserve id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/add_reserve": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "post_add_reserve",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddReserveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddReserveResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/treasury/ebill/reqtopay": {
       "post": {
         "tags": [
@@ -1101,6 +1166,84 @@
   },
   "components": {
     "schemas": {
+      "AddReserveRequest": {
+        "type": "object",
+        "description": "--------------------------- Reserve funding",
+        "required": [
+          "reserve_id",
+          "amount"
+        ],
+        "properties": {
+          "reserve_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "AddReserveResponse": {
+        "type": "object",
+        "required": [
+          "reserve_id",
+          "address",
+          "amount",
+          "status"
+        ],
+        "properties": {
+          "reserve_id": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/AddReserveStatus"
+          }
+        }
+      },
+      "AddReserveStatus": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "Pending"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "Completed"
+            ],
+            "properties": {
+              "Completed": {
+                "type": "object",
+                "required": [
+                  "outpoint"
+                ],
+                "properties": {
+                  "outpoint": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "string",
+            "enum": [
+              "FundingMismatch"
+            ]
+          }
+        ]
+      },
       "AlphaStateResponse": {
         "type": "object",
         "required": [
@@ -2760,6 +2903,7 @@
       },
       "InfoReplyDiscriminants": {
         "type": "string",
+        "description": "Auto-generated discriminant enum variants",
         "enum": [
           "Pending",
           "Canceled",
