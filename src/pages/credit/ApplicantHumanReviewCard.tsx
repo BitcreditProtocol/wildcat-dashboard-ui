@@ -151,8 +151,8 @@ export function ApplicantHumanReviewCard({
               <option value="correction_or_reassessment_required">
                 {intl.formatMessage({
                   id: "credit.humanReview.reassess",
-                  defaultMessage: "Correction or reassessment required",
-                  description: "Second-review result requiring a corrected or fresh assessment",
+                  defaultMessage: "Correction required",
+                  description: "Second-review result requiring the applicant to correct and resubmit the same governed case",
                 })}
               </option>
             </select>
@@ -201,8 +201,8 @@ export function ApplicantHumanReviewCard({
                 })
               : intl.formatMessage({
                   id: "credit.humanReview.reassess",
-                  defaultMessage: "Correction or reassessment required",
-                  description: "Second-review result requiring a corrected or fresh assessment",
+                  defaultMessage: "Correction required",
+                  description: "Second-review result requiring the applicant to correct and resubmit the same governed case",
                 })}
           </p>
           <p className="mt-1 text-muted-foreground">{review.writtenBasis}</p>
