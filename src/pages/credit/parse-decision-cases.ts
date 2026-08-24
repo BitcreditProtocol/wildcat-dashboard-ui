@@ -1,6 +1,7 @@
 import type {
   ApplicantConfirmation,
   ApplicantHumanReviewRecord,
+  ApplicantMaterialEvidence,
   ConfirmedClaims,
   CreditProgram,
   CreditProgramAssignment,
@@ -46,6 +47,14 @@ const EVIDENCE_STATES = new Set([
   "withdrawn",
 ]);
 const EVIDENCE_CLAIM_KINDS = new Set(["party", "identifier", "date", "amount", "asset", "obligation", "status", "description", "other"]);
+const APPLICANT_MATERIAL_EVIDENCE_KINDS = new Set([
+  "bill_state",
+  "applicant_confirmation",
+  "submitted_document",
+  "acceptor_risk",
+  "duplicate_check",
+  "mint_capacity",
+]);
 
 const isObject = (value: unknown): value is JsonObject => typeof value === "object" && value !== null && !Array.isArray(value);
 const isString = (value: unknown): value is string => typeof value === "string";
@@ -534,6 +543,21 @@ function isApplicantHumanReview(value: unknown): value is ApplicantHumanReviewRe
   );
 }
 
+function isApplicantMaterialEvidence(value: unknown): value is ApplicantMaterialEvidence {
+  return (
+    isObject(value) &&
+    isString(value.kind) &&
+    APPLICANT_MATERIAL_EVIDENCE_KINDS.has(value.kind) &&
+    isNonEmptyString(value.reference) &&
+    (value.label === undefined || (value.kind === "submitted_document" && isNonEmptyString(value.label)))
+  );
+}
+
+function isApplicantMaterialEvidenceArray(value: unknown): value is ApplicantMaterialEvidence[] {
+  if (!isArrayOf(value, isApplicantMaterialEvidence) || value.length > 64) return false;
+  return new Set(value.map((evidence) => `${evidence.kind}\0${evidence.reference}`)).size === value.length;
+}
+
 function hasMatchingDecisionBindings(value: JsonObject): boolean {
   if (!isObject(value.snapshot) || !isObject(value.policyPack) || !isObject(value.result)) return false;
   const { snapshot, policyPack, result } = value;
@@ -600,6 +624,7 @@ function isDecisionCase(value: unknown): value is DecisionCase {
     (value.submittedEvidence !== undefined && !isEvidenceArray(value.submittedEvidence)) ||
     (value.evidencePackets !== undefined && !isEvidencePacketArray(value.evidencePackets)) ||
     (value.applicantConfirmation !== undefined && !isApplicantConfirmation(value.applicantConfirmation)) ||
+    (value.availableMaterialEvidence !== undefined && !isApplicantMaterialEvidenceArray(value.availableMaterialEvidence)) ||
     (value.applicantHumanReview !== undefined && !isApplicantHumanReview(value.applicantHumanReview)) ||
     (isObject(value.applicantHumanReview) &&
       isObject(value.snapshot) &&

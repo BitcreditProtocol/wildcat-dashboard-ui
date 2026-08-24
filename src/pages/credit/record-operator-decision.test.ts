@@ -268,8 +268,25 @@ describe("recordOperatorDecision", () => {
     );
     const request = fetch.mock.calls[0]?.[1] as RequestInit;
     if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
-    expect(JSON.parse(request.body)).not.toHaveProperty("operatorId");
-    expect(JSON.parse(request.body)).not.toHaveProperty("operatorRole");
+    expect(request.body).toBe(JSON.stringify({ ...command, materialEvidence: [], requiredItems: [] }));
+  });
+
+  it("forwards only the selected material-evidence identities for a discretionary decline", async () => {
+    const fetch = vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1" }));
+    vi.stubGlobal("fetch", fetch);
+    const materialEvidence = [{ kind: "submitted_document" as const, reference: "invoice-a" }];
+
+    const decline = {
+      ...command,
+      action: "decline_application" as const,
+      reasonCode: "operator_declined_governed_offer",
+      materialEvidence,
+    };
+    await expect(recordOperatorDecision(decline, approver)).resolves.toEqual({ ok: true });
+
+    const request = fetch.mock.calls[0]?.[1] as RequestInit;
+    if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
+    expect(request.body).toBe(JSON.stringify({ ...decline, materialEvidence, requiredItems: [] }));
   });
 
   it("fails closed when an Offer response has no valid signed authorization", async () => {

@@ -1,4 +1,5 @@
 import { authenticatedFetch } from "@/lib/api-client";
+import type { OperatorMaterialEvidenceSelection } from "./decision-types";
 
 /** Records the governed operator judgement before the corresponding Mint action. */
 export type OperatorDecisionAction =
@@ -18,6 +19,7 @@ export interface OperatorDecisionInput {
   discountedSat?: string;
   reasonCode: string;
   writtenBasis: string;
+  materialEvidence?: OperatorMaterialEvidenceSelection[];
   requiredItems?: string[];
 }
 
@@ -351,6 +353,7 @@ export async function recordOperatorDecision(
     const response = await authenticatedFetch("/api/ai-credit/operator-decisions", {
       body: JSON.stringify({
         ...input,
+        materialEvidence: input.materialEvidence ?? [],
         requiredItems: input.requiredItems ?? [],
       }),
       headers: { "content-type": "application/json" },

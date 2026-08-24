@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { QuoteActions } from "./QuoteActions";
 import type { OfferFormResult } from "./components/OfferFormDrawer";
-import type { DecisionCase } from "@/pages/credit/decision-types";
+import type { DecisionCase, OperatorMaterialEvidenceSelection } from "@/pages/credit/decision-types";
 import type {
   MintRiskAssessmentInput,
   MintAuthorityEvidenceInput,
@@ -56,7 +56,7 @@ let offerFormSubmit: ((data: OfferFormResult) => void) | undefined;
 let offerConfirmationSubmit: ((data: OfferFormResult) => void) | undefined;
 let offerConfirmationOpen = false;
 let offerConfirmationOpenChange: ((open: boolean) => void) | undefined;
-let denySubmit: ((writtenBasis: string) => void) | undefined;
+let denySubmit: ((writtenBasis: string, materialEvidence: OperatorMaterialEvidenceSelection[]) => void) | undefined;
 let returnInfoSubmit: ((writtenBasis: string) => void) | undefined;
 let returnInfoOpen = false;
 let returnInfoOpenChange: ((open: boolean) => void) | undefined;
@@ -105,16 +105,20 @@ vi.mock("./components/DenyConfirmDrawer", () => ({
   }: {
     children: ReactNode;
     mode?: "deny" | "return_for_information" | "close_unable_to_assess";
-    onSubmit: (writtenBasis: string) => void;
+    onSubmit: (writtenBasis: string, materialEvidence: OperatorMaterialEvidenceSelection[]) => void;
     onOpenChange: (open: boolean) => void;
     open: boolean;
   }) => {
     if (mode === "return_for_information") {
-      returnInfoSubmit = onSubmit;
+      returnInfoSubmit = (writtenBasis) => {
+        onSubmit(writtenBasis, []);
+      };
       returnInfoOpenChange = onOpenChange;
       returnInfoOpen = open;
     } else if (mode === "close_unable_to_assess") {
-      closeUnableSubmit = onSubmit;
+      closeUnableSubmit = (writtenBasis) => {
+        onSubmit(writtenBasis, []);
+      };
     } else {
       denySubmit = onSubmit;
     }
@@ -248,6 +252,10 @@ const governedOffer = {
   },
   result: { assessmentStatus: "ready_for_decision", recommendation: "offer_available", terms: { discountedSat: "95" } },
   resultDigest: `sha256:${"a".repeat(64)}`,
+  availableMaterialEvidence: [
+    { kind: "bill_state", reference: `sha256:${"d".repeat(64)}` },
+    { kind: "submitted_document", reference: "invoice-a", label: "commercial-invoice.pdf" },
+  ],
 } as unknown as DecisionCase;
 
 const governedNoFit = {
@@ -443,6 +451,15 @@ describe("QuoteActions", () => {
     expect(offerButton?.disabled).toBe(true);
     expect(denyButton?.title).toBe(operatorCapabilityError);
     expect(offerButton?.title).toBe(operatorCapabilityError);
+  });
+
+  it("fails closed when a discretionary decline has no server-listed material evidence", () => {
+    decisionCase = { ...governedOffer, availableMaterialEvidence: [] };
+    const page = renderComponent(pendingQuote);
+    const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
+
+    expect(denyButton?.disabled).toBe(true);
+    expect(denyButton?.title).toContain("no current evidence");
   });
 
   it("allows a reviewer to return verification work but not decide the quote", () => {
@@ -769,13 +786,13 @@ describe("QuoteActions", () => {
     expect(page.textContent).toContain("Deny");
     expect(page.textContent).not.toContain("Offer");
     await act(async () => {
-      denySubmit?.("Reviewed the deterministic no-fit result and confirmed it.");
+      denySubmit?.("Reviewed the deterministic no-fit result and confirmed it.", []);
       await Promise.resolve();
     });
     expect(mockHandleDenyQuote).not.toHaveBeenCalled();
 
     await act(async () => {
-      denySubmit?.("Reviewed the deterministic no-fit result and confirmed it.");
+      denySubmit?.("Reviewed the deterministic no-fit result and confirmed it.", []);
       await Promise.resolve();
     });
     expect(mockRecordOperatorDecision).toHaveBeenLastCalledWith({
@@ -785,6 +802,7 @@ describe("QuoteActions", () => {
       action: "confirm_no_current_product_fit",
       reasonCode: "operator_confirmed_no_current_product_fit",
       writtenBasis: "Reviewed the deterministic no-fit result and confirmed it.",
+      materialEvidence: [],
     });
     expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
   });
@@ -795,7 +813,7 @@ describe("QuoteActions", () => {
     expect(offerPage.textContent).toContain("Deny");
 
     await act(async () => {
-      denySubmit?.("Reviewed the governed offer and declined this application.");
+      denySubmit?.("Reviewed the governed offer and declined this application.", [{ kind: "submitted_document", reference: "invoice-a" }]);
       await Promise.resolve();
     });
     expect(mockRecordOperatorDecision).toHaveBeenCalledWith({
@@ -805,6 +823,7 @@ describe("QuoteActions", () => {
       action: "decline_application",
       reasonCode: "operator_declined_governed_offer",
       writtenBasis: "Reviewed the governed offer and declined this application.",
+      materialEvidence: [{ kind: "submitted_document", reference: "invoice-a" }],
     });
     expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
   });
