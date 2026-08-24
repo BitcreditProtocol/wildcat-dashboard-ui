@@ -5,6 +5,7 @@ import {
   operatorMayRecordDecision,
   recordMintCapacityAssessment,
   recordMintRiskAssessment,
+  recordApplicantHumanReviewUpdate,
   recordOperatorDecision,
   signedAuthorizationMatchesOffer,
   type OperatorCapability,
@@ -173,6 +174,36 @@ describe("Mint-owned capacity evidence", () => {
       })
     );
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("applicant human review", () => {
+  const input = {
+    billId: "bill-1",
+    caseId: "case-1",
+    requestId: "2798c386-935b-4f5e-a2ea-a5323454de0a",
+    contestedDecisionResultDigest: `sha256:${"a".repeat(64)}`,
+    action: "begin_review" as const,
+  };
+
+  it("uses the authenticated operator route without browser-supplied attribution", async () => {
+    const fetch = vi.fn().mockResolvedValue(response(true, 200, {}));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(recordApplicantHumanReviewUpdate(input, reviewer)).resolves.toEqual({ ok: true });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/ai-credit/operator-human-review-updates",
+      expect.objectContaining({ body: JSON.stringify(input), headers: { "content-type": "application/json" }, method: "POST" })
+    );
+  });
+
+  it("keeps the second-review identity check server-authoritative", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(false, 400, { error: "Human review must use another operator" })));
+
+    await expect(recordApplicantHumanReviewUpdate(input, approver)).resolves.toEqual({
+      ok: false,
+      error: "Human review must use another operator",
+    });
   });
 });
 
