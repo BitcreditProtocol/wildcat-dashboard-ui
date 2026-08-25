@@ -30,6 +30,7 @@ interface QuoteDetailCardProps {
     acceptor?: string;
     goodsDescription?: string;
     readyForDecision: boolean;
+    recommendation: "offer_available" | "no_current_product_fit" | null;
     passedChecks: number;
     failedChecks: number;
     notAssessedChecks: number;
@@ -231,12 +232,14 @@ export function QuoteDetailCard({
   const hasSignedVerification = signedAuthorizationReceipt !== null && signedAuthorizationReceipt !== undefined;
   const durableExecutionCompleted = durableAuthorizationReceipt?.status === "completed";
   const showDecisionStatus = effectiveQuoteStatus === "Pending" && decisionSummary !== undefined;
-  const decisionPhaseComplete = effectiveQuoteStatus !== "Pending";
-  const positiveDecisionOutcome = ["Offered", "Accepted", "MintingEnabled"].includes(effectiveQuoteStatus);
   const summaryStatusVariant = showDecisionStatus
-    ? decisionSummary.readyForDecision
-      ? "success"
-      : "pending"
+    ? decisionSummary.recommendation === "no_current_product_fit"
+      ? "secondary"
+      : decisionSummary.recommendation === "offer_available" && decisionSummary.readyForDecision
+        ? "success"
+        : decisionSummary.readyForDecision
+          ? "destructive"
+          : "pending"
     : getQuoteStatusVariant(effectiveQuoteStatus);
 
   return (
@@ -263,9 +266,13 @@ export function QuoteDetailCard({
               </Button>
               <Badge variant={summaryStatusVariant}>
                 {showDecisionStatus
-                  ? decisionSummary.readyForDecision
-                    ? intl.formatMessage({ id: "quotes.summary.ready", defaultMessage: "Ready for decision" })
-                    : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" })
+                  ? decisionSummary.recommendation === "no_current_product_fit"
+                    ? intl.formatMessage({ id: "quotes.summary.noCurrentProductFit", defaultMessage: "No current product fit" })
+                    : decisionSummary.recommendation === "offer_available" && decisionSummary.readyForDecision
+                      ? intl.formatMessage({ id: "quotes.summary.ready", defaultMessage: "Ready for decision" })
+                      : decisionSummary.readyForDecision
+                        ? intl.formatMessage({ id: "quotes.summary.assessmentUnavailable", defaultMessage: "Assessment unavailable" })
+                        : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" })
                   : intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
               </Badge>
             </div>
@@ -313,60 +320,33 @@ export function QuoteDetailCard({
             <section className="border-t border-border bg-elevation-100 px-6 py-5 lg:border-t-0 lg:border-l">
               <h3 className="text-sm font-semibold">
                 {intl.formatMessage({
-                  id: "quotes.summary.decisionStatus",
-                  defaultMessage: "Decision status",
-                  description: "Heading for the compact operator decision status",
+                  id: "quotes.summary.assessment",
+                  defaultMessage: "Assessment",
+                  description: "Heading for the compact operator assessment summary",
                 })}
               </h3>
-              <div className="mt-4 flex items-start gap-3">
-                {positiveDecisionOutcome || (!decisionPhaseComplete && decisionSummary.readyForDecision) ? (
-                  <CircleCheck className="mt-0.5 size-5 shrink-0 text-signal-success" aria-hidden="true" />
-                ) : (
-                  <CircleAlert className="mt-0.5 size-5 shrink-0 text-signal-alert" aria-hidden="true" />
+              <p className="mt-4 text-sm font-medium">
+                {intl.formatMessage(
+                  {
+                    id: "quotes.summary.policyChecks",
+                    defaultMessage: "Policy checks: {passed}/{total} passed",
+                    description: "Compact count of policy checks in the operator assessment summary",
+                  },
+                  { passed: decisionSummary.passedChecks, total: decisionSummary.totalChecks }
                 )}
-                <div>
-                  <p className="text-sm font-semibold">
-                    {decisionPhaseComplete
-                      ? intl.formatMessage({
-                          id: "quotes.summary.decisionPhaseComplete",
-                          defaultMessage: "Decision phase complete",
-                          description: "Compact status after a quote is no longer awaiting a Mint operator decision",
-                        })
-                      : decisionSummary.readyForDecision
-                        ? intl.formatMessage({ id: "quotes.summary.ready", defaultMessage: "Ready for decision" })
-                        : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" })}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {decisionPhaseComplete
-                      ? intl.formatMessage({
-                          id: "quotes.summary.decisionPhaseCompleteExplanation",
-                          defaultMessage: "This case is no longer awaiting an operator decision. Evidence remains available for audit.",
-                          description: "Compact explanation after a quote leaves the operator decision phase",
-                        })
-                      : decisionSummary.readyForDecision
-                        ? intl.formatMessage(
-                            {
-                              id: "quotes.summary.readyExplanation",
-                              defaultMessage: "{passed}/{total} policy checks passed. Evidence and applicant declarations are complete.",
-                              description: "Compact explanation that a governed case is ready for an operator decision",
-                            },
-                            { passed: decisionSummary.passedChecks, total: decisionSummary.totalChecks }
-                          )
-                        : intl.formatMessage(
-                            {
-                              id: "quotes.summary.verificationExplanation",
-                              defaultMessage: "{passed}/{total} policy checks passed. {count} items still require verification.",
-                              description: "Compact explanation that a governed case still needs verification",
-                            },
-                            {
-                              passed: decisionSummary.passedChecks,
-                              total: decisionSummary.totalChecks,
-                              count: decisionSummary.failedChecks + decisionSummary.notAssessedChecks,
-                            }
-                          )}
-                  </p>
-                </div>
-              </div>
+              </p>
+              {!decisionSummary.readyForDecision && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {intl.formatMessage(
+                    {
+                      id: "quotes.summary.verificationCount",
+                      defaultMessage: "{count, plural, one {# item needs verification} other {# items need verification}}",
+                      description: "Compact count of assessment items that still need verification",
+                    },
+                    { count: decisionSummary.failedChecks + decisionSummary.notAssessedChecks }
+                  )}
+                </p>
+              )}
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <Badge
                   variant={
@@ -390,12 +370,12 @@ export function QuoteDetailCard({
                         decisionSummary.hasMintPolicyAssignment
                       ? intl.formatMessage({
                           id: "quotes.summary.verifiedMintSources",
-                          defaultMessage: "Verified Mint sources",
+                          defaultMessage: "Risk data verified",
                           description: "Badge stating that policy, risk and capacity records are bound and signature-verified",
                         })
                       : intl.formatMessage({
                           id: "quotes.summary.mintEvidenceUnavailable",
-                          defaultMessage: "Underwriting evidence incomplete",
+                          defaultMessage: "Risk data missing",
                           description: "Badge warning that admissible or verified Mint underwriting evidence is incomplete",
                         })}
                 </Badge>
@@ -413,7 +393,7 @@ export function QuoteDetailCard({
           <p className="px-6 py-5 text-sm text-muted-foreground">
             {intl.formatMessage({
               id: "quotes.summary.unavailable",
-              defaultMessage: "No governed business assessment is available for this quote.",
+              defaultMessage: "No business assessment is available for this quote.",
             })}
           </p>
         )}

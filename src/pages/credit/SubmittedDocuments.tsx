@@ -24,11 +24,6 @@ const messages = defineMessages({
       "{documents, plural, one {# submitted document} other {# submitted documents}} · {claims, plural, one {# cited claim} other {# cited claims}}",
     description: "Compact count of documents and source-cited extracted claims",
   },
-  clear: {
-    id: "credit.submittedEvidence.clear",
-    defaultMessage: "No evidence requests outstanding",
-    description: "Badge when the governed decision has no outstanding evidence request",
-  },
   requests: {
     id: "credit.submittedEvidence.requests",
     defaultMessage: "{count, plural, one {# verification request} other {# verification requests}}",
@@ -41,8 +36,7 @@ const messages = defineMessages({
   },
   warning: {
     id: "credit.evidencePacket.warning",
-    defaultMessage:
-      "Machine extraction surfaces source-backed statements for review. It does not establish authenticity, truth, legal effect, or creditworthiness.",
+    defaultMessage: "Extracted text only — verify against the PDF.",
     description: "Plain-language boundary for machine-extracted evidence statements",
   },
   origin: { id: "credit.evidencePacket.origin", defaultMessage: "Origin", description: "Label for evidence origin" },
@@ -63,8 +57,7 @@ const messages = defineMessages({
   },
   clientBillWarning: {
     id: "credit.evidencePacket.clientBillWarning",
-    defaultMessage:
-      "Attachment integrity only: these exact bytes were found in this Mint quote's bill attachments. The document itself is not signed or bound to a signed eBill revision.",
+    defaultMessage: "Attachment bytes match this quote. Document authenticity is not verified.",
     description: "Warning about browser-asserted bill attachment provenance",
   },
   digest: { id: "credit.evidencePacket.digest", defaultMessage: "Server digest", description: "Label for server-computed evidence digest" },
@@ -150,11 +143,6 @@ const messages = defineMessages({
     defaultMessage: "Extracted at",
     description: "Label for the extraction timestamp",
   },
-  extractionWarning: {
-    id: "credit.evidencePacket.extractionWarning",
-    defaultMessage: "Machine-extracted from the cited source text; not independently verified.",
-    description: "Compact warning that extracted statements have no independent authority",
-  },
   extractionUnavailable: {
     id: "credit.evidencePacket.extractionUnavailable",
     defaultMessage: "No extraction proposal. Human review is required; absence is not an adverse finding.",
@@ -162,23 +150,8 @@ const messages = defineMessages({
   },
   supportingUnavailable: {
     id: "credit.evidencePacket.supportingUnavailable",
-    defaultMessage: "No extraction proposal. This supporting document was not used by the current governed assessment.",
-    description: "Explanation for supporting evidence without extraction that is outside the current governed assessment",
-  },
-  decisionRelevance: {
-    id: "credit.evidencePacket.decisionRelevance",
-    defaultMessage: "How it is used",
-    description: "Heading explaining whether a document affects the current governed assessment",
-  },
-  governedUse: {
-    id: "credit.evidencePacket.governedUse",
-    defaultMessage: "This document feeds the governed invoice-to-eBill checks shown below.",
-    description: "Explanation for evidence used by the current governed decision",
-  },
-  supportingUse: {
-    id: "credit.evidencePacket.supportingUse",
-    defaultMessage: "Available to the operator for context. It does not affect the current automated decision.",
-    description: "Explanation for supporting evidence outside current governed decision rules",
+    defaultMessage: "Not analyzed for this decision.",
+    description: "Explanation for supporting evidence without extraction",
   },
   pendingAnalysis: {
     id: "credit.evidencePacket.pendingAnalysis",
@@ -368,11 +341,9 @@ export function SubmittedDocuments({
             {intl.formatMessage(messages.summary, { documents: submittedEvidence.length, claims: citedClaimCount })}
           </p>
         </div>
-        <Badge variant={verificationRequests.length === 0 ? "success" : "pending"}>
-          {intl.formatMessage(verificationRequests.length === 0 ? messages.clear : messages.requests, {
-            count: verificationRequests.length,
-          })}
-        </Badge>
+        {verificationRequests.length > 0 && (
+          <Badge variant="pending">{intl.formatMessage(messages.requests, { count: verificationRequests.length })}</Badge>
+        )}
       </div>
       {verificationRequests.length > 0 && (
         <div className="rounded-lg border border-signal-alert/40 bg-signal-alert/5 p-3">
@@ -453,12 +424,6 @@ export function SubmittedDocuments({
                   {intl.formatMessage(messages.clientBillWarning)}
                 </p>
               )}
-              <section className="rounded-md bg-elevation-100 p-3">
-                <h4 className="font-medium">{intl.formatMessage(messages.decisionRelevance)}</h4>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {intl.formatMessage(isDecisionEvidence ? messages.governedUse : messages.supportingUse)}
-                </p>
-              </section>
               {isDecisionEvidence && invoiceAssessment && (
                 <section>
                   <h4 className="mb-2 font-medium">{intl.formatMessage(messages.decisionChecks)}</h4>
@@ -487,10 +452,7 @@ export function SubmittedDocuments({
                 </p>
               ) : claimGroups.length > 0 ? (
                 <section>
-                  <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                    <h4 className="font-medium">{intl.formatMessage(messages.extractedFields)}</h4>
-                    <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.extractionWarning)}</p>
-                  </div>
+                  <h4 className="mb-2 font-medium">{intl.formatMessage(messages.extractedFields)}</h4>
                   <div className="space-y-2">
                     {claimGroups.map((group) =>
                       group.collapsed ? (
