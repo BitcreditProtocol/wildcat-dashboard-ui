@@ -32,8 +32,8 @@ const messages = defineMessages({
   },
   saidCaption: {
     id: "credit.said.caption",
-    defaultMessage: "The same summary the applicant reviewed before submitting. No chat transcript is stored.",
-    description: "Caption explaining that this mirrors the applicant confirmation without storing a transcript",
+    defaultMessage: "Confirmed before submission.",
+    description: "Caption for the applicant-confirmed application",
   },
   saidUse: { id: "credit.said.use", defaultMessage: "What the money is for", description: "Applicant-reviewed use-of-funds label" },
   saidAcceptor: {
