@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { AppIcon, Button, toast } from "@bitcredit/ui-library";
+import { Badge } from "@/components/ui/badge";
 import { getEbillOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen";
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer";
@@ -30,7 +31,7 @@ import {
 } from "@/pages/credit/record-operator-decision";
 import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
 import { ApplicantHumanReviewCard } from "@/pages/credit/ApplicantHumanReviewCard";
-import type { OperatorMaterialEvidenceSelection } from "@/pages/credit/decision-types";
+import type { MintQuoteDenialStatus, OperatorMaterialEvidenceSelection } from "@/pages/credit/decision-types";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -115,6 +116,12 @@ export function QuoteActions({
   const recordedGovernance = useRef<{ key: string; result: OperatorDecisionSuccess } | undefined>(undefined);
   const mintActionInFlight = useRef(false);
   const [isGovernancePending, setIsGovernancePending] = useState(false);
+  const [recordedMintDenial, setRecordedMintDenial] = useState<{
+    billId: string;
+    caseId: string;
+    mintQuoteId: string;
+    status: MintQuoteDenialStatus;
+  }>();
 
   const denyTitle = intl.formatMessage({
     id: "quotes.actions.deny.title",
@@ -137,7 +144,30 @@ export function QuoteActions({
     defaultMessage: "Offer",
   });
   const hasApplicantHumanReview = decisionCase?.applicantHumanReview !== undefined;
-  const showPendingActions = effectiveQuoteStatus === "Pending" && !hasApplicantHumanReview;
+  const retainedMintDenial =
+    recordedMintDenial?.billId === billId &&
+    recordedMintDenial.mintQuoteId === value.id &&
+    (decisionCase === undefined || recordedMintDenial.caseId === decisionCase.snapshot.caseId)
+      ? recordedMintDenial.status
+      : undefined;
+  const workbenchMintDenial = decisionCase?.mintDenial;
+  const mintDenial =
+    retainedMintDenial !== undefined &&
+    workbenchMintDenial !== undefined &&
+    retainedMintDenial.operationId !== workbenchMintDenial.operationId
+      ? retainedMintDenial
+      : (workbenchMintDenial ?? retainedMintDenial);
+  const showPendingActions = effectiveQuoteStatus === "Pending" && !hasApplicantHumanReview && mintDenial === undefined;
+  useEffect(() => {
+    if (decisionCase?.mintDenial === undefined) return;
+    const workbenchStatus = decisionCase.mintDenial;
+    const caseId = decisionCase.snapshot.caseId;
+    setRecordedMintDenial((current) => {
+      const sameContext = current?.billId === billId && current.caseId === caseId && current.mintQuoteId === value.id;
+      if (sameContext && current.status.operationId !== workbenchStatus.operationId) return current;
+      return { billId, caseId, mintQuoteId: value.id, status: workbenchStatus };
+    });
+  }, [billId, decisionCase?.mintDenial, decisionCase?.snapshot.caseId, value.id]);
   useEffect(() => {
     if (!hasApplicantHumanReview) return;
     governanceGeneration.current += 1;
@@ -229,15 +259,13 @@ export function QuoteActions({
             description: "Explanation shown when an older assessment lacks the Mint-owned quote-to-program binding",
           });
   const showRequestToPayAction =
+    mintDenial === undefined &&
     (effectiveQuoteStatus === "Accepted" || effectiveQuoteStatus === "MintingEnabled") &&
     "keyset_id" in value &&
     ebill &&
     !ebillPaidEff &&
     !requestedToPayEff;
-  const { denyQuote, offerQuote, requestToPayMutation, handleDenyQuote, handleOfferQuote, handleRequestToPay } = useQuoteMutations(
-    value.id,
-    billId
-  );
+  const { offerQuote, requestToPayMutation, handleOfferQuote, handleRequestToPay } = useQuoteMutations(value.id, billId);
   const governanceFailed = (error: string) => {
     toast({
       title: intl.formatMessage(
@@ -263,20 +291,24 @@ export function QuoteActions({
     });
   };
   const recordGovernance = async (input: OfferFormResult["governance"]): Promise<OperatorDecisionSuccess | null> => {
+    const currentDecisionCase = decisionCase;
+    const assessmentUnavailable = intl.formatMessage({
+      id: "quotes.toast.governance.assessmentUnavailable",
+      defaultMessage: "The governed assessment is unavailable or changed",
+      description: "Error shown when a stale operator drawer can no longer be bound to the current governed assessment",
+    });
+    if (currentDecisionCase === undefined) {
+      governanceFailed(assessmentUnavailable);
+      return null;
+    }
     if (
       isCreditAssessmentUnavailable ||
       !hasQuoteBoundCreditProgram ||
       hasApplicantHumanReview ||
-      input.caseId !== decisionCase?.snapshot.caseId ||
-      input.decisionResultDigest !== decisionCase?.resultDigest
+      input.caseId !== currentDecisionCase.snapshot.caseId ||
+      input.decisionResultDigest !== currentDecisionCase.resultDigest
     ) {
-      governanceFailed(
-        intl.formatMessage({
-          id: "quotes.toast.governance.assessmentUnavailable",
-          defaultMessage: "The governed assessment is unavailable or changed",
-          description: "Error shown when a stale operator drawer can no longer be bound to the current governed assessment",
-        })
-      );
+      governanceFailed(assessmentUnavailable);
       return null;
     }
     if (!operatorMayRecordDecision(operatorCapability.capability, input.action)) {
@@ -290,7 +322,10 @@ export function QuoteActions({
     setIsGovernancePending(true);
     const generation = governanceGeneration.current;
     try {
-      const recorded = await recordOperatorDecision(input, operatorCapability.capability);
+      const recorded = await recordOperatorDecision(input, operatorCapability.capability, {
+        mintQuoteId: value.id,
+        mintId: currentDecisionCase.snapshot.mintId,
+      });
       if (generation !== governanceGeneration.current) return null;
       if (recorded.ok) recordedGovernance.current = { key: inputKey, result: recorded };
       else governanceFailed(recorded.error);
@@ -302,6 +337,12 @@ export function QuoteActions({
       governanceInFlight.current = false;
       setIsGovernancePending(false);
     }
+  };
+  const rememberMintDenial = (status: MintQuoteDenialStatus) => {
+    if (decisionCase === undefined) return;
+    setRecordedMintDenial({ billId, caseId: decisionCase.snapshot.caseId, mintQuoteId: value.id, status });
+    recordedGovernance.current = undefined;
+    void queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
   };
   const submitGovernedDeny = async (writtenBasis: string, materialEvidence: OperatorMaterialEvidenceSelection[]) => {
     if (decisionCase === undefined || mintActionInFlight.current) return;
@@ -320,11 +361,8 @@ export function QuoteActions({
         materialEvidence: confirmsNoFit ? [] : materialEvidence,
       });
       if (recorded === null) return;
-      if (!(await handleDenyQuote())) {
-        mintUpdateFailed();
-        return;
-      }
-      recordedGovernance.current = undefined;
+      if (recorded.mintDenial === undefined) return;
+      rememberMintDenial(recorded.mintDenial);
       setDenyConfirmDrawerOpen(false);
     } finally {
       mintActionInFlight.current = false;
@@ -480,13 +518,9 @@ export function QuoteActions({
       requiredItems: requiredVerificationItems,
     });
     if (recorded === null) return;
-    if (!(await handleDenyQuote())) {
-      mintUpdateFailed();
-      return;
-    }
-    recordedGovernance.current = undefined;
+    if (recorded.mintDenial === undefined) return;
+    rememberMintDenial(recorded.mintDenial);
     setUnableToAssessDrawerOpen(false);
-    void queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
   };
   const retryVerificationSources = async () => {
     if (decisionCase === undefined) return;
@@ -516,6 +550,24 @@ export function QuoteActions({
 
   return (
     <>
+      {mintDenial === undefined ? null : (
+        <div role="status" className="flex items-center gap-2 text-sm">
+          <Badge variant={mintDenial.state === "syncing" ? "pending" : "success"}>
+            {mintDenial.state === "syncing"
+              ? intl.formatMessage({
+                  id: "quotes.actions.denial.syncing",
+                  defaultMessage: "Denial syncing with Mint",
+                  description: "Status shown while the governed denial outbox is being delivered to the Mint",
+                })
+              : intl.formatMessage({
+                  id: "quotes.actions.denial.completed",
+                  defaultMessage: "Mint denial completed",
+                  description: "Status shown after the Mint durably completed the governed quote denial",
+                })}
+          </Badge>
+          {mintDenial.state === "syncing" && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
+        </div>
+      )}
       {showPendingActions || showRequestToPayAction ? (
         <div className="flex items-center gap-2">
           {showPendingActions && decisionCase?.result.assessmentStatus === "ready_for_decision" && (
@@ -524,22 +576,19 @@ export function QuoteActions({
               materialEvidenceOptions={declineMaterialEvidenceOptions}
               open={denyConfirmDrawerOpen}
               requireMaterialEvidence={denyAction === "decline_application"}
-              onOpenChange={(open) => {
-                if (!open && denyQuote.isPending) return;
-                setDenyConfirmDrawerOpen(open);
-              }}
-              isPending={isGovernancePending || denyQuote.isPending}
+              onOpenChange={setDenyConfirmDrawerOpen}
+              isPending={isGovernancePending}
               onSubmit={(writtenBasis, materialEvidence) => {
                 void submitGovernedDeny(writtenBasis, materialEvidence);
               }}
             >
               <Button
                 className="flex-1 max-w-sm"
-                disabled={isFetching || denyQuote.isPending || isGovernancePending || !denyGovernanceAvailable}
+                disabled={isFetching || isGovernancePending || !denyGovernanceAvailable}
                 title={denyGovernanceAvailable ? undefined : denyUnavailableReason}
                 variant="destructive"
               >
-                {denyButtonLabel} {denyQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
+                {denyButtonLabel} {isGovernancePending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
               </Button>
             </DenyConfirmDrawer>
           )}
@@ -667,12 +716,12 @@ export function QuoteActions({
               requiredItems={requiredVerificationItems}
               open={unableToAssessDrawerOpen}
               onOpenChange={setUnableToAssessDrawerOpen}
-              isPending={isGovernancePending || denyQuote.isPending}
+              isPending={isGovernancePending}
               onSubmit={(writtenBasis) => void submitUnableToAssess(writtenBasis)}
             >
               <Button
                 className="flex-1 max-w-sm"
-                disabled={isFetching || isGovernancePending || denyQuote.isPending || !mayCloseUnableToAssess}
+                disabled={isFetching || isGovernancePending || !mayCloseUnableToAssess}
                 variant="destructive"
               >
                 {intl.formatMessage({

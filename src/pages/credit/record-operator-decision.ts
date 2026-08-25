@@ -1,5 +1,6 @@
 import { authenticatedFetch } from "@/lib/api-client";
-import type { OperatorMaterialEvidenceSelection } from "./decision-types";
+import type { MintQuoteDenialStatus, OperatorMaterialEvidenceSelection } from "./decision-types";
+import { parseMintDenialStatus } from "./parse-decision-cases";
 
 /** Records the governed operator judgement before the corresponding Mint action. */
 export type OperatorDecisionAction =
@@ -124,6 +125,7 @@ export function verifiedAuthorizationReceiptOf(value: SignedOfferAuthorization):
 export interface OperatorDecisionSuccess {
   ok: true;
   signedAuthorization?: SignedOfferAuthorization;
+  mintDenial?: MintQuoteDenialStatus;
 }
 
 export function signedAuthorizationMatchesOffer(
@@ -344,7 +346,8 @@ export async function recordApplicantHumanReviewUpdate(
 
 export async function recordOperatorDecision(
   input: OperatorDecisionInput,
-  capability: OperatorCapability | undefined
+  capability: OperatorCapability | undefined,
+  expectedMint?: { mintQuoteId: string; mintId: string }
 ): Promise<OperatorDecisionSuccess | { ok: false; error: string }> {
   if (!operatorMayRecordDecision(capability, input.action) || capability === undefined) {
     return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
@@ -366,6 +369,10 @@ export async function recordOperatorDecision(
       return { ok: false, error: "The AI Credit operator service returned an invalid decision response" };
     }
     const offerDecision = input.action === "confirm_proposed_quote" || input.action === "propose_adjustment_and_requote";
+    const denialDecision =
+      input.action === "decline_application" ||
+      input.action === "confirm_no_current_product_fit" ||
+      input.action === "close_unable_to_assess";
     const carriesAuthorization = body.signedAuthorization !== undefined;
     const authorization = isSignedOfferAuthorization(body.signedAuthorization) ? body.signedAuthorization : undefined;
     if (offerDecision && authorization === undefined) {
@@ -374,7 +381,27 @@ export async function recordOperatorDecision(
     if (!offerDecision && carriesAuthorization) {
       return { ok: false, error: "The AI Credit operator service signed a non-offer decision" };
     }
-    return authorization === undefined ? { ok: true } : { ok: true, signedAuthorization: authorization };
+    let mintDenial: MintQuoteDenialStatus | undefined;
+    try {
+      if (denialDecision) {
+        if (expectedMint === undefined || body.caseId !== input.caseId || body.action !== input.action) {
+          throw new Error("unbound denial response");
+        }
+        mintDenial = parseMintDenialStatus(body.mintDenial, {
+          caseId: input.caseId,
+          mintQuoteId: expectedMint.mintQuoteId,
+          billId: input.billId,
+          mintId: expectedMint.mintId,
+        });
+        if (mintDenial === undefined) throw new Error("missing denial status");
+      } else if (body.mintDenial !== undefined) {
+        throw new Error("unexpected denial status");
+      }
+    } catch {
+      return { ok: false, error: "The AI Credit operator service returned an invalid Mint denial status" };
+    }
+    if (authorization !== undefined) return { ok: true, signedAuthorization: authorization };
+    return mintDenial === undefined ? { ok: true } : { ok: true, mintDenial };
   } catch {
     return { ok: false, error: "The AI Credit operator service is not reachable" };
   }

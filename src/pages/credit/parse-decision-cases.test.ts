@@ -6,6 +6,7 @@ const POLICY_DIGEST = `sha256:${"b".repeat(64)}`;
 const RESULT_DIGEST = `sha256:${"c".repeat(64)}`;
 const PROGRAM_DIGEST = `sha256:${"e".repeat(64)}`;
 const ASSIGNMENT_DIGEST = `sha256:${"f".repeat(64)}`;
+const DENIAL_OPERATION_ID = `sha256:${"1".repeat(64)}`;
 
 function parseDecisionCasesResponse(value: unknown) {
   return parseVersionedDecisionCasesResponse(
@@ -190,6 +191,27 @@ function validCase() {
   };
 }
 
+function completedMintDenial() {
+  return {
+    state: "completed",
+    operationId: DENIAL_OPERATION_ID,
+    receipt: {
+      receiptVersion: "credit-authorization-receipt-v1",
+      operationId: DENIAL_OPERATION_ID,
+      authorizationDigest: `sha256:${"2".repeat(64)}`,
+      caseId: "case-a",
+      status: "completed",
+      mintId: "mint-a",
+      billId: "bill-a",
+      action: "deny_governed_quote",
+      effectId: "quote-a",
+      resultDigest: `sha256:${"3".repeat(64)}`,
+      completedAt: "2026-08-25T12:00:00.000Z",
+      synthetic: true,
+    },
+  } as const;
+}
+
 describe("parseDecisionCasesResponse", () => {
   it("accepts an empty response and a fully bound governed offer", () => {
     expect(parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v1", cases: [] })).toEqual({ cases: [] });
@@ -201,6 +223,30 @@ describe("parseDecisionCasesResponse", () => {
       "invalid governed decision response"
     );
     expect(() => parseVersionedDecisionCasesResponse({ cases: [] })).toThrow("invalid governed decision response");
+  });
+
+  it("accepts only exact Mint denial states bound to the displayed case, quote, bill and operation", () => {
+    const decisionCase = validCase();
+    const syncing = { state: "syncing", operationId: DENIAL_OPERATION_ID } as const;
+    const completed = completedMintDenial();
+
+    expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, mintDenial: syncing }] })).toEqual({
+      cases: [{ ...decisionCase, mintDenial: syncing }],
+    });
+    expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, mintDenial: completed }] })).toEqual({
+      cases: [{ ...decisionCase, mintDenial: completed }],
+    });
+
+    for (const mintDenial of [
+      { ...syncing, extra: true },
+      { ...completed, receipt: { ...completed.receipt, caseId: "case-b" } },
+      { ...completed, receipt: { ...completed.receipt, effectId: "quote-b" } },
+      { ...completed, receipt: { ...completed.receipt, billId: "bill-b" } },
+      { ...completed, receipt: { ...completed.receipt, action: "request_to_mint" } },
+      { ...completed, receipt: { ...completed.receipt, operationId: `sha256:${"4".repeat(64)}` } },
+    ]) {
+      expect(() => parseDecisionCasesResponse({ cases: [{ ...decisionCase, mintDenial }] })).toThrow("invalid governed decision response");
+    }
   });
 
   it("accepts only a second-review request bound to the displayed decision", () => {

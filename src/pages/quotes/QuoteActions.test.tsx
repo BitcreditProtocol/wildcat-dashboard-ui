@@ -387,6 +387,26 @@ const signedAuthorization = {
   signatureAlgorithm: "Ed25519",
   signature: "synthetic-signature",
 } satisfies SignedOfferAuthorization;
+const DENIAL_OPERATION_ID = `sha256:${"1".repeat(64)}`;
+const syncingMintDenial = { state: "syncing", operationId: DENIAL_OPERATION_ID } as const;
+const completedMintDenial = {
+  state: "completed",
+  operationId: DENIAL_OPERATION_ID,
+  receipt: {
+    receiptVersion: "credit-authorization-receipt-v1",
+    operationId: DENIAL_OPERATION_ID,
+    authorizationDigest: `sha256:${"2".repeat(64)}`,
+    caseId: "case-no-fit",
+    status: "completed",
+    mintId: "mint-demo",
+    billId: "bill-1",
+    action: "deny_governed_quote",
+    effectId: "quote-1",
+    resultDigest: `sha256:${"3".repeat(64)}`,
+    completedAt: "2026-08-25T12:00:00.000Z",
+    synthetic: true,
+  },
+} as const;
 
 function renderComponent(value = acceptedQuote, onAuthorizationVerified?: (receipt: VerifiedAuthorizationReceipt) => void) {
   const mount = document.createElement("div");
@@ -446,7 +466,9 @@ beforeEach(() => {
     Promise.resolve(
       input.action === "confirm_proposed_quote" || input.action === "propose_adjustment_and_requote"
         ? { ok: true, signedAuthorization }
-        : { ok: true }
+        : input.action === "return_for_information"
+          ? { ok: true }
+          : { ok: true, mintDenial: syncingMintDenial }
     )
   );
   mockHandleDenyQuote.mockResolvedValue(true);
@@ -914,7 +936,9 @@ describe("QuoteActions", () => {
 
   it("governs no-fit denial and fails closed", async () => {
     decisionCase = governedNoFit;
-    mockRecordOperatorDecision.mockResolvedValueOnce({ ok: false, error: "adapter unavailable" }).mockResolvedValueOnce({ ok: true });
+    mockRecordOperatorDecision
+      .mockResolvedValueOnce({ ok: false, error: "adapter unavailable" })
+      .mockResolvedValueOnce({ ok: true, mintDenial: syncingMintDenial });
     const page = renderComponent(pendingQuote);
 
     expect(page.textContent).toContain("Deny");
@@ -938,7 +962,27 @@ describe("QuoteActions", () => {
       writtenBasis: "Reviewed the deterministic no-fit result and confirmed it.",
       materialEvidence: [],
     });
-    expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
+    expect(mockHandleDenyQuote).not.toHaveBeenCalled();
+    expect(page.textContent).toContain("Denial syncing with Mint");
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["ai-credit", "decisions"] });
+
+    decisionCase = {
+      ...governedNoFit,
+      mintDenial: {
+        ...completedMintDenial,
+        operationId: `sha256:${"4".repeat(64)}`,
+        receipt: { ...completedMintDenial.receipt, operationId: `sha256:${"4".repeat(64)}` },
+      },
+    };
+    rerenderComponent(pendingQuote);
+    expect(page.textContent).toContain("Denial syncing with Mint");
+    expect(page.textContent).not.toContain("Mint denial completed");
+
+    decisionCase = { ...governedNoFit, mintDenial: completedMintDenial };
+    rerenderComponent(pendingQuote);
+    expect(page.textContent).toContain("Mint denial completed");
+    expect(page.textContent).not.toContain("Offer");
+    expect(page.textContent).not.toContain("Deny");
   });
 
   it("shows and governs Deny for an available offer", async () => {
@@ -959,7 +1003,8 @@ describe("QuoteActions", () => {
       writtenBasis: "Reviewed the governed offer and declined this application.",
       materialEvidence: [{ kind: "submitted_document", reference: "invoice-a" }],
     });
-    expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
+    expect(mockHandleDenyQuote).not.toHaveBeenCalled();
+    expect(offerPage.textContent).toContain("Denial syncing with Mint");
   });
 
   it("shows fail-closed Deny and governs Return for information with the named verification items", async () => {
@@ -1048,7 +1093,8 @@ describe("QuoteActions", () => {
         requiredItems: ["Current governed acceptor probability of default and loss given default"],
       })
     );
-    expect(mockHandleDenyQuote).toHaveBeenCalledOnce();
+    expect(mockHandleDenyQuote).not.toHaveBeenCalled();
+    expect(page.textContent).toContain("Denial syncing with Mint");
   });
 
   it("imports a signed Mint capacity snapshot instead of offering a blind retry", async () => {

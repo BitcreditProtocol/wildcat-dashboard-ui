@@ -480,6 +480,8 @@
   "quote.status.Pending": "Pending",
   "quote.status.Rejected": "Rejected",
   "quotes.actions.creditProgram.unavailable": "A fresh Mint credit-program assignment is required before this quote can be acted on.",
+  "quotes.actions.denial.completed": "Mint denial completed",
+  "quotes.actions.denial.syncing": "Denial syncing with Mint",
   "quotes.actions.deny.button": "Deny",
   "quotes.actions.deny.evidenceUnavailable": "Deny is unavailable because the governed case has no current evidence the operator can cite.",
   "quotes.actions.deny.title": "Confirm denying quote",
