@@ -218,6 +218,25 @@ export interface CreditProgramAssignment {
   assignmentDigest: string;
 }
 
+export interface MintQuoteDenialReceipt {
+  receiptVersion: "credit-authorization-receipt-v1";
+  operationId: string;
+  authorizationDigest: string;
+  caseId: string;
+  status: "completed";
+  mintId: string;
+  billId: string;
+  action: "deny_governed_quote";
+  effectId: string;
+  resultDigest: string;
+  completedAt: string;
+  synthetic: true;
+}
+
+export type MintQuoteDenialStatus =
+  | { state: "syncing"; operationId: string }
+  | { state: "completed"; operationId: string; receipt: MintQuoteDenialReceipt };
+
 export interface DecisionCase {
   /** Exact Mint quote this assessment governs; null only for read-only synthetic fixtures. */
   mintQuoteId: string | null;
@@ -284,6 +303,7 @@ export interface DecisionCase {
   /** Server-listed evidence an operator may select for a discretionary decline. */
   availableMaterialEvidence?: ApplicantMaterialEvidence[];
   applicantHumanReview?: ApplicantHumanReviewRecord;
+  mintDenial?: MintQuoteDenialStatus;
 }
 
 /** Domain codes are rendered as humanized English, matching the rest of this synthetic view. */
