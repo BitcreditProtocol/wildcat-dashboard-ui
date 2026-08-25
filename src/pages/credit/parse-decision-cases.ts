@@ -11,6 +11,7 @@ import type {
   DecisionTerms,
   EvidenceCitation,
   EvidencePacket,
+  MintQuoteDenialStatus,
   ProposedEvidenceField,
   SubmittedEvidence,
   TraceValues,
@@ -75,6 +76,72 @@ const isDate = (value: unknown): value is string => {
 };
 const isDateTime = (value: unknown): value is string => isNonEmptyString(value) && !Number.isNaN(Date.parse(value));
 const isEvidenceState = (value: unknown): value is string => isString(value) && EVIDENCE_STATES.has(value);
+
+const hasExactKeys = (value: JsonObject, keys: readonly string[]): boolean =>
+  Object.keys(value).length === keys.length && keys.every((key) => Object.prototype.hasOwnProperty.call(value, key));
+
+export function parseMintDenialStatus(
+  value: unknown,
+  expected: { caseId: string; mintQuoteId: string; billId: string; mintId: string }
+): MintQuoteDenialStatus | undefined {
+  if (value === undefined) return undefined;
+  if (!isObject(value) || !isDigest(value.operationId)) throw new Error("AI Credit returned an invalid Mint denial status");
+  if (value.state === "syncing" && hasExactKeys(value, ["state", "operationId"])) {
+    return { state: "syncing", operationId: value.operationId };
+  }
+  const receipt = value.receipt;
+  if (
+    value.state !== "completed" ||
+    !hasExactKeys(value, ["state", "operationId", "receipt"]) ||
+    !isObject(receipt) ||
+    !hasExactKeys(receipt, [
+      "receiptVersion",
+      "operationId",
+      "authorizationDigest",
+      "caseId",
+      "status",
+      "mintId",
+      "billId",
+      "action",
+      "effectId",
+      "resultDigest",
+      "completedAt",
+      "synthetic",
+    ]) ||
+    receipt.receiptVersion !== "credit-authorization-receipt-v1" ||
+    receipt.operationId !== value.operationId ||
+    !isDigest(receipt.authorizationDigest) ||
+    receipt.caseId !== expected.caseId ||
+    receipt.status !== "completed" ||
+    receipt.mintId !== expected.mintId ||
+    receipt.billId !== expected.billId ||
+    receipt.action !== "deny_governed_quote" ||
+    receipt.effectId !== expected.mintQuoteId ||
+    !isDigest(receipt.resultDigest) ||
+    !isDateTime(receipt.completedAt) ||
+    receipt.synthetic !== true
+  ) {
+    throw new Error("AI Credit returned an invalid Mint denial status");
+  }
+  return {
+    state: "completed",
+    operationId: value.operationId,
+    receipt: {
+      receiptVersion: receipt.receiptVersion,
+      operationId: receipt.operationId,
+      authorizationDigest: receipt.authorizationDigest,
+      caseId: receipt.caseId,
+      status: receipt.status,
+      mintId: receipt.mintId,
+      billId: receipt.billId,
+      action: receipt.action,
+      effectId: receipt.effectId,
+      resultDigest: receipt.resultDigest,
+      completedAt: receipt.completedAt,
+      synthetic: receipt.synthetic,
+    },
+  };
+}
 
 function isArrayOf<T>(value: unknown, predicate: (item: unknown) => item is T): value is T[] {
   return Array.isArray(value) && value.every((item: unknown) => predicate(item));
@@ -631,11 +698,39 @@ function isDecisionCase(value: unknown): value is DecisionCase {
       (value.applicantHumanReview.request.caseId !== value.snapshot.caseId ||
         value.applicantHumanReview.request.contestedDecisionResultDigest !== value.resultDigest)) ||
     !hasMatchingDecisionBindings(value) ||
-    !hasMatchingCreditProgramBindings(value)
+    !hasMatchingCreditProgramBindings(value) ||
+    !hasMatchingMintDenial(value)
   ) {
     return false;
   }
   return true;
+}
+
+function hasMatchingMintDenial(value: JsonObject): boolean {
+  if (value.mintDenial === undefined) return true;
+  const snapshot = value.snapshot;
+  if (
+    !isObject(snapshot) ||
+    !isObject(snapshot.bill) ||
+    !isNonEmptyString(snapshot.caseId) ||
+    !isNonEmptyString(snapshot.bill.billId) ||
+    !isNonEmptyString(snapshot.mintId) ||
+    !isNonEmptyString(value.mintQuoteId)
+  ) {
+    return false;
+  }
+  try {
+    return (
+      parseMintDenialStatus(value.mintDenial, {
+        caseId: snapshot.caseId,
+        mintQuoteId: value.mintQuoteId,
+        billId: snapshot.bill.billId,
+        mintId: snapshot.mintId,
+      }) !== undefined
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function parseDecisionCasesResponse(value: unknown): DecisionCasesResponse {

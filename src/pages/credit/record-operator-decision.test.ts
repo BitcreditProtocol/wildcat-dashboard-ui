@@ -37,6 +37,26 @@ const signedAuthorization = {
   signatureAlgorithm: "Ed25519",
   signature: "synthetic-signature",
 } satisfies SignedOfferAuthorization;
+const DENIAL_OPERATION_ID = `sha256:${"1".repeat(64)}`;
+const expectedMint = { mintQuoteId: "quote-1", mintId: "mint-demo" };
+const completedMintDenial = {
+  state: "completed",
+  operationId: DENIAL_OPERATION_ID,
+  receipt: {
+    receiptVersion: "credit-authorization-receipt-v1",
+    operationId: DENIAL_OPERATION_ID,
+    authorizationDigest: `sha256:${"2".repeat(64)}`,
+    caseId: "case-1",
+    status: "completed",
+    mintId: "mint-demo",
+    billId: "bill-1",
+    action: "deny_governed_quote",
+    effectId: "quote-1",
+    resultDigest: `sha256:${"3".repeat(64)}`,
+    completedAt: "2026-08-25T12:00:00.000Z",
+    synthetic: true,
+  },
+} as const;
 
 function response(ok: boolean, status: number, body: unknown): Response {
   return { ok, status, json: () => Promise.resolve(body) } as Response;
@@ -272,21 +292,59 @@ describe("recordOperatorDecision", () => {
   });
 
   it("forwards only the selected material-evidence identities for a discretionary decline", async () => {
-    const fetch = vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1" }));
-    vi.stubGlobal("fetch", fetch);
     const materialEvidence = [{ kind: "submitted_document" as const, reference: "invoice-a" }];
-
     const decline = {
       ...command,
       action: "decline_application" as const,
       reasonCode: "operator_declined_governed_offer",
       materialEvidence,
     };
-    await expect(recordOperatorDecision(decline, approver)).resolves.toEqual({ ok: true });
+    const fetch = vi.fn().mockResolvedValue(
+      response(true, 200, {
+        schemaVersion: "ai-credit-operator-decision-response-v1",
+        caseId: decline.caseId,
+        action: decline.action,
+        mintDenial: completedMintDenial,
+      })
+    );
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(recordOperatorDecision(decline, approver, expectedMint)).resolves.toEqual({
+      ok: true,
+      mintDenial: completedMintDenial,
+    });
 
     const request = fetch.mock.calls[0]?.[1] as RequestInit;
     if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
     expect(request.body).toBe(JSON.stringify({ ...decline, materialEvidence, requiredItems: [] }));
+  });
+
+  it("fails closed on malformed or differently bound Mint denial responses", async () => {
+    const decline = { ...command, action: "decline_application" as const };
+    for (const body of [
+      { caseId: "case-2", action: decline.action, mintDenial: completedMintDenial },
+      { caseId: decline.caseId, action: "close_unable_to_assess", mintDenial: completedMintDenial },
+      { caseId: decline.caseId, action: decline.action, mintDenial: { state: "syncing", operationId: DENIAL_OPERATION_ID, extra: true } },
+      {
+        caseId: decline.caseId,
+        action: decline.action,
+        mintDenial: { ...completedMintDenial, receipt: { ...completedMintDenial.receipt, effectId: "quote-2" } },
+      },
+      {
+        caseId: decline.caseId,
+        action: decline.action,
+        mintDenial: { ...completedMintDenial, receipt: { ...completedMintDenial.receipt, operationId: `sha256:${"4".repeat(64)}` } },
+      },
+    ]) {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1", ...body }))
+      );
+      await expect(recordOperatorDecision(decline, approver, expectedMint)).resolves.toEqual({
+        ok: false,
+        error: "The AI Credit operator service returned an invalid Mint denial status",
+      });
+    }
   });
 
   it("fails closed when an Offer response has no valid signed authorization", async () => {
