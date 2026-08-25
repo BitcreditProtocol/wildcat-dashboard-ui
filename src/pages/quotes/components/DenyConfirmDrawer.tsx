@@ -96,8 +96,7 @@ export function DenyConfirmDrawer({
         isReturn
           ? intl.formatMessage({
               id: "quotes.returnForInformation.description",
-              defaultMessage:
-                "Record the verification items from the governed assessment. Applicant status is delivered separately and is not confirmed here.",
+              defaultMessage: "Record the missing information. The applicant is not notified from this screen.",
               description: "Confirmation description that records required information without claiming applicant delivery",
             })
           : isUnableToAssess
@@ -230,7 +229,7 @@ export function DenyConfirmDrawer({
         <p className="mt-1 text-xs text-muted-foreground">
           {intl.formatMessage({
             id: "quotes.deny.writtenBasis.help",
-            defaultMessage: "Required, at least 20 characters. This is stored with the governed decision.",
+            defaultMessage: "Required, at least 20 characters.",
             description: "Help text for the operator's written reason when denying a credit quote",
           })}
         </p>

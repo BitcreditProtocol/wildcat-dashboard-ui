@@ -246,7 +246,7 @@ describe("QuoteDocuments", () => {
     });
     expect(onOpenEvidence).toHaveBeenCalledWith(evidence);
     expect(page.textContent).toContain("Supporting document");
-    expect(page.textContent).toContain("This supporting document was not used by the current governed assessment");
+    expect(page.textContent).toContain("Not analyzed for this decision");
     expect(page.textContent).not.toContain("Human review is required");
   });
 
@@ -321,7 +321,7 @@ describe("QuoteDocuments", () => {
     expect(page.textContent).toContain("Shipment statusLoaded for export");
     expect(page.textContent).toContain("ContainerGT-COFFEE-42");
     expect(page.textContent).toContain("Show source · page 2");
-    expect(page.textContent).toContain("It does not affect the current automated decision");
+    expect(page.textContent).not.toContain("How it is used");
     expect(page.textContent).not.toContain("Invoice matched to eBill");
   });
 

@@ -222,7 +222,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       toast({
         title: intl.formatMessage({
           id: "quotes.toast.offer.invalidExpiry",
-          defaultMessage: "The offer expiry is outside the governed validity period. Review it before offering the quote.",
+          defaultMessage: "The offer expires after the assessment. Choose an earlier date.",
           description: "Error shown when a Mint offer would outlive its governed credit decision",
         }),
         variant: "error",
