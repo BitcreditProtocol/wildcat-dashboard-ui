@@ -1,5 +1,4 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@bitcredit/ui-library";
+import { Card } from "@bitcredit/ui-library";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -8,90 +7,30 @@ import { ApplicantClaims, InvoiceEvidence } from "./CaseEvidence";
 import { percentFromBps, words, type DecisionCase } from "./decision-types";
 
 const messages = defineMessages({
-  synthetic: { id: "credit.synthetic", defaultMessage: "Synthetic", description: "Badge marking synthetic fixture data" },
-  outcomeVerification: {
-    id: "credit.outcome.verification",
-    defaultMessage: "Verification required",
-    description: "Primary title when evidence is incomplete",
-  },
-  outcomeOffer: {
-    id: "credit.outcome.offer",
-    defaultMessage: "Offer recommended",
-    description: "Primary title when the deterministic core recommends offer terms",
-  },
-  outcomeNoFit: {
-    id: "credit.outcome.noFit",
-    defaultMessage: "No current product fit",
-    description: "Primary title when policy permits no offer",
-  },
-  outcomeUnknown: {
-    id: "credit.outcome.unknown",
-    defaultMessage: "Assessment unavailable",
-    description: "Primary title for a payload this build cannot safely understand",
-  },
-  verificationSummary: {
-    id: "credit.outcome.verificationSummary",
-    defaultMessage: "No quote can be issued until the requested evidence is verified.",
-    description: "Concise summary under a verification-required outcome",
-  },
-  noFitSummary: {
-    id: "credit.outcome.noFitSummary",
-    defaultMessage: "No offer is available under the active policy.",
-    description: "Concise summary under a no-current-product-fit outcome",
-  },
   unknownSummary: {
     id: "credit.outcome.unknownSummary",
-    defaultMessage: "This adapter cannot safely interpret the governed result. No action is available.",
-    description: "Fail-closed summary for an unreadable governed result",
+    defaultMessage: "This assessment cannot be read safely. No action is available.",
+    description: "Fail-closed summary for an unreadable assessment",
   },
-  withinPolicy: { id: "credit.outcome.withinPolicy", defaultMessage: "Within policy", description: "Offer outcome badge" },
-  blocked: { id: "credit.outcome.blocked", defaultMessage: "Blocked", description: "Verification outcome badge" },
   ownerApplicant: {
     id: "credit.verification.owner.applicant",
-    defaultMessage: "Owner: applicant · request supporting information",
+    defaultMessage: "Applicant · request supporting information",
     description: "Resolution owner and action for applicant-owned verification",
   },
   ownerMintRisk: {
     id: "credit.verification.owner.mintRisk",
-    defaultMessage: "Owner: Mint risk · record a current risk assessment",
+    defaultMessage: "Mint risk · record a current risk assessment",
     description: "Resolution owner and action for Mint risk verification",
   },
   ownerMintOperations: {
     id: "credit.verification.owner.mintOperations",
-    defaultMessage: "Owner: Mint operations · refresh the Mint source",
+    defaultMessage: "Mint operations · refresh the Mint source",
     description: "Resolution owner and action for Mint operations verification",
   },
   ownerSystem: {
     id: "credit.verification.owner.system",
-    defaultMessage: "Owner: system · retry the source check",
+    defaultMessage: "System · retry the source check",
     description: "Resolution owner and action for system verification",
-  },
-  noOffer: { id: "credit.outcome.noOffer", defaultMessage: "No offer", description: "No-fit outcome badge" },
-  unreadable: { id: "credit.outcome.unreadable", defaultMessage: "Unreadable", description: "Unreadable outcome badge" },
-  discounted: {
-    id: "credit.quote.discounted",
-    defaultMessage: "Recommended amount available for minting",
-    description: "Label for the net amount recommended by the deterministic core after fees",
-  },
-  mintQuoteAmount: {
-    id: "credit.quote.mintQuoteAmount",
-    defaultMessage: "Amount available for minting",
-    description: "Label for the net amount the Mint currently offers the bill holder after fees",
-  },
-  expires: {
-    id: "credit.quote.expires",
-    defaultMessage: "Recommendation valid until",
-    description: "Label for the governed recommendation expiry",
-  },
-  allInCost: {
-    id: "credit.quote.allInCost",
-    defaultMessage: "Minting fee",
-    description: "Total Minting fee including every fee component",
-  },
-  allInCostDetail: {
-    id: "credit.quote.allInCostDetail",
-    defaultMessage: "{rate} of bill amount over {tenor} days",
-    description: "Minting fee ratio and tenor beneath the fee",
   },
   annualizedCost: {
     id: "credit.fee.annualizedCost",
@@ -113,39 +52,24 @@ const messages = defineMessages({
     defaultMessage: "Repayment & recourse",
     description: "Heading above the repayment and contingent-recourse disclosure",
   },
-  checksPassed: {
-    id: "credit.signals.checksPassed",
-    defaultMessage: "{passed}/{total} checks passed",
-    description: "Compact count of passing deterministic axes",
-  },
-  invoiceMatch: {
-    id: "credit.signals.invoiceMatch",
-    defaultMessage: "Amount, date and currency match",
-    description: "Compact positive signal naming the invoice fields deterministically compared with the bill",
-  },
-  invoiceReview: {
-    id: "credit.signals.invoiceReview",
-    defaultMessage: "Invoice needs review",
-    description: "Compact non-positive invoice consistency signal",
-  },
   reviewDetails: {
     id: "credit.details.applicationReview",
-    defaultMessage: "Application & decision rationale",
+    defaultMessage: "Inputs and checks",
     description: "Expandable section containing applicant confirmation, invoice findings and deterministic checks",
   },
   reviewHint: {
     id: "credit.details.applicationReviewHint",
-    defaultMessage: "Applicant confirmation, reviewed invoice findings and six policy checks",
+    defaultMessage: "Applicant confirmation, invoice findings and policy checks",
     description: "Caption for the application and decision-rationale disclosure",
   },
   policyDetails: {
     id: "credit.details.policy",
-    defaultMessage: "Policy & audit trail",
+    defaultMessage: "Audit details",
     description: "Expandable section containing policy provenance and immutable identifiers",
   },
   feeDetails: {
     id: "credit.details.fee",
-    defaultMessage: "Recommendation calculation",
+    defaultMessage: "Fee calculation",
     description: "Expandable section containing the immutable deterministic recommendation calculation",
   },
   feeHint: {
@@ -323,7 +247,7 @@ const messages = defineMessages({
   },
   verification: {
     id: "credit.verification",
-    defaultMessage: "Required before a quote can be considered:",
+    defaultMessage: "Required before a decision:",
     description: "Heading above outstanding verification requests",
   },
   noFitReasons: {
@@ -359,133 +283,41 @@ const messages = defineMessages({
   },
 });
 
-function useDecisionOutcome(decisionCase: DecisionCase) {
+function DecisionException({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
   const intl = useIntl();
   const { result } = decisionCase;
-
-  if (result.assessmentStatus === "blocked_pending_verification") {
-    return {
-      title: intl.formatMessage(messages.outcomeVerification),
-      summary: intl.formatMessage(messages.verificationSummary),
-      badge: <Badge variant="pending">{intl.formatMessage(messages.blocked)}</Badge>,
-    };
-  }
-  if (result.recommendation === "offer_available") {
-    return {
-      title: intl.formatMessage(messages.outcomeOffer),
-      summary: undefined,
-      badge: <Badge variant="success">{intl.formatMessage(messages.withinPolicy)}</Badge>,
-    };
-  }
-  if (result.recommendation === "no_current_product_fit") {
-    return {
-      title: intl.formatMessage(messages.outcomeNoFit),
-      summary: intl.formatMessage(messages.noFitSummary),
-      badge: <Badge variant="secondary">{intl.formatMessage(messages.noOffer)}</Badge>,
-    };
-  }
-  return {
-    title: intl.formatMessage(messages.outcomeUnknown),
-    summary: intl.formatMessage(messages.unknownSummary),
-    badge: <Badge variant="destructive">{intl.formatMessage(messages.unreadable)}</Badge>,
-  };
-}
-
-function GovernedTerms({
-  decisionCase,
-  formatSat,
-  mintQuoteAmountSat,
-}: {
-  decisionCase: DecisionCase;
-  formatSat: (value: string) => string;
-  mintQuoteAmountSat?: string;
-}) {
-  const intl = useIntl();
-  const { result, snapshot } = decisionCase;
-  const terms = result.terms;
-  const passed = result.axes.filter((finding) => finding.status === "pass").length;
-  const mayShowOffer = result.assessmentStatus === "ready_for_decision" && result.recommendation === "offer_available";
-
-  if (!mayShowOffer || terms === null) {
-    return (
-      <div className="rounded-lg border border-border bg-elevation-100 p-4">
-        {result.assessmentStatus === "blocked_pending_verification" ? (
-          <>
-            <p className="font-medium text-signal-alert">{intl.formatMessage(messages.verification)}</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-              {result.verificationRequests.map((request) => (
-                <li key={request.code}>
-                  <span>{request.requiredItem}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {intl.formatMessage(
-                      request.owner === "applicant"
-                        ? messages.ownerApplicant
-                        : request.owner === "mint_risk"
-                          ? messages.ownerMintRisk
-                          : request.owner === "mint_operations"
-                            ? messages.ownerMintOperations
-                            : messages.ownerSystem
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : result.recommendation === "no_current_product_fit" ? (
-          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-            <NoFitMath decisionCase={decisionCase} formatSat={formatSat} />
-            <p>{intl.formatMessage(messages.noFitReasons, { reasons: result.reasonCodes.map(words).join("; ") })}</p>
-          </div>
-        ) : (
-          <p className="font-medium text-signal-alert">{intl.formatMessage(messages.unknownSummary)}</p>
-        )}
-      </div>
-    );
-  }
-
-  const invoice = snapshot.invoice;
-  const hasInvoiceEvidence =
-    invoice !== null && (decisionCase.submittedEvidence ?? []).some((evidence) => evidence.reference === invoice.reference);
-  const invoiceMatches = invoice?.billAndClaimsConsistency === "match" && invoice.plausibility === "plausible";
-  const billSum = BigInt(terms.billSumSat);
-  const quotedAmount = mintQuoteAmountSat !== undefined && /^\d+$/.test(mintQuoteAmountSat) ? BigInt(mintQuoteAmountSat) : null;
-  const validQuotedAmount = quotedAmount !== null && quotedAmount > 0n && quotedAmount <= billSum ? quotedAmount : null;
-  const displayedAmount = validQuotedAmount ?? BigInt(terms.discountedSat);
-  const displayedFee = billSum - displayedAmount;
-  const displayedFeeRatioBps = Number((displayedFee * 10_000n + billSum - 1n) / billSum);
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid gap-4 rounded-lg border border-border bg-elevation-100 p-4 sm:grid-cols-3">
-        <div>
-          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.allInCost)}</div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{formatSat(displayedFee.toString())}</div>
-          <div className="mt-0.5 text-xs text-muted-foreground">
-            {intl.formatMessage(messages.allInCostDetail, {
-              rate: percentFromBps(displayedFeeRatioBps),
-              tenor: terms.tenorDays,
-            })}
-          </div>
+    <div className="rounded-lg border border-border bg-elevation-100 p-4">
+      {result.assessmentStatus === "blocked_pending_verification" ? (
+        <>
+          <p className="font-medium text-signal-alert">{intl.formatMessage(messages.verification)}</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+            {result.verificationRequests.map((request) => (
+              <li key={request.code}>
+                <span>{request.requiredItem}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {intl.formatMessage(
+                    request.owner === "applicant"
+                      ? messages.ownerApplicant
+                      : request.owner === "mint_risk"
+                        ? messages.ownerMintRisk
+                        : request.owner === "mint_operations"
+                          ? messages.ownerMintOperations
+                          : messages.ownerSystem
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : result.recommendation === "no_current_product_fit" ? (
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+          <NoFitMath decisionCase={decisionCase} formatSat={formatSat} />
+          <p>{intl.formatMessage(messages.noFitReasons, { reasons: result.reasonCodes.map(words).join("; ") })}</p>
         </div>
-        <div>
-          <div className="text-xs font-medium text-muted-foreground">
-            {intl.formatMessage(validQuotedAmount === null ? messages.discounted : messages.mintQuoteAmount)}
-          </div>
-          <div className="mt-1 text-lg font-semibold tabular-nums">{formatSat(displayedAmount.toString())}</div>
-        </div>
-        <div>
-          <div className="text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.expires)}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums">{terms.offerExpiresOn}</div>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Badge variant="outline">{intl.formatMessage(messages.checksPassed, { passed, total: result.axes.length })}</Badge>
-        {hasInvoiceEvidence && (
-          <Badge variant={invoiceMatches ? "success" : "pending"}>
-            {intl.formatMessage(invoiceMatches ? messages.invoiceMatch : messages.invoiceReview)}
-          </Badge>
-        )}
-      </div>
+      ) : (
+        <p className="font-medium text-signal-alert">{intl.formatMessage(messages.unknownSummary)}</p>
+      )}
     </div>
   );
 }
@@ -726,7 +558,7 @@ function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCas
   );
 }
 
-export function CreditAssessmentCard({ decisionCase, mintQuoteAmountSat }: { decisionCase: DecisionCase; mintQuoteAmountSat?: string }) {
+export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionCase }) {
   const intl = useIntl();
   const formatSat = (value: string) => `${intl.formatNumber(Number(value))} sat`;
   const { snapshot, policyPack } = decisionCase;
@@ -734,32 +566,18 @@ export function CreditAssessmentCard({ decisionCase, mintQuoteAmountSat }: { dec
     decisionCase.result.assessmentStatus === "ready_for_decision" && decisionCase.result.recommendation === "offer_available"
       ? decisionCase.result.terms
       : null;
-  const outcome = useDecisionOutcome(decisionCase);
   const validThrough = [snapshot.duplicateCheck.validThrough, snapshot.mintCapacity.validThrough]
     .concat(snapshot.invoice === null ? [] : snapshot.invoice.validThrough)
     .reduce((earliest, date) => (date < earliest ? date : earliest), snapshot.acceptor.validThrough);
 
   return (
     <Card className="gap-0 overflow-hidden p-0 text-sm">
-      <div className="flex flex-col gap-4 p-5">
-        <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-xl">{outcome.title}</CardTitle>
-              {outcome.badge}
-            </div>
-            {outcome.summary !== undefined && <p className="mt-1 text-sm text-muted-foreground">{outcome.summary}</p>}
-            <p className="mt-1 text-xs text-muted-foreground">
-              {intl.formatMessage(messages.assessed, { asOf: snapshot.asOfDate, validThrough })}
-            </p>
-            {decisionCase.mintQuoteId !== null && decisionCase.creditProgram === undefined && (
-              <p className="mt-2 text-xs font-medium text-amber-600 dark:text-amber-400">{intl.formatMessage(messages.legacyReadOnly)}</p>
-            )}
-          </div>
-          {snapshot.isSynthetic && <Badge variant="outline">{intl.formatMessage(messages.synthetic)}</Badge>}
-        </div>
-
-        <GovernedTerms decisionCase={decisionCase} formatSat={formatSat} mintQuoteAmountSat={mintQuoteAmountSat} />
+      <div className="flex flex-col gap-3 p-5">
+        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.assessed, { asOf: snapshot.asOfDate, validThrough })}</p>
+        {decisionCase.mintQuoteId !== null && decisionCase.creditProgram === undefined && (
+          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{intl.formatMessage(messages.legacyReadOnly)}</p>
+        )}
+        {offerTerms === null && <DecisionException decisionCase={decisionCase} formatSat={formatSat} />}
       </div>
 
       {offerTerms !== null && (

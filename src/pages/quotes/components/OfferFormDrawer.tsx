@@ -158,7 +158,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
         <p role="alert">
           <FormattedMessage
             id="credit.offer.governanceRequired"
-            defaultMessage="A governed offer is unavailable. Resolve or retry its assessment before offering terms."
+            defaultMessage="No current offer is available. Resolve or retry the assessment first."
             description="Blocks a Mint offer until AI Credit has a valid governed offer for the bill"
           />
         </p>
@@ -168,7 +168,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
           <div className="px-4 pb-4 text-xs text-muted-foreground">
             <FormattedMessage
               id="credit.offer.adjustmentLimits"
-              defaultMessage="Governed amount: {governed} sat. Absolute maximum: {maximum} sat. Lower adjustments are checked against policy when confirmed. The governed offer expires {expiresOn}."
+              defaultMessage="Suggested: {governed} sat · maximum: {maximum} sat · expires: {expiresOn}"
               description="Governed amount, exposed absolute maximum and governed expiry shown above the Mint offer form"
               values={{
                 governed: governedTerms.discountedSat,
@@ -209,7 +209,7 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
             >
               <FormattedMessage
                 id="credit.offer.writtenBasis.help"
-                defaultMessage="Required, at least 20 characters ({count}/20). This is stored with the governed decision."
+                defaultMessage="Required, at least 20 characters ({count}/20)."
                 description="Help and validation text for the operator's written basis on a governed offer"
                 values={{ count: Math.min(writtenBasisLength, 20) }}
               />

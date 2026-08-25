@@ -143,6 +143,7 @@ describe("QuoteDetailCard", () => {
           acceptor: "Coffee cooperative",
           goodsDescription: "Coffee crop inputs",
           readyForDecision: true,
+          recommendation: "offer_available",
           passedChecks: 6,
           failedChecks: 0,
           notAssessedChecks: 0,
@@ -166,8 +167,7 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("Payer at maturityCoffee cooperative");
     expect(page.textContent).toContain("Underlying tradeCoffee crop inputs");
     expect(page.textContent).toContain("Minting caseAccepted");
-    expect(page.textContent).toContain("Decision statusDecision phase complete");
-    expect(page.textContent).toContain("This case is no longer awaiting an operator decision. Evidence remains available for audit.");
+    expect(page.textContent).toContain("AssessmentPolicy checks: 6/6 passed");
     expect(page.textContent).toContain("Synthetic testnet inputs");
     expect(page.textContent).not.toContain("Ready for decision");
     expect(page.textContent).not.toContain("Decision evidence");
@@ -251,6 +251,7 @@ describe("QuoteDetailCard", () => {
           useOfFunds: "Fertilizer",
           repaymentSource: "Coffee sales",
           readyForDecision: true,
+          recommendation: "offer_available",
           passedChecks: 6,
           failedChecks: 0,
           notAssessedChecks: 0,
@@ -277,8 +278,50 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("3.32% of bill over 180 days");
     expect(page.textContent).toContain("Recommended amount available for minting7,928,000sat");
     expect(page.textContent).toContain("Valid until 2026-08-24");
-    expect(page.textContent).toContain("Decision statusReady for decision");
-    expect(page.textContent).toContain("6/6 policy checks passed. Evidence and applicant declarations are complete.");
+    expect(page.textContent).toContain("Ready for decision");
+    expect(page.textContent).toContain("AssessmentPolicy checks: 6/6 passed");
+  });
+
+  it("distinguishes a no-fit assessment from an offer-ready case", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{
+          id: baseQuote.id,
+          bill: baseQuote.bill,
+          submitted: "2026-08-21T10:00:00.000Z",
+          suggested_expiration: "2026-08-23T23:59:59.999Z",
+          status: "Pending",
+        }}
+        effectiveQuoteStatus="Pending"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        decisionSummary={{
+          useOfFunds: "Fertilizer",
+          repaymentSource: "Coffee sales",
+          readyForDecision: true,
+          recommendation: "no_current_product_fit",
+          passedChecks: 5,
+          failedChecks: 1,
+          notAssessedChecks: 0,
+          totalChecks: 6,
+          invoiceExtractedAndMatched: true,
+          answersAffirmed: true,
+          recourseAcknowledged: true,
+          unresolvedContradictions: 0,
+          underwritingEvidenceProvenance: "synthetic",
+          underwritingAuthoritySignaturesVerified: true,
+          hasMintPolicyAssignment: true,
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("No current product fit");
+    expect(page.textContent).not.toContain("Ready for decision");
   });
 
   it("shows the exact verified authorization receipt returned by the Mint command", () => {

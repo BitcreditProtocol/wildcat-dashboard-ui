@@ -130,7 +130,7 @@ function PageBody({ id }: { id: string }) {
         <div className="text-xs text-red-500">
           {intl.formatMessage({
             id: "quotes.error.checkApi",
-            defaultMessage: "Check if the API server is running and accessible",
+            defaultMessage: "Try again. If the problem continues, contact support.",
           })}
         </div>
       </div>
@@ -337,6 +337,7 @@ function PageBody({ id }: { id: string }) {
                     ? { goodsDescription: creditAssessment.decisionCase.snapshot.invoice.goodsDescription }
                     : {}),
                   readyForDecision: creditAssessment.decisionCase.result.assessmentStatus === "ready_for_decision",
+                  recommendation: creditAssessment.decisionCase.result.recommendation,
                   passedChecks: creditAssessment.decisionCase.result.axes.filter((axis) => axis.status === "pass").length,
                   failedChecks: creditAssessment.decisionCase.result.axes.filter((axis) => axis.status === "fail").length,
                   notAssessedChecks: creditAssessment.decisionCase.result.axes.filter(
@@ -397,11 +398,7 @@ function PageBody({ id }: { id: string }) {
           }
         />
 
-        <QuoteCreditAssessment
-          billId={bill.id}
-          mintQuoteId={quote.id}
-          mintQuoteAmountSat={"discounted" in quote ? String(quote.discounted) : undefined}
-        />
+        <QuoteCreditAssessment billId={bill.id} mintQuoteId={quote.id} />
       </section>
 
       <div className="contents print:hidden">

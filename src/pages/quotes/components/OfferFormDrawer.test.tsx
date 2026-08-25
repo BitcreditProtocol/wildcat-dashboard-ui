@@ -166,12 +166,11 @@ describe("OfferFormDrawer", () => {
 
     expect(suggestedNets[suggestedNets.length - 1]).toBe("7734000");
     // And the operator can see what they are approving, against the guardrails it was measured on.
-    expect(container.textContent).toContain("Governed amount available for minting 7,734,000 sat");
+    expect(container.textContent).toContain("Suggested amount: 7,734,000 sat");
     expect(container.textContent).toContain("Minting fee 266,000 sat over 180 days");
     expect(container.textContent).toContain("6.88% annualized fee rate (ceiling 15.00%)");
     expect(container.textContent).toContain("3.33% of the bill amount (ceiling 30.00%)");
-    expect(container.textContent).toContain("Offering less than this raises both figures");
-    expect(container.textContent).toContain("Governed amount: 7734000 sat. Absolute maximum: 7950000 sat");
+    expect(container.textContent).toContain("Suggested: 7734000 sat · maximum: 7950000 sat · expires: 2026-08-12");
   });
 
   it("blocks the form when no assessment exists for the bill", () => {
@@ -180,7 +179,7 @@ describe("OfferFormDrawer", () => {
 
     expect(suggestedNets).toHaveLength(0);
     expect(container.textContent).not.toContain("Governed offer");
-    expect(container.textContent).toContain("A governed offer is unavailable");
+    expect(container.textContent).toContain("No current offer is available");
   });
 
   it("suggests nothing when the assessment produced no offer", () => {

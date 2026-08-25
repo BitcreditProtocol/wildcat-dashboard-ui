@@ -12,12 +12,12 @@ import { useCreditAssessmentForBill } from "./use-credit-assessment";
 const messages = defineMessages({
   loading: {
     id: "credit.quoteCard.loading",
-    defaultMessage: "Loading governed credit assessment…",
+    defaultMessage: "Loading assessment…",
     description: "Visible status while the deterministic assessment is loading",
   },
   unavailable: {
     id: "credit.quoteCard.unavailable",
-    defaultMessage: "Governed credit assessment unavailable. Do not offer from this panel until it can be loaded.",
+    defaultMessage: "Assessment unavailable. Do not offer until it can be loaded.",
     description: "Fail-closed error when the deterministic assessment cannot be loaded",
   },
   absent: {
@@ -27,20 +27,12 @@ const messages = defineMessages({
   },
   fullAssessment: {
     id: "credit.quoteCard.fullAssessment",
-    defaultMessage: "Full governed assessment",
-    description: "Collapsed heading for the detailed governed credit assessment below the executive summary",
+    defaultMessage: "Assessment details",
+    description: "Collapsed heading for the detailed credit assessment below the summary",
   },
 });
 
-export function QuoteCreditAssessment({
-  billId,
-  mintQuoteId,
-  mintQuoteAmountSat,
-}: {
-  billId: string | undefined;
-  mintQuoteId: string | undefined;
-  mintQuoteAmountSat?: string;
-}) {
+export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
   const intl = useIntl();
   const { decisionCase, isLoading, isAbsent, error } = useCreditAssessmentForBill(billId, mintQuoteId);
 
@@ -57,7 +49,7 @@ export function QuoteCreditAssessment({
       <details id="full-governed-assessment" className="scroll-mt-4 rounded-lg border border-border print:hidden">
         <summary className="cursor-pointer px-5 py-4 text-sm font-semibold">{intl.formatMessage(messages.fullAssessment)}</summary>
         <div className="border-t border-border p-4">
-          <CreditAssessmentCard decisionCase={decisionCase} mintQuoteAmountSat={mintQuoteAmountSat} />
+          <CreditAssessmentCard decisionCase={decisionCase} />
         </div>
       </details>
     );

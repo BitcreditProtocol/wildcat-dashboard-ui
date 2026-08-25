@@ -244,13 +244,13 @@ export function QuoteActions({
     : !hasRequiredDeclineEvidence
       ? intl.formatMessage({
           id: "quotes.actions.deny.evidenceUnavailable",
-          defaultMessage: "Deny is unavailable because the governed case has no current evidence the operator can cite.",
+          defaultMessage: "Deny is unavailable because there is no current evidence to cite.",
           description: "Explanation when a discretionary decline cannot be recorded without server-listed material evidence",
         })
       : hasQuoteBoundCreditProgram
         ? intl.formatMessage({
             id: "quotes.actions.deny.unavailable",
-            defaultMessage: "Deny is unavailable until the governed assessment is ready.",
+            defaultMessage: "Deny is unavailable until the assessment is ready.",
             description: "Explanation shown when a quote cannot yet be denied because its governed credit assessment is incomplete",
           })
         : intl.formatMessage({
@@ -294,7 +294,7 @@ export function QuoteActions({
     const currentDecisionCase = decisionCase;
     const assessmentUnavailable = intl.formatMessage({
       id: "quotes.toast.governance.assessmentUnavailable",
-      defaultMessage: "The governed assessment is unavailable or changed",
+      defaultMessage: "The assessment is unavailable or changed",
       description: "Error shown when a stale operator drawer can no longer be bound to the current governed assessment",
     });
     if (currentDecisionCase === undefined) {
@@ -374,7 +374,7 @@ export function QuoteActions({
       toast({
         title: intl.formatMessage({
           id: "quotes.toast.offer.invalidExpiry",
-          defaultMessage: "The offer expiry is outside the governed validity period. Review it before offering the quote.",
+          defaultMessage: "The offer expires after the assessment. Choose an earlier date.",
           description: "Error shown when a Mint offer would outlive its governed credit decision",
         }),
         variant: "error",
@@ -436,7 +436,7 @@ export function QuoteActions({
     toast({
       title: intl.formatMessage({
         id: "quotes.toast.returnForInformation.recorded",
-        defaultMessage: "Required information recorded. Applicant delivery is handled separately.",
+        defaultMessage: "Saved. The applicant has not been notified.",
         description: "Success message after recording required information without claiming applicant delivery",
       }),
       variant: "success",
