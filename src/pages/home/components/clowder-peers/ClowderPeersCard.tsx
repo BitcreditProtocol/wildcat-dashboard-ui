@@ -83,6 +83,12 @@ export function ClowderPeersCard() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <PeerStatusSection
           title={<FormattedMessage id="home.clowderPeers.betasOpinionOfMe.title" defaultMessage="My Betas" />}
+          infoTooltip={
+            <FormattedMessage
+              id="home.clowderPeers.betasOpinionOfMe.info"
+              defaultMessage="Mints that follow you as their alpha. Shows the status each beta currently assigns to you, i.e. how you are viewed."
+            />
+          }
           peers={betas}
           statuses={betasOpinionOfMeQueries}
           isLoading={betasLoading || mintInfoLoading}
@@ -90,6 +96,12 @@ export function ClowderPeersCard() {
         />
         <PeerStatusSection
           title={<FormattedMessage id="home.clowderPeers.myOpinionOfAlphas.title" defaultMessage="My Alphas" />}
+          infoTooltip={
+            <FormattedMessage
+              id="home.clowderPeers.myOpinionOfAlphas.info"
+              defaultMessage="Mints you follow as your alphas. Shows the status you currently assign to each one, i.e. how you view them."
+            />
+          }
           peers={alphas}
           statuses={myOpinionOfAlphasQueries}
           substitutes={alphaSubstituteQueries}

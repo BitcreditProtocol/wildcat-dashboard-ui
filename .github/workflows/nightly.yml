@@ -1,5 +1,9 @@
 name: build and push nightly image
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     branches:
@@ -9,48 +13,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  IMAGE_NAME: "bcr-wdc-dashboard-ui"
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Login to GHCR
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
-
-      - id: meta
-        name: Metadata
-        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=nightly
-
-      - id: push
-        name: Build & push ${{ env.IMAGE_NAME }}
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ github.repository }}/${{ env.IMAGE_NAME }}
-          cache-to: type=gha,mode=max,scope=${{ github.repository }}/${{ env.IMAGE_NAME }}
+  nightly:
+    uses: ./.github/workflows/build-image.yml
+    with:
+      tags: type=raw,value=nightly

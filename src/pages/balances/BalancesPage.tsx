@@ -9,6 +9,7 @@ import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Currency } from "@/components/Currency";
 import { CollectFeesCard } from "./CollectFeesCard";
+import { AddReserveCard } from "./AddReserveCard";
 
 function Loader() {
   return (
@@ -290,7 +291,10 @@ function PageBodyWithDevSection() {
           </Card>
         </div>
 
-        <CollectFeesCard />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CollectFeesCard />
+          <AddReserveCard />
+        </div>
 
         {/*
           TODO Charts display mock data - will be updated when historical data endpoint is available

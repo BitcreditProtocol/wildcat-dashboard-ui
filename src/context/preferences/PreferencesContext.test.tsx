@@ -86,12 +86,11 @@ describe("PreferencesProvider", () => {
       page.querySelector('[data-testid="set-decimal"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(storageData["user-preferences"]).toBe(
-      JSON.stringify({
-        theme: "system",
-        currency: "eur",
-        decimalFormat: "space",
-      })
-    );
+    expect(JSON.parse(storageData["user-preferences"])).toEqual({
+      theme: "system",
+      currency: "eur",
+      decimalFormat: "space",
+      dateFormat: "dd MMM yyyy",
+    });
   });
 });

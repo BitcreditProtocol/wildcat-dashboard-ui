@@ -34,11 +34,9 @@ updates:
     target-branch: "dev"
     open-pull-requests-limit: 7
     groups:
-      npm-patch:
+      npm:
         update-types:
           - "patch"
-      npm-minor:
-        update-types:
           - "minor"
       ## optional: group major updates
       #npm-major:

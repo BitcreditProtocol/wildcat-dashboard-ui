@@ -46,6 +46,9 @@ vi.mock("@tanstack/react-query", async () => {
       if (queryId === "collectFeesToken") {
         return mockUseCollectFeesQuery();
       }
+      if (queryId === "addReserveStatus") {
+        return { data: undefined, error: null, isError: false, refetch: vi.fn() };
+      }
       return mockUseCoverageQuery();
     },
   };
@@ -57,6 +60,12 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   }),
   getClowderLocalCoverageOptions: () => ({
     queryKey: [{ _id: "coverage" }],
+  }),
+  postAddReserveMutation: () => ({
+    mutationFn: () => Promise.resolve(undefined),
+  }),
+  getAddReserveStatusOptions: () => ({
+    queryKey: [{ _id: "addReserveStatus" }],
   }),
 }));
 
