@@ -4,6 +4,27 @@ export type ClientOptions = {
     baseUrl: `${string}://opt` | (string & {});
 };
 
+/**
+ * --------------------------- Reserve funding
+ */
+export type AddReserveRequest = {
+    reserve_id: string;
+    amount: number;
+};
+
+export type AddReserveResponse = {
+    reserve_id: string;
+    address: string;
+    amount: number;
+    status: AddReserveStatus;
+};
+
+export type AddReserveStatus = 'Pending' | {
+    Completed: {
+        outpoint: string;
+    };
+} | 'FundingMismatch';
+
 export type AlphaStateResponse = {
     state: SimpleAlphaState;
 };
@@ -422,6 +443,9 @@ export type InfoReply = {
     status: 'FailedEbillValidation';
 };
 
+/**
+ * Auto-generated discriminant enum variants
+ */
 export type InfoReplyDiscriminants = 'Pending' | 'Canceled' | 'Offered' | 'OfferExpired' | 'Denied' | 'Accepted' | 'Rejected' | 'MintingEnabled' | 'FailedEbillValidation';
 
 /**
@@ -1400,6 +1424,50 @@ export type GetClowderStatusResponses = {
 };
 
 export type GetClowderStatusResponse = GetClowderStatusResponses[keyof GetClowderStatusResponses];
+
+export type GetAddReserveStatusData = {
+    body?: never;
+    path: {
+        /**
+         * the add_reserve request id
+         */
+        rid: string;
+    };
+    query?: never;
+    url: '/v1/admin/clowder/add_reserve/{rid}';
+};
+
+export type GetAddReserveStatusErrors = {
+    /**
+     * add_reserve id not found
+     */
+    404: unknown;
+};
+
+export type GetAddReserveStatusResponses = {
+    /**
+     * Successful response
+     */
+    200: AddReserveResponse;
+};
+
+export type GetAddReserveStatusResponse = GetAddReserveStatusResponses[keyof GetAddReserveStatusResponses];
+
+export type PostAddReserveData = {
+    body: AddReserveRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/add_reserve';
+};
+
+export type PostAddReserveResponses = {
+    /**
+     * Successful response
+     */
+    200: AddReserveResponse;
+};
+
+export type PostAddReserveResponse = PostAddReserveResponses[keyof PostAddReserveResponses];
 
 export type PostEbillReqtopayData = {
     body: RequestToPayFromEBillRequest;
