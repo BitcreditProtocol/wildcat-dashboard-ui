@@ -1,7 +1,7 @@
 ARG NODE_ENV
 ARG VITE_MODE
 
-FROM node:25-slim AS builder
+FROM node:26-slim AS builder
 ARG NODE_ENV
 ARG VITE_MODE
 ENV NODE_ENV=${NODE_ENV:-production}

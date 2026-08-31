@@ -2,7 +2,7 @@
 
 ## Development
 
-Prerequisite: Node.js 25.x (see `.nvmrc`).
+Prerequisite: Node.js 26.x (see `.nvmrc`).
 
 ### Install
 
