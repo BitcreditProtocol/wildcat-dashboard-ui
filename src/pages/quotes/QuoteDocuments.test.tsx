@@ -59,6 +59,7 @@ describe("QuoteDocuments", () => {
         requestToMintFiles={[]}
         creditEvidence={{
           status: "available",
+          assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
           submittedEvidence: [],
@@ -73,9 +74,9 @@ describe("QuoteDocuments", () => {
       />
     );
 
-    expect(page.textContent).toContain("Documents & evidence");
+    expect(page.textContent).toContain("Evidence");
     expect(page.querySelector("#documents-and-evidence")).not.toBeNull();
-    expect(page.textContent).toContain("1 bill file · No submitted credit evidence");
+    expect(page.textContent).toContain("No submitted credit evidence");
     expect(page.textContent).toContain("Show details");
     expect(page.textContent).not.toContain("invoice.pdf");
   });
@@ -157,7 +158,7 @@ describe("QuoteDocuments", () => {
       />
     );
 
-    expect(page.textContent).toContain("No bill files · Credit evidence unavailable");
+    expect(page.textContent).toContain("Credit evidence unavailable");
     act(() => {
       page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -172,6 +173,7 @@ describe("QuoteDocuments", () => {
         requestToMintFiles={[]}
         creditEvidence={{
           status: "available",
+          assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
           submittedEvidence: [
@@ -196,9 +198,9 @@ describe("QuoteDocuments", () => {
     act(() => {
       page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(page.textContent).toContain("Evidence review");
+    expect(page.textContent).toContain("1 submitted document");
     expect(page.textContent).toContain("invoice.pdf");
-    expect(page.textContent).toContain("Applicant upload");
+    expect(page.textContent).toContain("Applicant");
     expect(page.textContent).toContain("No current server receipt");
     expect(Array.from(page.querySelectorAll("button")).some((button) => button.textContent === "View")).toBe(false);
   });
@@ -217,6 +219,7 @@ describe("QuoteDocuments", () => {
         requestToMintFiles={[]}
         creditEvidence={{
           status: "available",
+          assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
           submittedEvidence: [evidence],
@@ -242,7 +245,7 @@ describe("QuoteDocuments", () => {
     });
     expect(onOpenEvidence).toHaveBeenCalledWith(evidence);
     expect(page.textContent).toContain("Supporting document");
-    expect(page.textContent).toContain("Not analyzed for this decision");
+    expect(page.textContent).toContain("No extracted facts");
     expect(page.textContent).not.toContain("Human review is required");
   });
 
@@ -259,6 +262,7 @@ describe("QuoteDocuments", () => {
         requestToMintFiles={[]}
         creditEvidence={{
           status: "available",
+          assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
           submittedEvidence: [evidence],
@@ -335,6 +339,7 @@ describe("QuoteDocuments", () => {
         requestToMintFiles={[]}
         creditEvidence={{
           status: "available",
+          assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
           submittedEvidence: [evidence],
@@ -395,7 +400,7 @@ describe("QuoteDocuments", () => {
       page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(page.textContent).toContain("Invoice matched to eBill");
+    expect(page.textContent).toContain("Matched");
     expect(page.textContent).toContain("6 cited claims");
     expect(page.textContent).toContain("InvoiceDEMO-42");
     expect(page.textContent).toContain("Total8,100,000 sat");
@@ -410,5 +415,7 @@ describe("QuoteDocuments", () => {
       details.querySelector("summary")?.textContent?.includes("Audit details")
     );
     expect(technical?.open).toBe(false);
+    expect(technical?.textContent).not.toContain(evidence.contentDigest);
+    expect(technical?.textContent).not.toContain("sha256:derivative");
   });
 });

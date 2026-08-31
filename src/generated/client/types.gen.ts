@@ -66,7 +66,6 @@ export type AdminInfoReply = InfoReply & {
     credit_program_digest?: string | null;
     credit_authorization_receipt?: null | CreditAuthorizationReceipt;
     credit_evidence?: null | MintCreditEvidence;
-    credit_exposure_reservation?: null | CreditExposureReservation;
 };
 
 export type AlphaStateResponse = {
@@ -405,18 +404,6 @@ export type CreditAuthorizationTerms = {
     feeRatioBps: number;
 };
 
-export type CreditExposureReservation = {
-    reservationVersion: string;
-    reservationId: string;
-    mintId: string;
-    quoteId: string;
-    amountSat: string;
-    capacityEvidenceId: string;
-    state: string;
-    createdAt: string;
-    updatedAt: string;
-};
-
 /**
  * Currency Unit
  */
@@ -634,42 +621,11 @@ export type LightSignedBy = {
 
 export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc' | 'submitted_desc' | 'submitted_asc';
 
-export type MintCapacityAuthorityEvidence = {
-    schemaVersion: string;
-    keyId: string;
-    mintId: string;
-    existingExposureSat: string;
-    exposureLimitSat: string;
-    evidenceState: string;
-    methodologyVersion: string;
-    assessedBy: string;
-    assessedAt: string;
-    validThrough: string;
-    evidenceRefs: Array<string>;
-    synthetic: boolean;
-};
-
-export type MintCapacityEvidence = {
-    schemaVersion: string;
-    evidenceId: string;
-    signedEvidence: SignedMintCapacityEvidence;
-    operatorId: string;
-    writtenBasisDigest: string;
-    recordedAt: string;
-    verifiedAt: string;
-};
-
-export type MintCapacityEvidenceRequest = {
-    signedEvidence: SignedMintCapacityEvidence;
-    writtenBasis: string;
-};
-
 export type MintCreditEvidence = {
     schemaVersion: string;
     mintId: string;
     acceptorRef: string;
     acceptorRisk?: null | AcceptorRiskEvidence;
-    mintCapacity?: null | MintCapacityEvidence;
 };
 
 /**
@@ -812,13 +768,6 @@ export type SignedBy = {
 export type SignedCreditAuthorizationEnvelope = {
     authorization: CreditAuthorizationEnvelope;
     authorizationDigest: string;
-    signatureAlgorithm: string;
-    signature: string;
-};
-
-export type SignedMintCapacityEvidence = {
-    evidence: MintCapacityAuthorityEvidence;
-    evidenceDigest: string;
     signatureAlgorithm: string;
     signature: string;
 };
@@ -1229,33 +1178,6 @@ export type RecordAcceptorRiskEvidenceResponses = {
 };
 
 export type RecordAcceptorRiskEvidenceResponse = RecordAcceptorRiskEvidenceResponses[keyof RecordAcceptorRiskEvidenceResponses];
-
-export type RecordMintCapacityEvidenceData = {
-    body: MintCapacityEvidenceRequest;
-    path?: never;
-    query?: never;
-    url: '/v1/admin/credit/mint-capacity';
-};
-
-export type RecordMintCapacityEvidenceErrors = {
-    /**
-     * Invalid evidence
-     */
-    400: unknown;
-    /**
-     * Approver role required
-     */
-    403: unknown;
-};
-
-export type RecordMintCapacityEvidenceResponses = {
-    /**
-     * Mint-owned capacity evidence recorded
-     */
-    200: MintCapacityEvidence;
-};
-
-export type RecordMintCapacityEvidenceResponse = RecordMintCapacityEvidenceResponses[keyof RecordMintCapacityEvidenceResponses];
 
 export type GetSharedEbillHistoryData = {
     body?: never;

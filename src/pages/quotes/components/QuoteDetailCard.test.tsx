@@ -99,6 +99,17 @@ const baseQuote: InfoReply = {
   keyset_id: keysetId,
 };
 
+const evidenceSummary = {
+  documents: 2,
+  citedClaims: 10,
+  openRequests: 0,
+  investigation: {
+    status: "available",
+    findings: 3,
+    sources: 4,
+  },
+} as const;
+
 beforeEach(() => {
   vi.clearAllMocks();
   storageData = {};
@@ -125,6 +136,55 @@ beforeEach(() => {
 });
 
 describe("QuoteDetailCard", () => {
+  it("labels retained history as awaiting applicant evidence and suppresses stale recommended terms", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{
+          id: baseQuote.id,
+          bill: baseQuote.bill,
+          submitted: "2026-08-21T10:00:00.000Z",
+          suggested_expiration: "2026-08-23T23:59:59.999Z",
+          status: "Pending",
+        }}
+        effectiveQuoteStatus="Pending"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        decisionSummary={{
+          assessmentCurrency: "historical_pending_applicant_response",
+          useOfFunds: "Fertilizer",
+          repaymentSource: "Coffee sales",
+          readyForDecision: true,
+          recommendation: "offer_available",
+          passedChecks: 6,
+          failedChecks: 0,
+          notAssessedChecks: 0,
+          totalChecks: 6,
+          answersAffirmed: true,
+          recourseAcknowledged: true,
+          unresolvedContradictions: 0,
+          evidenceSummary,
+          recommendedTerms: {
+            mintingFee: 266_000,
+            amountAvailableForMinting: 7_734_000,
+            feeRatioBps: 333,
+            tenorDays: 180,
+            offerExpiresOn: "2026-08-23",
+          },
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("Hold");
+    expect(page.textContent).toContain("Awaiting applicant evidence");
+    expect(page.textContent).not.toContain("7,734,000");
+    expect(page.textContent).not.toContain("Offer valid until");
+  });
+
   it("distinguishes the amount available for minting from the Minting fee", () => {
     const page = renderWithProviders(
       <QuoteDetailCard
@@ -138,6 +198,7 @@ describe("QuoteDetailCard", () => {
         isInMempool={false}
         requestedToPay={false}
         decisionSummary={{
+          assessmentCurrency: "current",
           useOfFunds: "Fertilizer and seasonal workers",
           repaymentSource: "Coffee harvest sales",
           acceptor: "Coffee cooperative",
@@ -148,37 +209,40 @@ describe("QuoteDetailCard", () => {
           failedChecks: 0,
           notAssessedChecks: 0,
           totalChecks: 6,
-          invoiceExtractedAndMatched: true,
           answersAffirmed: true,
           recourseAcknowledged: true,
           unresolvedContradictions: 0,
-          underwritingEvidenceProvenance: "synthetic",
-          underwritingAuthoritySignaturesVerified: true,
-          hasMintPolicyAssignment: true,
+          evidenceSummary,
           billAcceptanceState: "accepted",
         }}
       />
     );
 
-    expect(page.textContent).toContain("Amount available for minting80,000,000sat");
-    expect(page.textContent).toContain("Minting fee20,000,000sat");
+    expect(page.textContent).toContain("Available to mint80,000,000sat");
+    expect(page.textContent).toContain("Fee20,000,000sat");
     expect(page.textContent).toContain("Use of proceedsFertilizer and seasonal workers");
     expect(page.textContent).toContain("Repayment sourceCoffee harvest sales");
-    expect(page.textContent).toContain("Payer at maturityCoffee cooperative");
+    expect(page.textContent).toContain("Payer at maturityACME Corp");
     expect(page.textContent).toContain("Underlying tradeCoffee crop inputs");
-    expect(page.textContent).toContain("Minting caseAccepted");
-    expect(page.textContent).toContain("AssessmentPolicy checks: 6/6 passed");
-    expect(page.textContent).toContain("Synthetic testnet inputs");
+    expect(page.textContent).toContain("Accepted");
+    const businessCase = Array.from(page.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("Business case")
+    );
+    expect(businessCase?.open).toBe(false);
+    expect(businessCase?.querySelector("summary")?.textContent).toContain("Coffee crop inputs · Fertilizer and seasonal workers");
+    expect(page.textContent).not.toContain("Automated preparation");
+    expect(page.textContent).not.toContain("AI proposal");
+    expect(page.textContent).not.toContain("Synthetic testnet inputs");
     expect(page.textContent).not.toContain("Ready for decision");
     expect(page.textContent).not.toContain("Decision evidence");
     expect(page.textContent).not.toContain("Automated checks");
     expect(page.textContent).not.toContain("Applicant attestations");
-    expect(page.textContent).toContain("Audit & lifecycle");
+    expect(page.textContent).toContain("Processing & audit");
     expect(page.textContent).toContain("eBillAccepted");
     expect(page.textContent).toContain("ApplicantAccepted quote");
     expect(page.textContent).toContain("Mint operationUnavailable");
-    expect(page.textContent).toContain("No authorization receipt");
-    expect(page.querySelector('a[href="#documents-and-evidence"]')?.textContent).toBe("Review evidence");
+    expect(page.textContent).not.toContain("No authorization receipt");
+    expect(page.querySelector('a[href="#documents-and-evidence"]')).toBeNull();
     expect(page.querySelector('a[href="#bill-history"]')).toBeNull();
     expect(page.querySelector('a[href="#full-governed-assessment"]')).toBeNull();
     expect(page.querySelector("details")?.open).toBe(false);
@@ -193,40 +257,6 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).not.toContain("Not requested");
     expect(page.textContent).not.toContain("Reference & party details");
     expect(page.textContent).not.toContain("Fee:80,000,000sat");
-  });
-
-  it("shows the quote-bound exposure reservation returned by the Mint", () => {
-    const page = renderWithProviders(
-      <QuoteDetailCard
-        quote={{
-          ...baseQuote,
-          credit_exposure_reservation: {
-            reservationVersion: "credit-exposure-reservation-v1",
-            reservationId: "11111111-1111-4111-8111-111111111111",
-            mintId: "local-wildcat",
-            quoteId: baseQuote.id,
-            amountSat: "80000000",
-            capacityEvidenceId: "22222222-2222-4222-8222-222222222222",
-            state: "committed",
-            createdAt: "2026-08-21T10:00:00Z",
-            updatedAt: "2026-08-21T10:05:00Z",
-          },
-        }}
-        effectiveQuoteStatus="Accepted"
-        ebillPaid={false}
-        isMintComplete={false}
-        isMintCompleteLoading={false}
-        showPayment={false}
-        rejectedToPay={false}
-        isInMempool={false}
-        requestedToPay={false}
-      />
-    );
-
-    expect(page.textContent).toContain("Capacity committed");
-    expect(page.textContent).toContain("Exposure amount80,000,000sat");
-    expect(page.textContent).not.toContain("Capacity evidence");
-    expect(page.textContent).not.toContain("22222222-2222-4222-8222-222222222222");
   });
 
   it("shows governed recommended terms while the Mint quote is pending", () => {
@@ -248,6 +278,7 @@ describe("QuoteDetailCard", () => {
         isInMempool={false}
         requestedToPay={false}
         decisionSummary={{
+          assessmentCurrency: "current",
           useOfFunds: "Fertilizer",
           repaymentSource: "Coffee sales",
           readyForDecision: true,
@@ -256,30 +287,81 @@ describe("QuoteDetailCard", () => {
           failedChecks: 0,
           notAssessedChecks: 0,
           totalChecks: 6,
-          invoiceExtractedAndMatched: true,
           answersAffirmed: true,
           recourseAcknowledged: true,
           unresolvedContradictions: 0,
-          underwritingEvidenceProvenance: "synthetic",
-          underwritingAuthoritySignaturesVerified: false,
-          hasMintPolicyAssignment: true,
+          evidenceSummary: {
+            ...evidenceSummary,
+            documents: 1,
+            citedClaims: 8,
+            investigation: { status: "not_run", findings: 0, sources: 0 },
+          },
           recommendedTerms: {
             mintingFee: 272_000,
             amountAvailableForMinting: 7_928_000,
             feeRatioBps: 332,
             tenorDays: 180,
-            offerExpiresOn: "2026-08-24",
+            offerExpiresOn: "2099-08-24",
           },
         }}
       />
     );
 
-    expect(page.textContent).toContain("Recommended Minting fee272,000sat");
+    expect(page.textContent).toContain("Fee272,000sat");
     expect(page.textContent).toContain("3.32% of bill over 180 days");
-    expect(page.textContent).toContain("Recommended amount available for minting7,928,000sat");
-    expect(page.textContent).toContain("Valid until 2026-08-24");
-    expect(page.textContent).toContain("Ready for decision");
-    expect(page.textContent).toContain("AssessmentPolicy checks: 6/6 passed");
+    expect(page.textContent).toContain("Available to mint7,928,000sat");
+    expect(page.textContent).toContain("Ready · terms valid to 2099-08-24");
+    expect(page.textContent).toContain("Policy 6/6");
+    expect(page.textContent).toContain("1 document");
+  });
+
+  it("holds an expired governed offer instead of presenting it as actionable", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{
+          id: baseQuote.id,
+          bill: baseQuote.bill,
+          submitted: "2026-08-21T10:00:00.000Z",
+          suggested_expiration: "2026-08-23T23:59:59.999Z",
+          status: "Pending",
+        }}
+        effectiveQuoteStatus="Pending"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        decisionSummary={{
+          assessmentCurrency: "current",
+          useOfFunds: "Fertilizer",
+          repaymentSource: "Coffee sales",
+          readyForDecision: true,
+          recommendation: "offer_available",
+          passedChecks: 6,
+          failedChecks: 0,
+          notAssessedChecks: 0,
+          totalChecks: 6,
+          answersAffirmed: true,
+          recourseAcknowledged: true,
+          unresolvedContradictions: 0,
+          evidenceSummary,
+          recommendedTerms: {
+            mintingFee: 272_000,
+            amountAvailableForMinting: 7_928_000,
+            feeRatioBps: 332,
+            tenorDays: 180,
+            offerExpiresOn: "2000-01-01",
+          },
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("Terms expired");
+    expect(page.textContent).toContain("Expired 2000-01-01 · Awaiting applicant");
+    expect(page.textContent).not.toContain("Hold");
+    expect(page.textContent).not.toContain("Ready for decision");
   });
 
   it("distinguishes a no-fit assessment from an offer-ready case", () => {
@@ -301,6 +383,7 @@ describe("QuoteDetailCard", () => {
         isInMempool={false}
         requestedToPay={false}
         decisionSummary={{
+          assessmentCurrency: "current",
           useOfFunds: "Fertilizer",
           repaymentSource: "Coffee sales",
           readyForDecision: true,
@@ -309,19 +392,69 @@ describe("QuoteDetailCard", () => {
           failedChecks: 1,
           notAssessedChecks: 0,
           totalChecks: 6,
-          invoiceExtractedAndMatched: true,
           answersAffirmed: true,
           recourseAcknowledged: true,
           unresolvedContradictions: 0,
-          underwritingEvidenceProvenance: "synthetic",
-          underwritingAuthoritySignaturesVerified: true,
-          hasMintPolicyAssignment: true,
+          evidenceSummary: {
+            ...evidenceSummary,
+            investigation: { status: "not_run", findings: 0, sources: 0 },
+          },
         }}
       />
     );
 
     expect(page.textContent).toContain("No current product fit");
     expect(page.textContent).not.toContain("Ready for decision");
+  });
+
+  it("shows the next applicant request and an exact collapsed reassessment diff", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{
+          id: baseQuote.id,
+          bill: baseQuote.bill,
+          submitted: "2026-08-21T10:00:00.000Z",
+          suggested_expiration: "2026-08-23T23:59:59.999Z",
+          status: "Pending",
+        }}
+        effectiveQuoteStatus="Pending"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        decisionSummary={{
+          assessmentCurrency: "current",
+          useOfFunds: "Fertilizer",
+          repaymentSource: "Coffee sales",
+          readyForDecision: false,
+          recommendation: null,
+          passedChecks: 4,
+          failedChecks: 0,
+          notAssessedChecks: 2,
+          totalChecks: 6,
+          answersAffirmed: true,
+          recourseAcknowledged: false,
+          unresolvedContradictions: 0,
+          evidenceSummary: { ...evidenceSummary, openRequests: 1 },
+          applicantRequests: [{ axis: "applicant_recourse_risk", requiredItem: "Acknowledge whole-face recourse" }],
+          reassessmentChanges: [
+            {
+              field: "required_information",
+              before: "Upload signed delivery receipt",
+              after: "Acknowledge whole-face recourse",
+            },
+          ],
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("Blocking itemsAcknowledge whole-face recourse");
+    expect(page.textContent).toContain("Changed since last assessment (1)");
+    expect(page.textContent).toContain("Required informationBeforeUpload signed delivery receiptAfterAcknowledge whole-face recourse");
+    expect(page.querySelector("details")?.open).toBe(false);
   });
 
   it("shows the exact verified authorization receipt returned by the Mint command", () => {
@@ -348,11 +481,13 @@ describe("QuoteDetailCard", () => {
       />
     );
 
-    expect(page.textContent).toContain("Authorization verified");
+    expect(page.textContent).toContain("Processing & audit");
+    expect(page.textContent).toContain("Offer expires");
+    expect(page.textContent).not.toContain("Authorization verified");
     expect(page.textContent).toContain("AuthorizationSigned command verified");
     expect(page.textContent).toContain("ApplicantAwaiting response");
     expect(page.textContent).toContain("synthetic-testnet-key-1");
-    expect(page.textContent).toContain(`sha256:${"c".repeat(15)}…`);
+    expect(page.textContent).not.toContain("sha256:");
     expect(page.textContent).toContain("request_to_mint");
     expect(page.textContent).toContain("mint-demo / bill-1 / quote-1");
     expect(page.textContent).toMatch(/Expires2099-09-0[23] \d{2}:59/u);
@@ -390,15 +525,14 @@ describe("QuoteDetailCard", () => {
       />
     );
 
-    expect(page.textContent).toContain("Audit receipt saved");
+    expect(page.textContent).toContain("Processing & audit");
+    expect(page.textContent).not.toContain("Audit receipt saved");
     expect(page.textContent).toContain("Authorizationcompleted");
     expect(page.textContent).toContain("Mint operationComplete · 80,000,000 / 80,000,000");
-    expect(page.textContent).toContain(`Operation IDsha256:${"a".repeat(15)}…`);
     expect(page.textContent).toContain("Execution statuscompleted");
     expect(page.textContent).toContain("Completed at2026-08-21T12:06:00.000Z");
     expect(page.textContent).toContain("Effect IDquote-1");
-    expect(page.textContent).toContain(`Authorization digestsha256:${"c".repeat(15)}…`);
-    expect(page.textContent).toContain(`Result digestsha256:${"b".repeat(15)}…`);
+    expect(page.textContent).not.toContain("sha256:");
     expect(page.textContent).toContain("Exact scoperequest_to_mintmint-demo / bill-1");
     expect(page.textContent).not.toContain("Signing key");
     expect(page.textContent).not.toContain("Expires");

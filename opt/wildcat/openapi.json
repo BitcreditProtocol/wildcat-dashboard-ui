@@ -533,42 +533,6 @@
         }
       }
     },
-    "/v1/admin/credit/mint-capacity": {
-      "put": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "record_mint_capacity_evidence",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MintCapacityEvidenceRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Mint-owned capacity evidence recorded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MintCapacityEvidence"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid evidence"
-          },
-          "403": {
-            "description": "Approver role required"
-          }
-        }
-      }
-    },
     "/v1/admin/credit/quote/{qid}/ebill/history": {
       "get": {
         "tags": [
@@ -1535,16 +1499,6 @@
                   },
                   {
                     "$ref": "#/components/schemas/MintCreditEvidence"
-                  }
-                ]
-              },
-              "credit_exposure_reservation": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/CreditExposureReservation"
                   }
                 ]
               }
@@ -2838,55 +2792,6 @@
         },
         "additionalProperties": false
       },
-      "CreditExposureReservation": {
-        "type": "object",
-        "required": [
-          "reservationVersion",
-          "reservationId",
-          "mintId",
-          "quoteId",
-          "amountSat",
-          "capacityEvidenceId",
-          "state",
-          "createdAt",
-          "updatedAt"
-        ],
-        "properties": {
-          "reservationVersion": {
-            "type": "string"
-          },
-          "reservationId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "mintId": {
-            "type": "string"
-          },
-          "quoteId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "amountSat": {
-            "type": "string"
-          },
-          "capacityEvidenceId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "state": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "additionalProperties": false
-      },
       "CurrencyUnit": {
         "oneOf": [
           {
@@ -3685,122 +3590,6 @@
           "submitted_asc"
         ]
       },
-      "MintCapacityAuthorityEvidence": {
-        "type": "object",
-        "required": [
-          "schemaVersion",
-          "keyId",
-          "mintId",
-          "existingExposureSat",
-          "exposureLimitSat",
-          "evidenceState",
-          "methodologyVersion",
-          "assessedBy",
-          "assessedAt",
-          "validThrough",
-          "evidenceRefs",
-          "synthetic"
-        ],
-        "properties": {
-          "schemaVersion": {
-            "type": "string"
-          },
-          "keyId": {
-            "type": "string"
-          },
-          "mintId": {
-            "type": "string"
-          },
-          "existingExposureSat": {
-            "type": "string"
-          },
-          "exposureLimitSat": {
-            "type": "string"
-          },
-          "evidenceState": {
-            "type": "string"
-          },
-          "methodologyVersion": {
-            "type": "string"
-          },
-          "assessedBy": {
-            "type": "string"
-          },
-          "assessedAt": {
-            "type": "string",
-            "format": "date"
-          },
-          "validThrough": {
-            "type": "string",
-            "format": "date"
-          },
-          "evidenceRefs": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "synthetic": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
-      "MintCapacityEvidence": {
-        "type": "object",
-        "required": [
-          "schemaVersion",
-          "evidenceId",
-          "signedEvidence",
-          "operatorId",
-          "writtenBasisDigest",
-          "recordedAt",
-          "verifiedAt"
-        ],
-        "properties": {
-          "schemaVersion": {
-            "type": "string"
-          },
-          "evidenceId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "signedEvidence": {
-            "$ref": "#/components/schemas/SignedMintCapacityEvidence"
-          },
-          "operatorId": {
-            "type": "string"
-          },
-          "writtenBasisDigest": {
-            "type": "string"
-          },
-          "recordedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "verifiedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "additionalProperties": false
-      },
-      "MintCapacityEvidenceRequest": {
-        "type": "object",
-        "required": [
-          "signedEvidence",
-          "writtenBasis"
-        ],
-        "properties": {
-          "signedEvidence": {
-            "$ref": "#/components/schemas/SignedMintCapacityEvidence"
-          },
-          "writtenBasis": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
       "MintCreditEvidence": {
         "type": "object",
         "required": [
@@ -3825,16 +3614,6 @@
               },
               {
                 "$ref": "#/components/schemas/AcceptorRiskEvidence"
-              }
-            ]
-          },
-          "mintCapacity": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/MintCapacityEvidence"
               }
             ]
           }
@@ -4274,30 +4053,6 @@
             "$ref": "#/components/schemas/CreditAuthorizationEnvelope"
           },
           "authorizationDigest": {
-            "type": "string"
-          },
-          "signatureAlgorithm": {
-            "type": "string"
-          },
-          "signature": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
-      "SignedMintCapacityEvidence": {
-        "type": "object",
-        "required": [
-          "evidence",
-          "evidenceDigest",
-          "signatureAlgorithm",
-          "signature"
-        ],
-        "properties": {
-          "evidence": {
-            "$ref": "#/components/schemas/MintCapacityAuthorityEvidence"
-          },
-          "evidenceDigest": {
             "type": "string"
           },
           "signatureAlgorithm": {

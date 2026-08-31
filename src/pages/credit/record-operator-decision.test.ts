@@ -3,8 +3,8 @@ import {
   fetchOperatorCapability,
   durableAuthorizationReceiptFromQuote,
   operatorMayRecordDecision,
-  recordMintCapacityAssessment,
   recordMintRiskAssessment,
+  reviewInvoiceEvidence,
   recordApplicantHumanReviewUpdate,
   recordOperatorDecision,
   signedAuthorizationMatchesOffer,
@@ -162,38 +162,39 @@ describe("Mint-owned risk evidence", () => {
   });
 });
 
-describe("Mint-owned capacity evidence", () => {
-  const capacity = {
-    mintQuoteId: "quote-1",
+describe("invoice evidence review", () => {
+  const input = {
     billId: "bill-1",
     caseId: "case-1",
     decisionResultDigest: `sha256:${"a".repeat(64)}`,
-    signedEvidence: {
-      evidence: { mintId: "mint-demo", keyId: "capacity-authority-v1" },
-      evidenceDigest: `sha256:${"c".repeat(64)}`,
-      signatureAlgorithm: "Ed25519",
-      signature: "signed-by-capacity-authority",
+    evidence: {
+      reference: `sha256:${"b".repeat(64)}`,
+      contentDigest: `sha256:${"c".repeat(64)}`,
+      label: "invoice.pdf",
+      origin: "applicant_upload" as const,
     },
-    writtenBasis: "Current Mint capacity ledger snapshot supplied by the approved authority.",
   };
 
-  it("records the signed snapshot at the Mint before re-evaluating AI Credit", async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce(response(true, 200, {}))
-      .mockResolvedValueOnce(response(true, 200, {}));
+  it("submits the exact current evidence through the authenticated operator route", async () => {
+    const fetch = vi.fn().mockResolvedValue(response(true, 200, {}));
     vi.stubGlobal("fetch", fetch);
 
-    await expect(recordMintCapacityAssessment(capacity, approver)).resolves.toEqual({ ok: true });
-    expect(fetch).toHaveBeenNthCalledWith(
-      1,
-      "/v1/admin/credit/mint-capacity",
-      expect.objectContaining({
-        method: "PUT",
-        body: JSON.stringify({ signedEvidence: capacity.signedEvidence, writtenBasis: capacity.writtenBasis }),
-      })
+    await expect(reviewInvoiceEvidence(input, reviewer)).resolves.toEqual({ ok: true });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/ai-credit/operator-verifications",
+      expect.objectContaining({ body: JSON.stringify({ ...input, action: "review_invoice" }), method: "POST" })
     );
-    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not send without an operator capability", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(reviewInvoiceEvidence(input, undefined)).resolves.toEqual({
+      ok: false,
+      error: "A ready AI Credit operator capability is required for this action",
+    });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
 

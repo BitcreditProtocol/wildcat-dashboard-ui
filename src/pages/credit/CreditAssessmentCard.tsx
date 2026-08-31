@@ -1,4 +1,3 @@
-import { Card } from "@bitcredit/ui-library";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -54,12 +53,12 @@ const messages = defineMessages({
   },
   reviewDetails: {
     id: "credit.details.applicationReview",
-    defaultMessage: "Inputs and checks",
+    defaultMessage: "Assessment inputs",
     description: "Expandable section containing applicant confirmation, invoice findings and deterministic checks",
   },
   reviewHint: {
     id: "credit.details.applicationReviewHint",
-    defaultMessage: "Applicant confirmation, invoice findings and policy checks",
+    defaultMessage: "Applicant claims · Invoice review",
     description: "Caption for the application and decision-rationale disclosure",
   },
   policyDetails: {
@@ -205,16 +204,6 @@ const messages = defineMessages({
     defaultMessage: "Program version",
     description: "Immutable Mint credit program release bound to the quote",
   },
-  creditProgramAssignment: {
-    id: "credit.audit.creditProgramAssignment",
-    defaultMessage: "Quote assignment",
-    description: "Digest binding the Mint quote and bill to the credit program",
-  },
-  creditProgramDigest: {
-    id: "credit.audit.creditProgramDigest",
-    defaultMessage: "Program digest",
-    description: "Digest of the immutable Mint credit program release",
-  },
   legacyReadOnly: {
     id: "credit.audit.legacyReadOnly",
     defaultMessage: "Read-only legacy assessment. A fresh Mint credit-program assignment is required before any action.",
@@ -233,8 +222,6 @@ const messages = defineMessages({
   },
   caseId: { id: "credit.audit.caseId", defaultMessage: "Case", description: "Immutable case identifier label" },
   snapshotDate: { id: "credit.audit.snapshotDate", defaultMessage: "Snapshot date", description: "Decision snapshot date label" },
-  policyDigest: { id: "credit.audit.policyDigest", defaultMessage: "Policy digest", description: "Policy digest label" },
-  resultDigest: { id: "credit.audit.resultDigest", defaultMessage: "Result digest", description: "Decision result digest label" },
   annualLimit: {
     id: "credit.audit.annualLimit",
     defaultMessage: "Maximum effective annual cost",
@@ -275,12 +262,12 @@ const messages = defineMessages({
     defaultMessage: "Assessed {asOf} · evidence valid through {validThrough}",
     description: "Visible freshness of the deterministic assessment and its earliest evidence expiry",
   },
-  mintId: { id: "credit.audit.mintId", defaultMessage: "Mint", description: "Mint that produced the governed decision" },
-  snapshotDigest: {
-    id: "credit.audit.snapshotDigest",
-    defaultMessage: "Snapshot digest",
-    description: "Immutable digest of the exact decision input snapshot",
+  awaitingApplicantEvidence: {
+    id: "credit.assessment.awaitingApplicantEvidence",
+    defaultMessage: "Awaiting applicant evidence",
+    description: "Status for a retained non-actionable assessment pending an applicant response",
   },
+  mintId: { id: "credit.audit.mintId", defaultMessage: "Mint", description: "Mint that produced the governed decision" },
 });
 
 function DecisionException({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
@@ -397,13 +384,13 @@ function NoFitMath({ decisionCase, formatSat }: { decisionCase: DecisionCase; fo
 
 function Disclosure({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
   return (
-    <details className="group border-t border-border">
+    <details className="group/disclosure border-t border-border">
       <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 hover:bg-elevation-100 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-medium">{title}</span>
           <span className="block truncate text-xs text-muted-foreground">{hint}</span>
         </span>
-        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open/disclosure:rotate-180" />
       </summary>
       <div className="flex flex-col gap-5 border-t border-border px-5 py-4">{children}</div>
     </details>
@@ -562,22 +549,31 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
   const intl = useIntl();
   const formatSat = (value: string) => `${intl.formatNumber(Number(value))} sat`;
   const { snapshot, policyPack } = decisionCase;
+  const isHistoricalAssessment = decisionCase.assessmentCurrency === "historical_pending_applicant_response";
   const offerTerms =
-    decisionCase.result.assessmentStatus === "ready_for_decision" && decisionCase.result.recommendation === "offer_available"
+    !isHistoricalAssessment &&
+    decisionCase.result.assessmentStatus === "ready_for_decision" &&
+    decisionCase.result.recommendation === "offer_available"
       ? decisionCase.result.terms
       : null;
-  const validThrough = [snapshot.duplicateCheck.validThrough, snapshot.mintCapacity.validThrough]
+  const validThrough = [snapshot.duplicateCheck.validThrough]
     .concat(snapshot.invoice === null ? [] : snapshot.invoice.validThrough)
     .reduce((earliest, date) => (date < earliest ? date : earliest), snapshot.acceptor.validThrough);
 
   return (
-    <Card className="gap-0 overflow-hidden p-0 text-sm">
-      <div className="flex flex-col gap-3 p-5">
+    <div className="text-sm">
+      <div className="flex flex-col gap-3 px-6 py-5">
+        {isHistoricalAssessment && (
+          <p role="status" className="font-medium text-signal-alert">
+            {intl.formatMessage(messages.awaitingApplicantEvidence)}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.assessed, { asOf: snapshot.asOfDate, validThrough })}</p>
         {decisionCase.mintQuoteId !== null && decisionCase.creditProgram === undefined && (
           <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{intl.formatMessage(messages.legacyReadOnly)}</p>
         )}
         {offerTerms === null && <DecisionException decisionCase={decisionCase} formatSat={formatSat} />}
+        <AssessmentPanel decisionCase={decisionCase} />
       </div>
 
       {offerTerms !== null && (
@@ -599,7 +595,6 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
           submittedEvidence={decisionCase.submittedEvidence ?? []}
         />
         <InvoiceEvidence invoice={snapshot.invoice} />
-        <AssessmentPanel decisionCase={decisionCase} formatSat={formatSat} />
       </Disclosure>
 
       <Disclosure
@@ -613,14 +608,6 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
               <AuditRow label={intl.formatMessage(messages.creditProgramVersion)}>
                 {decisionCase.creditProgram.creditProgramVersion}
               </AuditRow>
-              <AuditRow label={intl.formatMessage(messages.creditProgramDigest)}>
-                <span title={decisionCase.creditProgram.creditProgramDigest}>{decisionCase.creditProgram.creditProgramDigest}</span>
-              </AuditRow>
-              <AuditRow label={intl.formatMessage(messages.creditProgramAssignment)}>
-                <span title={decisionCase.creditProgramAssignment.assignmentDigest}>
-                  {decisionCase.creditProgramAssignment.assignmentDigest}
-                </span>
-              </AuditRow>
             </>
           )}
           <AuditRow label={intl.formatMessage(messages.policyFile)}>{decisionCase.policyFileName}</AuditRow>
@@ -632,18 +619,9 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
           <AuditRow label={intl.formatMessage(messages.mintId)}>{snapshot.mintId}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.caseId)}>{snapshot.caseId}</AuditRow>
           <AuditRow label={intl.formatMessage(messages.snapshotDate)}>{snapshot.asOfDate}</AuditRow>
-          <AuditRow label={intl.formatMessage(messages.snapshotDigest)}>
-            <span title={snapshot.snapshotDigest}>{snapshot.snapshotDigest}</span>
-          </AuditRow>
-          <AuditRow label={intl.formatMessage(messages.policyDigest)}>
-            <span title={policyPack.policyPackDigest}>{policyPack.policyPackDigest}</span>
-          </AuditRow>
-          <AuditRow label={intl.formatMessage(messages.resultDigest)}>
-            <span title={decisionCase.resultDigest}>{decisionCase.resultDigest}</span>
-          </AuditRow>
         </dl>
         <PricingTrace steps={decisionCase.result.calculationTrace} />
       </Disclosure>
-    </Card>
+    </div>
   );
 }

@@ -265,7 +265,11 @@ describe("QuotePage", () => {
     const page = renderPage(`/quotes/${quoteId}`);
 
     expect(page.querySelector("#minting-summary")).not.toBeNull();
-    expect(page.textContent).toContain("Audit receipt saved");
+    const headings = Array.from(page.querySelectorAll("h1"), (heading) => heading.textContent);
+    expect(headings).toContain("Accepted");
+    expect(headings.some((heading) => heading?.startsWith("Quote"))).toBe(false);
+    expect(page.textContent).toContain("Processing & audit");
+    expect(page.textContent).not.toContain("Audit receipt saved");
     expect(page.textContent).not.toContain("Print one-page summary");
   });
 
@@ -373,13 +377,13 @@ describe("QuotePage", () => {
     expect(keysetLink).toBeNull();
   });
 
-  it("shows a collapsed documents and evidence section before the actions", () => {
+  it("puts actions before the collapsed evidence section", () => {
     const page = renderPage(`/quotes/${quoteId}`);
-    expect(page.textContent).toContain("Documents & evidence");
+    expect(page.textContent).toContain("Evidence");
     expect(page.textContent).toContain("Show details");
     expect(page.textContent).not.toContain("invoice.pdf");
     const content = page.textContent ?? "";
-    expect(content.indexOf("Documents & evidence")).toBeLessThan(content.indexOf("QuoteActionsMock"));
+    expect(content.indexOf("QuoteActionsMock")).toBeLessThan(content.indexOf("Evidence"));
   });
 
   it("opens minted bill documents with the attachment endpoint", async () => {

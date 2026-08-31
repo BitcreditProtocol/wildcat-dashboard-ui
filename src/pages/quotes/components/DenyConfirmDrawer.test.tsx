@@ -8,6 +8,7 @@ const confirmDrawerProps = vi.hoisted(() => ({
   current: undefined as
     | {
         cancelButtonDisabled?: boolean;
+        description?: string;
         onOpenChange: (open: boolean) => void;
         onSubmit: () => void;
         submitButtonDisabled?: boolean;
@@ -22,6 +23,7 @@ vi.mock("@/components/Drawers", () => ({
   }: {
     children?: ReactNode;
     cancelButtonDisabled?: boolean;
+    description?: string;
     onOpenChange: (open: boolean) => void;
     onSubmit: () => void;
     submitButtonDisabled?: boolean;
@@ -54,6 +56,7 @@ describe("DenyConfirmDrawer", () => {
     });
 
     expect(container.textContent).toContain("Required information");
+    expect(confirmDrawerProps.current?.description).toContain("No notification is sent from this screen.");
     expect(container.textContent).toContain("Signed delivery receipt");
     expect(container.textContent).toContain("Current acceptor financials");
     act(() => root.unmount());

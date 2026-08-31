@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import type { PropsWithChildren } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import {
@@ -98,19 +97,21 @@ export function InvoiceEvidence({ invoice }: { invoice: DecisionInvoice | null }
 
   return (
     <div className="text-xs">
-      <div className="mb-1 flex flex-wrap items-center gap-2">
-        <span className="font-medium">{intl.formatMessage(messages.evidence)}</span>
-        <Badge variant={invoice.plausibility === "plausible" ? "success" : "destructive"}>
-          {intl.formatMessage(messages.plausibility)}: {words(invoice.plausibility)}
-        </Badge>
-        <Badge variant={invoice.billAndClaimsConsistency === "match" ? "success" : "destructive"}>
-          {intl.formatMessage(messages.consistency)}: {words(invoice.billAndClaimsConsistency)}
-        </Badge>
-      </div>
-      <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+      <div className="mb-2 font-medium">{intl.formatMessage(messages.evidence)}</div>
+      <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
         <Row label={intl.formatMessage(messages.goods)}>{invoice.goodsDescription}</Row>
         <Row label={intl.formatMessage(messages.invoiceNumber)}>
           <span className="font-mono">{invoice.invoiceNumber}</span>
+        </Row>
+        <Row label={intl.formatMessage(messages.plausibility)}>
+          <span className={invoice.plausibility === "plausible" ? "text-signal-success" : "text-destructive"}>
+            {words(invoice.plausibility)}
+          </span>
+        </Row>
+        <Row label={intl.formatMessage(messages.consistency)}>
+          <span className={invoice.billAndClaimsConsistency === "match" ? "text-signal-success" : "text-destructive"}>
+            {words(invoice.billAndClaimsConsistency)}
+          </span>
         </Row>
       </div>
       <p className="mt-1 text-muted-foreground">

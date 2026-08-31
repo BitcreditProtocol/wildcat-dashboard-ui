@@ -28,7 +28,7 @@ const passingAxes: DecisionCase["result"]["axes"] = [
   { axis: "transaction_integrity", status: "pass", reasonCodes: [] },
   { axis: "applicant_recourse_risk", status: "pass", reasonCodes: [] },
   { axis: "evidence_sufficiency", status: "pass", reasonCodes: [] },
-  { axis: "mint_exposure_capacity", status: "pass", reasonCodes: [] },
+  { axis: "mint_exposure_capacity", status: "not_assessed", reasonCodes: [] },
 ];
 
 const caseFixture = (overrides: {
@@ -46,7 +46,7 @@ const caseFixture = (overrides: {
   mintQuoteId: "quote-1",
   policyFileName: "synthetic-guatemala-v7.json",
   snapshot: {
-    schemaVersion: "decision-input-snapshot-v8",
+    schemaVersion: "decision-input-snapshot-v9",
     snapshotDigest: "sha256:snapshot",
     caseId: overrides.caseId,
     applicantRef: "synthetic-applicant-a",
@@ -84,10 +84,10 @@ const caseFixture = (overrides: {
     },
     duplicateCheck: { result: "clear", evidenceState: "independently_verified", validThrough: "2026-11-09" },
     mintCapacity: {
-      existingExposureSat: "8000000",
-      exposureLimitSat: "40000000",
-      evidenceState: "independently_verified",
-      validThrough: "2026-11-10",
+      existingExposureSat: null,
+      exposureLimitSat: null,
+      evidenceState: "source_unavailable",
+      validThrough: "2026-08-10",
     },
   },
   policyPack: {
@@ -115,19 +115,6 @@ const caseFixture = (overrides: {
         reasonCode: "acceptor_loss_parameters_verified",
         observed: { probabilityOfDefaultBps: 600, lossGivenDefaultBps: 4000, evidenceState: "independently_verified" },
         policy: { exposureAtDefaultSat: "8000000" },
-      },
-      {
-        ruleId: "mint_capacity_available",
-        subject: "mint_exposure_capacity",
-        outcome: "pass",
-        reasonCode: "mint_capacity_available",
-        observed: {
-          existingExposureSat: "8000000",
-          proposedExposureSat: "8000000",
-          resultingExposureSat: "16000000",
-          evidenceState: "independently_verified",
-        },
-        policy: { exposureLimitSat: "40000000" },
       },
     ],
     calculationTrace: overrides.calculationTrace ?? [],
@@ -267,6 +254,18 @@ describe("CreditAssessmentCard", () => {
     mockUseQuery.mockReset();
   });
 
+  it("labels retained history as awaiting applicant evidence and does not present stale terms as a recommendation", () => {
+    const historicalCase = {
+      ...offerCase,
+      assessmentCurrency: "historical_pending_applicant_response" as const,
+    };
+
+    render(<CreditAssessmentCard decisionCase={historicalCase} />);
+
+    expect(container.textContent).toContain("Awaiting applicant evidence");
+    expect(container.textContent).not.toContain("Fee calculation");
+  });
+
   it("puts the whole fee calculation one disclosure away", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
@@ -340,7 +339,7 @@ describe("CreditAssessmentCard", () => {
     );
 
     const disclosures = Array.from(container.querySelectorAll("details")).filter((details) =>
-      ["Inputs and checks", "Audit details"].some((label) => details.querySelector("summary")?.textContent?.includes(label))
+      ["Assessment inputs", "Audit details"].some((label) => details.querySelector("summary")?.textContent?.includes(label))
     );
     expect(disclosures).toHaveLength(2);
     expect(disclosures.every((details) => !details.open)).toBe(true);
@@ -348,16 +347,16 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
     expect(container.textContent).toContain("Credit programGt coffee accepted bill");
     expect(container.textContent).toContain("Program versionsynthetic-guatemala-program-v1");
-    expect(container.querySelector('[title="sha256:program"]')).not.toBeNull();
-    expect(container.querySelector('[title="sha256:assignment"]')).not.toBeNull();
+    expect(container.textContent).not.toContain("sha256:program");
+    expect(container.textContent).not.toContain("sha256:assignment");
     expect(container.textContent).toContain("Policy filesynthetic-guatemala-v7.json");
     expect(container.textContent).toContain("Calculation versiondeterministic-credit-core-v7");
     expect(container.textContent).toContain("Maximum effective annual cost15.00%");
     expect(container.textContent).toContain("Maximum fee ratio30.00%");
-    expect(container.querySelector('[title="sha256:policy-pack"]')).not.toBeNull();
-    expect(container.querySelector('[title="sha256:result"]')).not.toBeNull();
+    expect(container.textContent).not.toContain("sha256:policy-pack");
+    expect(container.textContent).not.toContain("sha256:result");
     expect(container.textContent).toContain("Mintsynthetic-mint-guatemala");
-    expect(container.querySelector('[title="sha256:snapshot"]')).not.toBeNull();
+    expect(container.textContent).not.toContain("sha256:snapshot");
   });
 
   it("marks quote-bound legacy assessments as read-only", () => {
@@ -366,13 +365,16 @@ describe("CreditAssessmentCard", () => {
     expect(container.textContent).toContain("fresh Mint credit-program assignment");
   });
 
-  it("shows curated risk percentages and resulting exposure while retaining honest raw audit data", () => {
+  it("keeps historical capacity compatibility out of the operator-facing case assessment", () => {
     render(<CreditAssessmentCard decisionCase={offerCase} />);
 
-    expect(container.textContent).toContain("Acceptor PD 6.00% · LGD 40.00%");
-    expect(container.textContent).toContain("Resulting Mint exposure 16,000,000 sat of 40,000,000 sat, including 8,000,000 sat proposed");
+    const facts = container.querySelector("section > dl");
+    expect(facts?.textContent).toContain("Acceptor riskPD 6.00% · LGD 40.00%");
+    expect(facts?.children).toHaveLength(3);
+    expect(container.textContent).toContain("5/5 passed");
+    expect(container.textContent).not.toContain("Mint exposure capacity");
     const technical = Array.from(container.querySelectorAll("details")).find((details) =>
-      details.querySelector("summary")?.textContent?.includes("Technical rule trace")
+      details.querySelector("summary")?.textContent?.includes("Rule trace")
     );
     expect(technical?.textContent).toContain("independently_verified");
   });
@@ -436,14 +438,14 @@ describe("CreditAssessmentCard", () => {
       <SubmittedDocuments submittedEvidence={withDocuments.submittedEvidence ?? []} evidencePackets={withDocuments.evidencePackets ?? []} />
     );
 
-    expect(container.textContent).toContain("Evidence review");
+    expect(container.textContent).toContain("2 submitted documents");
     // The uuid core appends to a stored file name is not shown to the operator.
     expect(container.textContent).toContain("goods-invoice.pdf");
     expect(container.textContent).not.toContain("0f4d1c22");
-    expect(container.textContent).toContain("Bill attachment lineage");
+    expect(container.textContent).toContain("Bill-bound");
     expect(container.textContent).toContain("No current server receipt");
     expect(container.textContent).toContain("delivery-photo.jpg");
-    expect(container.textContent).toContain("Applicant upload");
+    expect(container.textContent).toContain("Applicant");
   });
 
   it("tells the operator not to offer while verification is outstanding", () => {
@@ -483,9 +485,15 @@ describe("QuoteCreditAssessment", () => {
     mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
-    const details = container.querySelector("details");
-    expect(details?.open).toBe(false);
-    expect(details?.querySelector("summary")?.textContent).toBe("Assessment details");
+    const button = container.querySelector("button");
+    expect(button?.getAttribute("aria-expanded")).toBe("false");
+    expect(button?.textContent).toBe("Risk details5/5 checks passedShow details");
+    expect(container.textContent).not.toContain("7,734,000 sat");
+    void act(() => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(button?.getAttribute("aria-expanded")).toBe("true");
+    expect(button?.textContent).toBe("Risk details5/5 checks passedHide details");
     expect(container.textContent).toContain("7,734,000 sat");
   });
 

@@ -7,6 +7,8 @@ import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
 import type { AdminInfoReply, MintOperationStatus } from "@/generated/client/types.gen";
 import type { DurableAuthorizationReceipt, VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
+import type { AssessmentChange } from "@/pages/credit/assessment-diff";
+import { axisLabels, words } from "@/pages/credit/decision-types";
 import { ChevronDown, CircleAlert, CircleCheck, Clock3, Printer } from "lucide-react";
 import { useIntl } from "react-intl";
 
@@ -25,6 +27,7 @@ interface QuoteDetailCardProps {
   mintOperationStatus?: MintOperationStatus;
   isMintOperationLoading?: boolean;
   decisionSummary?: {
+    assessmentCurrency: "current" | "historical_pending_applicant_response";
     useOfFunds: string;
     repaymentSource: string;
     acceptor?: string;
@@ -35,13 +38,21 @@ interface QuoteDetailCardProps {
     failedChecks: number;
     notAssessedChecks: number;
     totalChecks: number;
-    invoiceExtractedAndMatched: boolean;
     answersAffirmed: boolean;
     recourseAcknowledged: boolean;
     unresolvedContradictions: number;
-    underwritingEvidenceProvenance: "mint_backed" | "synthetic" | "unavailable";
-    underwritingAuthoritySignaturesVerified: boolean;
-    hasMintPolicyAssignment: boolean;
+    evidenceSummary: {
+      documents: number;
+      citedClaims: number;
+      openRequests: number;
+      investigation: {
+        status: "available" | "disabled" | "idle" | "running" | "unavailable" | "not_run";
+        findings: number;
+        sources: number;
+      };
+    };
+    applicantRequests?: { axis: string; requiredItem: string }[];
+    reassessmentChanges?: AssessmentChange[];
     billAcceptanceState?: string;
     recommendedTerms?: {
       mintingFee: number;
@@ -109,14 +120,16 @@ export function QuoteDetailCard({
 }: QuoteDetailCardProps) {
   const intl = useIntl();
   const bill = quote.bill;
+  const isHistoricalAssessment = decisionSummary?.assessmentCurrency === "historical_pending_applicant_response";
   const netProceeds = "discounted" in quote ? quote.discounted : null;
-  const showingRecommendation = netProceeds === null && decisionSummary?.recommendedTerms !== undefined;
-  const displayedAmountAvailableForMinting = netProceeds ?? decisionSummary?.recommendedTerms?.amountAvailableForMinting ?? null;
-  const mintingFee = netProceeds === null ? (decisionSummary?.recommendedTerms?.mintingFee ?? null) : bill.sum - netProceeds;
+  const recommendedTerms = isHistoricalAssessment ? undefined : decisionSummary?.recommendedTerms;
+  const showingRecommendation = netProceeds === null && recommendedTerms !== undefined;
+  const displayedAmountAvailableForMinting = netProceeds ?? recommendedTerms?.amountAvailableForMinting ?? null;
+  const mintingFee = netProceeds === null ? (recommendedTerms?.mintingFee ?? null) : bill.sum - netProceeds;
   const mintingFeeRate =
     mintingFee === null || bill.sum === 0
       ? null
-      : showingRecommendation && decisionSummary?.recommendedTerms
+      : showingRecommendation && recommendedTerms
         ? intl.formatMessage(
             {
               id: "quotes.summary.recommendedFeeContext",
@@ -124,18 +137,11 @@ export function QuoteDetailCard({
               description: "Fee ratio and tenor for the governed recommended Minting fee",
             },
             {
-              rate: intl.formatNumber(decisionSummary.recommendedTerms.feeRatioBps / 100, { maximumFractionDigits: 2 }),
-              days: decisionSummary.recommendedTerms.tenorDays,
+              rate: intl.formatNumber(recommendedTerms.feeRatioBps / 100, { maximumFractionDigits: 2 }),
+              days: recommendedTerms.tenorDays,
             }
           )
         : `${((mintingFee / bill.sum) * 100).toFixed(4)}%`;
-  const exposureReservation =
-    quote.credit_exposure_reservation?.quoteId === quote.id &&
-    /^(0|[1-9][0-9]*)$/u.test(quote.credit_exposure_reservation.amountSat) &&
-    ["reserved", "committed", "released"].includes(quote.credit_exposure_reservation.state)
-      ? quote.credit_exposure_reservation
-      : null;
-
   const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
   const maturityLabel = maturityDate
     ? humanReadableDurationDays(intl.locale, maturityDate)
@@ -232,25 +238,161 @@ export function QuoteDetailCard({
   const hasSignedVerification = signedAuthorizationReceipt !== null && signedAuthorizationReceipt !== undefined;
   const durableExecutionCompleted = durableAuthorizationReceipt?.status === "completed";
   const showDecisionStatus = effectiveQuoteStatus === "Pending" && decisionSummary !== undefined;
+  const offerExpired =
+    showDecisionStatus &&
+    decisionSummary.recommendation === "offer_available" &&
+    decisionSummary.recommendedTerms !== undefined &&
+    Date.parse(`${decisionSummary.recommendedTerms.offerExpiresOn}T23:59:59.999Z`) <= Date.now();
   const summaryStatusVariant = showDecisionStatus
-    ? decisionSummary.recommendation === "no_current_product_fit"
-      ? "secondary"
-      : decisionSummary.recommendation === "offer_available" && decisionSummary.readyForDecision
-        ? "success"
-        : decisionSummary.readyForDecision
-          ? "destructive"
-          : "pending"
+    ? isHistoricalAssessment
+      ? "pending"
+      : offerExpired
+        ? "pending"
+        : decisionSummary.recommendation === "no_current_product_fit"
+          ? "secondary"
+          : decisionSummary.recommendation === "offer_available" && decisionSummary.readyForDecision
+            ? "success"
+            : decisionSummary.readyForDecision
+              ? "destructive"
+              : "pending"
     : getQuoteStatusVariant(effectiveQuoteStatus);
+  const decisionHeadline = isHistoricalAssessment
+    ? intl.formatMessage({
+        id: "quotes.summary.actionHold",
+        defaultMessage: "Hold",
+        description: "Recommended operator action while applicant evidence is pending",
+      })
+    : offerExpired
+      ? intl.formatMessage({
+          id: "quotes.summary.termsExpired",
+          defaultMessage: "Terms expired",
+          description: "Primary operator status when the prepared terms are no longer actionable",
+        })
+      : decisionSummary?.recommendation === "no_current_product_fit"
+        ? intl.formatMessage({ id: "quotes.summary.actionDoNotOffer", defaultMessage: "Do not offer" })
+        : decisionSummary?.recommendation === "offer_available" && decisionSummary.readyForDecision
+          ? intl.formatMessage({
+              id: "quotes.summary.actionOffer",
+              defaultMessage: "Offer",
+              description: "Recommended operator action for a governed offer-ready case",
+            })
+          : decisionSummary?.readyForDecision
+            ? intl.formatMessage({ id: "quotes.summary.actionReview", defaultMessage: "Review" })
+            : intl.formatMessage({
+                id: "quotes.summary.actionHold",
+                defaultMessage: "Hold",
+                description: "Recommended operator action while applicant evidence is pending",
+              });
+  const decisionStatusLine = isHistoricalAssessment
+    ? intl.formatMessage({
+        id: "quotes.summary.awaitingApplicantEvidence",
+        defaultMessage: "Awaiting applicant evidence",
+        description: "Status and executive headline for a retained non-actionable assessment pending an applicant response",
+      })
+    : offerExpired && decisionSummary?.recommendedTerms
+      ? intl.formatMessage(
+          { id: "quotes.summary.termsExpiredOn", defaultMessage: "Expired {date} · Awaiting applicant" },
+          { date: decisionSummary.recommendedTerms.offerExpiresOn }
+        )
+      : decisionSummary?.recommendation === "offer_available" && decisionSummary.readyForDecision && decisionSummary.recommendedTerms
+        ? intl.formatMessage(
+            { id: "quotes.summary.termsValidTo", defaultMessage: "Ready · terms valid to {date}" },
+            { date: decisionSummary.recommendedTerms.offerExpiresOn }
+          )
+        : decisionSummary?.recommendation === "no_current_product_fit"
+          ? intl.formatMessage({ id: "quotes.summary.noCurrentProductFit", defaultMessage: "No current product fit" })
+          : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" });
+  const changeLabel = (change: AssessmentChange): string => {
+    if (change.field === "axis") return axisLabels[change.axis ?? ""] ?? words(change.axis ?? "axis");
+    const labels: Record<Exclude<AssessmentChange["field"], "axis">, string> = {
+      assessment: intl.formatMessage({ id: "quotes.reassessment.assessment", defaultMessage: "Assessment" }),
+      recommendation: intl.formatMessage({ id: "quotes.reassessment.recommendation", defaultMessage: "Recommendation" }),
+      required_information: intl.formatMessage({ id: "quotes.reassessment.requiredInformation", defaultMessage: "Required information" }),
+      contradictions: intl.formatMessage({ id: "quotes.reassessment.contradictions", defaultMessage: "Contradictions" }),
+      invoice_plausibility: intl.formatMessage({ id: "quotes.reassessment.invoicePlausibility", defaultMessage: "Invoice plausibility" }),
+      invoice_consistency: intl.formatMessage({ id: "quotes.reassessment.invoiceConsistency", defaultMessage: "Invoice consistency" }),
+      invoice_evidence: intl.formatMessage({ id: "quotes.reassessment.invoiceEvidence", defaultMessage: "Invoice evidence" }),
+      invoice_amount: intl.formatMessage({
+        id: "quotes.reassessment.invoiceAmount",
+        defaultMessage: "Submitted invoice amount",
+        description: "Label for the amount extracted from the submitted invoice",
+      }),
+      invoice_amount_vs_bill: intl.formatMessage({
+        id: "quotes.reassessment.invoiceAmountVsBill",
+        defaultMessage: "Invoice amount vs eBill",
+        description: "Label for the deterministic comparison between invoice and eBill amounts",
+      }),
+      use_of_funds: intl.formatMessage({
+        id: "quotes.reassessment.useOfFunds",
+        defaultMessage: "Use of funds",
+        description: "Label for a changed applicant use-of-funds claim",
+      }),
+      acceptor: intl.formatMessage({
+        id: "quotes.reassessment.acceptor",
+        defaultMessage: "Acceptor",
+        description: "Label for a changed acceptor claim",
+      }),
+      repayment_source: intl.formatMessage({
+        id: "quotes.reassessment.repaymentSource",
+        defaultMessage: "Repayment source",
+        description: "Label for a changed applicant repayment-source claim",
+      }),
+      recourse_acknowledgement: intl.formatMessage({
+        id: "quotes.reassessment.recourseAcknowledgement",
+        defaultMessage: "Whole-face recourse",
+        description: "Label for a changed whole-face recourse acknowledgement",
+      }),
+      claim_evidence: intl.formatMessage({
+        id: "quotes.reassessment.claimEvidence",
+        defaultMessage: "Claim evidence",
+        description: "Label for a changed applicant-claim evidence state",
+      }),
+      document_count: intl.formatMessage({
+        id: "quotes.reassessment.documentCount",
+        defaultMessage: "Submitted document count",
+        description: "Label for a changed submitted-document count",
+      }),
+      documents: intl.formatMessage({
+        id: "quotes.reassessment.documents",
+        defaultMessage: "Submitted documents",
+        description: "Label for changed submitted-document identities and digests",
+      }),
+      minting_fee: intl.formatMessage({ id: "quotes.reassessment.mintingFee", defaultMessage: "Minting fee" }),
+      amount_available: intl.formatMessage({
+        id: "quotes.reassessment.amountAvailable",
+        defaultMessage: "Amount available for minting",
+      }),
+      offer_expiry: intl.formatMessage({ id: "quotes.reassessment.offerExpiry", defaultMessage: "Offer expiry" }),
+    };
+    return labels[change.field];
+  };
+  const changeValue = (change: AssessmentChange, value: string): string => {
+    if (value === "") return intl.formatMessage({ id: "quotes.reassessment.none", defaultMessage: "None" });
+    if (change.field === "minting_fee" || change.field === "amount_available" || change.field === "invoice_amount") {
+      return `${intl.formatNumber(BigInt(value))} sat`;
+    }
+    if (change.field === "recourse_acknowledgement") {
+      return value === "true"
+        ? intl.formatMessage({ id: "quotes.reassessment.acknowledged", defaultMessage: "Acknowledged" })
+        : intl.formatMessage({ id: "quotes.reassessment.notAcknowledged", defaultMessage: "Not acknowledged" });
+    }
+    return ["required_information", "offer_expiry", "use_of_funds", "acceptor", "repayment_source", "documents"].includes(change.field)
+      ? value
+      : words(value);
+  };
+  const applicantRequests = decisionSummary?.applicantRequests ?? [];
+  const reassessmentChanges = decisionSummary?.reassessmentChanges ?? [];
 
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
         <header className="border-b border-border bg-elevation-100 px-6 py-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight">
-                {intl.formatMessage({ id: "quotes.summary.caseTitle", defaultMessage: "Minting case" })}
-              </h2>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h1 className={`text-3xl font-semibold tracking-tight ${offerExpired ? "text-signal-alert" : ""}`}>
+                {showDecisionStatus ? decisionHeadline : effectiveQuoteStatus}
+              </h1>
+              {showDecisionStatus && <p className="mt-1 truncate text-sm text-muted-foreground">{decisionStatusLine}</p>}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -264,130 +406,139 @@ export function QuoteDetailCard({
               >
                 <Printer className="size-4" aria-hidden="true" />
               </Button>
-              <Badge variant={summaryStatusVariant}>
-                {showDecisionStatus
-                  ? decisionSummary.recommendation === "no_current_product_fit"
-                    ? intl.formatMessage({ id: "quotes.summary.noCurrentProductFit", defaultMessage: "No current product fit" })
-                    : decisionSummary.recommendation === "offer_available" && decisionSummary.readyForDecision
-                      ? intl.formatMessage({ id: "quotes.summary.ready", defaultMessage: "Ready for decision" })
-                      : decisionSummary.readyForDecision
-                        ? intl.formatMessage({ id: "quotes.summary.assessmentUnavailable", defaultMessage: "Assessment unavailable" })
-                        : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" })
-                  : intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
-              </Badge>
+              {!showDecisionStatus && (
+                <Badge variant={summaryStatusVariant}>{intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}</Badge>
+              )}
             </div>
           </div>
         </header>
 
         {decisionSummary ? (
-          <div className="grid lg:grid-cols-[1.35fr_1fr]">
-            <section className="px-6 py-5">
-              <h3 className="text-sm font-semibold">
-                {intl.formatMessage({ id: "quotes.summary.businessCase", defaultMessage: "Business case" })}
-              </h3>
-              <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+          <div>
+            <section className="overflow-x-auto border-b border-border px-6 py-3">
+              <p className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+                {decisionSummary.unresolvedContradictions > 0
+                  ? intl.formatMessage(
+                      { id: "quotes.summary.contradictionCount", defaultMessage: "{count} contradictions" },
+                      { count: decisionSummary.unresolvedContradictions }
+                    )
+                  : decisionSummary.evidenceSummary.openRequests > 0
+                    ? intl.formatMessage(
+                        { id: "quotes.summary.openCount", defaultMessage: "{count} open" },
+                        { count: decisionSummary.evidenceSummary.openRequests }
+                      )
+                    : intl.formatMessage({ id: "quotes.summary.noOpenExceptions", defaultMessage: "No open exceptions" })}
+                {" · "}
+                {intl.formatMessage(
+                  { id: "quotes.summary.policyCompact", defaultMessage: "Policy {passed}/{total}" },
+                  { passed: decisionSummary.passedChecks, total: decisionSummary.totalChecks }
+                )}
+                {" · "}
+                {intl.formatMessage(
+                  {
+                    id: "quotes.summary.documentCountCompact",
+                    defaultMessage: "{count, plural, one {# document} other {# documents}}",
+                  },
+                  { count: decisionSummary.evidenceSummary.documents }
+                )}
+              </p>
+
+              {applicantRequests.length > 0 && (
+                <section className="mt-3 border-l-2 border-signal-alert pl-3">
+                  <h4 className="text-xs font-semibold text-signal-alert">
+                    {intl.formatMessage({ id: "quotes.summary.blockingItems", defaultMessage: "Blocking items" })}
+                  </h4>
+                  <ul className="mt-2 space-y-2">
+                    {applicantRequests.map((request) => (
+                      <li key={`${request.axis}:${request.requiredItem}`} className="text-sm font-medium">
+                        {request.requiredItem}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {reassessmentChanges.length > 0 && (
+                <details className="group mt-4 rounded-md border border-border bg-background">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-medium marker:hidden">
+                    {intl.formatMessage(
+                      { id: "quotes.reassessment.changed", defaultMessage: "Changed since last assessment ({count})" },
+                      { count: reassessmentChanges.length }
+                    )}
+                    <ChevronDown
+                      className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                      aria-hidden="true"
+                    />
+                  </summary>
+                  <div className="border-t border-border px-3 py-1">
+                    {reassessmentChanges.map((change) => (
+                      <div key={`${change.field}:${change.axis ?? ""}`} className="border-b border-border py-2 last:border-b-0">
+                        <div className="text-xs font-medium">{changeLabel(change)}</div>
+                        <dl className="mt-1 grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <dt className="text-muted-foreground">
+                              {intl.formatMessage({ id: "quotes.reassessment.before", defaultMessage: "Before" })}
+                            </dt>
+                            <dd className="mt-0.5 break-words">{changeValue(change, change.before)}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-muted-foreground">
+                              {intl.formatMessage({ id: "quotes.reassessment.after", defaultMessage: "After" })}
+                            </dt>
+                            <dd className="mt-0.5 break-words font-medium">{changeValue(change, change.after)}</dd>
+                          </div>
+                        </dl>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </section>
+
+            <details className="group border-b border-border">
+              <summary className="flex cursor-pointer list-none items-center gap-4 px-6 py-4 marker:hidden">
+                <h3 className="shrink-0 text-sm font-semibold">
+                  {intl.formatMessage({ id: "quotes.summary.statedByApplicant", defaultMessage: "Business case" })}
+                </h3>
+                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                  {decisionSummary.goodsDescription
+                    ? `${decisionSummary.goodsDescription} · ${decisionSummary.useOfFunds}`
+                    : decisionSummary.useOfFunds}
+                </span>
+                <ChevronDown
+                  className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                  aria-hidden="true"
+                />
+              </summary>
+              <dl className="grid gap-x-8 gap-y-5 border-t border-border px-6 py-5 sm:grid-cols-2">
                 <div>
                   <dt className="text-xs text-muted-foreground">
                     {intl.formatMessage({ id: "quotes.summary.purpose", defaultMessage: "Use of proceeds" })}
                   </dt>
-                  <dd className="mt-1 text-sm font-medium leading-5">{decisionSummary.useOfFunds}</dd>
+                  <dd className="mt-1 break-words text-sm font-medium leading-6">{decisionSummary.useOfFunds}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
                     {intl.formatMessage({ id: "quotes.summary.repayment", defaultMessage: "Repayment source" })}
                   </dt>
-                  <dd className="mt-1 text-sm font-medium leading-5">{decisionSummary.repaymentSource}</dd>
+                  <dd className="mt-1 break-words text-sm font-medium leading-6">{decisionSummary.repaymentSource}</dd>
                 </div>
-                {decisionSummary.acceptor && (
-                  <div>
-                    <dt className="text-xs text-muted-foreground">
-                      {intl.formatMessage({ id: "quotes.summary.payer", defaultMessage: "Payer at maturity" })}
-                    </dt>
-                    <dd className="mt-1 text-sm font-medium leading-5">{decisionSummary.acceptor}</dd>
-                  </div>
-                )}
+                <div>
+                  <dt className="text-xs text-muted-foreground">
+                    {intl.formatMessage({ id: "quotes.summary.payer", defaultMessage: "Payer at maturity" })}
+                  </dt>
+                  <dd className="mt-1 break-words text-sm font-medium leading-6">{bill.drawee.name}</dd>
+                </div>
                 {decisionSummary.goodsDescription && (
                   <div>
                     <dt className="text-xs text-muted-foreground">
                       {intl.formatMessage({ id: "quotes.summary.tradeEvidence", defaultMessage: "Underlying trade" })}
                     </dt>
-                    <dd className="mt-1 text-sm font-medium leading-5">{decisionSummary.goodsDescription}</dd>
+                    <dd className="mt-1 break-words text-sm font-medium leading-6">{decisionSummary.goodsDescription}</dd>
                   </div>
                 )}
               </dl>
-            </section>
-
-            <section className="border-t border-border bg-elevation-100 px-6 py-5 lg:border-t-0 lg:border-l">
-              <h3 className="text-sm font-semibold">
-                {intl.formatMessage({
-                  id: "quotes.summary.assessment",
-                  defaultMessage: "Assessment",
-                  description: "Heading for the compact operator assessment summary",
-                })}
-              </h3>
-              <p className="mt-4 text-sm font-medium">
-                {intl.formatMessage(
-                  {
-                    id: "quotes.summary.policyChecks",
-                    defaultMessage: "Policy checks: {passed}/{total} passed",
-                    description: "Compact count of policy checks in the operator assessment summary",
-                  },
-                  { passed: decisionSummary.passedChecks, total: decisionSummary.totalChecks }
-                )}
-              </p>
-              {!decisionSummary.readyForDecision && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {intl.formatMessage(
-                    {
-                      id: "quotes.summary.verificationCount",
-                      defaultMessage: "{count, plural, one {# item needs verification} other {# items need verification}}",
-                      description: "Compact count of assessment items that still need verification",
-                    },
-                    { count: decisionSummary.failedChecks + decisionSummary.notAssessedChecks }
-                  )}
-                </p>
-              )}
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Badge
-                  variant={
-                    decisionSummary.underwritingEvidenceProvenance === "mint_backed" &&
-                    decisionSummary.underwritingAuthoritySignaturesVerified &&
-                    decisionSummary.hasMintPolicyAssignment
-                      ? "success"
-                      : decisionSummary.underwritingEvidenceProvenance === "synthetic"
-                        ? "outline"
-                        : "pending"
-                  }
-                >
-                  {decisionSummary.underwritingEvidenceProvenance === "synthetic"
-                    ? intl.formatMessage({
-                        id: "quotes.summary.syntheticInputs",
-                        defaultMessage: "Synthetic testnet inputs",
-                        description: "Badge stating that risk and capacity inputs are synthetic testnet data",
-                      })
-                    : decisionSummary.underwritingEvidenceProvenance === "mint_backed" &&
-                        decisionSummary.underwritingAuthoritySignaturesVerified &&
-                        decisionSummary.hasMintPolicyAssignment
-                      ? intl.formatMessage({
-                          id: "quotes.summary.verifiedMintSources",
-                          defaultMessage: "Risk data verified",
-                          description: "Badge stating that policy, risk and capacity records are bound and signature-verified",
-                        })
-                      : intl.formatMessage({
-                          id: "quotes.summary.mintEvidenceUnavailable",
-                          defaultMessage: "Risk data missing",
-                          description: "Badge warning that admissible or verified Mint underwriting evidence is incomplete",
-                        })}
-                </Badge>
-                <a className="text-sm font-medium text-primary underline-offset-4 hover:underline" href="#documents-and-evidence">
-                  {intl.formatMessage({
-                    id: "quotes.summary.reviewEvidence",
-                    defaultMessage: "Review evidence",
-                    description: "Link from the executive summary to source documents and extracted evidence",
-                  })}
-                </a>
-              </div>
-            </section>
+            </details>
           </div>
         ) : (
           <p className="px-6 py-5 text-sm text-muted-foreground">
@@ -398,26 +549,30 @@ export function QuoteDetailCard({
           </p>
         )}
 
-        <section className="grid grid-cols-2 border-t border-border bg-elevation-100 lg:grid-cols-4">
+        <section className="grid grid-cols-2 border-t border-border bg-elevation-100 md:grid-cols-4">
           <div className="border-r border-b border-border px-5 py-4 lg:border-b-0">
-            <div className="text-xs text-muted-foreground">
+            <div className="truncate text-xs text-muted-foreground">
               {intl.formatMessage({ id: "quotes.detail.sum", defaultMessage: "Bill amount" })}
             </div>
-            <Currency value={bill.sum} sourceCurrency="sat" className="mt-1 text-xl font-semibold" amountClassName="text-current" />
+            <Currency
+              value={bill.sum}
+              sourceCurrency="sat"
+              className="mt-1 whitespace-nowrap text-xl font-semibold tabular-nums"
+              amountClassName="text-current"
+            />
           </div>
           <div className="border-b border-border px-5 py-4 lg:border-r lg:border-b-0">
-            <div className="text-xs text-muted-foreground">
-              {showingRecommendation
-                ? intl.formatMessage({
-                    id: "quotes.summary.recommendedMintingFee",
-                    defaultMessage: "Recommended Minting fee",
-                    description: "Governed recommended Minting fee before the Mint has issued terms",
-                  })
-                : intl.formatMessage({ id: "quotes.detail.discount.absolute", defaultMessage: "Minting fee" })}
+            <div className="truncate text-xs text-muted-foreground">
+              {intl.formatMessage({ id: "quotes.summary.fee", defaultMessage: "Fee" })}
             </div>
             {mintingFee !== null && mintingFeeRate !== null ? (
               <>
-                <Currency value={mintingFee} sourceCurrency="sat" className="mt-1 text-xl font-semibold" amountClassName="text-current" />
+                <Currency
+                  value={mintingFee}
+                  sourceCurrency="sat"
+                  className="mt-1 whitespace-nowrap text-xl font-semibold tabular-nums"
+                  amountClassName="text-current"
+                />
                 <div className="mt-0.5 text-xs text-muted-foreground">{mintingFeeRate}</div>
               </>
             ) : (
@@ -425,32 +580,26 @@ export function QuoteDetailCard({
             )}
           </div>
           <div className="border-r border-border px-5 py-4">
-            <div className="text-xs text-muted-foreground">
-              {showingRecommendation
-                ? intl.formatMessage({
-                    id: "quotes.summary.recommendedAmountAvailable",
-                    defaultMessage: "Recommended amount available for minting",
-                    description: "Governed recommended amount before the Mint has issued terms",
-                  })
-                : intl.formatMessage({ id: "quotes.detail.discounted", defaultMessage: "Amount available for minting" })}
+            <div className="truncate text-xs text-muted-foreground">
+              {intl.formatMessage({ id: "quotes.summary.availableToMint", defaultMessage: "Available to mint" })}
             </div>
             {displayedAmountAvailableForMinting !== null ? (
               <>
                 <Currency
                   value={displayedAmountAvailableForMinting}
                   sourceCurrency="sat"
-                  className="mt-1 text-xl font-semibold"
+                  className="mt-1 whitespace-nowrap text-xl font-semibold tabular-nums"
                   amountClassName="text-current"
                 />
-                {showingRecommendation && decisionSummary?.recommendedTerms && (
+                {quote.status === "Offered" && "ttl" in quote && quote.ttl && (
                   <div className="mt-0.5 text-xs text-muted-foreground">
                     {intl.formatMessage(
                       {
-                        id: "quotes.summary.recommendationValidUntil",
-                        defaultMessage: "Valid until {date}",
-                        description: "Expiry date of the governed recommended terms",
+                        id: "quotes.detail.offerExpiresAt",
+                        defaultMessage: "Offer expires {date}",
+                        description: "Expiry timestamp for the Mint's current offer",
                       },
-                      { date: decisionSummary.recommendedTerms.offerExpiresOn }
+                      { date: formatLocalDateTime(new Date(quote.ttl)) }
                     )}
                   </div>
                 )}
@@ -460,10 +609,10 @@ export function QuoteDetailCard({
             )}
           </div>
           <div className="px-5 py-4">
-            <div className="text-xs text-muted-foreground">
+            <div className="truncate text-xs text-muted-foreground">
               {intl.formatMessage({ id: "quotes.detail.maturityDate", defaultMessage: "Maturity" })}
             </div>
-            <div className="mt-1 text-lg font-semibold tabular-nums">{bill.maturity_date}</div>
+            <div className="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums">{bill.maturity_date}</div>
             <div className="mt-0.5 text-xs text-muted-foreground">{maturityLabel}</div>
           </div>
         </section>
@@ -472,33 +621,12 @@ export function QuoteDetailCard({
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 marker:hidden">
             <span className="text-sm font-semibold">
               {intl.formatMessage({
-                id: "quotes.lifecycle.auditTitle",
-                defaultMessage: "Audit & lifecycle",
-                description: "Collapsed heading for authorization receipts and lifecycle details",
+                id: "quotes.lifecycle.processingDetails",
+                defaultMessage: "Processing & audit",
+                description: "Collapsed heading for technical quote processing and authorization details",
               })}
             </span>
-            <span className="flex items-center gap-2">
-              <Badge variant={durableExecutionCompleted || hasSignedVerification ? "success" : "outline"}>
-                {hasDurableReceipt
-                  ? intl.formatMessage({
-                      id: "quotes.authorization.executionPersisted",
-                      defaultMessage: "Audit receipt saved",
-                      description: "Badge when the Mint exposes a durable authorization execution receipt",
-                    })
-                  : hasSignedVerification
-                    ? intl.formatMessage({
-                        id: "quotes.authorization.signedVerified",
-                        defaultMessage: "Authorization verified",
-                        description: "Badge shown after the Mint accepts the signed authorization command in this session",
-                      })
-                    : intl.formatMessage({
-                        id: "quotes.authorization.unavailable",
-                        defaultMessage: "No authorization receipt",
-                        description: "Badge when neither a signed command nor durable execution receipt is available",
-                      })}
-              </Badge>
-              <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
-            </span>
+            <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
           </summary>
 
           <div className="border-t border-border px-6 py-5">
@@ -552,43 +680,8 @@ export function QuoteDetailCard({
                 />
               </ol>
 
-              {exposureReservation !== null && (
-                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-3 text-xs">
-                  <Badge variant={exposureReservation.state === "released" ? "outline" : "success"}>
-                    {intl.formatMessage(
-                      {
-                        id: "quotes.capacity.state",
-                        defaultMessage: "Capacity {state}",
-                        description: "State of the quote-bound Mint exposure reservation",
-                      },
-                      { state: exposureReservation.state }
-                    )}
-                  </Badge>
-                  <span className="text-muted-foreground">
-                    {intl.formatMessage({
-                      id: "quotes.capacity.amount",
-                      defaultMessage: "Exposure amount",
-                      description: "Label for the amount controlled by the Mint exposure reservation",
-                    })}
-                  </span>
-                  <Currency value={Number(exposureReservation.amountSat)} sourceCurrency="sat" />
-                </div>
-              )}
-
               {hasDurableReceipt ? (
                 <dl className="grid gap-x-5 gap-y-3 border-t border-border pt-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <dt className="text-muted-foreground">
-                      {intl.formatMessage({
-                        id: "quotes.authorization.operationId",
-                        defaultMessage: "Operation ID",
-                        description: "Label for the durable Mint authorization operation identifier",
-                      })}
-                    </dt>
-                    <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.operationId}>
-                      {durableAuthorizationReceipt.operationId.slice(0, 22)}…
-                    </dd>
-                  </div>
                   <div>
                     <dt className="text-muted-foreground">
                       {intl.formatMessage({
@@ -618,30 +711,6 @@ export function QuoteDetailCard({
                       })}
                     </dt>
                     <dd className="mt-1 break-all font-mono">{durableAuthorizationReceipt.effectId}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">
-                      {intl.formatMessage({
-                        id: "quotes.authorization.digest",
-                        defaultMessage: "Authorization digest",
-                        description: "Label for the digest binding the signed authorization",
-                      })}
-                    </dt>
-                    <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.authorizationDigest}>
-                      {durableAuthorizationReceipt.authorizationDigest.slice(0, 22)}…
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">
-                      {intl.formatMessage({
-                        id: "quotes.authorization.resultDigest",
-                        defaultMessage: "Result digest",
-                        description: "Label for the digest binding the persisted Mint result",
-                      })}
-                    </dt>
-                    <dd className="mt-1 font-mono" title={durableAuthorizationReceipt.resultDigest}>
-                      {durableAuthorizationReceipt.resultDigest.slice(0, 22)}…
-                    </dd>
                   </div>
                   <div className="sm:col-span-2">
                     <dt className="text-muted-foreground">
@@ -673,18 +742,6 @@ export function QuoteDetailCard({
                   <div>
                     <dt className="text-muted-foreground">
                       {intl.formatMessage({
-                        id: "quotes.authorization.digest",
-                        defaultMessage: "Authorization digest",
-                        description: "Label for the digest binding the signed authorization",
-                      })}
-                    </dt>
-                    <dd className="mt-1 font-mono" title={signedAuthorizationReceipt.authorizationDigest}>
-                      {signedAuthorizationReceipt.authorizationDigest.slice(0, 22)}…
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">
-                      {intl.formatMessage({
                         id: "quotes.authorization.scope",
                         defaultMessage: "Exact scope",
                         description: "Label for the Mint, bill and action bound by an authorization",
@@ -710,66 +767,60 @@ export function QuoteDetailCard({
               ) : null}
             </div>
           </div>
-        </details>
 
-        <footer className="flex flex-col gap-4 border-t border-border px-6 py-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <Text variant="label" className="w-32">
-                  {intl.formatMessage({ id: "participants.role.drawee", defaultMessage: "Drawee" })}:
-                </Text>
-                <ParticipantDetail participant={bill.drawee} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Text variant="label" className="w-32">
-                  {intl.formatMessage({ id: "participants.role.drawer", defaultMessage: "Drawer" })}:
-                </Text>
-                <ParticipantDetail participant={bill.drawer} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Text variant="label" className="w-32">
-                  {intl.formatMessage({ id: "participants.role.payee", defaultMessage: "Payee" })}:
-                </Text>
-                <ParticipantDetail participant={bill.payee} />
-              </div>
-              {bill.endorsees && bill.endorsees.length > 0 && (
+          <footer className="flex flex-col gap-4 border-t border-border px-6 py-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2">
                   <Text variant="label" className="w-32">
-                    {intl.formatMessage({ id: "participants.role.holder", defaultMessage: "Holder" })}:
+                    {intl.formatMessage({ id: "participants.role.drawee", defaultMessage: "Drawee" })}:
                   </Text>
-                  <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
+                  <ParticipantDetail participant={bill.drawee} />
                 </div>
-              )}
+                <div className="flex items-center gap-2">
+                  <Text variant="label" className="w-32">
+                    {intl.formatMessage({ id: "participants.role.drawer", defaultMessage: "Drawer" })}:
+                  </Text>
+                  <ParticipantDetail participant={bill.drawer} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Text variant="label" className="w-32">
+                    {intl.formatMessage({ id: "participants.role.payee", defaultMessage: "Payee" })}:
+                  </Text>
+                  <ParticipantDetail participant={bill.payee} />
+                </div>
+                {bill.endorsees && bill.endorsees.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Text variant="label" className="w-32">
+                      {intl.formatMessage({ id: "participants.role.holder", defaultMessage: "Holder" })}:
+                    </Text>
+                    <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {showPayment && (ebillPaid || rejectedToPay || isInMempool === true || requestedToPay) && (
+                  <Badge variant={ebillPaid ? "success" : rejectedToPay ? "destructive" : isInMempool ? "processing" : "info"}>
+                    {ebillPaid
+                      ? intl.formatMessage({ id: "quotes.payment.paid", defaultMessage: "Paid" })
+                      : rejectedToPay
+                        ? intl.formatMessage({ id: "quotes.payment.rejected", defaultMessage: "Payment rejected" })
+                        : isInMempool
+                          ? intl.formatMessage({ id: "quotes.payment.inMempool", defaultMessage: "Payment in mempool" })
+                          : intl.formatMessage({ id: "quotes.payment.requested", defaultMessage: "Payment requested" })}
+                  </Badge>
+                )}
+                {ebillPaid && (
+                  <Badge variant={!isMintCompleteLoading && isMintComplete ? "success" : "pending"}>
+                    {!isMintCompleteLoading && isMintComplete
+                      ? intl.formatMessage({ id: "quotes.redemption.complete", defaultMessage: "Redemption complete" })
+                      : intl.formatMessage({ id: "quotes.redemption.pending", defaultMessage: "Redemption pending" })}
+                  </Badge>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {quote.status === "Offered" && "ttl" in quote && quote.ttl && (
-                <span className="text-xs text-muted-foreground">
-                  {intl.formatMessage({ id: "quotes.detail.deadline", defaultMessage: "Offer deadline" })}{" "}
-                  {formatLocalDateTime(new Date(quote.ttl))}
-                </span>
-              )}
-              {showPayment && (ebillPaid || rejectedToPay || isInMempool === true || requestedToPay) && (
-                <Badge variant={ebillPaid ? "success" : rejectedToPay ? "destructive" : isInMempool ? "processing" : "info"}>
-                  {ebillPaid
-                    ? intl.formatMessage({ id: "quotes.payment.paid", defaultMessage: "Paid" })
-                    : rejectedToPay
-                      ? intl.formatMessage({ id: "quotes.payment.rejected", defaultMessage: "Payment rejected" })
-                      : isInMempool
-                        ? intl.formatMessage({ id: "quotes.payment.inMempool", defaultMessage: "Payment in mempool" })
-                        : intl.formatMessage({ id: "quotes.payment.requested", defaultMessage: "Payment requested" })}
-                </Badge>
-              )}
-              {ebillPaid && (
-                <Badge variant={!isMintCompleteLoading && isMintComplete ? "success" : "pending"}>
-                  {!isMintCompleteLoading && isMintComplete
-                    ? intl.formatMessage({ id: "quotes.redemption.complete", defaultMessage: "Redemption complete" })
-                    : intl.formatMessage({ id: "quotes.redemption.pending", defaultMessage: "Redemption pending" })}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </footer>
+          </footer>
+        </details>
       </CardContent>
     </Card>
   );

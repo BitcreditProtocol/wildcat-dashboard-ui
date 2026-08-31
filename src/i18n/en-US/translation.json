@@ -401,7 +401,7 @@
   "quotes.summary.mintEvidenceUnavailable": "Underwriting evidence unavailable",
   "quotes.summary.mintPolicyAssigned": "Mint policy assigned",
   "quotes.summary.mintPolicyMissing": "No Mint policy assignment",
-  "quotes.summary.noContradictions": "Automated scan found no unresolved contradictions",
+  "quotes.summary.noContradictions": "No contradictions",
   "quotes.summary.payer": "Payer at maturity",
   "quotes.summary.print": "Print summary",
   "quotes.summary.purpose": "Use of proceeds",

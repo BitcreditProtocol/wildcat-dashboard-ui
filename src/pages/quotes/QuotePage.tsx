@@ -1,11 +1,10 @@
-import { toast, Heading } from "@bitcredit/ui-library";
+import { toast } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
-import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { getEbillAttachment, getEbillFileFromRequestToMint } from "@/generated/client/sdk.gen";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { QuoteActions } from "./QuoteActions";
@@ -15,9 +14,10 @@ import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { beginPdfDownload } from "@/lib/download";
 import { authenticatedFetch } from "@/lib/api-client";
 import { type CreditEvidenceState, QuoteDocuments } from "./QuoteDocuments";
-import type { SubmittedEvidence } from "@/pages/credit/decision-types";
+import { countCitedEvidenceClaims, operatorVisibleAxes, type SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { EndorseeList } from "./components/EndorseeList";
@@ -25,7 +25,13 @@ import type { InfoReply } from "@/generated/client/types.gen";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { QuoteCreditAssessment } from "@/pages/credit/QuoteCreditAssessment";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
-import { durableAuthorizationReceiptFromQuote, type VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
+import {
+  durableAuthorizationReceiptFromQuote,
+  reviewInvoiceEvidence,
+  type VerifiedAuthorizationReceipt,
+} from "@/pages/credit/record-operator-decision";
+import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
+import { assessmentChanges } from "@/pages/credit/assessment-diff";
 import { isQuotePollingCompleteStatus } from "@/utils/quote-status";
 
 interface LocationState {
@@ -56,9 +62,12 @@ function PageBody({ id }: { id: string }) {
   const intl = useIntl();
   const [openingDocumentHash, setOpeningDocumentHash] = useState<string | null>(null);
   const [openingEvidenceReference, setOpeningEvidenceReference] = useState<string | null>(null);
+  const [reviewingEvidenceReference, setReviewingEvidenceReference] = useState<string | null>(null);
   const [signedAuthorizationReceipt, setSignedAuthorizationReceipt] = useState<VerifiedAuthorizationReceipt | null>(null);
 
   const blobUrlTimerRef = useRef<number | null>(null);
+  const autoInvestigationStartedRef = useRef<string | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     return () => {
@@ -92,6 +101,12 @@ function PageBody({ id }: { id: string }) {
     isMintOperationLoading,
   } = useQuoteDetail(id);
   const creditAssessment = useCreditAssessmentForBill(billId, id);
+  const operatorCapability = useOperatorCapability();
+  const assessmentHistory = creditAssessment.decisionCase?.assessmentHistory;
+  const previousAssessment = assessmentHistory?.[assessmentHistory.length - 2];
+  const currentAssessment = assessmentHistory?.[assessmentHistory.length - 1];
+  const reassessmentChanges =
+    previousAssessment === undefined || currentAssessment === undefined ? [] : assessmentChanges(previousAssessment, currentAssessment);
   const creditEvidence: CreditEvidenceState = creditAssessment.isLoading
     ? { status: "loading" }
     : creditAssessment.error !== null
@@ -104,11 +119,36 @@ function PageBody({ id }: { id: string }) {
               status: "available",
               caseId: creditAssessment.decisionCase.snapshot.caseId,
               resultDigest: creditAssessment.decisionCase.resultDigest,
+              assessmentCurrency: creditAssessment.decisionCase.assessmentCurrency,
               submittedEvidence: creditAssessment.decisionCase.submittedEvidence ?? [],
               evidencePackets: creditAssessment.decisionCase.evidencePackets ?? [],
               invoiceAssessment: creditAssessment.decisionCase.snapshot.invoice,
               verificationRequests: creditAssessment.decisionCase.result.verificationRequests,
+              claimInvestigation: creditAssessment.decisionCase.claimInvestigation,
             };
+
+  const investigation = creditAssessment.decisionCase?.claimInvestigation;
+  useEffect(() => {
+    if (
+      creditAssessment.decisionCase?.assessmentCurrency !== "current" ||
+      investigation?.status !== "idle" ||
+      autoInvestigationStartedRef.current === investigation.request.inputDigest
+    ) {
+      return;
+    }
+    autoInvestigationStartedRef.current = investigation.request.inputDigest;
+    void authenticatedFetch("/api/ai-credit/operator-claim-investigations", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(investigation.request),
+      cache: "no-store",
+      credentials: "same-origin",
+      redirect: "error",
+      signal: AbortSignal.timeout(15_000),
+    })
+      .then((response) => (response.ok ? queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] }) : undefined))
+      .catch(() => undefined);
+  }, [creditAssessment.decisionCase?.assessmentCurrency, investigation, queryClient]);
 
   if (error) {
     const errorMessage = getApiErrorMessage(error);
@@ -202,16 +242,7 @@ function PageBody({ id }: { id: string }) {
         );
       }
 
-      const blobUrl = window.URL.createObjectURL(resolvedAttachment);
-      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
-
-      if (!openedWindow) {
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.click();
-      }
+      const blobUrl = beginPdfDownload(resolvedAttachment, documentFile.name);
 
       if (blobUrlTimerRef.current !== null) {
         clearTimeout(blobUrlTimerRef.current);
@@ -236,22 +267,6 @@ function PageBody({ id }: { id: string }) {
 
   const handleOpenEvidence = async (evidence: SubmittedEvidence) => {
     if (creditEvidence.status !== "available" || openingEvidenceReference !== null) return;
-    // Browsers only permit a new tab during the original click. Reserve it before the authenticated
-    // fetch, then point it at the verified PDF bytes; otherwise the useful result is popup-blocked.
-    const openedWindow = window.open("about:blank", "_blank");
-    if (openedWindow === null) {
-      toast({
-        title: intl.formatMessage({ id: "quotes.documents.openError", defaultMessage: "Failed to open document" }),
-        description: intl.formatMessage({
-          id: "quotes.documents.popupBlocked",
-          defaultMessage: "Allow popups for this dashboard, then try again.",
-          description: "Instructions when a browser blocks opening submitted evidence",
-        }),
-        variant: "error",
-      });
-      return;
-    }
-    openedWindow.opener = null;
     setOpeningEvidenceReference(evidence.reference);
     try {
       const response = await authenticatedFetch("/api/ai-credit/workbench-evidence", {
@@ -268,15 +283,13 @@ function PageBody({ id }: { id: string }) {
           intl.formatMessage({ id: "quotes.documents.evidenceOpenError", defaultMessage: "Submitted evidence could not be opened." })
         );
       }
-      const blobUrl = window.URL.createObjectURL(await response.blob());
-      openedWindow.location.replace(blobUrl);
+      const blobUrl = beginPdfDownload(await response.blob(), evidence.label);
       if (blobUrlTimerRef.current !== null) clearTimeout(blobUrlTimerRef.current);
       blobUrlTimerRef.current = window.setTimeout(() => {
         window.URL.revokeObjectURL(blobUrl);
         blobUrlTimerRef.current = null;
       }, 60_000);
     } catch (error) {
-      openedWindow.close();
       toast({
         title: intl.formatMessage({ id: "quotes.documents.openError", defaultMessage: "Failed to open document" }),
         description: getApiErrorMessage(error),
@@ -284,6 +297,54 @@ function PageBody({ id }: { id: string }) {
       });
     } finally {
       setOpeningEvidenceReference(null);
+    }
+  };
+
+  const handleReviewInvoiceEvidence = async (evidence: SubmittedEvidence) => {
+    if (
+      creditEvidence.status !== "available" ||
+      billId === undefined ||
+      operatorCapability.capability === undefined ||
+      reviewingEvidenceReference !== null ||
+      !window.confirm(
+        intl.formatMessage({
+          id: "quotes.documents.confirmInvoiceReview",
+          defaultMessage: "Confirm that this invoice matches the current eBill facts? This does not verify commercial truth.",
+          description: "Confirmation before recording a Mint operator invoice-to-eBill review",
+        })
+      )
+    ) {
+      return;
+    }
+    setReviewingEvidenceReference(evidence.reference);
+    try {
+      const result = await reviewInvoiceEvidence(
+        {
+          billId,
+          caseId: creditEvidence.caseId,
+          decisionResultDigest: creditEvidence.resultDigest,
+          evidence,
+        },
+        operatorCapability.capability
+      );
+      if (result.ok) {
+        toast({
+          title: intl.formatMessage({
+            id: "quotes.documents.invoiceReviewRecorded",
+            defaultMessage: "Invoice review recorded",
+            description: "Toast after a governed invoice review is stored and reassessed",
+          }),
+        });
+        await queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
+      } else {
+        toast({
+          title: intl.formatMessage({ id: "quotes.documents.invoiceReviewFailed", defaultMessage: "Invoice review failed" }),
+          description: result.error,
+          variant: "error",
+        });
+      }
+    } finally {
+      setReviewingEvidenceReference(null);
     }
   };
 
@@ -301,7 +362,7 @@ function PageBody({ id }: { id: string }) {
   const durableAuthorizationReceipt = durableAuthorizationReceiptFromQuote(quote, quote.id, bill.id);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mt-4 flex flex-col gap-4">
       <section className="flex flex-col gap-4" id="minting-summary">
         <div className="hidden print:block">
           <h1 className="text-2xl font-semibold">
@@ -326,6 +387,7 @@ function PageBody({ id }: { id: string }) {
           decisionSummary={
             creditAssessment.decisionCase?.applicantConfirmation
               ? {
+                  assessmentCurrency: creditAssessment.decisionCase.assessmentCurrency,
                   useOfFunds: creditAssessment.decisionCase.applicantConfirmation.useOfFunds,
                   repaymentSource: creditAssessment.decisionCase.applicantConfirmation.repaymentSource,
                   ...(creditAssessment.decisionCase.applicantConfirmation.acceptor &&
@@ -338,51 +400,43 @@ function PageBody({ id }: { id: string }) {
                     : {}),
                   readyForDecision: creditAssessment.decisionCase.result.assessmentStatus === "ready_for_decision",
                   recommendation: creditAssessment.decisionCase.result.recommendation,
-                  passedChecks: creditAssessment.decisionCase.result.axes.filter((axis) => axis.status === "pass").length,
-                  failedChecks: creditAssessment.decisionCase.result.axes.filter((axis) => axis.status === "fail").length,
-                  notAssessedChecks: creditAssessment.decisionCase.result.axes.filter(
+                  passedChecks: operatorVisibleAxes(creditAssessment.decisionCase.result.axes).filter((axis) => axis.status === "pass")
+                    .length,
+                  failedChecks: operatorVisibleAxes(creditAssessment.decisionCase.result.axes).filter((axis) => axis.status === "fail")
+                    .length,
+                  notAssessedChecks: operatorVisibleAxes(creditAssessment.decisionCase.result.axes).filter(
                     (axis) => axis.status === "blocked" || axis.status === "not_assessed"
                   ).length,
-                  totalChecks: creditAssessment.decisionCase.result.axes.length,
-                  invoiceExtractedAndMatched:
-                    creditAssessment.decisionCase.snapshot.invoice !== null &&
-                    creditAssessment.decisionCase.snapshot.invoice.plausibility === "plausible" &&
-                    creditAssessment.decisionCase.snapshot.invoice.billAndClaimsConsistency === "match" &&
-                    (creditAssessment.decisionCase.submittedEvidence ?? []).some(
-                      (evidence) => evidence.reference === creditAssessment.decisionCase?.snapshot.invoice?.reference
-                    ) &&
-                    (creditAssessment.decisionCase.evidencePackets ?? []).some(
-                      (packet) =>
-                        packet.evidence.reference === creditAssessment.decisionCase?.snapshot.invoice?.reference &&
-                        packet.extraction !== undefined
-                    ),
+                  totalChecks: operatorVisibleAxes(creditAssessment.decisionCase.result.axes).length,
                   answersAffirmed: creditAssessment.decisionCase.applicantConfirmation.answersAffirmed,
                   recourseAcknowledged: creditAssessment.decisionCase.applicantConfirmation.recourseAcknowledged,
                   unresolvedContradictions: creditAssessment.decisionCase.snapshot.contradictions.length,
-                  underwritingEvidenceProvenance:
-                    creditAssessment.decisionCase.snapshot.acceptor.probabilityOfDefaultBps === null ||
-                    creditAssessment.decisionCase.snapshot.acceptor.lossGivenDefaultBps === null ||
-                    creditAssessment.decisionCase.snapshot.mintCapacity.existingExposureSat === null ||
-                    creditAssessment.decisionCase.snapshot.mintCapacity.exposureLimitSat === null ||
-                    creditAssessment.decisionCase.result.verificationRequests.some(
-                      (request) => request.axis === "acceptor_repayment_risk" || request.axis === "mint_exposure_capacity"
-                    )
-                      ? "unavailable"
-                      : creditAssessment.decisionCase.snapshot.isSynthetic
-                        ? "synthetic"
-                        : "mint_backed",
-                  underwritingAuthoritySignaturesVerified:
-                    creditAssessment.decisionCase.snapshot.acceptor.evidenceRefs?.some((reference) =>
-                      reference.startsWith("authority-signature:sha256:")
-                    ) === true &&
-                    creditAssessment.decisionCase.snapshot.mintCapacity.evidenceRefs?.some((reference) =>
-                      reference.startsWith("authority-signature:sha256:")
-                    ) === true,
-                  hasMintPolicyAssignment:
-                    creditAssessment.decisionCase.creditProgram !== undefined &&
-                    creditAssessment.decisionCase.creditProgramAssignment !== undefined,
+                  evidenceSummary: {
+                    documents: (creditAssessment.decisionCase.submittedEvidence ?? []).length,
+                    citedClaims: countCitedEvidenceClaims(creditAssessment.decisionCase.evidencePackets ?? []),
+                    openRequests: creditAssessment.decisionCase.result.verificationRequests.length,
+                    investigation:
+                      creditAssessment.decisionCase.claimInvestigation?.status === "available"
+                        ? {
+                            status: "available" as const,
+                            findings: creditAssessment.decisionCase.claimInvestigation.proposal.findings.length,
+                            sources: creditAssessment.decisionCase.claimInvestigation.proposal.findings.reduce(
+                              (count, finding) => count + finding.sources.length,
+                              0
+                            ),
+                          }
+                        : {
+                            status: creditAssessment.decisionCase.claimInvestigation?.status ?? ("not_run" as const),
+                            findings: 0,
+                            sources: 0,
+                          },
+                  },
+                  applicantRequests: creditAssessment.decisionCase.result.verificationRequests
+                    .filter((request) => request.owner === "applicant")
+                    .map(({ axis, requiredItem }) => ({ axis, requiredItem })),
+                  reassessmentChanges,
                   billAcceptanceState: creditAssessment.decisionCase.snapshot.bill?.acceptanceState,
-                  ...(creditAssessment.decisionCase.result.terms
+                  ...(creditAssessment.decisionCase.assessmentCurrency === "current" && creditAssessment.decisionCase.result.terms
                     ? {
                         recommendedTerms: {
                           mintingFee: Number(creditAssessment.decisionCase.result.terms.effectiveFeeSat),
@@ -398,6 +452,19 @@ function PageBody({ id }: { id: string }) {
           }
         />
 
+        <div className="print:hidden">
+          <QuoteActions
+            value={quote}
+            isFetching={isFetching}
+            ebillPaid={ebillPaid}
+            isMintComplete={isMintComplete}
+            requestedToPay={requestedToPay}
+            paymentDeadlineTs={paymentDeadlineTs}
+            timeOfRequestToPay={timeOfRequestToPay}
+            onAuthorizationVerified={setSignedAuthorizationReceipt}
+          />
+        </div>
+
         <QuoteCreditAssessment billId={bill.id} mintQuoteId={quote.id} />
       </section>
 
@@ -408,19 +475,10 @@ function PageBody({ id }: { id: string }) {
           creditEvidence={creditEvidence}
           openingDocumentHash={openingDocumentHash}
           openingEvidenceReference={openingEvidenceReference}
+          reviewingEvidenceReference={reviewingEvidenceReference}
           onOpenDocument={handleOpenDocument}
           onOpenEvidence={handleOpenEvidence}
-        />
-
-        <QuoteActions
-          value={quote}
-          isFetching={isFetching}
-          ebillPaid={ebillPaid}
-          isMintComplete={isMintComplete}
-          requestedToPay={requestedToPay}
-          paymentDeadlineTs={paymentDeadlineTs}
-          timeOfRequestToPay={timeOfRequestToPay}
-          onAuthorizationVerified={setSignedAuthorizationReceipt}
+          onReviewInvoiceEvidence={operatorCapability.capability === undefined ? undefined : handleReviewInvoiceEvidence}
         />
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
@@ -490,19 +548,8 @@ export default function QuotePage() {
         {quoteId}
       </Breadcrumbs>
 
-      <div className="flex flex-col gap-3 mb-4 sm:mb-0 sm:flex-row sm:items-center sm:justify-between">
-        <Heading as="h1" variant="page" className="mb-2 sm:mb-6 pt-4">
-          <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
-            <span>
-              {intl.formatMessage({
-                id: "quotes.detail.title",
-                defaultMessage: "Quote",
-              })}
-            </span>
-            <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
-          </span>
-        </Heading>
-        <div className="flex items-center gap-2 print:hidden">
+      {(fromKeyset && keysetIdFromState) || hasKeysetId ? (
+        <div className="flex items-center justify-end gap-2 pt-2 print:hidden">
           {fromKeyset && keysetIdFromState ? (
             <Button variant="outline" size="sm" asChild>
               <Link
@@ -539,7 +586,7 @@ export default function QuotePage() {
             </Button>
           ) : null}
         </div>
-      </div>
+      ) : null}
       <PageBody id={quoteId} />
     </>
   );
