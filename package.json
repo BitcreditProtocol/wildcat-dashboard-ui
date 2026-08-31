@@ -27,6 +27,7 @@
     "crowdin:status": "crowdin status"
   },
   "dependencies": {
+    "@bitcredit/ai-credit-shared": "file:vendor/ai-credit/bitcredit-ai-credit-shared-0.1.0-testnet.8.tgz",
     "@bitcredit/ui-library": "^0.1.14-bugfix",
     "@radix-ui/react-collapsible": "^1.1.20",
     "@radix-ui/react-dialog": "^1.1.23",

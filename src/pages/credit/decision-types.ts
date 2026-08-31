@@ -1,16 +1,37 @@
 /**
- * Shape of `/api/ai-credit/workbench-decisions` (synthetic decision snapshots) as far as the
- * quotes credit view reads it, plus the small display helpers shared by the colocated panels.
- * Money is named as the mint's quote API names it: the mint offers `discounted` against the
- * bill's `sum`, and the difference is its fee. Nothing here is an advance or a loan.
+ * The governed response contract lives in AI Credit. This host file contains only the aliases and
+ * display helpers used by the Mint dashboard; it must not reimplement the wire validator.
  */
+import type {
+  ApplicantConfirmationSummary,
+  ApplicantHumanReviewRecord as SharedApplicantHumanReviewRecord,
+  ApplicantHumanReviewResolution as SharedApplicantHumanReviewResolution,
+  ApplicantMaterialEvidence as SharedApplicantMaterialEvidence,
+  ApplicantMaterialEvidenceKind as SharedApplicantMaterialEvidenceKind,
+  ClaimInvestigationProposal as SharedClaimInvestigationProposal,
+  ClaimInvestigationStart as SharedClaimInvestigationStart,
+  ClaimInvestigationState as SharedClaimInvestigationState,
+  CreditProgram as SharedCreditProgram,
+  CreditProgramAssignment as SharedCreditProgramAssignment,
+  DecisionTerms as SharedDecisionTerms,
+  EvidenceClaimKind as SharedEvidenceClaimKind,
+  EvidenceDocumentAnalysis as SharedEvidenceDocumentAnalysis,
+  EvidenceDocumentCitation as SharedEvidenceDocumentCitation,
+  EvidenceReference,
+  InvoiceExtractionProposal,
+  MintQuoteDenialReceipt as SharedMintQuoteDenialReceipt,
+  MintQuoteDenialStatus as SharedMintQuoteDenialStatus,
+  OperatorMaterialEvidenceSelection as SharedOperatorMaterialEvidenceSelection,
+  ProposedEvidenceField as SharedProposedEvidenceField,
+} from "@bitcredit/ai-credit-shared";
 
 export type AxisStatus = "pass" | "caution" | "blocked" | "fail" | "not_assessed";
 export type AssessmentStatus = "ready_for_decision" | "blocked_pending_verification";
 export type Recommendation = "offer_available" | "no_current_product_fit";
-
+export type AssessmentCurrency = "current" | "historical_pending_applicant_response";
 export type TraceValues = Record<string, string | number | boolean>;
 
+/** Display projections only. Runtime validation stays in the shared AI Credit package. */
 export interface DecisionBill {
   billId: string;
   billStateDigest: string;
@@ -25,18 +46,23 @@ export interface DecisionBill {
 
 export interface DecisionInvoice {
   reference: string;
+  contentDigest?: string;
   invoiceNumber: string;
   goodsDescription: string;
   sellerRef: string;
   buyerRef: string;
+  transactionReference?: string;
   issueDate: string;
+  currency?: string;
   totalSat: string;
   plausibility: string;
   billAndClaimsConsistency: string;
   evidenceState: string;
   methodologyVersion: string;
   assessedBy: string;
+  assessedAt?: string;
   validThrough: string;
+  evidenceRefs?: string[];
 }
 
 export interface ConfirmedClaims {
@@ -47,140 +73,32 @@ export interface ConfirmedClaims {
   evidenceState: string;
 }
 
-export interface ApplicantConfirmation {
-  schemaVersion: "applicant-confirmation-summary-v1";
-  preparedInputId: string;
-  useOfFunds: string;
-  acceptor: string | null;
-  repaymentSource: string;
-  answersAffirmed: true;
-  recourseAcknowledged: boolean;
-}
+export type ApplicantConfirmation = ApplicantConfirmationSummary;
+export type ApplicantHumanReviewResolution = SharedApplicantHumanReviewResolution;
+export type ApplicantHumanReviewRecord = SharedApplicantHumanReviewRecord;
+export type ApplicantMaterialEvidenceKind = SharedApplicantMaterialEvidenceKind;
+export type ApplicantMaterialEvidence = SharedApplicantMaterialEvidence;
+export type OperatorMaterialEvidenceSelection = SharedOperatorMaterialEvidenceSelection;
+export type DecisionTerms = SharedDecisionTerms;
+export type SubmittedEvidence = EvidenceReference;
 
-export type ApplicantHumanReviewResolution = "decision_upheld" | "correction_or_reassessment_required";
+export type ClaimInvestigationStart = SharedClaimInvestigationStart;
+export type ClaimInvestigationProposal = SharedClaimInvestigationProposal;
+export type ClaimInvestigationState = SharedClaimInvestigationState;
+export type ClaimInvestigationTrack = ClaimInvestigationProposal["findings"][number]["track"];
+export type ClaimInvestigationFindingStatus = ClaimInvestigationProposal["findings"][number]["status"];
 
-export interface ApplicantHumanReviewRecord {
-  request: {
-    schemaVersion: "applicant-human-review-request-v1";
-    requestId: string;
-    caseId: string;
-    applicantRef: string;
-    contestedDecisionResultDigest: string;
-    statement: string;
-    requestedAt: string;
-    synthetic: true;
-  };
-  status: "requested" | "in_review" | "completed";
-  reviewer: { reviewerId: string; reviewerRole: "reviewer" | "approver" } | null;
-  resolution: ApplicantHumanReviewResolution | null;
-  writtenBasis: string | null;
-  statusChangedAt: string;
-}
-
-export type ApplicantMaterialEvidenceKind =
-  | "bill_state"
-  | "applicant_confirmation"
-  | "submitted_document"
-  | "acceptor_risk"
-  | "duplicate_check"
-  | "mint_capacity";
-
-export interface ApplicantMaterialEvidence {
-  kind: ApplicantMaterialEvidenceKind;
-  reference: string;
-  /** Server-owned display name; only submitted documents may carry one. */
-  label?: string;
-}
-
-export type OperatorMaterialEvidenceSelection = Pick<ApplicantMaterialEvidence, "kind" | "reference">;
-
-export interface DecisionTerms {
-  /** What the acceptor owes at maturity — `BillInfo.sum` in the quote API. */
-  billSumSat: string;
-  /** What the mint may offer for the bill — `discounted` in the quote API, issued as crsat. */
-  discountedSat: string;
-  appliedDiscountSat: string;
-  operatingCostSat: string;
-  /** `bill.sum - discounted`: the mint's whole fee. */
-  effectiveFeeSat: string;
-  /** What the holder carries if the acceptor dishonours, by having endorsed the bill. */
-  endorsementExposureSat: string;
-  maturityDate: string;
-  offerExpiresOn: string;
-  tenorDays: number;
-  annualDiscountBps: number;
-  effectiveAnnualBps: number;
-  feeRatioBps: number;
-}
-
-/** Documents the applicant submitted with the application. Provenance for a reviewer, not input. */
-export interface SubmittedEvidence {
-  reference: string;
-  label: string;
-  contentDigest: string;
-  origin: "bill_attachment" | "client_asserted_bill_attachment" | "applicant_upload";
-}
-
-const STORED_FILE_SUFFIX = /_[a-f0-9-]{36}(?=\.\w+$)/;
-
-export const displayEvidenceLabel = (label: string) => label.replace(STORED_FILE_SUFFIX, "");
-
-export interface EvidenceCitation {
-  page: number;
-  exactSnippet: string;
-}
-
-export interface ProposedEvidenceField {
-  value: string;
-  citation: EvidenceCitation;
-}
-
-export type EvidenceClaimKind = "party" | "identifier" | "date" | "amount" | "asset" | "obligation" | "status" | "description" | "other";
-
-export interface EvidenceDocumentAnalysis {
-  schemaVersion: "evidence-document-analysis-v1";
-  evidence: SubmittedEvidence;
-  derivativeDigest: string;
-  parserVersion: string;
-  promptVersion: "evidence-document-analysis-v1";
-  modelId: string;
-  extractedAt: string;
-  analysis: {
-    documentType: ProposedEvidenceField | null;
-    claims: {
-      kind: EvidenceClaimKind;
-      label: string;
-      value: string;
-      citation: EvidenceCitation;
-    }[];
-  };
-}
-
+export type EvidenceCitation = SharedEvidenceDocumentCitation;
+export type ProposedEvidenceField = SharedProposedEvidenceField;
+export type EvidenceClaimKind = SharedEvidenceClaimKind;
+export type EvidenceDocumentAnalysis = SharedEvidenceDocumentAnalysis;
 export interface EvidencePacket {
-  evidence: SubmittedEvidence;
+  evidence: EvidenceReference;
   status: "quarantined";
   byteLength: number;
   analysisStatus?: "pending" | "available";
   analysis?: EvidenceDocumentAnalysis;
-  extraction?: {
-    schemaVersion: "invoice-extraction-proposal-v1";
-    derivativeDigest: string;
-    parserVersion: string;
-    promptVersion: string;
-    modelId: string;
-    extractedAt: string;
-    proposal: {
-      invoiceNumber: ProposedEvidenceField | null;
-      seller: ProposedEvidenceField | null;
-      buyer: ProposedEvidenceField | null;
-      issueDate: ProposedEvidenceField | null;
-      goodsDescription: ProposedEvidenceField | null;
-      transactionReference: ProposedEvidenceField | null;
-      currency: ProposedEvidenceField | null;
-      totalSat: ProposedEvidenceField | null;
-      lineItems: { description: string; amountSat: string; citation: EvidenceCitation }[];
-    };
-  };
+  extraction?: Omit<InvoiceExtractionProposal, "evidence"> & { evidence?: EvidenceReference };
 }
 
 export interface VerificationRequest {
@@ -192,53 +110,13 @@ export interface VerificationRequest {
   resolutionAction?: "request_applicant_information" | "record_acceptor_risk_assessment" | "refresh_mint_capacity" | "retry_system_check";
 }
 
-/** Immutable Mint-owned product metadata selecting one exact governed policy pack. */
-export interface CreditProgram {
-  schemaVersion: "credit-program-v1";
-  creditProgramId: string;
-  creditProgramVersion: string;
-  creditProgramDigest: string;
-  isSynthetic: true;
-  country: string;
-  industry: string;
-  product: string;
-  policyPackVersion: string;
-  policyPackDigest: string;
-}
-
-/** The Mint's exact quote-and-bill binding to a credit-program release. */
-export interface CreditProgramAssignment {
-  schemaVersion: "mint-credit-program-selection-v1";
-  mintId: string;
-  mintQuoteId: string;
-  billId: string;
-  creditProgramVersion: string;
-  creditProgramDigest: string;
-  assignmentAuthority: "wildcat_mint_admin";
-  assignmentDigest: string;
-}
-
-export interface MintQuoteDenialReceipt {
-  receiptVersion: "credit-authorization-receipt-v1";
-  operationId: string;
-  authorizationDigest: string;
-  caseId: string;
-  status: "completed";
-  mintId: string;
-  billId: string;
-  action: "deny_governed_quote";
-  effectId: string;
-  resultDigest: string;
-  completedAt: string;
-  synthetic: true;
-}
-
-export type MintQuoteDenialStatus =
-  | { state: "syncing"; operationId: string }
-  | { state: "completed"; operationId: string; receipt: MintQuoteDenialReceipt };
+export type CreditProgram = SharedCreditProgram;
+export type CreditProgramAssignment = SharedCreditProgramAssignment;
+export type MintQuoteDenialReceipt = SharedMintQuoteDenialReceipt;
+export type MintQuoteDenialStatus = SharedMintQuoteDenialStatus;
 
 export interface DecisionCase {
-  /** Exact Mint quote this assessment governs; null only for read-only synthetic fixtures. */
+  assessmentCurrency: AssessmentCurrency;
   mintQuoteId: string | null;
   policyFileName: string;
   snapshot: {
@@ -279,7 +157,6 @@ export interface DecisionCase {
     product: string;
     country: string;
     industry: string;
-    /** The holder guardrails, so a rate can be read against the limit it was measured against. */
     maximumEffectiveAnnualBps: number;
     maximumFeeRatioBps: number;
   };
@@ -290,20 +167,61 @@ export interface DecisionCase {
     terms: DecisionTerms | null;
     verificationRequests: VerificationRequest[];
     reasonCodes: string[];
-    assessmentTrace: { ruleId: string; subject: string; outcome: string; reasonCode: string; observed: TraceValues; policy: TraceValues }[];
+    assessmentTrace: {
+      ruleId: string;
+      subject: string;
+      outcome: string;
+      reasonCode: string;
+      observed: TraceValues;
+      policy: TraceValues;
+      effect?: TraceValues;
+    }[];
     calculationTrace: { step: string; formula: string; inputs: TraceValues; result: string }[];
   };
   resultDigest: string;
-  /** Absent only on legacy/synthetic fixtures that remain read-only. */
+  assessmentHistory?: AssessmentRevision[];
   creditProgram?: CreditProgram;
   creditProgramAssignment?: CreditProgramAssignment;
   submittedEvidence?: SubmittedEvidence[];
   evidencePackets?: EvidencePacket[];
+  claimInvestigation?: ClaimInvestigationState;
   applicantConfirmation?: ApplicantConfirmation;
-  /** Server-listed evidence an operator may select for a discretionary decline. */
   availableMaterialEvidence?: ApplicantMaterialEvidence[];
   applicantHumanReview?: ApplicantHumanReviewRecord;
   mintDenial?: MintQuoteDenialStatus;
+}
+
+export interface AssessmentRevision {
+  snapshot: DecisionCase["snapshot"];
+  result: DecisionCase["result"];
+  resultDigest: string;
+  submittedEvidence?: SubmittedEvidence[];
+}
+
+const STORED_FILE_SUFFIX = /_[a-f0-9-]{36}(?=\.\w+$)/;
+
+export const displayEvidenceLabel = (label: string) => label.replace(STORED_FILE_SUFFIX, "");
+
+export function countCitedEvidenceClaims(evidencePackets: readonly EvidencePacket[]): number {
+  return evidencePackets.reduce((count, packet) => {
+    if (packet.analysis !== undefined) return count + packet.analysis.analysis.claims.length;
+    if (packet.extraction === undefined) return count;
+    const { proposal } = packet.extraction;
+    return (
+      count +
+      [
+        proposal.invoiceNumber,
+        proposal.seller,
+        proposal.buyer,
+        proposal.issueDate,
+        proposal.goodsDescription,
+        proposal.transactionReference,
+        proposal.currency,
+        proposal.totalSat,
+      ].filter((field) => field !== null).length +
+      proposal.lineItems.length
+    );
+  }, 0);
 }
 
 /** Domain codes are rendered as humanized English, matching the rest of this synthetic view. */
@@ -317,6 +235,14 @@ export const axisLabels: Record<string, string> = {
   evidence_sufficiency: "Evidence sufficiency",
   mint_exposure_capacity: "Mint exposure capacity",
 };
+
+/**
+ * The current operator prototype is case-scoped. The capacity axis remains in
+ * historical decision contracts for compatibility, but is deliberately not an
+ * operator-facing case check until Mint-level portfolio accounting exists.
+ */
+export const operatorVisibleAxes = (axes: DecisionCase["result"]["axes"]): DecisionCase["result"]["axes"] =>
+  axes.filter((axis) => axis.axis !== "mint_exposure_capacity");
 
 export const axisBadgeVariant = (status: AxisStatus): "success" | "destructive" | "pending" | "outline" | "secondary" => {
   if (status === "pass") return "success";
