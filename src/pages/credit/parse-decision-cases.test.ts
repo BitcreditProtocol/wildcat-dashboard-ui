@@ -25,18 +25,20 @@ function validCase() {
     "evidence_sufficiency",
     "mint_exposure_capacity",
   ];
+  const assessedAxes = axes.filter((axis) => axis !== "mint_exposure_capacity");
   return {
+    assessmentCurrency: "current",
     mintQuoteId: "quote-a",
-    policyFileName: "synthetic-guatemala-v11.json",
+    policyFileName: "synthetic-guatemala-v12.json",
     snapshot: {
-      schemaVersion: "decision-input-snapshot-v8",
+      schemaVersion: "decision-input-snapshot-v9",
       snapshotDigest: SNAPSHOT_DIGEST,
       caseId: "case-a",
       applicantRef: "applicant-a",
       mintId: "mint-a",
       asOfDate: "2026-08-10",
       policyPackDigest: POLICY_DIGEST,
-      calculationVersion: "deterministic-credit-core-v9",
+      calculationVersion: "deterministic-credit-core-v10",
       isSynthetic: true,
       product: "accepted_bill_discount",
       country: "GT",
@@ -81,39 +83,107 @@ function validCase() {
         evidenceRefs: ["duplicate-evidence-a"],
       },
       mintCapacity: {
-        existingExposureSat: "0",
-        exposureLimitSat: "40000000",
-        evidenceState: "independently_verified",
-        methodologyVersion: "mint-capacity-v1",
-        assessedBy: "fixture-verifier",
+        existingExposureSat: null,
+        exposureLimitSat: null,
+        evidenceState: "source_unavailable",
+        methodologyVersion: "mint-capacity-not-assessed-v1",
+        assessedBy: "ai_credit_case_product",
         assessedAt: "2026-08-10",
         validThrough: "2026-11-08",
-        evidenceRefs: ["capacity-evidence-a"],
+        evidenceRefs: ["mint-a-capacity-not-assessed"],
       },
     },
     policyPack: {
-      schemaVersion: "synthetic-credit-policy-pack-v11",
+      schemaVersion: "synthetic-credit-policy-pack-v12",
       isSynthetic: true,
       currency: "SAT",
-      policyPackVersion: "synthetic-guatemala-v11",
+      policyPackVersion: "synthetic-guatemala-v12",
       policyPackDigest: POLICY_DIGEST,
-      calculationVersion: "deterministic-credit-core-v9",
+      calculationVersion: "deterministic-credit-core-v10",
       product: "accepted_bill_discount",
       country: "GT",
       industry: "coffee_production",
+      eligibleBillStates: ["accepted"],
+      hardGatePrecedence: [
+        "bill_already_financed",
+        "bill_not_accepted",
+        "tenor_outside_policy",
+        "bill_sum_above_policy_cap",
+        "invoice_commercially_implausible",
+      ],
+      minimumTenorDays: 30,
+      maximumTenorDays: 240,
+      maximumBillSumSat: "20000000",
+      minimumUsefulDiscountedSat: "500000",
+      evidenceRules: {
+        invoice: { methodologyVersion: "synthetic-invoice-review-v1", allowedAssessors: ["fixture-verifier"] },
+        acceptorLossParameters: { methodologyVersion: "synthetic-acceptor-loss-parameters-v1", allowedAssessors: ["fixture-verifier"] },
+        duplicateCheck: { methodologyVersion: "synthetic-mint-duplicate-check-v1", allowedAssessors: ["fixture-verifier"] },
+      },
+      applicantRecourseRequirement: "whole_face_recourse_by_endorsement",
+      pricingComponents: {
+        costOfFundsBps: 100,
+        uncertaintyMarginBpsByEvidenceState: { corroborated: 200, independently_verified: 100 },
+        returnObjectiveBps: 100,
+        subsidyBps: 0,
+      },
+      operatingCostSat: "50000",
       maximumEffectiveAnnualBps: 1500,
       maximumFeeRatioBps: 3000,
+      offerValidityDays: 2,
+      dayCountDenominator: 360,
+      requiredEvidenceStates: ["corroborated", "independently_verified"],
+      reviewPermissions: { confirm: true, adjustPriceAndRequote: true, returnForInformation: true, waiveHardGate: false },
+      localeCatalogVersion: "ai-credit-es-v2",
+      questionGraphVersion: "coffee-v1",
+      reasonCodes: [
+        "accepted_bill_eligible",
+        "acceptor_loss_parameters_verified",
+        "bill_already_financed",
+        "bill_and_invoice_consistent",
+        "bill_not_accepted",
+        "bill_sum_above_policy_cap",
+        "cost_above_policy_ceiling",
+        "duplicate_check_clear",
+        "evidence_admissible",
+        "fee_ratio_above_policy_ceiling",
+        "governed_terms_available",
+        "invoice_commercially_implausible",
+        "no_useful_compliant_terms",
+        "pricing_components_applied",
+        "tenor_outside_policy",
+        "verification_acceptor_loss_parameters_required",
+        "verification_bill_required",
+        "verification_contradiction_required",
+        "verification_duplicate_check_required",
+        "verification_invoice_consistency_required",
+        "verification_invoice_evidence_required",
+        "verification_invoice_required",
+        "verification_recourse_acknowledgment_required",
+        "whole_face_recourse_acknowledged",
+      ],
+      operatorReasonCodes: [
+        "operator_confirmed_governed_terms",
+        "operator_confirmed_no_current_product_fit",
+        "operator_declined_governed_offer",
+        "operator_adjusted_price_within_bounds",
+        "operator_returned_for_information",
+      ],
     },
     result: {
-      schemaVersion: "decision-result-v9",
+      schemaVersion: "decision-result-v10",
       snapshotDigest: SNAPSHOT_DIGEST,
       mintId: "mint-a",
       policyPackDigest: POLICY_DIGEST,
-      policyPackVersion: "synthetic-guatemala-v11",
-      calculationVersion: "deterministic-credit-core-v9",
+      policyPackVersion: "synthetic-guatemala-v12",
+      calculationVersion: "deterministic-credit-core-v10",
       assessmentStatus: "ready_for_decision",
       recommendation: "offer_available",
-      axes: axes.map((axis) => ({ axis, status: "pass", reasonCodes: [`${axis}_passed`] })),
+      axes: axes.map((axis) =>
+        axis === "mint_exposure_capacity"
+          ? { axis, status: "not_assessed", reasonCodes: [] }
+          : { axis, status: "pass", reasonCodes: [`${axis}_passed`] }
+      ),
       terms: {
         billSumSat: "8000000",
         discountedSat: "7734000",
@@ -131,7 +201,7 @@ function validCase() {
       verificationRequests: [],
       reasonCodes: ["governed_terms_available"],
       assessmentTrace: [
-        ...axes.map((axis) => ({
+        ...assessedAxes.map((axis) => ({
           ruleId: `${axis}_rule`,
           subject: axis,
           outcome: "pass",
@@ -169,7 +239,7 @@ function validCase() {
       country: "GT",
       industry: "coffee_production",
       product: "accepted_bill_discount",
-      policyPackVersion: "synthetic-guatemala-v11",
+      policyPackVersion: "synthetic-guatemala-v12",
       policyPackDigest: POLICY_DIGEST,
     },
     creditProgramAssignment: {
@@ -184,6 +254,7 @@ function validCase() {
     },
     submittedEvidence: [],
     evidencePackets: [],
+    claimInvestigation: { status: "disabled", reason: "not_configured" },
     availableMaterialEvidence: [
       { kind: "bill_state", reference: `sha256:${"d".repeat(64)}` },
       { kind: "submitted_document", reference: "invoice-a", label: "commercial-invoice.pdf" },
@@ -223,6 +294,76 @@ describe("parseDecisionCasesResponse", () => {
       "invalid governed decision response"
     );
     expect(() => parseVersionedDecisionCasesResponse({ cases: [] })).toThrow("invalid governed decision response");
+  });
+
+  it("requires an explicit assessment currency and accepts the historical applicant-response state", () => {
+    const decisionCase = validCase();
+    const { assessmentCurrency: _omitted, ...missingCurrency } = decisionCase;
+    void _omitted;
+    expect(() => parseDecisionCasesResponse({ cases: [missingCurrency] })).toThrow("invalid governed decision response");
+    expect(
+      parseDecisionCasesResponse({
+        cases: [{ ...decisionCase, assessmentCurrency: "historical_pending_applicant_response" }],
+      }).cases[0]?.assessmentCurrency
+    ).toBe("historical_pending_applicant_response");
+    expect(() => parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentCurrency: "stale" }] })).toThrow(
+      "invalid governed decision response"
+    );
+  });
+
+  it("accepts only bounded assessment history whose last revision is current", () => {
+    const decisionCase = validCase();
+    const current = {
+      snapshot: decisionCase.snapshot,
+      result: decisionCase.result,
+      resultDigest: decisionCase.resultDigest,
+      submittedEvidence: decisionCase.submittedEvidence,
+    };
+    expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentHistory: [current] }] })).toEqual({
+      cases: [{ ...decisionCase, assessmentHistory: [current] }],
+    });
+
+    const foreignPriors = [
+      { ...current, snapshot: { ...current.snapshot, caseId: "case-b" } },
+      {
+        ...current,
+        snapshot: { ...current.snapshot, mintId: "mint-b" },
+        result: { ...current.result, mintId: "mint-b" },
+      },
+      {
+        ...current,
+        snapshot: {
+          ...current.snapshot,
+          bill: current.snapshot.bill === null ? null : { ...current.snapshot.bill, billId: "bill-b" },
+        },
+      },
+    ];
+    for (const foreignPrior of foreignPriors) {
+      expect(() => parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentHistory: [foreignPrior, current] }] })).toThrow(
+        "invalid governed decision response"
+      );
+    }
+
+    for (const mismatchedPrior of [
+      { ...current, result: { ...current.result, policyPackDigest: `sha256:${"8".repeat(64)}` } },
+      { ...current, result: { ...current.result, calculationVersion: "deterministic-credit-core-v8" } },
+    ]) {
+      expect(() => parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentHistory: [mismatchedPrior, current] }] })).toThrow(
+        "invalid governed decision response"
+      );
+    }
+
+    for (const assessmentHistory of [
+      [],
+      [{ ...current, extra: true }],
+      [{ ...current, resultDigest: `sha256:${"9".repeat(64)}` }],
+      [{ ...current, submittedEvidence: [{ reference: "missing-fields" }] }],
+      Array.from({ length: 33 }, () => current),
+    ]) {
+      expect(() => parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentHistory }] })).toThrow(
+        "invalid governed decision response"
+      );
+    }
   });
 
   it("accepts only exact Mint denial states bound to the displayed case, quote, bill and operation", () => {
@@ -337,56 +478,34 @@ describe("parseDecisionCasesResponse", () => {
         ],
       })
     ).toThrow();
+
+    for (const requiredItem of ["x".repeat(501), "Upload proof\nthen continue", "Upload proof\u202Efdp.exe"]) {
+      expect(() =>
+        parseDecisionCasesResponse({
+          cases: [
+            {
+              ...blocked,
+              result: {
+                ...blocked.result,
+                verificationRequests: [{ ...blocked.result.verificationRequests[0], requiredItem }],
+              },
+            },
+          ],
+        })
+      ).toThrow("invalid governed decision response");
+    }
   });
 
-  it("accepts unavailable Mint capacity values on a verification-blocked decision", () => {
+  it("accepts the Mint exposure axis only as explicitly not assessed", () => {
     const decisionCase = validCase();
-    const blockedCapacity = {
-      ...decisionCase,
-      snapshot: {
-        ...decisionCase.snapshot,
-        schemaVersion: "decision-input-snapshot-v9",
-        mintCapacity: {
-          ...decisionCase.snapshot.mintCapacity,
-          existingExposureSat: null,
-          exposureLimitSat: null,
-          evidenceState: "source_unavailable",
-        },
-      },
-      result: {
-        ...decisionCase.result,
-        assessmentStatus: "blocked_pending_verification",
-        recommendation: null,
-        terms: null,
-        calculationTrace: [],
-        reasonCodes: ["verification_mint_capacity_required"],
-        axes: decisionCase.result.axes.map((axis) =>
-          axis.axis === "mint_exposure_capacity"
-            ? { ...axis, status: "blocked", reasonCodes: ["verification_mint_capacity_required"] }
-            : axis
-        ),
-        assessmentTrace: decisionCase.result.assessmentTrace.map((step) =>
-          step.subject === "mint_exposure_capacity"
-            ? {
-                ...step,
-                outcome: "blocked",
-                reasonCode: "verification_mint_capacity_required",
-                observed: { existingExposureSat: "missing", exposureLimitSat: "missing" },
-              }
-            : step
-        ),
-        verificationRequests: [
-          {
-            code: "mint_capacity",
-            axis: "mint_exposure_capacity",
-            requiredItem: "Current Mint exposure and capacity snapshot",
-            reasonCode: "verification_mint_capacity_required",
-          },
-        ],
-      },
-    };
 
-    expect(parseDecisionCasesResponse({ cases: [blockedCapacity] })).toEqual({ cases: [blockedCapacity] });
+    expect(decisionCase.snapshot.mintCapacity).toMatchObject({ existingExposureSat: null, exposureLimitSat: null });
+    expect(decisionCase.result.axes.find((axis) => axis.axis === "mint_exposure_capacity")).toEqual({
+      axis: "mint_exposure_capacity",
+      status: "not_assessed",
+      reasonCodes: [],
+    });
+    expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase] });
   });
 
   it("keeps v8 Mint capacity non-null", () => {
@@ -395,6 +514,7 @@ describe("parseDecisionCasesResponse", () => {
       ...decisionCase,
       snapshot: {
         ...decisionCase.snapshot,
+        schemaVersion: "decision-input-snapshot-v8",
         mintCapacity: { ...decisionCase.snapshot.mintCapacity, existingExposureSat: null },
       },
     };
@@ -442,6 +562,8 @@ describe("parseDecisionCasesResponse", () => {
             axis: "acceptor_repayment_risk",
             requiredItem: "Current acceptor loss parameters",
             reasonCode: "verification_acceptor_required",
+            owner: "mint_risk",
+            resolutionAction: "record_acceptor_risk_assessment",
           },
         ],
       },
@@ -545,6 +667,179 @@ describe("parseDecisionCasesResponse", () => {
                 analysis: { ...analysis, evidence: { ...evidence, reference: `sha256:${"c".repeat(64)}` } },
               },
             ],
+          },
+        ],
+      })
+    ).toThrow("invalid governed decision response");
+  });
+
+  it("accepts only exact, case-bound public-source investigation states", () => {
+    const evidence = {
+      reference: `sha256:${"4".repeat(64)}`,
+      label: "business-record.pdf",
+      contentDigest: `sha256:${"4".repeat(64)}`,
+      origin: "applicant_upload" as const,
+    };
+    const applicantConfirmation = {
+      schemaVersion: "applicant-confirmation-summary-v1" as const,
+      preparedInputId: "2798c386-935b-4f5e-a2ea-a5323454de0a",
+      useOfFunds: "Buy fertilizer for the coffee harvest",
+      acceptor: "Buyer Cooperative",
+      repaymentSource: "Payment from Buyer Cooperative",
+      answersAffirmed: true as const,
+      recourseAcknowledged: true,
+    };
+    const decisionCase = {
+      ...validCase(),
+      submittedEvidence: [evidence],
+      applicantConfirmation,
+      claimInvestigation: {
+        status: "available",
+        proposal: {
+          schemaVersion: "claim-investigation-proposal-v1",
+          caseId: "case-a",
+          snapshotDigest: SNAPSHOT_DIGEST,
+          resultDigest: RESULT_DIGEST,
+          inputDigest: `sha256:${"5".repeat(64)}`,
+          promptVersion: "public-claim-investigation-v1",
+          modelId: "codex:gpt-5.6-luna",
+          assessedAt: "2026-08-28T09:00:00.000Z",
+          authority: "display_only_model_proposal",
+          evidenceAnchors: [evidence],
+          searchQueries: ["Buyer Cooperative Guatemala"],
+          findings: [
+            {
+              track: "operational_plausibility",
+              status: "public_context",
+              claim: {
+                source: "applicant_confirmed",
+                preparedInputId: applicantConfirmation.preparedInputId,
+                field: "acceptor",
+                value: applicantConfirmation.acceptor,
+              },
+              summary: "The public listing describes common cooperative purchasing structures.",
+              sources: [
+                {
+                  title: "Public cooperative directory",
+                  url: "https://example.com/cooperatives/buyer",
+                  excerpt: "The directory lists Buyer Cooperative Holdings.",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase] });
+    const withoutInvestigation = structuredClone(decisionCase);
+    Reflect.deleteProperty(withoutInvestigation, "claimInvestigation");
+    expect(parseDecisionCasesResponse({ cases: [withoutInvestigation] })).toEqual({ cases: [withoutInvestigation] });
+
+    for (const claimInvestigation of [
+      { ...decisionCase.claimInvestigation, extra: true },
+      {
+        ...decisionCase.claimInvestigation,
+        proposal: { ...decisionCase.claimInvestigation.proposal, caseId: "case-b" },
+      },
+      {
+        ...decisionCase.claimInvestigation,
+        proposal: {
+          ...decisionCase.claimInvestigation.proposal,
+          findings: [
+            {
+              ...decisionCase.claimInvestigation.proposal.findings[0],
+              sources: [
+                {
+                  title: "Unsafe source",
+                  url: "http://example.com/cooperatives/buyer",
+                  excerpt: "Not transported over HTTPS.",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      ...["https://localhost./internal", "https://foo.local./internal"].map((url) => ({
+        ...decisionCase.claimInvestigation,
+        proposal: {
+          ...decisionCase.claimInvestigation.proposal,
+          findings: [
+            {
+              ...decisionCase.claimInvestigation.proposal.findings[0],
+              sources: [
+                {
+                  title: "Private target",
+                  url,
+                  excerpt: "A trailing dot must not bypass the local-host restriction.",
+                },
+              ],
+            },
+          ],
+        },
+      })),
+      {
+        ...decisionCase.claimInvestigation,
+        proposal: {
+          ...decisionCase.claimInvestigation.proposal,
+          findings: [
+            {
+              ...decisionCase.claimInvestigation.proposal.findings[0],
+              sources: [
+                {
+                  title: "Private target",
+                  url: "https://127.0.0.1/internal",
+                  excerpt: "A model-controlled URL must not target the operator's local network.",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        ...decisionCase.claimInvestigation,
+        proposal: {
+          ...decisionCase.claimInvestigation.proposal,
+          findings: [{ ...decisionCase.claimInvestigation.proposal.findings[0], sources: [] }],
+        },
+      },
+      {
+        ...decisionCase.claimInvestigation,
+        proposal: {
+          ...decisionCase.claimInvestigation.proposal,
+          findings: [
+            {
+              ...decisionCase.claimInvestigation.proposal.findings[0],
+              claim: { ...decisionCase.claimInvestigation.proposal.findings[0].claim, value: "Another organization" },
+            },
+          ],
+        },
+      },
+    ]) {
+      expect(() => parseDecisionCasesResponse({ cases: [{ ...decisionCase, claimInvestigation }] })).toThrow(
+        "invalid governed decision response"
+      );
+    }
+  });
+
+  it("accepts a retry only when the server supplies the exact current investigation request", () => {
+    const decisionCase = validCase();
+    const request = {
+      schemaVersion: "claim-investigation-start-v1",
+      caseId: decisionCase.snapshot.caseId,
+      snapshotDigest: decisionCase.snapshot.snapshotDigest,
+      resultDigest: decisionCase.resultDigest,
+      inputDigest: `sha256:${"6".repeat(64)}`,
+    };
+    const unavailable = { status: "unavailable", modelId: "codex:gpt-5.6-luna", request };
+
+    expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, claimInvestigation: unavailable }] }).cases).toHaveLength(1);
+    expect(() =>
+      parseDecisionCasesResponse({
+        cases: [
+          {
+            ...decisionCase,
+            claimInvestigation: { ...unavailable, request: { ...request, resultDigest: `sha256:${"7".repeat(64)}` } },
           },
         ],
       })
