@@ -12,6 +12,7 @@ permissions:
 jobs:
   validate:
     name: Validate (style, lint, test, build)
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
       NODE_VERSION: 25
