@@ -56,7 +56,7 @@ export function SortButtons<T extends string>({ sortBy, onSortChange, options }:
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Text variant="label">
         {intl.formatMessage({
           id: "sortButtons.sortByLabel",
