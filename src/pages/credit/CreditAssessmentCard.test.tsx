@@ -42,6 +42,7 @@ const caseFixture = (overrides: {
   assessmentTrace?: DecisionCase["result"]["assessmentTrace"];
   calculationTrace?: DecisionCase["result"]["calculationTrace"];
 }): DecisionCase => ({
+  assessmentCurrency: "current",
   mintQuoteId: "quote-1",
   policyFileName: "synthetic-guatemala-v7.json",
   snapshot: {
