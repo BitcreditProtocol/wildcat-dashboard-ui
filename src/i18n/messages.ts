@@ -11,7 +11,7 @@ import trTR from "./tr-TR/translation.json";
 import zuZA from "./zu-ZA/translation.json";
 
 export const messagesByLocale: Record<string, Record<string, string>> = {
-  "en-US": enUS,
+  "en-US": { ...source, ...enUS },
   "ach-UG": achUG,
   "en-GB": enGB,
   "de-AT": deAT,

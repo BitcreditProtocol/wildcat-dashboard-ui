@@ -17,14 +17,12 @@ export function MintRiskAssessmentDrawer({
   open,
   onOpenChange,
   isPending,
-  kind = "risk",
   onSubmit,
   children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isPending: boolean;
-  kind?: "risk" | "capacity";
   onSubmit: (value: MintAuthorityEvidenceFormValue) => void;
   children: ReactNode;
 }) {
@@ -38,44 +36,24 @@ export function MintRiskAssessmentDrawer({
     ? [authority.assessedBy, authority.validThrough, authority.keyId].filter((value): value is string => typeof value === "string")
     : [];
   const valid = signedEvidence !== undefined && writtenBasis.trim().length >= 20;
-  const copy =
-    kind === "risk"
-      ? {
-          title: intl.formatMessage({
-            id: "quotes.mintRisk.title",
-            defaultMessage: "Import signed risk assessment",
-            description: "Title of the external signed acceptor risk assessment import form",
-          }),
-          description: intl.formatMessage({
-            id: "quotes.mintRisk.description",
-            defaultMessage:
-              "Import an Ed25519-signed assessment from an approved risk authority. The Mint verifies its signature, acceptor binding, method and validity before re-evaluating the case.",
-            description: "Explanation of the signed risk authority import workflow",
-          }),
-          submit: intl.formatMessage({
-            id: "quotes.mintRisk.submit",
-            defaultMessage: "Verify, import and re-evaluate",
-            description: "Submit button for an externally signed risk assessment",
-          }),
-        }
-      : {
-          title: intl.formatMessage({
-            id: "quotes.mintCapacity.title",
-            defaultMessage: "Import signed capacity snapshot",
-            description: "Title of the external signed Mint capacity snapshot import form",
-          }),
-          description: intl.formatMessage({
-            id: "quotes.mintCapacity.description",
-            defaultMessage:
-              "Import an Ed25519-signed snapshot from the approved capacity authority. The Mint verifies its signature, Mint binding, method and validity before re-evaluating the case.",
-            description: "Explanation of the signed capacity authority import workflow",
-          }),
-          submit: intl.formatMessage({
-            id: "quotes.mintCapacity.submit",
-            defaultMessage: "Verify, import and re-evaluate",
-            description: "Submit button for an externally signed capacity snapshot",
-          }),
-        };
+  const copy = {
+    title: intl.formatMessage({
+      id: "quotes.mintRisk.title",
+      defaultMessage: "Import signed risk assessment",
+      description: "Title of the external signed acceptor risk assessment import form",
+    }),
+    description: intl.formatMessage({
+      id: "quotes.mintRisk.description",
+      defaultMessage:
+        "Import an Ed25519-signed assessment from an approved risk authority. The Mint verifies its signature, acceptor binding, method and validity before re-evaluating the case.",
+      description: "Explanation of the signed risk authority import workflow",
+    }),
+    submit: intl.formatMessage({
+      id: "quotes.mintRisk.submit",
+      defaultMessage: "Verify, import and re-evaluate",
+      description: "Submit button for an externally signed risk assessment",
+    }),
+  };
 
   return (
     <ConfirmDrawer

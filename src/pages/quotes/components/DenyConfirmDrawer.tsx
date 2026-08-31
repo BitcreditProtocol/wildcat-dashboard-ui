@@ -96,8 +96,8 @@ export function DenyConfirmDrawer({
         isReturn
           ? intl.formatMessage({
               id: "quotes.returnForInformation.description",
-              defaultMessage: "Record the missing information. The applicant is not notified from this screen.",
-              description: "Confirmation description that records required information without claiming applicant delivery",
+              defaultMessage: "Record what the applicant must provide. No notification is sent from this screen.",
+              description: "Confirmation description for an applicant information request without claiming notification delivery",
             })
           : isUnableToAssess
             ? intl.formatMessage({
@@ -129,8 +129,8 @@ export function DenyConfirmDrawer({
         isReturn
           ? intl.formatMessage({
               id: "quotes.returnForInformation.confirmButton",
-              defaultMessage: "Record required information",
-              description: "Confirmation button that records required information without claiming applicant delivery",
+              defaultMessage: "Request information",
+              description: "Confirmation button that records an applicant information request without claiming notification delivery",
             })
           : isUnableToAssess
             ? intl.formatMessage({
