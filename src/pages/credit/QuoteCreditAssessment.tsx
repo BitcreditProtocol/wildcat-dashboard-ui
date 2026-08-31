@@ -1,6 +1,9 @@
-import { Skeleton } from "@bitcredit/ui-library";
+import { AppIcon, Card, CardContent, CardHeader, CardTitle, Skeleton } from "@bitcredit/ui-library";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { CreditAssessmentCard } from "./CreditAssessmentCard";
+import { operatorVisibleAxes } from "./decision-types";
 import { useCreditAssessmentForBill } from "./use-credit-assessment";
 
 /**
@@ -27,13 +30,34 @@ const messages = defineMessages({
   },
   fullAssessment: {
     id: "credit.quoteCard.fullAssessment",
-    defaultMessage: "Assessment details",
+    defaultMessage: "Risk details",
     description: "Collapsed heading for the detailed credit assessment below the summary",
+  },
+  checksPassed: {
+    id: "credit.quoteCard.checksPassed",
+    defaultMessage: "{passed}/{total} checks passed",
+    description: "Compact risk-panel summary when every policy axis passes",
+  },
+  checksOpen: {
+    id: "credit.quoteCard.checksOpen",
+    defaultMessage: "{count, plural, one {# check needs attention} other {# checks need attention}} · {passed}/{total} passed",
+    description: "Compact risk-panel summary when policy axes are not all passing",
+  },
+  show: {
+    id: "credit.quoteCard.showDetails",
+    defaultMessage: "Show details",
+    description: "Action to expand the risk details card",
+  },
+  hide: {
+    id: "credit.quoteCard.hideDetails",
+    defaultMessage: "Hide details",
+    description: "Action to collapse the risk details card",
   },
 });
 
 export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
   const intl = useIntl();
+  const [isExpanded, setIsExpanded] = useState(false);
   const { decisionCase, isLoading, isAbsent, error } = useCreditAssessmentForBill(billId, mintQuoteId);
 
   if (isLoading) {
@@ -45,13 +69,40 @@ export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string 
     );
   }
   if (error === null && decisionCase !== undefined) {
+    const assessedAxes = operatorVisibleAxes(decisionCase.result.axes).filter((axis) => axis.status !== "not_assessed");
+    const passed = assessedAxes.filter((axis) => axis.status === "pass").length;
+    const total = assessedAxes.length;
+    const attention = total - passed;
+    const summary = intl.formatMessage(attention === 0 ? messages.checksPassed : messages.checksOpen, {
+      count: attention,
+      passed,
+      total,
+    });
     return (
-      <details id="full-governed-assessment" className="scroll-mt-4 rounded-lg border border-border print:hidden">
-        <summary className="cursor-pointer px-5 py-4 text-sm font-semibold">{intl.formatMessage(messages.fullAssessment)}</summary>
-        <div className="border-t border-border p-4">
-          <CreditAssessmentCard decisionCase={decisionCase} />
-        </div>
-      </details>
+      <Card id="full-governed-assessment" className="scroll-mt-4 print:hidden">
+        <CardHeader className="p-0">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-4 p-6 text-left"
+            onClick={() => setIsExpanded((value) => !value)}
+            aria-expanded={isExpanded}
+          >
+            <span className="min-w-0">
+              <CardTitle>{intl.formatMessage(messages.fullAssessment)}</CardTitle>
+              <span className="mt-1 block truncate text-sm text-muted-foreground">{summary}</span>
+            </span>
+            <span className="flex h-8 shrink-0 items-center gap-1 px-2 py-0">
+              <span className="text-xs text-muted-foreground">{intl.formatMessage(isExpanded ? messages.hide : messages.show)}</span>
+              {isExpanded ? <AppIcon icon={ChevronUp} size="sm" /> : <AppIcon icon={ChevronDown} size="sm" />}
+            </span>
+          </button>
+        </CardHeader>
+        {isExpanded && (
+          <CardContent className="border-t border-border p-0">
+            <CreditAssessmentCard decisionCase={decisionCase} />
+          </CardContent>
+        )}
+      </Card>
     );
   }
   if (error === null && isAbsent) return <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.absent)}</p>;

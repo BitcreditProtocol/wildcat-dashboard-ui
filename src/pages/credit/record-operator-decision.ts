@@ -1,5 +1,5 @@
 import { authenticatedFetch } from "@/lib/api-client";
-import type { MintQuoteDenialStatus, OperatorMaterialEvidenceSelection } from "./decision-types";
+import type { MintQuoteDenialStatus, OperatorMaterialEvidenceSelection, SubmittedEvidence } from "./decision-types";
 import { parseMintDenialStatus } from "./parse-decision-cases";
 
 /** Records the governed operator judgement before the corresponding Mint action. */
@@ -47,6 +47,13 @@ export interface MintAuthorityEvidenceInput {
   decisionResultDigest: string;
   signedEvidence: Record<string, unknown>;
   writtenBasis: string;
+}
+
+export interface InvoiceEvidenceReviewInput {
+  billId: string;
+  caseId: string;
+  decisionResultDigest: string;
+  evidence: SubmittedEvidence;
 }
 
 export type MintRiskAssessmentInput = MintAuthorityEvidenceInput;
@@ -274,13 +281,6 @@ export async function recordMintRiskAssessment(
   return recordMintAuthorityEvidence(input, capability, `/v1/admin/credit/quote/${encodeURIComponent(input.mintQuoteId)}/acceptor-risk`);
 }
 
-export async function recordMintCapacityAssessment(
-  input: MintAuthorityEvidenceInput,
-  capability: OperatorCapability | undefined
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  return recordMintAuthorityEvidence(input, capability, "/v1/admin/credit/mint-capacity");
-}
-
 async function recordMintAuthorityEvidence(
   input: MintAuthorityEvidenceInput,
   capability: OperatorCapability | undefined,
@@ -319,6 +319,24 @@ export async function retryOperatorVerificationSources(
       headers: { "content-type": "application/json" },
       method: "POST",
       signal: AbortSignal.timeout(15_000),
+    });
+    return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
+  } catch {
+    return { ok: false, error: "The AI Credit operator service is not reachable" };
+  }
+}
+
+export async function reviewInvoiceEvidence(
+  input: InvoiceEvidenceReviewInput,
+  capability: OperatorCapability | undefined
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (capability === undefined) return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
+  try {
+    const response = await authenticatedFetch("/api/ai-credit/operator-verifications", {
+      body: JSON.stringify({ ...input, action: "review_invoice" }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+      signal: AbortSignal.timeout(30_000),
     });
     return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
   } catch {

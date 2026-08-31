@@ -1,5 +1,12 @@
 import { Badge } from "@/components/ui/badge";
-import type { DecisionInvoice, EvidencePacket, SubmittedEvidence, VerificationRequest } from "@/pages/credit/decision-types";
+import { ClaimInvestigationPanel } from "@/pages/credit/ClaimInvestigationPanel";
+import type {
+  ClaimInvestigationState,
+  DecisionInvoice,
+  EvidencePacket,
+  SubmittedEvidence,
+  VerificationRequest,
+} from "@/pages/credit/decision-types";
 import { SubmittedDocuments } from "@/pages/credit/SubmittedDocuments";
 import { AppIcon, Button, Card, CardContent, CardHeader, CardTitle, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -15,10 +22,12 @@ export type CreditEvidenceState =
       status: "available";
       caseId: string;
       resultDigest: string;
+      assessmentCurrency: "current" | "historical_pending_applicant_response";
       submittedEvidence: readonly SubmittedEvidence[];
       evidencePackets: readonly EvidencePacket[];
       invoiceAssessment: DecisionInvoice | null;
       verificationRequests: readonly VerificationRequest[];
+      claimInvestigation?: ClaimInvestigationState;
     };
 
 interface QuoteDocumentsProps {
@@ -27,14 +36,16 @@ interface QuoteDocumentsProps {
   creditEvidence: CreditEvidenceState;
   openingDocumentHash: string | null;
   openingEvidenceReference: string | null;
+  reviewingEvidenceReference?: string | null;
   onOpenDocument: (document: QuoteDocument) => void | Promise<void>;
   onOpenEvidence: (evidence: SubmittedEvidence) => void | Promise<void>;
+  onReviewInvoiceEvidence?: (evidence: SubmittedEvidence) => void | Promise<void>;
 }
 
 const messages = defineMessages({
   title: {
     id: "quotes.documentsAndEvidence.title",
-    defaultMessage: "Documents & evidence",
+    defaultMessage: "Evidence",
     description: "Heading for bill files and AI Credit evidence on a quote",
   },
   billFileCount: {
@@ -124,7 +135,7 @@ const messages = defineMessages({
   },
   sourceFiles: {
     id: "quotes.documentsAndEvidence.sourceFiles",
-    defaultMessage: "Source files from the eBill and Mint request ({count})",
+    defaultMessage: "Source files ({count})",
     description: "Collapsed technical source-file disclosure below the operator evidence review",
   },
 });
@@ -181,7 +192,11 @@ function CreditEvidence({
   state,
   openingEvidenceReference,
   onOpenEvidence,
-}: Pick<QuoteDocumentsProps, "openingEvidenceReference" | "onOpenEvidence"> & { state: CreditEvidenceState }) {
+  reviewingEvidenceReference,
+  onReviewInvoiceEvidence,
+}: Pick<QuoteDocumentsProps, "openingEvidenceReference" | "onOpenEvidence" | "reviewingEvidenceReference" | "onReviewInvoiceEvidence"> & {
+  state: CreditEvidenceState;
+}) {
   const intl = useIntl();
   if (state.status === "loading") {
     return (
@@ -215,23 +230,31 @@ function CreditEvidence({
   }
   if (state.submittedEvidence.length === 0) {
     return (
-      <section aria-labelledby="credit-evidence-heading" className="space-y-2">
-        <h3 id="credit-evidence-heading" className="text-sm font-medium">
-          {intl.formatMessage(messages.creditEvidence)}
-        </h3>
-        <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.emptyEvidence)}</p>
-      </section>
+      <div className="space-y-4">
+        <section aria-labelledby="credit-evidence-heading" className="space-y-2">
+          <h3 id="credit-evidence-heading" className="text-sm font-medium">
+            {intl.formatMessage(messages.creditEvidence)}
+          </h3>
+          <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.emptyEvidence)}</p>
+        </section>
+        {state.claimInvestigation !== undefined && <ClaimInvestigationPanel state={state.claimInvestigation} />}
+      </div>
     );
   }
   return (
-    <SubmittedDocuments
-      submittedEvidence={state.submittedEvidence}
-      evidencePackets={state.evidencePackets}
-      invoiceAssessment={state.invoiceAssessment}
-      verificationRequests={state.verificationRequests}
-      openingEvidenceReference={openingEvidenceReference}
-      onOpenEvidence={onOpenEvidence}
-    />
+    <div className="space-y-4">
+      <SubmittedDocuments
+        submittedEvidence={state.submittedEvidence}
+        evidencePackets={state.evidencePackets}
+        invoiceAssessment={state.invoiceAssessment}
+        verificationRequests={state.verificationRequests}
+        openingEvidenceReference={openingEvidenceReference}
+        onOpenEvidence={onOpenEvidence}
+        reviewingEvidenceReference={reviewingEvidenceReference}
+        onReviewInvoiceEvidence={onReviewInvoiceEvidence}
+      />
+      {state.claimInvestigation !== undefined && <ClaimInvestigationPanel state={state.claimInvestigation} />}
+    </div>
   );
 }
 
@@ -241,8 +264,10 @@ export function QuoteDocuments({
   creditEvidence,
   openingDocumentHash,
   openingEvidenceReference,
+  reviewingEvidenceReference,
   onOpenDocument,
   onOpenEvidence,
+  onReviewInvoiceEvidence,
 }: QuoteDocumentsProps) {
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -267,9 +292,7 @@ export function QuoteDocuments({
         >
           <span className="min-w-0">
             <CardTitle>{intl.formatMessage(messages.title)}</CardTitle>
-            <span className="mt-1 block text-sm text-muted-foreground">
-              {intl.formatMessage(messages.billFileCount, { count: billFileCount })} · {evidenceSummary}
-            </span>
+            <span className="mt-1 block truncate text-sm text-muted-foreground">{evidenceSummary}</span>
           </span>
           <span className="flex h-8 shrink-0 items-center gap-1 px-2 py-0">
             <span className="text-xs text-muted-foreground">{intl.formatMessage(isExpanded ? messages.hide : messages.show)}</span>
@@ -280,7 +303,13 @@ export function QuoteDocuments({
 
       {isExpanded && (
         <CardContent className="space-y-4 border-t border-border pt-5">
-          <CreditEvidence state={creditEvidence} openingEvidenceReference={openingEvidenceReference} onOpenEvidence={onOpenEvidence} />
+          <CreditEvidence
+            state={creditEvidence}
+            openingEvidenceReference={openingEvidenceReference}
+            onOpenEvidence={onOpenEvidence}
+            reviewingEvidenceReference={reviewingEvidenceReference}
+            onReviewInvoiceEvidence={onReviewInvoiceEvidence}
+          />
           {billFileCount === 0 ? (
             <p className="border-t border-border pt-4 text-sm text-muted-foreground">{intl.formatMessage(messages.noBillFiles)}</p>
           ) : (

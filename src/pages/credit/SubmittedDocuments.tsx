@@ -1,8 +1,8 @@
-import { Badge } from "@/components/ui/badge";
 import { Button, TruncatedTextPopover } from "@bitcredit/ui-library";
-import { FileText } from "lucide-react";
+import { ChevronDown, FileText } from "lucide-react";
 import { defineMessages, type IntlShape, useIntl } from "react-intl";
 import {
+  countCitedEvidenceClaims,
   displayEvidenceLabel,
   words,
   type DecisionInvoice,
@@ -13,11 +13,6 @@ import {
 } from "./decision-types";
 
 const messages = defineMessages({
-  heading: {
-    id: "credit.submittedEvidence.heading",
-    defaultMessage: "Evidence review",
-    description: "Heading for evidence submitted with the AI Credit application",
-  },
   summary: {
     id: "credit.submittedEvidence.summary",
     defaultMessage:
@@ -39,20 +34,20 @@ const messages = defineMessages({
     defaultMessage: "Extracted text only — verify against the PDF.",
     description: "Plain-language boundary for machine-extracted evidence statements",
   },
-  origin: { id: "credit.evidencePacket.origin", defaultMessage: "Origin", description: "Label for evidence origin" },
+  origin: { id: "credit.evidencePacket.origin", defaultMessage: "Independence", description: "Label for evidence origin" },
   originBill: {
     id: "credit.evidencePacket.origin.bill",
-    defaultMessage: "Bill attachment lineage",
+    defaultMessage: "Bill-bound",
     description: "Evidence origin reserved for governed or explicitly synthetic bill attachments",
   },
   originClientBill: {
     id: "credit.evidencePacket.origin.clientBill",
-    defaultMessage: "Browser-asserted bill attachment",
+    defaultMessage: "Browser-asserted",
     description: "Evidence origin supplied by the browser without server proof of bill binding",
   },
   originUpload: {
     id: "credit.evidencePacket.origin.upload",
-    defaultMessage: "Applicant upload",
+    defaultMessage: "Applicant",
     description: "Evidence origin for an applicant-uploaded file",
   },
   clientBillWarning: {
@@ -60,13 +55,7 @@ const messages = defineMessages({
     defaultMessage: "Attachment bytes match this quote. Document authenticity is not verified.",
     description: "Warning about browser-asserted bill attachment provenance",
   },
-  digest: { id: "credit.evidencePacket.digest", defaultMessage: "Server digest", description: "Label for server-computed evidence digest" },
-  submittedDigest: {
-    id: "credit.evidencePacket.submittedDigest",
-    defaultMessage: "Submitted digest (no server receipt)",
-    description: "Label for a digest that has no current evidence-service receipt",
-  },
-  status: { id: "credit.evidencePacket.status", defaultMessage: "Ingress", description: "Label for evidence ingress status" },
+  status: { id: "credit.evidencePacket.status", defaultMessage: "Status", description: "Label for evidence review status" },
   quarantined: {
     id: "credit.evidencePacket.quarantined",
     defaultMessage: "Quarantined · {bytes} bytes",
@@ -79,7 +68,7 @@ const messages = defineMessages({
   },
   matched: {
     id: "credit.evidencePacket.matched",
-    defaultMessage: "Invoice matched to eBill",
+    defaultMessage: "Matched",
     description: "Evidence status when the decision snapshot records a plausible invoice consistent with the eBill",
   },
   verificationRequired: {
@@ -111,6 +100,26 @@ const messages = defineMessages({
     id: "credit.evidencePacket.decisionChecks",
     defaultMessage: "Decision checks",
     description: "Heading for governed invoice checks derived from the decision snapshot",
+  },
+  document: {
+    id: "credit.evidencePacket.document",
+    defaultMessage: "Document",
+    description: "Evidence table document column",
+  },
+  establishes: {
+    id: "credit.evidencePacket.establishes",
+    defaultMessage: "Establishes",
+    description: "Evidence table extracted-facts column",
+  },
+  invoiceAligned: {
+    id: "credit.evidencePacket.invoiceAligned",
+    defaultMessage: "Invoice aligns with eBill",
+    description: "Compact evidence-table statement for a governed invoice match",
+  },
+  noExtractedFacts: {
+    id: "credit.evidencePacket.noExtractedFacts",
+    defaultMessage: "No extracted facts",
+    description: "Evidence table fallback when no source-cited facts are available",
   },
   plausibility: { id: "credit.evidencePacket.plausibility", defaultMessage: "Plausibility", description: "Invoice plausibility label" },
   consistency: {
@@ -175,11 +184,6 @@ const messages = defineMessages({
     description: "Label for the model route requested by the adapter, not provider attestation",
   },
   prompt: { id: "credit.evidencePacket.prompt", defaultMessage: "Prompt", description: "Label for prompt version" },
-  derivative: {
-    id: "credit.evidencePacket.derivative",
-    defaultMessage: "Text derivative",
-    description: "Label for the parsed text derivative digest",
-  },
   invoiceNumber: { id: "credit.evidencePacket.field.invoiceNumber", defaultMessage: "Invoice", description: "Invoice-number field label" },
   seller: { id: "credit.evidencePacket.field.seller", defaultMessage: "Seller", description: "Invoice seller field label" },
   buyer: { id: "credit.evidencePacket.field.buyer", defaultMessage: "Buyer", description: "Invoice buyer field label" },
@@ -195,6 +199,16 @@ const messages = defineMessages({
   lineItem: { id: "credit.evidencePacket.field.lineItem", defaultMessage: "Line item", description: "Invoice line-item field label" },
   view: { id: "credit.evidencePacket.view", defaultMessage: "View PDF", description: "Button to open submitted evidence" },
   opening: { id: "credit.evidencePacket.opening", defaultMessage: "Opening…", description: "Button while submitted evidence opens" },
+  review: {
+    id: "credit.evidencePacket.review",
+    defaultMessage: "Confirm eBill match",
+    description: "Action to record a governed operator comparison of an extracted invoice and the current eBill",
+  },
+  reviewing: {
+    id: "credit.evidencePacket.reviewing",
+    defaultMessage: "Recording…",
+    description: "Pending label while a governed operator invoice review is recorded",
+  },
 });
 
 function originMessage(origin: SubmittedEvidence["origin"]) {
@@ -312,209 +326,235 @@ export function SubmittedDocuments({
   invoiceAssessment = null,
   verificationRequests = [],
   openingEvidenceReference,
+  reviewingEvidenceReference,
   onOpenEvidence,
+  onReviewInvoiceEvidence,
 }: {
   submittedEvidence: readonly SubmittedEvidence[];
   evidencePackets: readonly EvidencePacket[];
   invoiceAssessment?: DecisionInvoice | null;
   verificationRequests?: readonly VerificationRequest[];
   openingEvidenceReference?: string | null;
+  reviewingEvidenceReference?: string | null;
   onOpenEvidence?: (evidence: SubmittedEvidence) => void | Promise<void>;
+  onReviewInvoiceEvidence?: (evidence: SubmittedEvidence) => void | Promise<void>;
 }) {
   const intl = useIntl();
   if (submittedEvidence.length === 0) return null;
-  const citedClaimCount = evidencePackets.reduce(
-    (count, packet) =>
-      count +
-      claimGroupsFor(packet, intl)
-        .flatMap((group) => group.claims)
-        .filter((claim) => claim.citations.length > 0).length,
-    0
-  );
+  const citedClaimCount = countCitedEvidenceClaims(evidencePackets);
 
   return (
-    <section className="flex flex-col gap-4 text-sm" data-testid="evidence-packet">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 className="text-base font-semibold">{intl.formatMessage(messages.heading)}</h3>
-          <p className="text-xs text-muted-foreground">
-            {intl.formatMessage(messages.summary, { documents: submittedEvidence.length, claims: citedClaimCount })}
-          </p>
-        </div>
+    <section className="space-y-3 text-sm" data-testid="evidence-packet">
+      <div className="flex items-center justify-between gap-4">
+        <p className="truncate text-xs text-muted-foreground">
+          {intl.formatMessage(messages.summary, { documents: submittedEvidence.length, claims: citedClaimCount })}
+        </p>
         {verificationRequests.length > 0 && (
-          <Badge variant="pending">{intl.formatMessage(messages.requests, { count: verificationRequests.length })}</Badge>
+          <span className="shrink-0 whitespace-nowrap text-xs font-medium text-signal-alert">
+            {intl.formatMessage(messages.requests, { count: verificationRequests.length })}
+          </span>
         )}
       </div>
+
       {verificationRequests.length > 0 && (
-        <div className="rounded-lg border border-signal-alert/40 bg-signal-alert/5 p-3">
-          <p className="font-medium text-signal-alert">{intl.formatMessage(messages.outstanding)}</p>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-xs">
+        <section className="border-l-2 border-signal-alert pl-3">
+          <h4 className="text-xs font-semibold text-signal-alert">{intl.formatMessage(messages.outstanding)}</h4>
+          <ul className="mt-1 space-y-1 text-xs">
             {verificationRequests.map((request) => (
               <li key={`${request.axis}:${request.code}`}>{request.requiredItem}</li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
-      <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.warning)}</p>
-      {submittedEvidence.map((evidence) => {
-        const packet = evidencePackets.find(
-          (candidate) =>
-            candidate.evidence.reference === evidence.reference &&
-            candidate.evidence.contentDigest === evidence.contentDigest &&
-            candidate.evidence.origin === evidence.origin
-        );
-        const extraction = packet?.extraction;
-        const analysis = packet?.analysis;
-        const claimGroups = claimGroupsFor(packet, intl);
-        const documentType = analysis?.analysis.documentType?.value;
-        const isDecisionEvidence = invoiceAssessment?.reference === evidence.reference;
-        const isMatched =
-          isDecisionEvidence &&
-          invoiceAssessment.plausibility === "plausible" &&
-          invoiceAssessment.billAndClaimsConsistency === "match" &&
-          extraction !== undefined;
-        const reviewStatus = isMatched
-          ? messages.matched
-          : packet === undefined
-            ? messages.receiptUnavailable
-            : isDecisionEvidence
-              ? extraction === undefined
-                ? messages.humanReview
-                : messages.verificationRequired
-              : analysis !== undefined || extraction !== undefined
-                ? messages.extractionAvailable
-                : packet.analysisStatus === "pending"
-                  ? messages.analysisPending
-                  : messages.supporting;
-        return (
-          <article key={`${evidence.reference}:${evidence.origin}`} className="overflow-hidden rounded-lg border border-divider-200">
-            <header className="flex min-w-0 flex-col gap-3 border-b border-border bg-elevation-100 p-4 sm:flex-row sm:items-center">
-              <div className="flex min-w-0 flex-1 items-start gap-2">
-                <FileText className="size-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0">
-                  <TruncatedTextPopover text={displayEvidenceLabel(evidence.label)} className="min-w-0 font-medium" />
-                  {documentType !== undefined && <p className="mt-0.5 text-xs text-muted-foreground">{documentType}</p>}
-                </div>
-              </div>
-              <Badge
-                variant={
-                  isMatched
-                    ? "success"
-                    : packet === undefined || isDecisionEvidence || packet.analysisStatus === "pending"
-                      ? "pending"
-                      : "outline"
-                }
-              >
-                {intl.formatMessage(reviewStatus)}
-              </Badge>
-              {packet !== undefined && onOpenEvidence !== undefined && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={openingEvidenceReference !== null && openingEvidenceReference !== undefined}
-                  onClick={() => void onOpenEvidence(evidence)}
-                >
-                  {intl.formatMessage(openingEvidenceReference === evidence.reference ? messages.opening : messages.view)}
-                </Button>
-              )}
-            </header>
-            <div className="space-y-4 p-4">
-              {evidence.origin === "client_asserted_bill_attachment" && (
-                <p className="rounded-md bg-signal-alert/5 p-2 text-xs text-signal-alert">
-                  {intl.formatMessage(messages.clientBillWarning)}
-                </p>
-              )}
-              {isDecisionEvidence && invoiceAssessment && (
-                <section>
-                  <h4 className="mb-2 font-medium">{intl.formatMessage(messages.decisionChecks)}</h4>
-                  <dl className="grid gap-2 sm:grid-cols-3">
-                    {(
-                      [
-                        [messages.plausibility, invoiceAssessment.plausibility],
-                        [messages.consistency, invoiceAssessment.billAndClaimsConsistency],
-                        [messages.evidenceState, invoiceAssessment.evidenceState],
-                      ] as const
-                    ).map(([label, value]) => (
-                      <div key={label.id} className="rounded-md border border-border p-3">
-                        <dt className="text-xs text-muted-foreground">{intl.formatMessage(label)}</dt>
-                        <dd className="mt-1 font-medium">{words(value)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              )}
-              {packet?.analysisStatus === "pending" && analysis === undefined && (
-                <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.pendingAnalysis)}</p>
-              )}
-              {claimGroups.length === 0 && packet?.analysisStatus !== "pending" ? (
-                <p className="text-sm text-muted-foreground">
-                  {intl.formatMessage(isDecisionEvidence ? messages.extractionUnavailable : messages.supportingUnavailable)}
-                </p>
-              ) : claimGroups.length > 0 ? (
-                <section>
-                  <h4 className="mb-2 font-medium">{intl.formatMessage(messages.extractedFields)}</h4>
-                  <div className="space-y-2">
-                    {claimGroups.map((group) =>
-                      group.collapsed ? (
-                        <details key={group.id} className="rounded-md border border-border">
-                          <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{group.label}</summary>
-                          <div className="border-t border-border p-3">
-                            <ClaimGrid claims={group.claims} intl={intl} />
-                          </div>
-                        </details>
-                      ) : (
-                        <ClaimGrid key={group.id} claims={group.claims} intl={intl} />
-                      )
-                    )}
-                  </div>
-                </section>
-              ) : null}
-              <details className="rounded-md border border-border">
-                <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{intl.formatMessage(messages.technical)}</summary>
-                <dl className="grid gap-3 border-t border-border p-3 text-xs sm:grid-cols-2">
-                  <div>
-                    <dt className="text-muted-foreground">{intl.formatMessage(messages.origin)}</dt>
-                    <dd>{intl.formatMessage(originMessage(evidence.origin))}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">{intl.formatMessage(messages.status)}</dt>
-                    <dd>
-                      {packet === undefined
-                        ? intl.formatMessage(messages.receiptUnavailable)
-                        : intl.formatMessage(messages.quarantined, { bytes: intl.formatNumber(packet.byteLength) })}
-                    </dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-muted-foreground">
-                      {intl.formatMessage(packet === undefined ? messages.submittedDigest : messages.digest)}
-                    </dt>
-                    <dd className="break-all font-mono">{evidence.contentDigest}</dd>
-                  </div>
-                  {(analysis ?? extraction) && (
-                    <>
-                      {(
-                        [
-                          [messages.extraction, (analysis ?? extraction)?.schemaVersion ?? ""],
-                          [messages.parser, (analysis ?? extraction)?.parserVersion ?? ""],
-                          [messages.model, (analysis ?? extraction)?.modelId ?? ""],
-                          [messages.prompt, (analysis ?? extraction)?.promptVersion ?? ""],
-                          [messages.extractedAt, (analysis ?? extraction)?.extractedAt ?? ""],
-                          [messages.derivative, (analysis ?? extraction)?.derivativeDigest ?? ""],
-                        ] as const
-                      ).map(([label, value]) => (
-                        <div key={label.id} className={label === messages.derivative ? "sm:col-span-2" : undefined}>
-                          <dt className="text-muted-foreground">{intl.formatMessage(label)}</dt>
-                          <dd className="break-all font-mono">{value}</dd>
-                        </div>
-                      ))}
-                    </>
+
+      <div className="overflow-hidden rounded-lg border border-border">
+        <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_8rem_7rem_1.25rem] gap-4 border-b border-border bg-elevation-100 px-4 py-2 text-xs font-medium text-muted-foreground md:grid">
+          <span>{intl.formatMessage(messages.document)}</span>
+          <span>{intl.formatMessage(messages.establishes)}</span>
+          <span>{intl.formatMessage(messages.origin)}</span>
+          <span>{intl.formatMessage(messages.status)}</span>
+          <span />
+        </div>
+        <div className="divide-y divide-border">
+          {submittedEvidence.map((evidence) => {
+            const packet = evidencePackets.find(
+              (candidate) =>
+                candidate.evidence.reference === evidence.reference &&
+                candidate.evidence.contentDigest === evidence.contentDigest &&
+                candidate.evidence.origin === evidence.origin
+            );
+            const extraction = packet?.extraction;
+            const analysis = packet?.analysis;
+            const claimGroups = claimGroupsFor(packet, intl);
+            const documentType = analysis?.analysis.documentType?.value;
+            const isDecisionEvidence = invoiceAssessment?.reference === evidence.reference;
+            const isMatched =
+              isDecisionEvidence &&
+              invoiceAssessment.plausibility === "plausible" &&
+              invoiceAssessment.billAndClaimsConsistency === "match" &&
+              invoiceAssessment.evidenceState === "corroborated";
+            const canReviewInvoice =
+              isDecisionEvidence &&
+              extraction !== undefined &&
+              invoiceAssessment?.evidenceState !== "corroborated" &&
+              verificationRequests.some((request) => request.code === "invoice_evidence" || request.code === "invoice_consistency");
+            const reviewStatus = isMatched
+              ? messages.matched
+              : packet === undefined
+                ? messages.receiptUnavailable
+                : isDecisionEvidence
+                  ? extraction === undefined
+                    ? messages.humanReview
+                    : messages.verificationRequired
+                  : analysis !== undefined || extraction !== undefined
+                    ? messages.extractionAvailable
+                    : packet.analysisStatus === "pending"
+                      ? messages.analysisPending
+                      : messages.supporting;
+            const establishes =
+              claimGroups
+                .flatMap((group) => group.claims)
+                .slice(0, 3)
+                .map((claim) => claim.value)
+                .join(" · ") || (isMatched ? intl.formatMessage(messages.invoiceAligned) : "");
+            const independence = intl.formatMessage(originMessage(evidence.origin));
+            return (
+              <details key={`${evidence.reference}:${evidence.origin}`} className="group">
+                <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_1.25rem] items-center gap-3 px-4 py-3 marker:hidden md:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_8rem_7rem_1.25rem] md:gap-4">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <TruncatedTextPopover text={displayEvidenceLabel(evidence.label)} className="block truncate font-medium" />
+                      {documentType !== undefined && <span className="block truncate text-xs text-muted-foreground">{documentType}</span>}
+                    </span>
+                  </span>
+                  <span className="hidden truncate text-xs text-muted-foreground md:block" title={establishes || undefined}>
+                    {establishes || intl.formatMessage(messages.noExtractedFacts)}
+                  </span>
+                  <span
+                    className="hidden truncate text-xs md:block"
+                    title={
+                      evidence.origin === "client_asserted_bill_attachment" ? intl.formatMessage(messages.clientBillWarning) : undefined
+                    }
+                  >
+                    {independence}
+                  </span>
+                  <span className={`whitespace-nowrap text-xs font-medium ${isMatched ? "text-signal-success" : "text-muted-foreground"}`}>
+                    {intl.formatMessage(reviewStatus)}
+                  </span>
+                  <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+                  <span className="col-span-3 truncate text-xs text-muted-foreground md:hidden" title={establishes || undefined}>
+                    {establishes || independence}
+                  </span>
+                </summary>
+                <div className="space-y-4 border-t border-border bg-elevation-100/40 p-4">
+                  {(canReviewInvoice || (packet !== undefined && onOpenEvidence !== undefined)) && (
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {canReviewInvoice && onReviewInvoiceEvidence !== undefined && (
+                        <Button
+                          size="sm"
+                          disabled={reviewingEvidenceReference !== null && reviewingEvidenceReference !== undefined}
+                          onClick={() => void onReviewInvoiceEvidence(evidence)}
+                        >
+                          {intl.formatMessage(reviewingEvidenceReference === evidence.reference ? messages.reviewing : messages.review)}
+                        </Button>
+                      )}
+                      {packet !== undefined && onOpenEvidence !== undefined && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={openingEvidenceReference !== null && openingEvidenceReference !== undefined}
+                          onClick={() => void onOpenEvidence(evidence)}
+                        >
+                          {intl.formatMessage(openingEvidenceReference === evidence.reference ? messages.opening : messages.view)}
+                        </Button>
+                      )}
+                    </div>
                   )}
-                </dl>
+                  {isDecisionEvidence && invoiceAssessment && (
+                    <section>
+                      <h4 className="mb-2 text-xs font-medium text-muted-foreground">{intl.formatMessage(messages.decisionChecks)}</h4>
+                      <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-3">
+                        {(
+                          [
+                            [messages.plausibility, invoiceAssessment.plausibility],
+                            [messages.consistency, invoiceAssessment.billAndClaimsConsistency],
+                            [messages.evidenceState, invoiceAssessment.evidenceState],
+                          ] as const
+                        ).map(([label, value]) => (
+                          <div key={label.id}>
+                            <dt className="text-xs text-muted-foreground">{intl.formatMessage(label)}</dt>
+                            <dd className="mt-1 font-medium">{words(value)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </section>
+                  )}
+                  {packet?.analysisStatus === "pending" && analysis === undefined && (
+                    <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.pendingAnalysis)}</p>
+                  )}
+                  {claimGroups.length === 0 && packet?.analysisStatus !== "pending" && !isMatched ? (
+                    <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.noExtractedFacts)}</p>
+                  ) : claimGroups.length > 0 ? (
+                    <section>
+                      <h4 className="mb-2 font-medium">{intl.formatMessage(messages.extractedFields)}</h4>
+                      <div className="space-y-2">
+                        {claimGroups.map((group) =>
+                          group.collapsed ? (
+                            <details key={group.id} className="rounded-md border border-border">
+                              <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{group.label}</summary>
+                              <div className="border-t border-border p-3">
+                                <ClaimGrid claims={group.claims} intl={intl} />
+                              </div>
+                            </details>
+                          ) : (
+                            <ClaimGrid key={group.id} claims={group.claims} intl={intl} />
+                          )
+                        )}
+                      </div>
+                    </section>
+                  ) : null}
+                  <details className="rounded-md border border-border">
+                    <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{intl.formatMessage(messages.technical)}</summary>
+                    <dl className="grid gap-3 border-t border-border p-3 text-xs sm:grid-cols-2">
+                      <div>
+                        <dt className="text-muted-foreground">{intl.formatMessage(messages.origin)}</dt>
+                        <dd>{intl.formatMessage(originMessage(evidence.origin))}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">{intl.formatMessage(messages.status)}</dt>
+                        <dd>
+                          {packet === undefined
+                            ? intl.formatMessage(messages.receiptUnavailable)
+                            : intl.formatMessage(messages.quarantined, { bytes: intl.formatNumber(packet.byteLength) })}
+                        </dd>
+                      </div>
+                      {(analysis ?? extraction) && (
+                        <>
+                          {(
+                            [
+                              [messages.extraction, (analysis ?? extraction)?.schemaVersion ?? ""],
+                              [messages.parser, (analysis ?? extraction)?.parserVersion ?? ""],
+                              [messages.model, (analysis ?? extraction)?.modelId ?? ""],
+                              [messages.prompt, (analysis ?? extraction)?.promptVersion ?? ""],
+                              [messages.extractedAt, (analysis ?? extraction)?.extractedAt ?? ""],
+                            ] as const
+                          ).map(([label, value]) => (
+                            <div key={label.id}>
+                              <dt className="text-muted-foreground">{intl.formatMessage(label)}</dt>
+                              <dd className="break-all font-mono">{value}</dd>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </dl>
+                  </details>
+                </div>
               </details>
-            </div>
-          </article>
-        );
-      })}
+            );
+          })}
+        </div>
+      </div>
     </section>
   );
 }
