@@ -60,7 +60,7 @@
     "@eslint/js": "^10.0.1",
     "@eslint/plugin-kit": "^0.7.2",
     "@formatjs/cli": "^6.16.22",
-    "@hey-api/openapi-ts": "^0.99.0",
+    "@hey-api/openapi-ts": "^0.97.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@types/big.js": "^7.0.0",
     "@types/node": "^26.4.0",
