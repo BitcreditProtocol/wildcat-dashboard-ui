@@ -1,6 +1,7 @@
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DATE_FORMAT_AUTO } from "@bitcredit/ui-library";
 import { PreferencesProvider, usePreferences } from "./PreferencesContext";
 
 let root: Root | null = null;
@@ -90,7 +91,7 @@ describe("PreferencesProvider", () => {
       theme: "system",
       currency: "eur",
       decimalFormat: "space",
-      dateFormat: "dd MMM yyyy",
+      dateFormat: DATE_FORMAT_AUTO,
     });
   });
 });

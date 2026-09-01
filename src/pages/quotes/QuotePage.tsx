@@ -241,12 +241,16 @@ function PageBody({ id }: { id: string }) {
         timeOfRequestToPay={timeOfRequestToPay}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-        <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
 
-        <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
+          <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
+        </div>
 
-        <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
+        </div>
       </div>
     </div>
   );
