@@ -7,7 +7,7 @@
     "node": ">=25 <27",
     "npm": ">=11 <13"
   },
-  "packageManager": "npm@12.0.2",
+  "packageManager": "npm@11.9.0",
   "scripts": {
     "dev": "vite",
     "dev:crowdin": "VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING=true vite",
