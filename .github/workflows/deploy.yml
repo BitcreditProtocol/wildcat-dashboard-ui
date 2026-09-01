@@ -24,6 +24,7 @@ jobs:
   # CF project:   wildcat-dashboard
   ######################################################################
   deploy-dev:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -95,6 +96,7 @@ jobs:
   # CF project:   wildcat-dashboard-staging
   ######################################################################
   deploy-staging:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -188,6 +190,7 @@ jobs:
   # CF project:   wildcat-dashboard-production
   ######################################################################
   deploy-production:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: read
