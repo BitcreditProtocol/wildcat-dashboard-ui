@@ -1,0 +1,19 @@
+# This repository carries its own issue templates, and a repository that does
+# stops using the organisation defaults in BitcreditProtocol/.github entirely --
+# contact links included. Without this file the chooser here offers no route to
+# report a vulnerability privately, which is the one link that matters most.
+#
+# The three links below are the organisation's, verbatim. Keep them in step with
+# .github/.github/ISSUE_TEMPLATE/config.yml; the templates themselves are this
+# repository's own and are deliberately richer than the organisation versions.
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/BitcreditProtocol/.github/security/advisories/new
+    about: Report privately. Never open a public issue for a vulnerability.
+  - name: Documentation
+    url: https://docs.bitcr.org/
+    about: Guides and reference for the Bitcredit Protocol.
+  - name: Protocol specifications
+    url: https://github.com/BitcreditProtocol/cats
+    about: How the protocol is defined.
