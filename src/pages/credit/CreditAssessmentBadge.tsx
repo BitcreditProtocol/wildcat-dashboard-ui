@@ -34,11 +34,11 @@ const messages = defineMessages({
 
 export function CreditAssessmentBadge({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
   const intl = useIntl();
-  const { decisionCase, issue } = useCreditAssessmentForBill(billId, mintQuoteId);
-  if (issue !== undefined) return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
-  if (decisionCase === undefined) return <Badge variant="default">{intl.formatMessage(messages.pending)}</Badge>;
+  const assessment = useCreditAssessmentForBill(billId, mintQuoteId);
+  if (assessment.status === "isolated") return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
+  if (assessment.status !== "assessed") return <Badge variant="default">{intl.formatMessage(messages.pending)}</Badge>;
 
-  const { result } = decisionCase;
+  const { result } = assessment.decisionCase;
   if (result.assessmentStatus === "blocked_pending_verification") {
     return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
   }

@@ -164,13 +164,12 @@ vi.mock("./components/useQuoteMutations", () => ({
 }));
 
 vi.mock("@/pages/credit/use-credit-assessment", () => ({
-  useCreditAssessmentForBill: () => ({
-    decisionCase,
-    isLoading: false,
-    error: null,
-    isAbsent: decisionCase === undefined,
-    isUnavailable: creditAssessmentUnavailable,
-  }),
+  useCreditAssessmentForBill: () =>
+    creditAssessmentUnavailable
+      ? { status: "unavailable", error: new Error("assessment unavailable") }
+      : decisionCase === undefined
+        ? { status: "absent" }
+        : { status: "assessed", decisionCase },
 }));
 
 vi.mock("@/pages/credit/record-operator-decision", async (importOriginal) => ({

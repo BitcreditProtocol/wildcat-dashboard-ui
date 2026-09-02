@@ -58,7 +58,9 @@ export function QuoteActions({
   const intl = useIntl();
   const queryClient = useQueryClient();
   const billId = value.bill.id;
-  const { decisionCase, isUnavailable: isCreditAssessmentUnavailable } = useCreditAssessmentForBill(billId, value.id);
+  const creditAssessment = useCreditAssessmentForBill(billId, value.id);
+  const decisionCase = creditAssessment.status === "assessed" ? creditAssessment.decisionCase : undefined;
+  const isCreditAssessmentUnavailable = creditAssessment.status === "unavailable";
   const operatorCapability = useOperatorCapability();
   const EBILL_DETAIL_POLL_INTERVAL_MS = 10_000;
   const shouldLoadEbillDetail = value.status === "Accepted" || value.status === "MintingEnabled";

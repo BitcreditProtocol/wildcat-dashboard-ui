@@ -101,20 +101,20 @@ function PageBody({ id }: { id: string }) {
     isMintOperationLoading,
   } = useQuoteDetail(id);
   const creditAssessment = useCreditAssessmentForBill(billId, id);
+  const decisionCase = creditAssessment.status === "assessed" ? creditAssessment.decisionCase : undefined;
   const operatorCapability = useOperatorCapability();
-  const assessmentHistory = creditAssessment.decisionCase?.assessmentHistory;
+  const assessmentHistory = decisionCase?.assessmentHistory;
   const previousAssessment = assessmentHistory?.[assessmentHistory.length - 2];
   const currentAssessment = assessmentHistory?.[assessmentHistory.length - 1];
   const reassessmentChanges =
     previousAssessment === undefined || currentAssessment === undefined ? [] : assessmentChanges(previousAssessment, currentAssessment);
-  const creditEvidence: CreditEvidenceState = creditAssessment.isLoading
-    ? { status: "loading" }
-    : creditAssessment.error !== null
-      ? { status: "unavailable" }
-      : creditAssessment.isAbsent
-        ? { status: "absent" }
-        : creditAssessment.decisionCase === undefined
-          ? { status: "unavailable" }
+  const creditEvidence: CreditEvidenceState =
+    creditAssessment.status === "loading"
+      ? { status: "loading" }
+      : creditAssessment.status === "unavailable" || creditAssessment.status === "isolated"
+        ? { status: "unavailable" }
+        : creditAssessment.status === "absent"
+          ? { status: "absent" }
           : {
               status: "available",
               caseId: creditAssessment.decisionCase.snapshot.caseId,
@@ -127,10 +127,10 @@ function PageBody({ id }: { id: string }) {
               claimInvestigation: creditAssessment.decisionCase.claimInvestigation,
             };
 
-  const investigation = creditAssessment.decisionCase?.claimInvestigation;
+  const investigation = decisionCase?.claimInvestigation;
   useEffect(() => {
     if (
-      creditAssessment.decisionCase?.assessmentCurrency !== "current" ||
+      decisionCase?.assessmentCurrency !== "current" ||
       investigation?.status !== "idle" ||
       autoInvestigationStartedRef.current === investigation.request.inputDigest
     ) {
@@ -148,7 +148,7 @@ function PageBody({ id }: { id: string }) {
     })
       .then((response) => (response.ok ? queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] }) : undefined))
       .catch(() => undefined);
-  }, [creditAssessment.decisionCase?.assessmentCurrency, investigation, queryClient]);
+  }, [decisionCase?.assessmentCurrency, investigation, queryClient]);
 
   if (error) {
     const errorMessage = getApiErrorMessage(error);
@@ -385,65 +385,62 @@ function PageBody({ id }: { id: string }) {
           mintOperationStatus={mintOperationStatus}
           isMintOperationLoading={isMintOperationLoading}
           decisionSummary={
-            creditAssessment.decisionCase?.applicantConfirmation
+            decisionCase?.applicantConfirmation
               ? {
-                  assessmentCurrency: creditAssessment.decisionCase.assessmentCurrency,
-                  useOfFunds: creditAssessment.decisionCase.applicantConfirmation.useOfFunds,
-                  repaymentSource: creditAssessment.decisionCase.applicantConfirmation.repaymentSource,
-                  ...(creditAssessment.decisionCase.applicantConfirmation.acceptor &&
-                  creditAssessment.decisionCase.applicantConfirmation.acceptor !==
-                    creditAssessment.decisionCase.applicantConfirmation.repaymentSource
-                    ? { acceptor: creditAssessment.decisionCase.applicantConfirmation.acceptor }
+                  assessmentCurrency: decisionCase.assessmentCurrency,
+                  useOfFunds: decisionCase.applicantConfirmation.useOfFunds,
+                  repaymentSource: decisionCase.applicantConfirmation.repaymentSource,
+                  ...(decisionCase.applicantConfirmation.acceptor &&
+                  decisionCase.applicantConfirmation.acceptor !== decisionCase.applicantConfirmation.repaymentSource
+                    ? { acceptor: decisionCase.applicantConfirmation.acceptor }
                     : {}),
-                  ...(creditAssessment.decisionCase.snapshot.invoice?.goodsDescription
-                    ? { goodsDescription: creditAssessment.decisionCase.snapshot.invoice.goodsDescription }
+                  ...(decisionCase.snapshot.invoice?.goodsDescription
+                    ? { goodsDescription: decisionCase.snapshot.invoice.goodsDescription }
                     : {}),
-                  readyForDecision: creditAssessment.decisionCase.result.assessmentStatus === "ready_for_decision",
-                  recommendation: creditAssessment.decisionCase.result.recommendation,
-                  passedChecks: operatorVisibleAxes(creditAssessment.decisionCase.result.axes).filter((axis) => axis.status === "pass")
-                    .length,
-                  failedChecks: operatorVisibleAxes(creditAssessment.decisionCase.result.axes).filter((axis) => axis.status === "fail")
-                    .length,
-                  notAssessedChecks: operatorVisibleAxes(creditAssessment.decisionCase.result.axes).filter(
+                  readyForDecision: decisionCase.result.assessmentStatus === "ready_for_decision",
+                  recommendation: decisionCase.result.recommendation,
+                  passedChecks: operatorVisibleAxes(decisionCase.result.axes).filter((axis) => axis.status === "pass").length,
+                  failedChecks: operatorVisibleAxes(decisionCase.result.axes).filter((axis) => axis.status === "fail").length,
+                  notAssessedChecks: operatorVisibleAxes(decisionCase.result.axes).filter(
                     (axis) => axis.status === "blocked" || axis.status === "not_assessed"
                   ).length,
-                  totalChecks: operatorVisibleAxes(creditAssessment.decisionCase.result.axes).length,
-                  answersAffirmed: creditAssessment.decisionCase.applicantConfirmation.answersAffirmed,
-                  recourseAcknowledged: creditAssessment.decisionCase.applicantConfirmation.recourseAcknowledged,
-                  unresolvedContradictions: creditAssessment.decisionCase.snapshot.contradictions.length,
+                  totalChecks: operatorVisibleAxes(decisionCase.result.axes).length,
+                  answersAffirmed: decisionCase.applicantConfirmation.answersAffirmed,
+                  recourseAcknowledged: decisionCase.applicantConfirmation.recourseAcknowledged,
+                  unresolvedContradictions: decisionCase.snapshot.contradictions.length,
                   evidenceSummary: {
-                    documents: (creditAssessment.decisionCase.submittedEvidence ?? []).length,
-                    citedClaims: countCitedEvidenceClaims(creditAssessment.decisionCase.evidencePackets ?? []),
-                    openRequests: creditAssessment.decisionCase.result.verificationRequests.length,
+                    documents: (decisionCase.submittedEvidence ?? []).length,
+                    citedClaims: countCitedEvidenceClaims(decisionCase.evidencePackets ?? []),
+                    openRequests: decisionCase.result.verificationRequests.length,
                     investigation:
-                      creditAssessment.decisionCase.claimInvestigation?.status === "available"
+                      decisionCase.claimInvestigation?.status === "available"
                         ? {
                             status: "available" as const,
-                            findings: creditAssessment.decisionCase.claimInvestigation.proposal.findings.length,
-                            sources: creditAssessment.decisionCase.claimInvestigation.proposal.findings.reduce(
+                            findings: decisionCase.claimInvestigation.proposal.findings.length,
+                            sources: decisionCase.claimInvestigation.proposal.findings.reduce(
                               (count, finding) => count + finding.sources.length,
                               0
                             ),
                           }
                         : {
-                            status: creditAssessment.decisionCase.claimInvestigation?.status ?? ("not_run" as const),
+                            status: decisionCase.claimInvestigation?.status ?? ("not_run" as const),
                             findings: 0,
                             sources: 0,
                           },
                   },
-                  applicantRequests: creditAssessment.decisionCase.result.verificationRequests
+                  applicantRequests: decisionCase.result.verificationRequests
                     .filter((request) => request.owner === "applicant")
                     .map(({ axis, requiredItem }) => ({ axis, requiredItem })),
                   reassessmentChanges,
-                  billAcceptanceState: creditAssessment.decisionCase.snapshot.bill?.acceptanceState,
-                  ...(creditAssessment.decisionCase.assessmentCurrency === "current" && creditAssessment.decisionCase.result.terms
+                  billAcceptanceState: decisionCase.snapshot.bill?.acceptanceState,
+                  ...(decisionCase.assessmentCurrency === "current" && decisionCase.result.terms
                     ? {
                         recommendedTerms: {
-                          mintingFee: Number(creditAssessment.decisionCase.result.terms.effectiveFeeSat),
-                          amountAvailableForMinting: Number(creditAssessment.decisionCase.result.terms.discountedSat),
-                          feeRatioBps: creditAssessment.decisionCase.result.terms.feeRatioBps,
-                          tenorDays: creditAssessment.decisionCase.result.terms.tenorDays,
-                          offerExpiresOn: creditAssessment.decisionCase.result.terms.offerExpiresOn,
+                          mintingFee: Number(decisionCase.result.terms.effectiveFeeSat),
+                          amountAvailableForMinting: Number(decisionCase.result.terms.discountedSat),
+                          feeRatioBps: decisionCase.result.terms.feeRatioBps,
+                          tenorDays: decisionCase.result.terms.tenorDays,
+                          offerExpiresOn: decisionCase.result.terms.offerExpiresOn,
                         },
                       }
                     : {}),

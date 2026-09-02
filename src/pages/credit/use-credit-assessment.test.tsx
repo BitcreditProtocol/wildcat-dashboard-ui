@@ -80,10 +80,7 @@ describe("useCreditAssessmentForBill", () => {
       await new Promise((resolve) => setTimeout(resolve, 1_100));
     });
 
-    expect(latest()?.isLoading).toBe(false);
-    expect(latest()?.decisionCase).toBeUndefined();
-    expect(latest()?.issue).toBeUndefined();
-    expect(latest()?.isUnavailable).toBe(true);
+    expect(latest()?.status).toBe("unavailable");
   });
 
   it("returns only an isolation issue bound to the exact bill and quote", async () => {
@@ -118,9 +115,41 @@ describe("useCreditAssessmentForBill", () => {
 
     const latest = await renderHook("bill-a", mintQuoteId);
 
-    expect(latest()?.decisionCase).toBeUndefined();
-    expect(latest()?.issue?.reasonCode).toBe("bill_state_mismatch");
-    expect(latest()?.isAbsent).toBe(false);
-    expect(latest()?.isUnavailable).toBe(false);
+    expect(latest()).toMatchObject({ status: "isolated", issue: { reasonCode: "bill_state_mismatch" } });
+  });
+
+  it("uses the narrow quote-less fallback only for missing legacy applicant authority", async () => {
+    const mintQuoteId = "da82cf03-b166-426d-b062-b3b9fbf4bd6f";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          Response.json({
+            schemaVersion: "ai-credit-workbench-decisions-v1",
+            cases: [],
+            issues: [
+              {
+                billId: "bill-a",
+                caseId: "case-wrong",
+                mintQuoteId: null,
+                reasonCode: "submitted_evidence_unavailable",
+                detectedAt: "2026-09-02T09:30:00.000Z",
+              },
+              {
+                billId: "bill-a",
+                caseId: "case-legacy",
+                mintQuoteId: null,
+                reasonCode: "legacy_authority_missing",
+                detectedAt: "2026-09-02T09:31:00.000Z",
+              },
+            ],
+          })
+        )
+      )
+    );
+
+    const latest = await renderHook("bill-a", mintQuoteId);
+
+    expect(latest()).toMatchObject({ status: "isolated", issue: { caseId: "case-legacy", reasonCode: "legacy_authority_missing" } });
   });
 });

@@ -167,9 +167,9 @@ const issuePresentation: Record<OperatorSubmittedCaseIssue["reasonCode"], { labe
 export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
-  const { decisionCase, issue, isLoading, isAbsent, error } = useCreditAssessmentForBill(billId, mintQuoteId);
+  const assessment = useCreditAssessmentForBill(billId, mintQuoteId);
 
-  if (isLoading) {
+  if (assessment.status === "loading") {
     return (
       <div role="status" className="flex flex-col gap-2 text-xs text-muted-foreground">
         <Skeleton className="h-24 rounded-lg" />
@@ -177,8 +177,8 @@ export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string 
       </div>
     );
   }
-  if (error === null && issue !== undefined) {
-    const presentation = issuePresentation[issue.reasonCode];
+  if (assessment.status === "isolated") {
+    const presentation = issuePresentation[assessment.issue.reasonCode];
     return (
       <Card className="print:hidden" role="status">
         <CardContent className="grid gap-1.5 p-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-6">
@@ -193,7 +193,8 @@ export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string 
       </Card>
     );
   }
-  if (error === null && decisionCase !== undefined) {
+  if (assessment.status === "assessed") {
+    const { decisionCase } = assessment;
     const assessedAxes = operatorVisibleAxes(decisionCase.result.axes).filter((axis) => axis.status !== "not_assessed");
     const passed = assessedAxes.filter((axis) => axis.status === "pass").length;
     const total = assessedAxes.length;
@@ -230,7 +231,7 @@ export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string 
       </Card>
     );
   }
-  if (error === null && isAbsent) return <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.absent)}</p>;
+  if (assessment.status === "absent") return <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.absent)}</p>;
   return (
     <p role="alert" className="rounded-lg border border-signal-alert/40 p-3 text-xs text-signal-alert">
       {intl.formatMessage(messages.unavailable)}
