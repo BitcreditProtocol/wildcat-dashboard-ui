@@ -34,7 +34,8 @@ const messages = defineMessages({
 
 export function CreditAssessmentBadge({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
   const intl = useIntl();
-  const { decisionCase } = useCreditAssessmentForBill(billId, mintQuoteId);
+  const { decisionCase, issue } = useCreditAssessmentForBill(billId, mintQuoteId);
+  if (issue !== undefined) return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
   if (decisionCase === undefined) return <Badge variant="default">{intl.formatMessage(messages.pending)}</Badge>;
 
   const { result } = decisionCase;

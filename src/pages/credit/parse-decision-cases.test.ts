@@ -285,15 +285,35 @@ function completedMintDenial() {
 
 describe("parseDecisionCasesResponse", () => {
   it("accepts an empty response and a fully bound governed offer", () => {
-    expect(parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v1", cases: [] })).toEqual({ cases: [] });
+    expect(parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v1", cases: [] })).toEqual({ cases: [], issues: [] });
     const decisionCase = validCase();
     expect(parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v1", cases: [decisionCase] })).toEqual({
       cases: [decisionCase],
+      issues: [],
     });
     expect(() => parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v2", cases: [] })).toThrow(
       "invalid governed decision response"
     );
     expect(() => parseVersionedDecisionCasesResponse({ cases: [] })).toThrow("invalid governed decision response");
+  });
+
+  it("keeps typed submitted-case isolation issues and rejects malformed ones", () => {
+    const issue = {
+      billId: "bill-a",
+      caseId: "case-a",
+      mintQuoteId: "da82cf03-b166-426d-b062-b3b9fbf4bd6f",
+      reasonCode: "bill_state_mismatch",
+      detectedAt: "2026-09-02T09:30:00.000Z",
+    } as const;
+
+    const schemaVersion = "ai-credit-workbench-decisions-v1";
+    expect(parseDecisionCasesResponse({ schemaVersion, cases: [], issues: [issue] })).toEqual({ cases: [], issues: [issue] });
+    expect(() => parseDecisionCasesResponse({ schemaVersion, cases: [], issues: [{ ...issue, reasonCode: "unknown_reason" }] })).toThrow(
+      "invalid governed decision response"
+    );
+    expect(() => parseDecisionCasesResponse({ schemaVersion, cases: [], issues: [{ ...issue, extra: true }] })).toThrow(
+      "invalid governed decision response"
+    );
   });
 
   it("requires an explicit assessment currency and accepts the historical applicant-response state", () => {
@@ -321,6 +341,7 @@ describe("parseDecisionCasesResponse", () => {
     };
     expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentHistory: [current] }] })).toEqual({
       cases: [{ ...decisionCase, assessmentHistory: [current] }],
+      issues: [],
     });
 
     const foreignPriors = [
@@ -373,9 +394,11 @@ describe("parseDecisionCasesResponse", () => {
 
     expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, mintDenial: syncing }] })).toEqual({
       cases: [{ ...decisionCase, mintDenial: syncing }],
+      issues: [],
     });
     expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, mintDenial: completed }] })).toEqual({
       cases: [{ ...decisionCase, mintDenial: completed }],
+      issues: [],
     });
 
     for (const mintDenial of [
@@ -411,6 +434,7 @@ describe("parseDecisionCasesResponse", () => {
     } as const;
     expect(parseDecisionCasesResponse({ cases: [{ ...decisionCase, applicantHumanReview }] })).toEqual({
       cases: [{ ...decisionCase, applicantHumanReview }],
+      issues: [],
     });
     expect(() =>
       parseDecisionCasesResponse({
@@ -505,7 +529,7 @@ describe("parseDecisionCasesResponse", () => {
       status: "not_assessed",
       reasonCodes: [],
     });
-    expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase] });
+    expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase], issues: [] });
   });
 
   it("keeps v8 Mint capacity non-null", () => {
@@ -569,7 +593,7 @@ describe("parseDecisionCasesResponse", () => {
       },
     };
 
-    expect(parseDecisionCasesResponse({ cases: [noFit, blocked] })).toEqual({ cases: [noFit, blocked] });
+    expect(parseDecisionCasesResponse({ cases: [noFit, blocked] })).toEqual({ cases: [noFit, blocked], issues: [] });
   });
 
   it.each([
@@ -655,7 +679,7 @@ describe("parseDecisionCasesResponse", () => {
       submittedEvidence: [evidence],
       evidencePackets: [{ evidence, status: "quarantined", byteLength: 1024, analysisStatus: "available", analysis }],
     };
-    expect(parseDecisionCasesResponse({ cases: [withAnalysis] })).toEqual({ cases: [withAnalysis] });
+    expect(parseDecisionCasesResponse({ cases: [withAnalysis] })).toEqual({ cases: [withAnalysis], issues: [] });
     expect(() =>
       parseDecisionCasesResponse({
         cases: [
@@ -731,10 +755,10 @@ describe("parseDecisionCasesResponse", () => {
       },
     };
 
-    expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase] });
+    expect(parseDecisionCasesResponse({ cases: [decisionCase] })).toEqual({ cases: [decisionCase], issues: [] });
     const withoutInvestigation = structuredClone(decisionCase);
     Reflect.deleteProperty(withoutInvestigation, "claimInvestigation");
-    expect(parseDecisionCasesResponse({ cases: [withoutInvestigation] })).toEqual({ cases: [withoutInvestigation] });
+    expect(parseDecisionCasesResponse({ cases: [withoutInvestigation] })).toEqual({ cases: [withoutInvestigation], issues: [] });
 
     for (const claimInvestigation of [
       { ...decisionCase.claimInvestigation, extra: true },
@@ -859,6 +883,6 @@ describe("parseDecisionCasesResponse", () => {
     const { creditProgram: _program, creditProgramAssignment: _assignment, ...legacy } = validCase();
     void _program;
     void _assignment;
-    expect(parseDecisionCasesResponse({ cases: [legacy] })).toEqual({ cases: [legacy] });
+    expect(parseDecisionCasesResponse({ cases: [legacy] })).toEqual({ cases: [legacy], issues: [] });
   });
 });
