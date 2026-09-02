@@ -10,15 +10,23 @@ type CreditAssessmentState = ReturnType<typeof useCreditAssessmentForBill>;
 
 let root: Root | null = null;
 
-function Harness({ onChange }: { onChange: (state: CreditAssessmentState) => void }) {
-  const state = useCreditAssessmentForBill("bill-a", "quote-a");
+function Harness({
+  billId,
+  mintQuoteId,
+  onChange,
+}: {
+  billId: string;
+  mintQuoteId: string;
+  onChange: (state: CreditAssessmentState) => void;
+}) {
+  const state = useCreditAssessmentForBill(billId, mintQuoteId);
   useEffect(() => {
     onChange(state);
   }, [onChange, state]);
   return null;
 }
 
-async function renderHook(): Promise<() => CreditAssessmentState | undefined> {
+async function renderHook(billId = "bill-a", mintQuoteId = "quote-a"): Promise<() => CreditAssessmentState | undefined> {
   const states: CreditAssessmentState[] = [];
   const onChange = (state: CreditAssessmentState) => states.push(state);
   const container = document.createElement("div");
@@ -27,7 +35,7 @@ async function renderHook(): Promise<() => CreditAssessmentState | undefined> {
   act(() => {
     root?.render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <Harness onChange={onChange} />
+        <Harness billId={billId} mintQuoteId={mintQuoteId} onChange={onChange} />
       </QueryClientProvider>
     );
   });
@@ -74,6 +82,45 @@ describe("useCreditAssessmentForBill", () => {
 
     expect(latest()?.isLoading).toBe(false);
     expect(latest()?.decisionCase).toBeUndefined();
+    expect(latest()?.issue).toBeUndefined();
     expect(latest()?.isUnavailable).toBe(true);
+  });
+
+  it("returns only an isolation issue bound to the exact bill and quote", async () => {
+    const mintQuoteId = "da82cf03-b166-426d-b062-b3b9fbf4bd6f";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          Response.json({
+            schemaVersion: "ai-credit-workbench-decisions-v1",
+            cases: [],
+            issues: [
+              {
+                billId: "bill-a",
+                caseId: "case-a",
+                mintQuoteId,
+                reasonCode: "bill_state_mismatch",
+                detectedAt: "2026-09-02T09:30:00.000Z",
+              },
+              {
+                billId: "bill-a",
+                caseId: "case-b",
+                mintQuoteId: "09724439-86df-4d57-a444-f65ca1e966bf",
+                reasonCode: "mint_quote_changed",
+                detectedAt: "2026-09-02T09:31:00.000Z",
+              },
+            ],
+          })
+        )
+      )
+    );
+
+    const latest = await renderHook("bill-a", mintQuoteId);
+
+    expect(latest()?.decisionCase).toBeUndefined();
+    expect(latest()?.issue?.reasonCode).toBe("bill_state_mismatch");
+    expect(latest()?.isAbsent).toBe(false);
+    expect(latest()?.isUnavailable).toBe(false);
   });
 });
