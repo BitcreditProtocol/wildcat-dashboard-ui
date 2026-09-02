@@ -156,6 +156,14 @@ const offerCase = caseFixture({
   ],
 });
 
+const isolatedIssue = {
+  billId: "synthetic-bill-a",
+  caseId: "synthetic-case-a",
+  mintQuoteId: "da82cf03-b166-426d-b062-b3b9fbf4bd6f",
+  reasonCode: "bill_state_mismatch",
+  detectedAt: "2026-09-02T09:30:00.000Z",
+} as const;
+
 const withDocuments: DecisionCase = {
   ...offerCase,
   applicantConfirmation: {
@@ -534,6 +542,19 @@ describe("QuoteCreditAssessment", () => {
 
     expect(container.textContent).toBe("No AI Credit assessment for this bill.");
   });
+
+  it("shows an isolated case as a concise operator action instead of an absent assessment", () => {
+    mockUseQuery.mockReturnValue({
+      data: { cases: [{ ...offerCase, mintQuoteId: isolatedIssue.mintQuoteId }], issues: [isolatedIssue] },
+      isLoading: false,
+      error: null,
+    });
+    render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId={isolatedIssue.mintQuoteId} />);
+
+    expect(container.textContent).toBe("Verification requiredBill state mismatchReconcile the current bill state before continuing.");
+    expect(container.querySelector('[role="status"]')).not.toBeNull();
+    expect(container.querySelector("button")).toBeNull();
+  });
 });
 
 describe("CreditAssessmentBadge", () => {
@@ -563,6 +584,17 @@ describe("CreditAssessmentBadge", () => {
     render(<CreditAssessmentBadge billId="bitcrt-a-real-bill" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("Pending");
+  });
+
+  it("marks an isolated submitted case as requiring verification", () => {
+    mockUseQuery.mockReturnValue({
+      data: { cases: [{ ...offerCase, mintQuoteId: isolatedIssue.mintQuoteId }], issues: [isolatedIssue] },
+      isLoading: false,
+      error: null,
+    });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId={isolatedIssue.mintQuoteId} />);
+
+    expect(container.textContent).toBe("Verification required");
   });
 
   it("never lets an unreadable payload look like a refusal", () => {
