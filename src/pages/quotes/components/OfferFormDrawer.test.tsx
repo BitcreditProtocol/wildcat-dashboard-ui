@@ -161,7 +161,7 @@ describe("OfferFormDrawer", () => {
   });
 
   it("opens the form on the governed amount, so confirming approves it", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase], issues: [] }, isLoading: false, error: null });
     renderDrawer();
 
     expect(suggestedNets[suggestedNets.length - 1]).toBe("7734000");
@@ -174,7 +174,7 @@ describe("OfferFormDrawer", () => {
   });
 
   it("blocks the form when no assessment exists for the bill", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [], issues: [] }, isLoading: false, error: null });
     renderDrawer();
 
     expect(suggestedNets).toHaveLength(0);
@@ -184,7 +184,7 @@ describe("OfferFormDrawer", () => {
 
   it("suggests nothing when the assessment produced no offer", () => {
     const noFit = { ...decisionCase, result: { ...decisionCase.result, recommendation: "no_current_product_fit", terms: null } };
-    mockUseQuery.mockReturnValue({ data: { cases: [noFit] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [noFit], issues: [] }, isLoading: false, error: null });
     renderDrawer();
 
     expect(suggestedNets).toHaveLength(0);
@@ -208,7 +208,7 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
   });
 
   const submitWith = (net: string, basis = "Reviewed the governed terms and supporting evidence.") => {
-    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase], issues: [] }, isLoading: false, error: null });
     renderDrawer();
     enterWrittenBasis(basis);
     act(() => {
@@ -261,7 +261,7 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
   });
 
   it("submits nothing when the bill has no assessment", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [], issues: [] }, isLoading: false, error: null });
     renderDrawer();
     act(() => {
       submitForm?.({
@@ -276,7 +276,7 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
   });
 
   it("validates a direct net edit immediately", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase], issues: [] }, isLoading: false, error: null });
     renderDrawer();
     const netInput = container.querySelector<HTMLInputElement>("#netInput");
     if (netInput === null) throw new Error("Net amount was not rendered");
@@ -297,7 +297,7 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
   });
 
   it("keeps confirmation disabled until the written basis is complete", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [decisionCase], issues: [] }, isLoading: false, error: null });
     renderDrawer();
 
     expect(confirmDisabledValues[confirmDisabledValues.length - 1]).toBe(true);

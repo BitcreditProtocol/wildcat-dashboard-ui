@@ -490,7 +490,7 @@ describe("QuoteCreditAssessment", () => {
   });
 
   it("renders the assessment for the quote's own bill", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     const button = container.querySelector("button");
@@ -506,7 +506,7 @@ describe("QuoteCreditAssessment", () => {
   });
 
   it("says so quietly when the adapter holds no decision for the bill", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="bitcrt-some-real-bill" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("No AI Credit assessment for this bill.");
@@ -521,7 +521,7 @@ describe("QuoteCreditAssessment", () => {
   });
 
   it("fails closed instead of showing stale terms when a refresh fails", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: new Error("offline") });
+    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: new Error("offline") });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toContain("Assessment unavailable");
@@ -537,7 +537,7 @@ describe("QuoteCreditAssessment", () => {
   });
 
   it("does not reuse a same-bill assessment for a different Mint quote", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-2" />);
 
     expect(container.textContent).toBe("No AI Credit assessment for this bill.");
@@ -566,21 +566,21 @@ describe("CreditAssessmentBadge", () => {
   });
 
   it("marks a quote list row with the outcome", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("Ready for decision");
   });
 
   it("shows verification rather than an outcome while blocked", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [blockedCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [blockedCase], issues: [] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("Verification required");
   });
 
   it("keeps the normal pending label for unassessed quotes", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="bitcrt-a-real-bill" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("Pending");
@@ -599,7 +599,7 @@ describe("CreditAssessmentBadge", () => {
 
   it("never lets an unreadable payload look like a refusal", () => {
     const strange = { ...offerCase, result: { ...offerCase.result, recommendation: "something_new" as never } };
-    mockUseQuery.mockReturnValue({ data: { cases: [strange] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { cases: [strange], issues: [] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("Assessment unavailable");
