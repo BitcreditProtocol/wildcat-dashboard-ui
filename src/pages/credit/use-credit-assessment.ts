@@ -25,34 +25,28 @@ export function useCreditAssessments() {
   });
 }
 
-export function useCreditAssessmentForBill(
-  billId: string | undefined,
-  mintQuoteId: string | undefined
-): {
-  decisionCase: DecisionCase | undefined;
-  issue: OperatorSubmittedCaseIssue | undefined;
-  isLoading: boolean;
-  error: Error | null;
-  /** True when the adapter answered but holds neither a decision nor an isolation issue for this quote. */
-  isAbsent: boolean;
-  /** True when the latest adapter read failed, even if React Query still has stale data. */
-  isUnavailable: boolean;
-} {
+export type CreditAssessmentForBillState =
+  | { status: "loading" }
+  | { status: "unavailable"; error: Error }
+  | { status: "absent" }
+  | { status: "isolated"; issue: OperatorSubmittedCaseIssue }
+  | { status: "assessed"; decisionCase: DecisionCase };
+
+export function useCreditAssessmentForBill(billId: string | undefined, mintQuoteId: string | undefined): CreditAssessmentForBillState {
   const { data, isLoading, error } = useCreditAssessments();
-  const issue =
-    error !== null || billId === undefined || mintQuoteId === undefined
-      ? undefined
-      : data?.issues?.find((one) => one.billId === billId && one.mintQuoteId === mintQuoteId);
-  const decisionCase =
-    error !== null || issue !== undefined || billId === undefined || mintQuoteId === undefined
-      ? undefined
-      : data?.cases.find((one) => one.snapshot.bill?.billId === billId && one.mintQuoteId === mintQuoteId);
-  return {
-    decisionCase,
-    issue,
-    isLoading,
-    error,
-    isAbsent: error === null && data !== undefined && decisionCase === undefined && issue === undefined,
-    isUnavailable: error !== null,
-  };
+  if (isLoading) return { status: "loading" };
+  // Fail closed on the latest read even when React Query retains older data.
+  if (error !== null) return { status: "unavailable", error };
+  if (billId === undefined || mintQuoteId === undefined || data === undefined) return { status: "absent" };
+
+  const issue = data.issues.find(
+    (one) =>
+      one.billId === billId &&
+      (one.mintQuoteId === mintQuoteId || (one.mintQuoteId === null && one.reasonCode === "legacy_authority_missing"))
+  );
+  // A newly isolated submission invalidates any retained prior assessment for the same quote.
+  if (issue !== undefined) return { status: "isolated", issue };
+
+  const decisionCase = data.cases.find((one) => one.snapshot.bill?.billId === billId && one.mintQuoteId === mintQuoteId);
+  return decisionCase === undefined ? { status: "absent" } : { status: "assessed", decisionCase };
 }
