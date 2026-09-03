@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { toast } from "@bitcredit/ui-library";
 import { RequestToPayConfirmation } from "./RequestToPayConfirmation";
+import { setItem } from "@/utils/local-storage";
 
 interface MockQueryOptions {
   queryKey: unknown[];
@@ -83,7 +84,33 @@ vi.mock("./CalendarModal", () => ({
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
-function renderComponent(maturityDate = "2026-03-01") {
+function unmountLast() {
+  if (root && container) {
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
+    root = null;
+    container = null;
+  }
+}
+
+function submitDrawer(page: HTMLDivElement) {
+  const submit = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Yes, request to pay"));
+  expect(submit).toBeDefined();
+
+  act(() => {
+    submit?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  });
+}
+
+function getSubmittedDeadline(onSubmit: ReturnType<typeof vi.fn>): string {
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+  return (onSubmit.mock.calls[0][0] as Date).toISOString();
+}
+
+function renderComponent(maturityDate = "2026-03-01", { open = false, billId = "bill-1" } = {}) {
+  unmountLast();
   const mount = document.createElement("div");
   const onOpenChange = vi.fn();
   const onSubmit = vi.fn();
@@ -94,13 +121,13 @@ function renderComponent(maturityDate = "2026-03-01") {
     mountRoot.render(
       <IntlProvider locale="en">
         <RequestToPayConfirmation
-          open={false}
+          open={open}
           onOpenChange={onOpenChange}
           onSubmit={onSubmit}
           isFetching={false}
           isPending={false}
           maturityDate={maturityDate}
-          billId="bill-1"
+          billId={billId}
         />
       </IntlProvider>
     );
@@ -115,6 +142,7 @@ function renderComponent(maturityDate = "2026-03-01") {
 beforeEach(() => {
   vi.useRealTimers();
   vi.clearAllMocks();
+  window.localStorage.clear();
   mockUseQuery.mockReturnValue({
     data: { id: "bill-1" },
     isLoading: false,
@@ -173,5 +201,30 @@ describe("RequestToPayConfirmation", () => {
 
     expect(toast).not.toHaveBeenCalled();
     expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+
+  it("ignores a deadline cached for a different bill", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
+
+    // Opening a bill that matures far out caches its own maturity +2 days default...
+    renderComponent("2026-12-01", { open: true, billId: "bill-other" });
+
+    // ...which must not leak into a bill whose maturity has already passed.
+    const { page, onSubmit } = renderComponent("2026-06-01", { open: true, billId: "bill-1" });
+    submitDrawer(page);
+
+    expect(getSubmittedDeadline(onSubmit)).toBe("2026-06-07T23:59:59.999Z");
+  });
+
+  it("re-uses the deadline cached for the same bill", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
+    setItem("requestToPayDeadlineUtc-bill-1", "2026-12-31T23:59:59.999Z");
+
+    const { page, onSubmit } = renderComponent("2026-06-01", { open: true, billId: "bill-1" });
+    submitDrawer(page);
+
+    expect(getSubmittedDeadline(onSubmit)).toBe("2026-12-31T23:59:59.999Z");
   });
 });

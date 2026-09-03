@@ -52,12 +52,12 @@ describe("dates utils", () => {
     expect(isBeforeUtcStartOfDate("2026-03-01", new Date("2026-03-01T00:00:00.000Z"))).toBe(false);
   });
 
-  it("uses maturity -2 days when maturity is in the future", () => {
+  it("uses maturity +2 days when maturity is in the future", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-02-18T12:00:00.000Z"));
 
     const deadline = getDefaultDeadline("2026-02-25");
-    expect(deadline.toISOString()).toBe("2026-02-23T23:59:59.999Z");
+    expect(deadline.toISOString()).toBe("2026-02-27T23:59:59.999Z");
   });
 
   it("uses now +2 days when maturity is in the past", () => {

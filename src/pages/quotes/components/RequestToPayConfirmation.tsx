@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useIntl } from "react-intl";
 import { getItem, setItem } from "@/utils/local-storage";
-import { getUtcStartOfDate } from "@/utils/dates";
+import { getDefaultDeadline, getUtcStartOfDate, toUtcEndOfDay } from "@/utils/dates";
 
 interface RequestToPayConfirmationProps {
   open: boolean;
@@ -19,20 +19,9 @@ interface RequestToPayConfirmationProps {
   billId: string;
 }
 
-const REQUEST_TO_PAY_DEADLINE_STORAGE_KEY = "requestToPayDeadlineUtc";
-const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 const MAX_TIMEOUT_MS = 2_147_483_647;
 
-const getMinSelectableDate = (maturityDate?: string | null): Date => {
-  const now = new Date();
-  const maturity = maturityDate ? new Date(maturityDate) : null;
-  const baseDate = maturity && maturity > now ? maturity : now;
-  return new Date(baseDate.getTime() + TWO_DAYS_MS);
-};
-
-const toUtcEndOfDay = (date: Date): Date => {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
-};
+const getDeadlineStorageKey = (billId: string): string => `requestToPayDeadlineUtc-${billId}`;
 
 export function RequestToPayConfirmation({
   open,
@@ -47,7 +36,7 @@ export function RequestToPayConfirmation({
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined);
   const [showPaymentCalendar, setShowPaymentCalendar] = useState(false);
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined);
-  const minSelectableDate = useMemo(() => getMinSelectableDate(maturityDate), [maturityDate]);
+  const [minSelectableDate, setMinSelectableDate] = useState<Date | undefined>(undefined);
   const maturityUtcStart = useMemo(() => getUtcStartOfDate(maturityDate), [maturityDate]);
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
   const requestToPayBlockedUntilMaturity = Boolean(maturityUtcStart && currentTimeMs < maturityUtcStart.getTime());
@@ -102,21 +91,24 @@ export function RequestToPayConfirmation({
       return;
     }
 
-    const stored = getItem<string>(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY);
-    const fallbackDeadline = toUtcEndOfDay(minSelectableDate);
+    const defaultDeadline = getDefaultDeadline(maturityDate);
+    setMinSelectableDate(defaultDeadline);
+
+    const storageKey = getDeadlineStorageKey(billId);
+    const stored = getItem<string>(storageKey);
     if (stored) {
       const parsed = new Date(stored);
-      if (!Number.isNaN(parsed.getTime()) && parsed >= minSelectableDate) {
+      if (!Number.isNaN(parsed.getTime()) && parsed >= defaultDeadline) {
         setValidUntilDate(parsed);
         setDraftValidUntilDate(parsed);
         return;
       }
     }
 
-    setValidUntilDate(fallbackDeadline);
-    setDraftValidUntilDate(fallbackDeadline);
-    setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, fallbackDeadline.toISOString());
-  }, [open, validUntilDate, minSelectableDate]);
+    setValidUntilDate(defaultDeadline);
+    setDraftValidUntilDate(defaultDeadline);
+    setItem(storageKey, defaultDeadline.toISOString());
+  }, [open, validUntilDate, maturityDate, billId]);
 
   return (
     <>
@@ -264,7 +256,7 @@ export function RequestToPayConfirmation({
           if (draftValidUntilDate) {
             const utcDeadline = toUtcEndOfDay(draftValidUntilDate);
             setValidUntilDate(utcDeadline);
-            setItem(REQUEST_TO_PAY_DEADLINE_STORAGE_KEY, utcDeadline.toISOString());
+            setItem(getDeadlineStorageKey(billId), utcDeadline.toISOString());
           }
           setShowPaymentCalendar(false);
           onOpenChange(true);
