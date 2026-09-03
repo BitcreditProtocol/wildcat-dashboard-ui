@@ -1,11 +1,12 @@
-# This repository carries its own issue templates, and a repository that does
+# This repository carries its own issue templates, and a repository that does so
 # stops using the organisation defaults in BitcreditProtocol/.github entirely --
 # contact links included. Without this file the chooser here offers no route to
 # report a vulnerability privately, which is the one link that matters most.
 #
 # The three links below are the organisation's, verbatim. Keep them in step with
-# .github/.github/ISSUE_TEMPLATE/config.yml; the templates themselves are this
-# repository's own and are deliberately richer than the organisation versions.
+# .github/ISSUE_TEMPLATE/config.yml in BitcreditProtocol/.github; the templates
+# themselves are this repository's own and are deliberately richer than the
+# organisation versions.
 blank_issues_enabled: true
 contact_links:
   - name: Security vulnerability
