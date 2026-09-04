@@ -9,8 +9,13 @@ import { QRCodeModal } from "@/components/QRCodeWithErrorBoundary";
 import { LoaderIcon, PlusCircle } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { createLogger } from "@/lib/logger";
+import { blockNonDigitInput, handleDrop } from "@/components/GrossToNetDiscountForm/input";
 
 const logger = createLogger("add-reserve");
+
+function toPositiveIntegerInput(value: string) {
+  return value.replace(/\D/g, "").replace(/^0+/, "");
+}
 
 function isCompleted(status: AddReserveStatus): status is { Completed: { outpoint: string } } {
   return typeof status === "object" && status !== null && "Completed" in status;
@@ -89,13 +94,15 @@ export function AddReserveCard() {
         {!reserve ? (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
-              type="number"
-              min={1}
-              step={1}
+              type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
               label={intl.formatMessage({ id: "balances.addReserve.amountLabel", defaultMessage: "Amount (sat)" })}
               value={amountInput}
-              onChange={(event) => setAmountInput(event.target.value)}
+              onBeforeInput={blockNonDigitInput}
+              onDrop={handleDrop}
+              onChange={(event) => setAmountInput(toPositiveIntegerInput(event.target.value))}
               disabled={isSubmitting}
               required
             />
