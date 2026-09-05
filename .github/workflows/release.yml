@@ -5,9 +5,9 @@ permissions:
   packages: write
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  # Release publication must not inherit commit-message CI skip directives.
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   release:
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
     uses: ./.github/workflows/build-image.yml
     with:
       tags: |
