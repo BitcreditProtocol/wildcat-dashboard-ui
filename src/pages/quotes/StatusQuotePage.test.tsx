@@ -305,14 +305,14 @@ describe("StatusQuotePage", () => {
     expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_asc" });
   });
 
-  it("passes backend quote sort order for maturity and keeps last status change local", () => {
+  it("passes backend quote sort order for maturity and last status change", () => {
     const page = renderPage();
 
     clickButtonByText(page, "Maturity");
     expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_desc" });
 
     clickButtonByText(page, "Last status change");
-    expect(lastQuotesQuery()?.sort).toBeUndefined();
+    expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_asc" });
     expect(
       Array.from(page.querySelectorAll("button"))
         .find((button) => button.textContent?.trim() === "Status")
@@ -320,6 +320,16 @@ describe("StatusQuotePage", () => {
     ).toContain("outline");
 
     clickButtonByText(page, "Last status change");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_desc" });
+  });
+
+  it("keeps amount and status sorting local, without a backend sort order", () => {
+    const page = renderPage();
+
+    clickButtonByText(page, "Amount");
+    expect(lastQuotesQuery()?.sort).toBeUndefined();
+
+    clickButtonByText(page, "Status");
     expect(lastQuotesQuery()?.sort).toBeUndefined();
   });
 

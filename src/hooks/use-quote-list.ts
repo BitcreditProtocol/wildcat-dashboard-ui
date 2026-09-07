@@ -124,6 +124,10 @@ function getApiSort(sortBy: SortBy): ListSort | undefined {
       return "bill_maturity_date_asc";
     case "maturity-desc":
       return "bill_maturity_date_desc";
+    case "statusChange-asc":
+      return "submitted_asc";
+    case "statusChange-desc":
+      return "submitted_desc";
     default:
       return undefined;
   }
@@ -298,7 +302,9 @@ export function useQuoteList(status?: QuoteStatus) {
     return searchableContent.includes(normalizedSearchQuery);
   });
 
-  const sortedQuotes = [...filteredQuotes].sort((a, b) => {
+  const preserveBackendOrder = !usesLegacyFallback && apiSort !== undefined;
+
+  const compareQuotes = (a: LightInfo, b: LightInfo) => {
     const aIndex = quotes.findIndex((q) => q.id === a.id);
     const bIndex = quotes.findIndex((q) => q.id === b.id);
 
@@ -339,7 +345,9 @@ export function useQuoteList(status?: QuoteStatus) {
       default:
         return 0;
     }
-  });
+  };
+
+  const sortedQuotes = preserveBackendOrder ? filteredQuotes : [...filteredQuotes].sort(compareQuotes);
 
   const toggleSort = (field: SortField) => {
     if (sortBy.startsWith(`${field}-`)) {
