@@ -2,10 +2,11 @@ import { useState } from "react";
 import { AppIcon, Calendar, Text, YearPicker, MonthPicker } from "@bitcredit/ui-library";
 import { Button } from "@bitcredit/ui-library";
 import { CalendarIcon } from "lucide-react";
-import { addDays, isAfter, isBefore, isSameDay } from "date-fns";
+import { isAfter, isBefore, isSameDay } from "date-fns";
 import { cn } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
+import { addUtcDays, calendarDayToUtc, utcToCalendarDay } from "@/utils/dates";
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -19,10 +20,6 @@ interface CalendarModalProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
-
-const toUtcStartOfDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
-
-const toUtcEndOfDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
 
 export function CalendarModal({
   isOpen,
@@ -40,12 +37,13 @@ export function CalendarModal({
   const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale);
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [month, setMonth] = useState<Date>(draftDate ?? selectedDate ?? minDate ?? new Date());
+  const [month, setMonth] = useState<Date>(utcToCalendarDay(draftDate ?? selectedDate ?? minDate ?? new Date()));
 
-  const fallbackMin = addDays(new Date(Date.now()), 1);
-  const minDay = toUtcStartOfDay(minDate ?? fallbackMin);
-  const maxDay = maxDate ? toUtcEndOfDay(maxDate) : null;
+  const fallbackMin = addUtcDays(new Date(Date.now()), 1);
+  const minDay = utcToCalendarDay(minDate ?? fallbackMin);
+  const maxDay = maxDate ? utcToCalendarDay(maxDate) : null;
   const disabled = (date: Date) => isBefore(date, minDay) || (maxDay ? isAfter(date, maxDay) : false);
+  const activeDate = draftDate ?? selectedDate;
 
   return (
     <>
@@ -96,17 +94,17 @@ export function CalendarModal({
               <Calendar
                 mode="single"
                 month={month}
-                selected={{ from: draftDate ?? selectedDate }}
+                selected={{ from: activeDate ? utcToCalendarDay(activeDate) : undefined }}
                 onCaptionLabelClicked={() => setShowYearPicker(true)}
                 onSelect={(_range, selectedDay) => {
                   if (selectedDay) {
-                    onDateChange(selectedDay);
+                    onDateChange(calendarDayToUtc(selectedDay));
                   }
                 }}
                 disabled={disabled}
                 isFutureNavigationDisabled={false}
                 modifiers={{
-                  saved: (d) => !!selectedDate && isSameDay(d, selectedDate),
+                  saved: (d) => !!selectedDate && isSameDay(d, utcToCalendarDay(selectedDate)),
                 }}
                 modifiersClassNames={{
                   saved:

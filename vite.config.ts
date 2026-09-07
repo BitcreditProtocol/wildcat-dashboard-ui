@@ -8,6 +8,7 @@ const vitestConfig = defineVitestConfig({
   test: {
     environment: "jsdom",
     env: {
+      TZ: "America/New_York",
       VITE_API_BASE_URL: "https://api.test.example.com",
       VITE_KEYCLOAK_URL: "https://keycloak.test.example.com",
       VITE_KEYCLOAK_REALM: "test-realm",
