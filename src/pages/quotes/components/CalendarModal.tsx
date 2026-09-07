@@ -37,8 +37,6 @@ export function CalendarModal({
   const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale);
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  // `month` and every date handed to / received from the calendar live in the library's
-  // local-time domain; the props and callbacks of this component are UTC.
   const [month, setMonth] = useState<Date>(utcToCalendarDay(draftDate ?? selectedDate ?? minDate ?? new Date()));
 
   const fallbackMin = addUtcDays(new Date(Date.now()), 1);
