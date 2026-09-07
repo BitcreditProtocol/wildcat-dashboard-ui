@@ -8,6 +8,9 @@ const vitestConfig = defineVitestConfig({
   test: {
     environment: "jsdom",
     env: {
+      // Pin a non-UTC zone so local/UTC day mix-ups fail here instead of only for
+      // users outside UTC (CI machines otherwise run in UTC and hide them).
+      TZ: "America/New_York",
       VITE_API_BASE_URL: "https://api.test.example.com",
       VITE_KEYCLOAK_URL: "https://keycloak.test.example.com",
       VITE_KEYCLOAK_REALM: "test-realm",

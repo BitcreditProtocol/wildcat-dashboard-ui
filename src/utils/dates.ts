@@ -1,4 +1,4 @@
-import { differenceInCalendarYears, differenceInMinutes, addDays } from "date-fns";
+import { differenceInCalendarYears, differenceInMinutes } from "date-fns";
 import { differenceInCalendarDays, differenceInCalendarMonths, differenceInHours, differenceInSeconds } from "date-fns";
 
 const UTC_TIME_ZONE = "UTC";
@@ -109,6 +109,37 @@ export const toUtcEndOfDay = (date: Date): Date => {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
 };
 
+export const addUtcDays = (date: Date, days: number): Date => {
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate() + days,
+      date.getUTCHours(),
+      date.getUTCMinutes(),
+      date.getUTCSeconds(),
+      date.getUTCMilliseconds()
+    )
+  );
+};
+
+/**
+ * The calendar library builds its grid from local-time dates (one local midnight per cell),
+ * while dates are stored, submitted and displayed in UTC everywhere else. These two helpers
+ * are the only bridge between the two: convert at the calendar boundary so the day a user
+ * clicks in the grid is that same day in UTC.
+ */
+
+/** Local-midnight date coming out of the calendar grid -> start of that day in UTC. */
+export const calendarDayToUtc = (date: Date): Date => {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+};
+
+/** UTC date -> the local-midnight date of the matching calendar grid cell. */
+export const utcToCalendarDay = (date: Date): Date => {
+  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+};
+
 export const getUtcStartOfDate = (dateValue?: string | null): Date | null => {
   if (!dateValue) {
     return null;
@@ -146,21 +177,13 @@ export const isBeforeUtcStartOfDate = (dateValue?: string | null, now = new Date
  * maturityDate is in YYYY-MM-DD format, parsed as midnight UTC (00:00:00).
  * Returns end of day UTC (23:59:59.999) for maturity + 2 days if maturity is in the future,
  * or if maturity is in the past or no maturity date provided, returns end of day UTC for today + 2 days.
+ * The day arithmetic runs in UTC, so the result does not shift for viewers whose local day
+ * differs from the UTC day.
  */
 export const getDefaultDeadline = (maturityDate?: string | null): Date => {
-  let deadline: Date;
   const now = new Date();
+  const maturityUtcStart = getUtcStartOfDate(maturityDate);
+  const base = maturityUtcStart && maturityUtcStart.getTime() > now.getTime() ? maturityUtcStart : now;
 
-  if (maturityDate) {
-    const maturity = new Date(maturityDate);
-    if (maturity > now) {
-      deadline = addDays(maturity, 2);
-    } else {
-      deadline = addDays(now, 2);
-    }
-  } else {
-    deadline = addDays(now, 2);
-  }
-
-  return toUtcEndOfDay(deadline);
+  return toUtcEndOfDay(addUtcDays(base, 2));
 };
