@@ -35,8 +35,6 @@ export function useKeysetDetail(keysetId: string) {
     refetchIntervalInBackground: true,
   });
 
-  // A quote's keyset is only known from its details, and the list endpoint cannot filter
-  // by keyset, so every quote has to be walked - not just the first page.
   const {
     data: quotePages,
     isLoading: quotesLoading,
@@ -66,8 +64,6 @@ export function useKeysetDetail(keysetId: string) {
   });
 
   const keyset = keysets?.data.find((k) => k.id === keysetId);
-
-  // Only quotes far enough along to carry a keyset id are worth a detail request.
   const candidateQuotes = useMemo(() => allQuotes.filter((quote) => canQuoteHaveKeyset(quote.status)), [allQuotes]);
 
   const quoteDetailsQueries = useQueries({
@@ -85,7 +81,6 @@ export function useKeysetDetail(keysetId: string) {
   });
 
   const quoteDetailsLoading = quoteDetailsQueries.some((query) => query.isLoading);
-  // A failed detail request means a quote silently drops out of the table, so surface it.
   const unresolvedQuoteCount = quoteDetailsQueries.filter((query) => query.isError).length;
 
   const matchedQuotes = candidateQuotes
@@ -135,9 +130,6 @@ export function useKeysetDetail(keysetId: string) {
     keyset,
     quoteRows,
     keysetsLoading,
-    // Which quotes belong to this keyset is unknown until every page and every
-    // candidate's details have arrived; showing the empty state before then reads
-    // as "this keyset has no quotes".
     quotesLoading: quotesLoading || hasNextPage || isFetchingNextPage || quoteDetailsLoading,
     unresolvedQuoteCount,
   };
