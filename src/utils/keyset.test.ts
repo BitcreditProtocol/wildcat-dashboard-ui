@@ -1,5 +1,46 @@
 import { describe, expect, it, vi } from "vitest";
-import { serializeKeysetId } from "./keyset";
+import { canQuoteHaveKeyset, doesQuoteBelongToKeyset, getQuoteKeysetId, serializeKeysetId } from "./keyset";
+
+const keysetIdObject = { version: "Version00", id: { V1: [0xaa, 0xbb] } };
+
+describe("canQuoteHaveKeyset", () => {
+  it("accepts the statuses whose reply carries a keyset id", () => {
+    expect(["Offered", "Accepted", "MintingEnabled", "FailedEbillValidation"].every((s) => canQuoteHaveKeyset(s as never))).toBe(true);
+  });
+
+  it("rejects statuses reached before or without an offer", () => {
+    expect(["Pending", "Canceled", "OfferExpired", "Denied", "Rejected"].some((s) => canQuoteHaveKeyset(s as never))).toBe(false);
+  });
+});
+
+describe("getQuoteKeysetId", () => {
+  it("returns the serialized keyset id", () => {
+    expect(getQuoteKeysetId({ keyset_id: keysetIdObject } as never)).toBe("00aabb");
+  });
+
+  it("returns null for a quote that has no keyset yet", () => {
+    expect(getQuoteKeysetId({ status: "Pending" } as never)).toBeNull();
+    expect(getQuoteKeysetId(undefined)).toBeNull();
+  });
+});
+
+describe("doesQuoteBelongToKeyset", () => {
+  it("matches on the keyset id", () => {
+    expect(doesQuoteBelongToKeyset({ keyset_id: keysetIdObject } as never, "00aabb")).toBe(true);
+  });
+
+  it("ignores hex casing", () => {
+    expect(doesQuoteBelongToKeyset({ keyset_id: keysetIdObject } as never, "00AABB")).toBe(true);
+  });
+
+  it("does not match a different keyset", () => {
+    expect(doesQuoteBelongToKeyset({ keyset_id: keysetIdObject } as never, "00ccdd")).toBe(false);
+  });
+
+  it("does not match a quote without a keyset", () => {
+    expect(doesQuoteBelongToKeyset({ status: "Pending" } as never, "00aabb")).toBe(false);
+  });
+});
 
 describe("serializeKeysetId", () => {
   it("returns input as-is when id is already a string", () => {

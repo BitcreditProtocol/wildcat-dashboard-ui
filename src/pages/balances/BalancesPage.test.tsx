@@ -164,7 +164,7 @@ beforeEach(() => {
 });
 
 describe("BalancesPage", () => {
-  it("shows secondary fiat display for sat balances and leaves custom units unchanged", async () => {
+  it("shows secondary fiat display for sat, crsat and e-IOU balances", async () => {
     storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
     vi.stubGlobal(
       "fetch",
@@ -200,9 +200,11 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("90,000.00");
     expect(page.textContent).toContain("50,000,000");
     expect(page.textContent).toContain("45,000.00");
-    expect(page.textContent).toContain("555 e-IOU");
-    expect(page.textContent).toContain("777 crsat");
     expect(page.textContent).toContain("42,000");
+    // 555 e-IOU at the fixed 0.067 euro-cent peg.
+    expect(page.textContent).toContain("555e-IOU0.37eur");
+    // A crsat is worth exactly one sat, so it converts at the sat rate.
+    expect(page.textContent).toContain("777crsat0.70eur");
   });
 
   it("shows only original sat amounts when fiat rates are unavailable", async () => {

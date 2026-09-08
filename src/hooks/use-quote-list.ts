@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
 import type { BitcreditBill, BillInfo, InfoReply, LightInfo, ListSort } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { isBeforeUtcStartOfDate } from "@/utils/dates";
+import { getNextQuotePageOffset, getPageQuotes, isPaginatedPage } from "@/utils/quote-pages";
 import * as React from "react";
 import { useState } from "react";
 import { useIntl } from "react-intl";
@@ -26,37 +27,6 @@ const RETRY_COUNT = 2;
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
-
-function isLightInfo(value: unknown): value is LightInfo {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "id" in value &&
-    typeof value.id === "string" &&
-    "status" in value &&
-    typeof value.status === "string" &&
-    "sum" in value &&
-    typeof value.sum === "number"
-  );
-}
-
-interface QuoteListPage {
-  data?: unknown[];
-  quotes?: unknown[];
-  total?: number;
-}
-
-function getPageQuotes(page: QuoteListPage | undefined): LightInfo[] {
-  if (!page) {
-    return [];
-  }
-
-  return (page.data ?? page.quotes ?? []).filter(isLightInfo);
-}
-
-function isPaginatedPage(page: QuoteListPage | undefined): boolean {
-  return Array.isArray(page?.data) && typeof page?.total === "number";
-}
 
 function getParticipantSearchValues(bill: BillInfo | null | undefined): string[] {
   if (!bill) {
@@ -180,11 +150,7 @@ export function useQuoteList(status?: QuoteStatus) {
     refetchInterval: shouldPollStatusPage(status) ? QUOTE_STATUS_POLL_INTERVAL_MS : false,
     refetchIntervalInBackground: true,
     initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const loadedCount = allPages.reduce((sum, page) => sum + getPageQuotes(page).length, 0);
-      const total = lastPage.total ?? getPageQuotes(lastPage).length;
-      return loadedCount < total ? loadedCount : undefined;
-    },
+    getNextPageParam: getNextQuotePageOffset,
     retry: RETRY_COUNT,
     retryDelay,
   });

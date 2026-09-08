@@ -193,6 +193,7 @@
   "keyset.detail.table.quoteStatus": "Quote status",
   "keyset.detail.table.sum": "Sum",
   "keyset.detail.title": "Keyset",
+  "keyset.detail.unresolvedQuotes": "{count, plural, one {# quote could not be loaded and may be missing from this list.} other {# quotes could not be loaded and may be missing from this list.}}",
   "keysets.card.meta": "Currency: {currency} | Maturity date: {maturityDate}",
   "keysets.empty": "No keysets found",
   "keysets.filter.active": "Active",
