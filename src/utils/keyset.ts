@@ -1,23 +1,41 @@
-import type { Id, IdBytes, KeySetVersion } from "@/generated/client/types.gen";
+import type { Id, IdBytes, InfoReply, InfoReplyDiscriminants, KeySetVersion } from "@/generated/client/types.gen";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("keyset");
 
 /**
- * Check if a bill's maturity date matches a keyset's final expiry date.
- * @param keysetFinalExpiry - Keyset final expiry timestamp (seconds since epoch)
- * @param billMaturityDate - Bill maturity date string (YYYY-MM-DD)
- * @returns true if dates match (year, month, day)
+ * Quote statuses whose `InfoReply` carries a `keyset_id`. A quote only gets a keyset
+ * once it has been offered, so quotes in any other status belong to no keyset at all
+ * and never need their details fetched when resolving a keyset's quotes.
  */
-export function doesBillMatchKeysetMaturity(keysetFinalExpiry: number, billMaturityDate: string): boolean {
-  const keysetDate = new Date(keysetFinalExpiry * 1000);
-  const billDate = new Date(billMaturityDate);
+const KEYSET_BEARING_QUOTE_STATUSES = new Set<InfoReplyDiscriminants>(["Offered", "Accepted", "MintingEnabled", "FailedEbillValidation"]);
 
-  return (
-    keysetDate.getFullYear() === billDate.getFullYear() &&
-    keysetDate.getMonth() === billDate.getMonth() &&
-    keysetDate.getDate() === billDate.getDate()
-  );
+export function canQuoteHaveKeyset(status: InfoReplyDiscriminants): boolean {
+  return KEYSET_BEARING_QUOTE_STATUSES.has(status);
+}
+
+/**
+ * Serialized id of the keyset a quote was offered under, or null when it has none yet.
+ */
+export function getQuoteKeysetId(quoteDetails: InfoReply | undefined): string | null {
+  if (!quoteDetails || !("keyset_id" in quoteDetails)) {
+    return null;
+  }
+
+  const serializedId = serializeKeysetId(quoteDetails.keyset_id);
+
+  return serializedId === "" ? null : serializedId;
+}
+
+/**
+ * Whether a quote was offered under the given keyset. This is the authoritative link
+ * between the two — never infer it from the bill maturity date, which only coincides
+ * with the keyset expiry and is not a join key.
+ */
+export function doesQuoteBelongToKeyset(quoteDetails: InfoReply | undefined, keysetId: string): boolean {
+  const quoteKeysetId = getQuoteKeysetId(quoteDetails);
+
+  return quoteKeysetId !== null && quoteKeysetId.toLowerCase() === keysetId.toLowerCase();
 }
 
 /**

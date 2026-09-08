@@ -8,6 +8,7 @@ import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/rea
 import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Currency } from "@/components/Currency";
+import { isSourceCurrencyCode } from "@/lib/currency";
 import { CollectFeesCard } from "./CollectFeesCard";
 import { AddReserveCard } from "./AddReserveCard";
 
@@ -160,10 +161,10 @@ export function BalanceText({ amount, unit, children }: PropsWithChildren<Balanc
   return (
     <>
       <Heading as="h3" variant="page" className="text-text-on-tint">
-        {unit === "sat" ? (
+        {isSourceCurrencyCode(unit) ? (
           <Currency
             value={Number(amount)}
-            sourceCurrency="sat"
+            sourceCurrency={unit}
             amountClassName="text-current"
             currencyClassName="text-sm font-medium text-text-on-tint-muted"
           />
@@ -201,7 +202,7 @@ function useBalances() {
     },
     eiou: {
       amount: coverage?.eiou_collateral?.toString() ?? "0",
-      unit: "e-IOU",
+      unit: "eiou",
     },
     credit: {
       amount: formatAmountValue(coverage?.credit_circulating_supply),

@@ -25,17 +25,7 @@ function getLocationState(value: unknown): LocationState | null {
 
 function PageBody({ keysetId }: { keysetId: string }) {
   const intl = useIntl();
-  const {
-    keyset,
-    allQuotes,
-    quoteDetailsQueries,
-    matchingBillIds,
-    mintCompleteQueries,
-    matchingQuotes,
-    billIdToEbillMap,
-    keysetsLoading,
-    quotesLoading,
-  } = useKeysetDetail(keysetId);
+  const { keyset, quoteRows, keysetsLoading, quotesLoading, unresolvedQuoteCount } = useKeysetDetail(keysetId);
 
   if (keysetsLoading) {
     return <KeysetLoader />;
@@ -105,15 +95,21 @@ function PageBody({ keysetId }: { keysetId: string }) {
         <CardContent>
           {quotesLoading ? (
             <Skeleton className="h-20 w-full" />
-          ) : matchingQuotes.length > 0 ? (
+          ) : quoteRows.length > 0 ? (
             <div className="space-y-3">
               <Heading as="h4" variant="sub">
-                <FormattedMessage
-                  id="keyset.detail.allQuotes"
-                  defaultMessage="All quotes ({count})"
-                  values={{ count: matchingQuotes.length }}
-                />
+                <FormattedMessage id="keyset.detail.allQuotes" defaultMessage="All quotes ({count})" values={{ count: quoteRows.length }} />
               </Heading>
+
+              {unresolvedQuoteCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  <FormattedMessage
+                    id="keyset.detail.unresolvedQuotes"
+                    defaultMessage="{count, plural, one {# quote could not be loaded and may be missing from this list.} other {# quotes could not be loaded and may be missing from this list.}}"
+                    values={{ count: unresolvedQuoteCount }}
+                  />
+                </p>
+              )}
 
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-xs">
@@ -141,25 +137,16 @@ function PageBody({ keysetId }: { keysetId: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {matchingQuotes.map((quote) => {
-                      const quoteIndex = allQuotes.findIndex((q) => q.id === quote.id);
-                      const quoteDetails = quoteDetailsQueries[quoteIndex]?.data;
-                      const billId = quoteDetails?.bill?.id;
-                      const ebill = billId ? billIdToEbillMap.get(billId) : null;
-                      const billIdIndex = billId ? matchingBillIds.indexOf(billId) : -1;
-                      const mintCompleteQuery = billId && billIdIndex >= 0 ? mintCompleteQueries[billIdIndex] : null;
-
-                      return (
-                        <KeysetQuoteTableRow
-                          key={quote.id}
-                          quote={quote}
-                          quoteDetails={quoteDetails}
-                          ebill={ebill}
-                          mintCompleteQuery={mintCompleteQuery ?? null}
-                          keysetId={keysetId}
-                        />
-                      );
-                    })}
+                    {quoteRows.map(({ quote, quoteDetails, ebill, mintCompleteQuery }) => (
+                      <KeysetQuoteTableRow
+                        key={quote.id}
+                        quote={quote}
+                        quoteDetails={quoteDetails}
+                        ebill={ebill}
+                        mintCompleteQuery={mintCompleteQuery}
+                        keysetId={keysetId}
+                      />
+                    ))}
                   </tbody>
                 </table>
               </div>
