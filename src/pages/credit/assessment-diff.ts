@@ -1,4 +1,4 @@
-import { operatorVisibleAxes, type AssessmentRevision } from "./decision-types";
+import { displayEvidenceLabel, operatorVisibleAxes, type AssessmentRevision } from "./decision-types";
 
 export interface AssessmentChange {
   field:
@@ -29,8 +29,9 @@ export interface AssessmentChange {
 
 const empty = "";
 const values = (items: readonly string[]) => (items.length === 0 ? empty : [...items].sort().join("; "));
+/** Exact references and digests stay in the immutable assessment; operators compare document names here. */
 const documents = (revision: AssessmentRevision) =>
-  values((revision.submittedEvidence ?? []).map(({ label, reference, contentDigest }) => `${label} [${reference}] ${contentDigest}`));
+  values([...new Set((revision.submittedEvidence ?? []).map(({ label }) => displayEvidenceLabel(label)))]);
 const invoiceAmountVsBill = (revision: AssessmentRevision) => {
   const invoice = revision.snapshot.invoice;
   const bill = revision.snapshot.bill;

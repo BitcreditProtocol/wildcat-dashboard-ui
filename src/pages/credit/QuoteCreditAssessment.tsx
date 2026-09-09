@@ -164,7 +164,17 @@ const issuePresentation: Record<OperatorSubmittedCaseIssue["reasonCode"], { labe
     submitted_evidence_unavailable: { label: "issueEvidenceUnavailable", action: "actionEvidence" },
   };
 
-export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
+export function QuoteCreditAssessment({
+  billId,
+  mintQuoteId,
+  embedded = false,
+  consolidatedRequirements = false,
+}: {
+  billId: string | undefined;
+  mintQuoteId: string | undefined;
+  embedded?: boolean;
+  consolidatedRequirements?: boolean;
+}) {
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
   const assessment = useCreditAssessmentForBill(billId, mintQuoteId);
@@ -195,6 +205,12 @@ export function QuoteCreditAssessment({ billId, mintQuoteId }: { billId: string 
   }
   if (assessment.status === "assessed") {
     const { decisionCase } = assessment;
+    if (embedded)
+      return (
+        <section id="full-governed-assessment" className="scroll-mt-4">
+          <CreditAssessmentCard consolidatedRequirements={consolidatedRequirements} decisionCase={decisionCase} />
+        </section>
+      );
     const assessedAxes = operatorVisibleAxes(decisionCase.result.axes).filter((axis) => axis.status !== "not_assessed");
     const passed = assessedAxes.filter((axis) => axis.status === "pass").length;
     const total = assessedAxes.length;

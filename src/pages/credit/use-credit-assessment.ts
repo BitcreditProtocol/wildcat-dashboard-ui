@@ -20,7 +20,13 @@ export function useCreditAssessments() {
     staleTime: 60_000,
     // Applications and verification replacements arrive from the borrower app. Poll while this
     // operator view is mounted so an absent or blocked case does not remain stale until refocus.
-    refetchInterval: 10_000,
+    refetchInterval: (query) =>
+      query.state.data?.cases.some(
+        (one) =>
+          one.liveInterview !== undefined || one.caseInvestigation?.status === "running" || one.caseInvestigation?.status === "queued"
+      )
+        ? 3_000
+        : 10_000,
     retry: 1,
   });
 }
@@ -32,21 +38,45 @@ export type CreditAssessmentForBillState =
   | { status: "isolated"; issue: OperatorSubmittedCaseIssue }
   | { status: "assessed"; decisionCase: DecisionCase };
 
-export function useCreditAssessmentForBill(billId: string | undefined, mintQuoteId: string | undefined): CreditAssessmentForBillState {
+export function useCreditAssessmentForBill(
+  billId: string | undefined,
+  mintQuoteId: string | undefined
+): CreditAssessmentForBillState & {
+  decisionCase?: DecisionCase;
+  recordedDecisionCase?: DecisionCase;
+  isLoading: boolean;
+  isAbsent: boolean;
+  isUnavailable: boolean;
+  error: Error | null;
+} {
   const { data, isLoading, error } = useCreditAssessments();
-  if (isLoading) return { status: "loading" };
-  // Fail closed on the latest read even when React Query retains older data.
-  if (error !== null) return { status: "unavailable", error };
-  if (billId === undefined || mintQuoteId === undefined || data === undefined) return { status: "absent" };
-
-  const issue = data.issues.find(
+  const scopedIssue = data?.issues.find(
     (one) =>
       one.billId === billId &&
       (one.mintQuoteId === mintQuoteId || (one.mintQuoteId === null && one.reasonCode === "legacy_authority_missing"))
   );
-  // A newly isolated submission invalidates any retained prior assessment for the same quote.
-  if (issue !== undefined) return { status: "isolated", issue };
+  const recordedDecisionCase =
+    billId === undefined || mintQuoteId === undefined || scopedIssue !== undefined
+      ? undefined
+      : data?.cases.find((one) => one.snapshot.bill?.billId === billId && one.mintQuoteId === mintQuoteId);
+  const state = (): CreditAssessmentForBillState => {
+    if (isLoading) return { status: "loading" };
+    // Fail closed on the latest read even when React Query retains older data.
+    if (error !== null) return { status: "unavailable", error };
+    if (billId === undefined || mintQuoteId === undefined || data === undefined) return { status: "absent" };
 
-  const decisionCase = data.cases.find((one) => one.snapshot.bill?.billId === billId && one.mintQuoteId === mintQuoteId);
-  return decisionCase === undefined ? { status: "absent" } : { status: "assessed", decisionCase };
+    // A newly isolated submission invalidates any retained prior assessment for the same quote.
+    if (scopedIssue !== undefined) return { status: "isolated", issue: scopedIssue };
+    return recordedDecisionCase === undefined ? { status: "absent" } : { status: "assessed", decisionCase: recordedDecisionCase };
+  };
+  const assessment = state();
+  return {
+    decisionCase: undefined,
+    recordedDecisionCase: assessment.status === "assessed" || assessment.status === "unavailable" ? recordedDecisionCase : undefined,
+    isLoading: assessment.status === "loading",
+    isAbsent: assessment.status === "absent",
+    isUnavailable: assessment.status === "unavailable",
+    error: null,
+    ...assessment,
+  };
 }
