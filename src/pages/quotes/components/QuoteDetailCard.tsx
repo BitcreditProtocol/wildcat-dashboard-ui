@@ -8,7 +8,7 @@ import { humanReadableDurationDays } from "@/utils/dates";
 import type { AdminInfoReply, MintOperationStatus } from "@/generated/client/types.gen";
 import type { DurableAuthorizationReceipt, VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
 import type { AssessmentChange } from "@/pages/credit/assessment-diff";
-import { axisLabels, words } from "@/pages/credit/decision-types";
+import { type AssessmentCurrency, axisLabels, words } from "@/pages/credit/decision-types";
 import { ChevronDown, CircleAlert, CircleCheck, Clock3, Printer } from "lucide-react";
 import { useIntl } from "react-intl";
 
@@ -27,7 +27,7 @@ interface QuoteDetailCardProps {
   mintOperationStatus?: MintOperationStatus;
   isMintOperationLoading?: boolean;
   decisionSummary?: {
-    assessmentCurrency: "current" | "historical_pending_applicant_response";
+    assessmentCurrency: AssessmentCurrency;
     useOfFunds: string;
     repaymentSource: string;
     acceptor?: string;
@@ -120,7 +120,7 @@ export function QuoteDetailCard({
 }: QuoteDetailCardProps) {
   const intl = useIntl();
   const bill = quote.bill;
-  const isHistoricalAssessment = decisionSummary?.assessmentCurrency === "historical_pending_applicant_response";
+  const isHistoricalAssessment = decisionSummary?.assessmentCurrency === "historical";
   const netProceeds = "discounted" in quote ? quote.discounted : null;
   const recommendedTerms = isHistoricalAssessment ? undefined : decisionSummary?.recommendedTerms;
   const showingRecommendation = netProceeds === null && recommendedTerms !== undefined;
@@ -260,7 +260,7 @@ export function QuoteDetailCard({
     ? intl.formatMessage({
         id: "quotes.summary.actionHold",
         defaultMessage: "Hold",
-        description: "Recommended operator action while applicant evidence is pending",
+        description: "Operator status when the assessment does not support a current decision",
       })
     : offerExpired
       ? intl.formatMessage({
@@ -281,13 +281,13 @@ export function QuoteDetailCard({
             : intl.formatMessage({
                 id: "quotes.summary.actionHold",
                 defaultMessage: "Hold",
-                description: "Recommended operator action while applicant evidence is pending",
+                description: "Operator status when the assessment does not support a current decision",
               });
   const decisionStatusLine = isHistoricalAssessment
     ? intl.formatMessage({
-        id: "quotes.summary.awaitingApplicantEvidence",
-        defaultMessage: "Awaiting applicant evidence",
-        description: "Status and executive headline for a retained non-actionable assessment pending an applicant response",
+        id: "quotes.summary.historicalAssessment",
+        defaultMessage: "Historical assessment · read-only",
+        description: "Status for a retained assessment that cannot authorize operator actions, without inferring why it is historical",
       })
     : offerExpired && decisionSummary?.recommendedTerms
       ? intl.formatMessage(

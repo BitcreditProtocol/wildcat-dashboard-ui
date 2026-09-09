@@ -262,10 +262,10 @@ const messages = defineMessages({
     defaultMessage: "Assessed {asOf} · evidence valid through {validThrough}",
     description: "Visible freshness of the deterministic assessment and its earliest evidence expiry",
   },
-  awaitingApplicantEvidence: {
-    id: "credit.assessment.awaitingApplicantEvidence",
-    defaultMessage: "Awaiting applicant evidence",
-    description: "Status for a retained non-actionable assessment pending an applicant response",
+  historicalAssessment: {
+    id: "credit.assessment.historicalAssessment",
+    defaultMessage: "Historical assessment · read-only",
+    description: "Status for a retained assessment that cannot authorize operator actions, without inferring why it is historical",
   },
   mintId: { id: "credit.audit.mintId", defaultMessage: "Mint", description: "Mint that produced the governed decision" },
 });
@@ -549,7 +549,7 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
   const intl = useIntl();
   const formatSat = (value: string) => `${intl.formatNumber(Number(value))} sat`;
   const { snapshot, policyPack } = decisionCase;
-  const isHistoricalAssessment = decisionCase.assessmentCurrency === "historical_pending_applicant_response";
+  const isHistoricalAssessment = decisionCase.assessmentCurrency === "historical";
   const offerTerms =
     !isHistoricalAssessment &&
     decisionCase.result.assessmentStatus === "ready_for_decision" &&
@@ -565,7 +565,7 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
       <div className="flex flex-col gap-3 px-6 py-5">
         {isHistoricalAssessment && (
           <p role="status" className="font-medium text-signal-alert">
-            {intl.formatMessage(messages.awaitingApplicantEvidence)}
+            {intl.formatMessage(messages.historicalAssessment)}
           </p>
         )}
         <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.assessed, { asOf: snapshot.asOfDate, validThrough })}</p>

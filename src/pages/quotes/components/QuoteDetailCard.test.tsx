@@ -136,7 +136,7 @@ beforeEach(() => {
 });
 
 describe("QuoteDetailCard", () => {
-  it("labels retained history as awaiting applicant evidence and suppresses stale recommended terms", () => {
+  it("labels retained history as read-only without inferring an applicant response or recommending stale terms", () => {
     const page = renderWithProviders(
       <QuoteDetailCard
         quote={{
@@ -155,7 +155,7 @@ describe("QuoteDetailCard", () => {
         isInMempool={false}
         requestedToPay={false}
         decisionSummary={{
-          assessmentCurrency: "historical_pending_applicant_response",
+          assessmentCurrency: "historical",
           useOfFunds: "Fertilizer",
           repaymentSource: "Coffee sales",
           readyForDecision: true,
@@ -180,7 +180,8 @@ describe("QuoteDetailCard", () => {
     );
 
     expect(page.textContent).toContain("Hold");
-    expect(page.textContent).toContain("Awaiting applicant evidence");
+    expect(page.textContent).toContain("Historical assessment · read-only");
+    expect(page.textContent).not.toContain("Awaiting applicant evidence");
     expect(page.textContent).not.toContain("7,734,000");
     expect(page.textContent).not.toContain("Offer valid until");
   });

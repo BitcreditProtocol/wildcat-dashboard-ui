@@ -262,15 +262,16 @@ describe("CreditAssessmentCard", () => {
     mockUseQuery.mockReset();
   });
 
-  it("labels retained history as awaiting applicant evidence and does not present stale terms as a recommendation", () => {
+  it("labels retained history as read-only without inferring an applicant response or recommending stale terms", () => {
     const historicalCase = {
       ...offerCase,
-      assessmentCurrency: "historical_pending_applicant_response" as const,
+      assessmentCurrency: "historical" as const,
     };
 
     render(<CreditAssessmentCard decisionCase={historicalCase} />);
 
-    expect(container.textContent).toContain("Awaiting applicant evidence");
+    expect(container.textContent).toContain("Historical assessment · read-only");
+    expect(container.textContent).not.toContain("Awaiting applicant evidence");
     expect(container.textContent).not.toContain("Fee calculation");
   });
 

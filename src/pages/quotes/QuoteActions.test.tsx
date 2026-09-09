@@ -460,26 +460,29 @@ beforeEach(() => {
 });
 
 describe("QuoteActions", () => {
-  it("keeps a retained historical assessment read-only while applicant evidence is pending", () => {
-    decisionCase = {
-      ...governedVerification,
-      assessmentCurrency: "historical_pending_applicant_response",
-    };
+  it.each([governedOffer, governedVerification])(
+    "keeps a retained historical assessment read-only regardless of its outcome",
+    (assessment) => {
+      decisionCase = {
+        ...assessment,
+        assessmentCurrency: "historical",
+      };
 
-    const page = renderComponent(pendingQuote);
-    const actions = Array.from(page.querySelectorAll("button")).map((button) => button.textContent);
+      const page = renderComponent(pendingQuote);
+      const actions = Array.from(page.querySelectorAll("button")).map((button) => button.textContent);
 
-    expect(actions).not.toContain("Offer");
-    expect(actions).not.toContain("Deny");
-    expect(page.textContent).not.toContain("Request information from applicant");
-    expect(page.textContent).not.toContain("Retry Mint source checks");
-    expect(page.textContent).not.toContain("Close — unable to assess");
-    expect(returnInfoSubmit).toBeUndefined();
-    expect(closeUnableSubmit).toBeUndefined();
-    expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
-    expect(mockRecordMintRiskAssessment).not.toHaveBeenCalled();
-    expect(mockRetryOperatorVerificationSources).not.toHaveBeenCalled();
-  });
+      expect(actions).not.toContain("Offer");
+      expect(actions).not.toContain("Deny");
+      expect(page.textContent).not.toContain("Request information from applicant");
+      expect(page.textContent).not.toContain("Retry Mint source checks");
+      expect(page.textContent).not.toContain("Close — unable to assess");
+      expect(returnInfoSubmit).toBeUndefined();
+      expect(closeUnableSubmit).toBeUndefined();
+      expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
+      expect(mockRecordMintRiskAssessment).not.toHaveBeenCalled();
+      expect(mockRetryOperatorVerificationSources).not.toHaveBeenCalled();
+    }
+  );
 
   it.each([
     ["requested", null],
@@ -555,6 +558,35 @@ describe("QuoteActions", () => {
     });
 
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+  });
+
+  it("discards an in-flight governed offer when the assessment becomes historical", async () => {
+    decisionCase = governedOffer;
+    let resolveRecord: ((result: OperatorDecisionSuccess) => void) | undefined;
+    mockRecordOperatorDecision.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRecord = resolve;
+      })
+    );
+    renderComponent(pendingQuote);
+    act(() => {
+      offerFormSubmit?.(offerData);
+      offerConfirmationSubmit?.(offerData);
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenCalledOnce();
+
+    decisionCase = { ...governedOffer, assessmentCurrency: "historical" };
+    rerenderComponent(pendingQuote);
+    await act(async () => {
+      resolveRecord?.({ ok: true, signedAuthorization });
+      await Promise.resolve();
+    });
+
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+    expect(mockHandleDenyQuote).not.toHaveBeenCalled();
+    decisionCase = governedOffer;
+    rerenderComponent(pendingQuote);
+    expect(offerConfirmationOpen).toBe(false);
   });
 
   it("disables governed decisions and exposes the capability error when the handshake fails", () => {

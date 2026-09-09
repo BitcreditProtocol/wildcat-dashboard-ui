@@ -28,7 +28,7 @@ import type {
 export type AxisStatus = "pass" | "caution" | "blocked" | "fail" | "not_assessed";
 export type AssessmentStatus = "ready_for_decision" | "blocked_pending_verification";
 export type Recommendation = "offer_available" | "no_current_product_fit";
-export type AssessmentCurrency = "current" | "historical_pending_applicant_response";
+export type AssessmentCurrency = "current" | "historical";
 export type TraceValues = Record<string, string | number | boolean>;
 
 /** Display projections only. Runtime validation stays in the shared AI Credit package. */
