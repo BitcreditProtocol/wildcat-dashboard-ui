@@ -33,5 +33,12 @@ export function parseMintDenialStatus(
 export function parseDecisionCasesResponse(value: unknown): DecisionCasesResponse {
   const parsed = operatorWorkbenchDecisionsResponseSchema.safeParse(value);
   if (!parsed.success) throw new Error("AI Credit returned an invalid governed decision response");
-  return { cases: parsed.data.cases, issues: parsed.data.issues };
+  return {
+    cases: parsed.data.cases.map((oneCase) => ({
+      ...oneCase,
+      // Shared package revisions use different historical labels; neither grants current authority.
+      assessmentCurrency: oneCase.assessmentCurrency === "current" ? "current" : "historical",
+    })),
+    issues: parsed.data.issues,
+  };
 }
