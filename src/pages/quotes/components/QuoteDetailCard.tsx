@@ -2,17 +2,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button, Card, CardContent, Text } from "@bitcredit/ui-library";
 import { ParticipantDetail } from "@/components/ParticipantsOverview";
 import { Currency } from "@/components/Currency";
-import { getQuoteStatusVariant } from "@/utils/quote-status";
 import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
 import type { AdminInfoReply, MintOperationStatus } from "@/generated/client/types.gen";
 import type { DurableAuthorizationReceipt, VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
-import type { AssessmentChange } from "@/pages/credit/assessment-diff";
-import { type AssessmentCurrency, axisLabels, words } from "@/pages/credit/decision-types";
 import { ChevronDown, CircleAlert, CircleCheck, Clock3, Printer } from "lucide-react";
+import type { ReactNode } from "react";
 import { useIntl } from "react-intl";
 
 interface QuoteDetailCardProps {
+  actions?: ReactNode;
+  assessmentUnavailable?: boolean;
+  noFitExplanation?: ReactNode;
   quote: AdminInfoReply;
   effectiveQuoteStatus: string;
   ebillPaid: boolean;
@@ -27,32 +28,19 @@ interface QuoteDetailCardProps {
   mintOperationStatus?: MintOperationStatus;
   isMintOperationLoading?: boolean;
   decisionSummary?: {
-    assessmentCurrency: AssessmentCurrency;
-    useOfFunds: string;
-    repaymentSource: string;
-    acceptor?: string;
-    goodsDescription?: string;
+    assessmentCurrency: "current" | "historical";
+    useOfFunds?: string;
+    repaymentSource?: string;
     readyForDecision: boolean;
+    investigationPending?: boolean;
+    pendingEvidenceQuestions?: number;
     recommendation: "offer_available" | "no_current_product_fit" | null;
-    passedChecks: number;
-    failedChecks: number;
-    notAssessedChecks: number;
-    totalChecks: number;
-    answersAffirmed: boolean;
-    recourseAcknowledged: boolean;
-    unresolvedContradictions: number;
-    evidenceSummary: {
-      documents: number;
-      citedClaims: number;
-      openRequests: number;
-      investigation: {
-        status: "available" | "disabled" | "idle" | "running" | "unavailable" | "not_run";
-        findings: number;
-        sources: number;
-      };
+    decisionBasis?: {
+      counterargument: string;
+      counterargumentOpen: boolean;
+      answerReviewFollowUpCount?: number;
     };
-    applicantRequests?: { axis: string; requiredItem: string }[];
-    reassessmentChanges?: AssessmentChange[];
+    applicantRequests?: { axis: string; requiredItem: string; owner?: string }[];
     billAcceptanceState?: string;
     recommendedTerms?: {
       mintingFee: number;
@@ -70,6 +58,53 @@ const formatLocalDateTime = (date: Date): string => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
+function ApplicantStatement({ label, value }: { label: string; value: string | undefined }) {
+  const intl = useIntl();
+  if (value === undefined || value.trim() === "")
+    return (
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-2 text-sm">
+          {intl.formatMessage({
+            id: "quotes.summary.answerMissing",
+            defaultMessage: "No answer recorded",
+            description: "Missing applicant answer is not fabricated",
+          })}
+        </p>
+      </div>
+    );
+  return (
+    <details data-print-statement className="group/statement min-w-0">
+      <summary className="cursor-pointer list-none marker:hidden">
+        <span className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          {label}
+          <span className="flex shrink-0 items-center gap-1 print:hidden">
+            <span className="group-open/statement:hidden">
+              {intl.formatMessage({
+                id: "quotes.summary.expandStatement",
+                defaultMessage: "Full answer",
+                description: "Expand the exact applicant answer",
+              })}
+            </span>
+            <span className="hidden group-open/statement:inline">
+              {intl.formatMessage({
+                id: "quotes.summary.collapseStatement",
+                defaultMessage: "Less",
+                description: "Collapse the applicant answer",
+              })}
+            </span>
+            <ChevronDown className="size-3 group-open/statement:rotate-180" aria-hidden="true" />
+          </span>
+        </span>
+        <span data-statement-preview className="mt-2 line-clamp-2 break-words text-sm leading-6 group-open/statement:hidden">
+          {value}
+        </span>
+      </summary>
+      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 print:hidden">{value}</p>
+    </details>
+  );
+}
+
 function LifecycleStage({
   label,
   value,
@@ -84,7 +119,7 @@ function LifecycleStage({
     state === "complete"
       ? "text-signal-success"
       : state === "current"
-        ? "text-signal-info"
+        ? "text-brand-200"
         : state === "failed"
           ? "text-destructive"
           : "text-muted-foreground";
@@ -103,6 +138,9 @@ function LifecycleStage({
 }
 
 export function QuoteDetailCard({
+  actions,
+  assessmentUnavailable = false,
+  noFitExplanation,
   quote,
   effectiveQuoteStatus,
   ebillPaid,
@@ -120,9 +158,14 @@ export function QuoteDetailCard({
 }: QuoteDetailCardProps) {
   const intl = useIntl();
   const bill = quote.bill;
-  const isHistoricalAssessment = decisionSummary?.assessmentCurrency === "historical";
+  const isHistoricalAssessment = decisionSummary?.assessmentCurrency !== undefined && decisionSummary.assessmentCurrency !== "current";
+  const offerExpired =
+    effectiveQuoteStatus === "Pending" &&
+    decisionSummary?.recommendation === "offer_available" &&
+    decisionSummary.recommendedTerms !== undefined &&
+    Date.parse(`${decisionSummary.recommendedTerms.offerExpiresOn}T23:59:59.999Z`) <= Date.now();
   const netProceeds = "discounted" in quote ? quote.discounted : null;
-  const recommendedTerms = isHistoricalAssessment ? undefined : decisionSummary?.recommendedTerms;
+  const recommendedTerms = isHistoricalAssessment || offerExpired ? undefined : decisionSummary?.recommendedTerms;
   const showingRecommendation = netProceeds === null && recommendedTerms !== undefined;
   const displayedAmountAvailableForMinting = netProceeds ?? recommendedTerms?.amountAvailableForMinting ?? null;
   const mintingFee = netProceeds === null ? (recommendedTerms?.mintingFee ?? null) : bill.sum - netProceeds;
@@ -238,319 +281,140 @@ export function QuoteDetailCard({
   const hasSignedVerification = signedAuthorizationReceipt !== null && signedAuthorizationReceipt !== undefined;
   const durableExecutionCompleted = durableAuthorizationReceipt?.status === "completed";
   const showDecisionStatus = effectiveQuoteStatus === "Pending" && decisionSummary !== undefined;
-  const offerExpired =
-    showDecisionStatus &&
-    decisionSummary.recommendation === "offer_available" &&
-    decisionSummary.recommendedTerms !== undefined &&
-    Date.parse(`${decisionSummary.recommendedTerms.offerExpiresOn}T23:59:59.999Z`) <= Date.now();
-  const summaryStatusVariant = showDecisionStatus
-    ? isHistoricalAssessment
-      ? "pending"
-      : offerExpired
-        ? "pending"
-        : decisionSummary.recommendation === "no_current_product_fit"
-          ? "secondary"
-          : decisionSummary.recommendation === "offer_available" && decisionSummary.readyForDecision
-            ? "success"
-            : decisionSummary.readyForDecision
-              ? "destructive"
-              : "pending"
-    : getQuoteStatusVariant(effectiveQuoteStatus);
-  const decisionHeadline = isHistoricalAssessment
-    ? intl.formatMessage({
-        id: "quotes.summary.actionHold",
-        defaultMessage: "Hold",
-        description: "Operator status when the assessment does not support a current decision",
-      })
-    : offerExpired
+  const pendingEvidenceQuestions = decisionSummary?.pendingEvidenceQuestions ?? 0;
+  const decisionHeadline =
+    decisionSummary?.investigationPending && !isHistoricalAssessment && !offerExpired
       ? intl.formatMessage({
-          id: "quotes.summary.termsExpired",
-          defaultMessage: "Terms expired",
-          description: "Primary operator status when the prepared terms are no longer actionable",
+          id: "quotes.summary.investigationPending",
+          defaultMessage: "Investigation incomplete",
+          description: "Answer investigation has not completed successfully",
         })
-      : decisionSummary?.recommendation === "no_current_product_fit"
-        ? intl.formatMessage({ id: "quotes.summary.actionDoNotOffer", defaultMessage: "Do not offer" })
-        : decisionSummary?.recommendation === "offer_available" && decisionSummary.readyForDecision
+      : pendingEvidenceQuestions > 0 && !isHistoricalAssessment && !offerExpired
+        ? intl.formatMessage({
+            id: "quotes.summary.reviewEvidenceQuestions",
+            defaultMessage: "Review evidence",
+            description: "Evidence work needs review even though the pricing calculation may be complete",
+          })
+        : isHistoricalAssessment
           ? intl.formatMessage({
-              id: "quotes.summary.actionOffer",
-              defaultMessage: "Offer",
-              description: "Recommended operator action for a governed offer-ready case",
+              id: "quotes.summary.evidenceRequired",
+              defaultMessage: "Evidence required",
+              description: "Primary operator status while current evidence work remains open",
             })
-          : decisionSummary?.readyForDecision
-            ? intl.formatMessage({ id: "quotes.summary.actionReview", defaultMessage: "Review" })
-            : intl.formatMessage({
-                id: "quotes.summary.actionHold",
-                defaultMessage: "Hold",
-                description: "Operator status when the assessment does not support a current decision",
-              });
-  const decisionStatusLine = isHistoricalAssessment
-    ? intl.formatMessage({
-        id: "quotes.summary.historicalAssessment",
-        defaultMessage: "Historical assessment · read-only",
-        description: "Status for a retained assessment that cannot authorize operator actions, without inferring why it is historical",
-      })
-    : offerExpired && decisionSummary?.recommendedTerms
-      ? intl.formatMessage(
-          { id: "quotes.summary.termsExpiredOn", defaultMessage: "Expired {date} · Awaiting applicant" },
-          { date: decisionSummary.recommendedTerms.offerExpiresOn }
-        )
-      : decisionSummary?.recommendation === "offer_available" && decisionSummary.readyForDecision && decisionSummary.recommendedTerms
+          : offerExpired
+            ? intl.formatMessage({
+                id: "quotes.summary.termsExpired",
+                defaultMessage: "Terms expired",
+                description: "Primary operator status when the prepared terms are no longer actionable",
+              })
+            : decisionSummary?.readyForDecision
+              ? intl.formatMessage({
+                  id: "quotes.summary.readyForOperatorDecision",
+                  defaultMessage: "Ready for operator decision",
+                  description: "Primary operator status when the current assessment can be acted on",
+                })
+              : intl.formatMessage({
+                  id: "quotes.summary.evidenceRequired",
+                  defaultMessage: "Evidence required",
+                  description: "Primary operator status while current evidence work remains open",
+                });
+  const decisionStatusLine =
+    decisionSummary?.investigationPending && !isHistoricalAssessment && !offerExpired
+      ? intl.formatMessage({
+          id: "quotes.summary.investigationOfferBlocked",
+          defaultMessage: "Check Investigation · offer blocked",
+          description: "An unfinished investigation cannot authorize an offer",
+        })
+      : pendingEvidenceQuestions > 0 && !isHistoricalAssessment && !offerExpired
         ? intl.formatMessage(
-            { id: "quotes.summary.termsValidTo", defaultMessage: "Ready · terms valid to {date}" },
-            { date: decisionSummary.recommendedTerms.offerExpiresOn }
+            {
+              id: "quotes.summary.unresolvedEvidenceQuestions",
+              defaultMessage:
+                "{count, plural, one {# evidence question unresolved} other {# evidence questions unresolved}} · offer blocked",
+              description: "Unresolved evidence is a preparation hold, not a credit denial",
+            },
+            { count: pendingEvidenceQuestions }
           )
-        : decisionSummary?.recommendation === "no_current_product_fit"
-          ? intl.formatMessage({ id: "quotes.summary.noCurrentProductFit", defaultMessage: "No current product fit" })
-          : intl.formatMessage({ id: "quotes.summary.verificationRequired", defaultMessage: "Verification required" });
-  const changeLabel = (change: AssessmentChange): string => {
-    if (change.field === "axis") return axisLabels[change.axis ?? ""] ?? words(change.axis ?? "axis");
-    const labels: Record<Exclude<AssessmentChange["field"], "axis">, string> = {
-      assessment: intl.formatMessage({ id: "quotes.reassessment.assessment", defaultMessage: "Assessment" }),
-      recommendation: intl.formatMessage({ id: "quotes.reassessment.recommendation", defaultMessage: "Recommendation" }),
-      required_information: intl.formatMessage({ id: "quotes.reassessment.requiredInformation", defaultMessage: "Required information" }),
-      contradictions: intl.formatMessage({ id: "quotes.reassessment.contradictions", defaultMessage: "Contradictions" }),
-      invoice_plausibility: intl.formatMessage({ id: "quotes.reassessment.invoicePlausibility", defaultMessage: "Invoice plausibility" }),
-      invoice_consistency: intl.formatMessage({ id: "quotes.reassessment.invoiceConsistency", defaultMessage: "Invoice consistency" }),
-      invoice_evidence: intl.formatMessage({ id: "quotes.reassessment.invoiceEvidence", defaultMessage: "Invoice evidence" }),
-      invoice_amount: intl.formatMessage({
-        id: "quotes.reassessment.invoiceAmount",
-        defaultMessage: "Submitted invoice amount",
-        description: "Label for the amount extracted from the submitted invoice",
-      }),
-      invoice_amount_vs_bill: intl.formatMessage({
-        id: "quotes.reassessment.invoiceAmountVsBill",
-        defaultMessage: "Invoice amount vs eBill",
-        description: "Label for the deterministic comparison between invoice and eBill amounts",
-      }),
-      use_of_funds: intl.formatMessage({
-        id: "quotes.reassessment.useOfFunds",
-        defaultMessage: "Use of funds",
-        description: "Label for a changed applicant use-of-funds claim",
-      }),
-      acceptor: intl.formatMessage({
-        id: "quotes.reassessment.acceptor",
-        defaultMessage: "Acceptor",
-        description: "Label for a changed acceptor claim",
-      }),
-      repayment_source: intl.formatMessage({
-        id: "quotes.reassessment.repaymentSource",
-        defaultMessage: "Repayment source",
-        description: "Label for a changed applicant repayment-source claim",
-      }),
-      recourse_acknowledgement: intl.formatMessage({
-        id: "quotes.reassessment.recourseAcknowledgement",
-        defaultMessage: "Whole-face recourse",
-        description: "Label for a changed whole-face recourse acknowledgement",
-      }),
-      claim_evidence: intl.formatMessage({
-        id: "quotes.reassessment.claimEvidence",
-        defaultMessage: "Claim evidence",
-        description: "Label for a changed applicant-claim evidence state",
-      }),
-      document_count: intl.formatMessage({
-        id: "quotes.reassessment.documentCount",
-        defaultMessage: "Submitted document count",
-        description: "Label for a changed submitted-document count",
-      }),
-      documents: intl.formatMessage({
-        id: "quotes.reassessment.documents",
-        defaultMessage: "Submitted documents",
-        description: "Label for changed submitted-document identities and digests",
-      }),
-      minting_fee: intl.formatMessage({ id: "quotes.reassessment.mintingFee", defaultMessage: "Minting fee" }),
-      amount_available: intl.formatMessage({
-        id: "quotes.reassessment.amountAvailable",
-        defaultMessage: "Amount available for minting",
-      }),
-      offer_expiry: intl.formatMessage({ id: "quotes.reassessment.offerExpiry", defaultMessage: "Offer expiry" }),
-    };
-    return labels[change.field];
-  };
-  const changeValue = (change: AssessmentChange, value: string): string => {
-    if (value === "") return intl.formatMessage({ id: "quotes.reassessment.none", defaultMessage: "None" });
-    if (change.field === "minting_fee" || change.field === "amount_available" || change.field === "invoice_amount") {
-      return `${intl.formatNumber(BigInt(value))} sat`;
-    }
-    if (change.field === "recourse_acknowledgement") {
-      return value === "true"
-        ? intl.formatMessage({ id: "quotes.reassessment.acknowledged", defaultMessage: "Acknowledged" })
-        : intl.formatMessage({ id: "quotes.reassessment.notAcknowledged", defaultMessage: "Not acknowledged" });
-    }
-    return ["required_information", "offer_expiry", "use_of_funds", "acceptor", "repayment_source", "documents"].includes(change.field)
-      ? value
-      : words(value);
-  };
+        : isHistoricalAssessment
+          ? intl.formatMessage({
+              id: "quotes.summary.historicalAssessment",
+              defaultMessage: "Historical assessment · read-only",
+              description: "Retained assessment is read-only; no reason for its historical status is inferred",
+            })
+          : offerExpired && decisionSummary?.recommendedTerms
+            ? intl.formatMessage(
+                {
+                  id: "quotes.summary.expiredTermsCompact",
+                  defaultMessage: "Expired {date} · awaiting applicant request",
+                  description: "Expired terms require an applicant-initiated request",
+                },
+                { date: decisionSummary.recommendedTerms.offerExpiresOn }
+              )
+            : decisionSummary?.recommendation === "offer_available" && decisionSummary.readyForDecision && decisionSummary.recommendedTerms
+              ? intl.formatMessage(
+                  {
+                    id: "quotes.summary.currentTermsCompact",
+                    defaultMessage: "Terms valid through {date}",
+                    description: "Expiry of currently actionable proposed terms",
+                  },
+                  { date: decisionSummary.recommendedTerms.offerExpiresOn }
+                )
+              : decisionSummary?.recommendation === "no_current_product_fit"
+                ? intl.formatMessage({
+                    id: "quotes.summary.noFitCompact",
+                    defaultMessage: "No offer recommended",
+                    description: "Non-binding no-fit recommendation for the operator",
+                  })
+                : decisionSummary?.readyForDecision
+                  ? intl.formatMessage({
+                      id: "quotes.summary.manualReviewCompact",
+                      defaultMessage: "Manual review required",
+                      description: "Current assessment needs an operator review",
+                    })
+                  : intl.formatMessage({
+                      id: "quotes.summary.verificationCompact",
+                      defaultMessage: "Verification required",
+                      description: "Evidence preparation is incomplete",
+                    });
   const applicantRequests = decisionSummary?.applicantRequests ?? [];
-  const reassessmentChanges = decisionSummary?.reassessmentChanges ?? [];
+  const decisionBasis = decisionSummary?.decisionBasis;
 
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
-        <header className="border-b border-border bg-elevation-100 px-6 py-5">
+        <header className="relative border-b border-border bg-elevation-100 px-6 py-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h1 className={`text-3xl font-semibold tracking-tight ${offerExpired ? "text-signal-alert" : ""}`}>
-                {showDecisionStatus ? decisionHeadline : effectiveQuoteStatus}
+              <h1 className={`pr-8 text-3xl font-semibold tracking-tight ${offerExpired ? "text-signal-alert" : ""}`}>
+                {assessmentUnavailable && effectiveQuoteStatus === "Pending"
+                  ? intl.formatMessage({
+                      id: "quotes.summary.assessmentUnavailable",
+                      defaultMessage: "Assessment unavailable",
+                      description: "Financial assessment failed to load, not a missing application",
+                    })
+                  : showDecisionStatus
+                    ? decisionHeadline
+                    : effectiveQuoteStatus}
               </h1>
-              {showDecisionStatus && <p className="mt-1 truncate text-sm text-muted-foreground">{decisionStatusLine}</p>}
+              {showDecisionStatus && <p className="mt-1 text-sm text-muted-foreground">{decisionStatusLine}</p>}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="xxs"
-                className="size-8 p-0"
-                onClick={() => window.print()}
-                aria-label={intl.formatMessage({ id: "quotes.summary.print", defaultMessage: "Print summary" })}
-                title={intl.formatMessage({ id: "quotes.summary.print", defaultMessage: "Print summary" })}
-              >
-                <Printer className="size-4" aria-hidden="true" />
-              </Button>
-              {!showDecisionStatus && (
-                <Badge variant={summaryStatusVariant}>{intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}</Badge>
-              )}
-            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xxs"
+              className="absolute top-5 right-5 size-8 p-0 print:hidden"
+              onClick={() => window.print()}
+              aria-label={intl.formatMessage({ id: "quotes.summary.print", defaultMessage: "Print summary" })}
+              title={intl.formatMessage({ id: "quotes.summary.print", defaultMessage: "Print summary" })}
+            >
+              <Printer className="size-4" aria-hidden="true" />
+            </Button>
           </div>
+          {actions && <div className="mt-4 print:hidden">{actions}</div>}
         </header>
 
-        {decisionSummary ? (
-          <div>
-            <section className="overflow-x-auto border-b border-border px-6 py-3">
-              <p className="whitespace-nowrap text-xs font-medium text-muted-foreground">
-                {decisionSummary.unresolvedContradictions > 0
-                  ? intl.formatMessage(
-                      { id: "quotes.summary.contradictionCount", defaultMessage: "{count} contradictions" },
-                      { count: decisionSummary.unresolvedContradictions }
-                    )
-                  : decisionSummary.evidenceSummary.openRequests > 0
-                    ? intl.formatMessage(
-                        { id: "quotes.summary.openCount", defaultMessage: "{count} open" },
-                        { count: decisionSummary.evidenceSummary.openRequests }
-                      )
-                    : intl.formatMessage({ id: "quotes.summary.noOpenExceptions", defaultMessage: "No open exceptions" })}
-                {" · "}
-                {intl.formatMessage(
-                  { id: "quotes.summary.policyCompact", defaultMessage: "Policy {passed}/{total}" },
-                  { passed: decisionSummary.passedChecks, total: decisionSummary.totalChecks }
-                )}
-                {" · "}
-                {intl.formatMessage(
-                  {
-                    id: "quotes.summary.documentCountCompact",
-                    defaultMessage: "{count, plural, one {# document} other {# documents}}",
-                  },
-                  { count: decisionSummary.evidenceSummary.documents }
-                )}
-              </p>
-
-              {applicantRequests.length > 0 && (
-                <section className="mt-3 border-l-2 border-signal-alert pl-3">
-                  <h4 className="text-xs font-semibold text-signal-alert">
-                    {intl.formatMessage({ id: "quotes.summary.blockingItems", defaultMessage: "Blocking items" })}
-                  </h4>
-                  <ul className="mt-2 space-y-2">
-                    {applicantRequests.map((request) => (
-                      <li key={`${request.axis}:${request.requiredItem}`} className="text-sm font-medium">
-                        {request.requiredItem}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {reassessmentChanges.length > 0 && (
-                <details className="group mt-4 rounded-md border border-border bg-background">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-medium marker:hidden">
-                    {intl.formatMessage(
-                      { id: "quotes.reassessment.changed", defaultMessage: "Changed since last assessment ({count})" },
-                      { count: reassessmentChanges.length }
-                    )}
-                    <ChevronDown
-                      className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-                      aria-hidden="true"
-                    />
-                  </summary>
-                  <div className="border-t border-border px-3 py-1">
-                    {reassessmentChanges.map((change) => (
-                      <div key={`${change.field}:${change.axis ?? ""}`} className="border-b border-border py-2 last:border-b-0">
-                        <div className="text-xs font-medium">{changeLabel(change)}</div>
-                        <dl className="mt-1 grid grid-cols-2 gap-3 text-xs">
-                          <div>
-                            <dt className="text-muted-foreground">
-                              {intl.formatMessage({ id: "quotes.reassessment.before", defaultMessage: "Before" })}
-                            </dt>
-                            <dd className="mt-0.5 break-words">{changeValue(change, change.before)}</dd>
-                          </div>
-                          <div>
-                            <dt className="text-muted-foreground">
-                              {intl.formatMessage({ id: "quotes.reassessment.after", defaultMessage: "After" })}
-                            </dt>
-                            <dd className="mt-0.5 break-words font-medium">{changeValue(change, change.after)}</dd>
-                          </div>
-                        </dl>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </section>
-
-            <details className="group border-b border-border">
-              <summary className="flex cursor-pointer list-none items-center gap-4 px-6 py-4 marker:hidden">
-                <h3 className="shrink-0 text-sm font-semibold">
-                  {intl.formatMessage({ id: "quotes.summary.statedByApplicant", defaultMessage: "Business case" })}
-                </h3>
-                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                  {decisionSummary.goodsDescription
-                    ? `${decisionSummary.goodsDescription} · ${decisionSummary.useOfFunds}`
-                    : decisionSummary.useOfFunds}
-                </span>
-                <ChevronDown
-                  className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-                  aria-hidden="true"
-                />
-              </summary>
-              <dl className="grid gap-x-8 gap-y-5 border-t border-border px-6 py-5 sm:grid-cols-2">
-                <div>
-                  <dt className="text-xs text-muted-foreground">
-                    {intl.formatMessage({ id: "quotes.summary.purpose", defaultMessage: "Use of proceeds" })}
-                  </dt>
-                  <dd className="mt-1 break-words text-sm font-medium leading-6">{decisionSummary.useOfFunds}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">
-                    {intl.formatMessage({ id: "quotes.summary.repayment", defaultMessage: "Repayment source" })}
-                  </dt>
-                  <dd className="mt-1 break-words text-sm font-medium leading-6">{decisionSummary.repaymentSource}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">
-                    {intl.formatMessage({ id: "quotes.summary.payer", defaultMessage: "Payer at maturity" })}
-                  </dt>
-                  <dd className="mt-1 break-words text-sm font-medium leading-6">{bill.drawee.name}</dd>
-                </div>
-                {decisionSummary.goodsDescription && (
-                  <div>
-                    <dt className="text-xs text-muted-foreground">
-                      {intl.formatMessage({ id: "quotes.summary.tradeEvidence", defaultMessage: "Underlying trade" })}
-                    </dt>
-                    <dd className="mt-1 break-words text-sm font-medium leading-6">{decisionSummary.goodsDescription}</dd>
-                  </div>
-                )}
-              </dl>
-            </details>
-          </div>
-        ) : (
-          <p className="px-6 py-5 text-sm text-muted-foreground">
-            {intl.formatMessage({
-              id: "quotes.summary.unavailable",
-              defaultMessage: "No business assessment is available for this quote.",
-            })}
-          </p>
-        )}
-
         <section className="grid grid-cols-2 border-t border-border bg-elevation-100 md:grid-cols-4">
-          <div className="border-r border-b border-border px-5 py-4 lg:border-b-0">
+          <div className="border-r border-b border-border px-5 py-4 md:border-b-0">
             <div className="truncate text-xs text-muted-foreground">
               {intl.formatMessage({ id: "quotes.detail.sum", defaultMessage: "Bill amount" })}
             </div>
@@ -561,7 +425,7 @@ export function QuoteDetailCard({
               amountClassName="text-current"
             />
           </div>
-          <div className="border-b border-border px-5 py-4 lg:border-r lg:border-b-0">
+          <div className="border-b border-border px-5 py-4 md:border-r md:border-b-0">
             <div className="truncate text-xs text-muted-foreground">
               {intl.formatMessage({ id: "quotes.summary.fee", defaultMessage: "Fee" })}
             </div>
@@ -616,6 +480,106 @@ export function QuoteDetailCard({
             <div className="mt-0.5 text-xs text-muted-foreground">{maturityLabel}</div>
           </div>
         </section>
+
+        {decisionSummary ? (
+          <div>
+            <section className="border-b border-border px-6 py-5">
+              <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-sm font-semibold">
+                  {intl.formatMessage({ id: "quotes.summary.statedByApplicant", defaultMessage: "Business case" })}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {intl.formatMessage({
+                    id: "quotes.summary.applicantTier",
+                    defaultMessage: "Applicant answers · not independently confirmed",
+                    description: "Provenance of the stated purpose and repayment source, not verified facts",
+                  })}
+                </p>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <ApplicantStatement
+                  label={intl.formatMessage({ id: "quotes.summary.purpose", defaultMessage: "Use of proceeds" })}
+                  value={decisionSummary.useOfFunds}
+                />
+                <ApplicantStatement
+                  label={intl.formatMessage({ id: "quotes.summary.repayment", defaultMessage: "Repayment source" })}
+                  value={decisionSummary.repaymentSource}
+                />
+              </div>
+              <p className="mt-4 text-xs text-muted-foreground">
+                {intl.formatMessage(
+                  {
+                    id: "quotes.summary.protocolPayer",
+                    defaultMessage: "Payer at maturity (eBill): {name}",
+                    description: "Drawee named in the protocol record, not inferred applicant identity",
+                  },
+                  { name: bill.drawee.name }
+                )}
+              </p>
+            </section>
+            <section className="border-b border-border px-6 py-4">
+              {noFitExplanation && <div className="text-sm">{noFitExplanation}</div>}
+              {decisionBasis && applicantRequests.length === 0 && !noFitExplanation && (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    {intl.formatMessage({ id: "quotes.summary.counterargument", defaultMessage: "Residual uncertainty" })}
+                  </p>
+                  <p className={`mt-1 text-sm font-medium ${decisionBasis.counterargumentOpen ? "text-signal-alert" : ""}`}>
+                    {decisionBasis.counterargument}
+                  </p>
+                  {(decisionBasis.answerReviewFollowUpCount ?? 0) > 0 && (
+                    <p className="mt-3 text-sm text-signal-alert">
+                      {intl.formatMessage(
+                        {
+                          id: "quotes.summary.answerReviewUnverified",
+                          defaultMessage: "Answer-review follow-ups · resolution not independently checked",
+                          description: "Targeted interview questions remain unverified even when the applicant answered them",
+                        },
+                        { count: decisionBasis.answerReviewFollowUpCount }
+                      )}
+                    </p>
+                  )}
+                </>
+              )}
+
+              {applicantRequests.length > 0 && (
+                <section className="mt-3 border-l-2 border-signal-alert pl-3">
+                  <h4 className="text-xs font-semibold text-signal-alert">
+                    {intl.formatMessage({
+                      id: "quotes.summary.beforeDecision",
+                      defaultMessage: "Before a decision",
+                      description: "Open applicant, Mint and system requirements",
+                    })}
+                  </h4>
+                  <ul className="mt-2 space-y-2">
+                    {applicantRequests.map((request) => (
+                      <li key={`${request.axis}:${request.requiredItem}`} className="text-sm font-medium">
+                        {request.requiredItem}
+                        {request.owner && <span className="ml-2 text-xs font-normal text-muted-foreground">{request.owner}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </section>
+          </div>
+        ) : (
+          <p
+            role={assessmentUnavailable ? "alert" : undefined}
+            className={`px-6 py-5 text-sm ${assessmentUnavailable ? "text-signal-alert" : "text-muted-foreground"}`}
+          >
+            {assessmentUnavailable
+              ? intl.formatMessage({
+                  id: "credit.quoteCard.unavailable",
+                  defaultMessage: "Assessment unavailable. Do not offer until it can be loaded.",
+                  description: "Fail-closed error when the deterministic assessment cannot be loaded",
+                })
+              : intl.formatMessage({
+                  id: "quotes.summary.unavailable",
+                  defaultMessage: "No business assessment is available for this quote.",
+                })}
+          </p>
+        )}
 
         <details className="group border-t border-border">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 marker:hidden">

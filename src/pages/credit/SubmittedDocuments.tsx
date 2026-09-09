@@ -68,8 +68,8 @@ const messages = defineMessages({
   },
   matched: {
     id: "credit.evidencePacket.matched",
-    defaultMessage: "Matched",
-    description: "Evidence status when the decision snapshot records a plausible invoice consistent with the eBill",
+    defaultMessage: "Fields match eBill",
+    description: "Evidence status when the current invoice fields are consistent with the eBill without implying document authenticity",
   },
   verificationRequired: {
     id: "credit.evidencePacket.verificationRequired",
@@ -329,6 +329,7 @@ export function SubmittedDocuments({
   reviewingEvidenceReference,
   onOpenEvidence,
   onReviewInvoiceEvidence,
+  showVerificationRequests = true,
 }: {
   submittedEvidence: readonly SubmittedEvidence[];
   evidencePackets: readonly EvidencePacket[];
@@ -338,6 +339,7 @@ export function SubmittedDocuments({
   reviewingEvidenceReference?: string | null;
   onOpenEvidence?: (evidence: SubmittedEvidence) => void | Promise<void>;
   onReviewInvoiceEvidence?: (evidence: SubmittedEvidence) => void | Promise<void>;
+  showVerificationRequests?: boolean;
 }) {
   const intl = useIntl();
   if (submittedEvidence.length === 0) return null;
@@ -349,14 +351,14 @@ export function SubmittedDocuments({
         <p className="truncate text-xs text-muted-foreground">
           {intl.formatMessage(messages.summary, { documents: submittedEvidence.length, claims: citedClaimCount })}
         </p>
-        {verificationRequests.length > 0 && (
+        {showVerificationRequests && verificationRequests.length > 0 && (
           <span className="shrink-0 whitespace-nowrap text-xs font-medium text-signal-alert">
             {intl.formatMessage(messages.requests, { count: verificationRequests.length })}
           </span>
         )}
       </div>
 
-      {verificationRequests.length > 0 && (
+      {showVerificationRequests && verificationRequests.length > 0 && (
         <section className="border-l-2 border-signal-alert pl-3">
           <h4 className="text-xs font-semibold text-signal-alert">{intl.formatMessage(messages.outstanding)}</h4>
           <ul className="mt-1 space-y-1 text-xs">

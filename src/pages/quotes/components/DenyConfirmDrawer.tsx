@@ -96,8 +96,8 @@ export function DenyConfirmDrawer({
         isReturn
           ? intl.formatMessage({
               id: "quotes.returnForInformation.description",
-              defaultMessage: "Record what the applicant must provide. No notification is sent from this screen.",
-              description: "Confirmation description for an applicant information request without claiming notification delivery",
+              defaultMessage: "Record what the applicant must provide through the eBill application flow.",
+              description: "Confirmation description for a governed applicant information request delivered through the eBill flow",
             })
           : isUnableToAssess
             ? intl.formatMessage({
@@ -130,7 +130,7 @@ export function DenyConfirmDrawer({
           ? intl.formatMessage({
               id: "quotes.returnForInformation.confirmButton",
               defaultMessage: "Request information",
-              description: "Confirmation button that records an applicant information request without claiming notification delivery",
+              description: "Confirmation button that records a governed applicant information request for eBill delivery",
             })
           : isUnableToAssess
             ? intl.formatMessage({

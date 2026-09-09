@@ -1,8 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { ClaimInvestigationPanel } from "@/pages/credit/ClaimInvestigationPanel";
+import { CaseReviewTrail } from "@/pages/credit/CaseReviewTrail";
+import { EvidenceCaseBrief, type EvidenceCaseSummary } from "@/pages/credit/EvidenceCaseBrief";
 import type {
-  AssessmentCurrency,
   ClaimInvestigationState,
+  ApplicantConfirmation,
+  ApplicantHumanReviewRecord,
+  DecisionCase,
+  InterviewTranscript,
   DecisionInvoice,
   EvidencePacket,
   SubmittedEvidence,
@@ -23,15 +28,22 @@ export type CreditEvidenceState =
       status: "available";
       caseId: string;
       resultDigest: string;
-      assessmentCurrency: AssessmentCurrency;
+      assessmentCurrency: "current" | "historical";
       submittedEvidence: readonly SubmittedEvidence[];
       evidencePackets: readonly EvidencePacket[];
       invoiceAssessment: DecisionInvoice | null;
       verificationRequests: readonly VerificationRequest[];
       claimInvestigation?: ClaimInvestigationState;
+      interviewTranscript?: InterviewTranscript;
+      applicantConfirmation?: ApplicantConfirmation;
+      applicantHumanReview?: ApplicantHumanReviewRecord;
+      axes?: DecisionCase["result"]["axes"];
+      caseSummary: EvidenceCaseSummary;
     };
 
 interface QuoteDocumentsProps {
+  embedded?: boolean;
+  showCaseRecord?: boolean;
   billAttachments: QuoteDocument[];
   requestToMintFiles: QuoteDocument[];
   creditEvidence: CreditEvidenceState;
@@ -54,10 +66,26 @@ const messages = defineMessages({
     defaultMessage: "{count, plural, =0 {No bill files} one {# bill file} other {# bill files}}",
     description: "Count of retrievable bill and request-to-mint files",
   },
-  evidenceCount: {
-    id: "quotes.documentsAndEvidence.evidenceCount",
-    defaultMessage: "{count, plural, =0 {No submitted credit evidence} one {# credit evidence item} other {# credit evidence items}}",
-    description: "Count of evidence items submitted with the AI Credit application",
+  openRequestSummary: {
+    id: "quotes.documentsAndEvidence.openRequestSummary",
+    defaultMessage:
+      "{requests, plural, one {# applicant request} other {# applicant requests}} · {documents, plural, one {# document} other {# documents}}",
+    description: "Collapsed evidence summary while applicant information is required",
+  },
+  awaitingApplicantSummary: {
+    id: "quotes.documentsAndEvidence.awaitingApplicantSummary",
+    defaultMessage: "Awaiting applicant · {requests, plural, one {# request} other {# requests}}",
+    description: "Collapsed evidence summary after an information request was recorded",
+  },
+  historicalPolicySummary: {
+    id: "quotes.documentsAndEvidence.historicalPolicySummary",
+    defaultMessage: "Archived assessment · view only",
+    description: "Collapsed evidence summary for a decision retained under an earlier policy release",
+  },
+  completeSummary: {
+    id: "quotes.documentsAndEvidence.completeSummary",
+    defaultMessage: "{documents, plural, one {# document} other {# documents}} · no open applicant request",
+    description: "Collapsed evidence summary with no open applicant-owned information request",
   },
   evidenceLoadingSummary: {
     id: "quotes.documentsAndEvidence.evidenceLoadingSummary",
@@ -139,7 +167,14 @@ const messages = defineMessages({
     defaultMessage: "Source files ({count})",
     description: "Collapsed technical source-file disclosure below the operator evidence review",
   },
+  submittedFile: {
+    id: "quotes.documentsAndEvidence.submittedFile",
+    defaultMessage: "Submitted file {number}",
+    description: "Operator-facing fallback name when a request-to-mint file is exposed only by a technical digest",
+  },
 });
+
+const technicalFileName = /^(?:sha256:)?[0-9a-f]{40,128}$/iu;
 
 function DocumentGroup({
   title,
@@ -163,13 +198,16 @@ function DocumentGroup({
       </div>
       {documents.map((file, index) => {
         const isOpening = openingDocumentHash === file.hash;
+        const displayName = technicalFileName.test(file.name)
+          ? intl.formatMessage(messages.submittedFile, { number: index + 1 })
+          : file.name;
         return (
           <div
             key={`${file.source}:${file.hash}:${file.name}:${String(index)}`}
             className="flex items-center justify-between gap-3 rounded-lg border p-3"
           >
             <div className="min-w-0">
-              <TruncatedTextPopover text={file.name} className="text-sm font-medium" />
+              <TruncatedTextPopover text={displayName} className="text-sm font-medium" />
             </div>
             <Button
               variant="outline"
@@ -190,12 +228,16 @@ function DocumentGroup({
 }
 
 function CreditEvidence({
+  showCaseRecord = true,
   state,
   openingEvidenceReference,
   onOpenEvidence,
   reviewingEvidenceReference,
   onReviewInvoiceEvidence,
-}: Pick<QuoteDocumentsProps, "openingEvidenceReference" | "onOpenEvidence" | "reviewingEvidenceReference" | "onReviewInvoiceEvidence"> & {
+}: Pick<
+  QuoteDocumentsProps,
+  "showCaseRecord" | "openingEvidenceReference" | "onOpenEvidence" | "reviewingEvidenceReference" | "onReviewInvoiceEvidence"
+> & {
   state: CreditEvidenceState;
 }) {
   const intl = useIntl();
@@ -232,6 +274,23 @@ function CreditEvidence({
   if (state.submittedEvidence.length === 0) {
     return (
       <div className="space-y-4">
+        <EvidenceCaseBrief
+          summary={state.caseSummary}
+          submittedEvidence={state.submittedEvidence}
+          verificationRequests={state.verificationRequests}
+          assessmentCurrency={state.assessmentCurrency}
+        />
+        {showCaseRecord && (
+          <CaseReviewTrail
+            transcript={state.interviewTranscript}
+            applicantConfirmation={state.applicantConfirmation}
+            applicantHumanReview={state.applicantHumanReview}
+            axes={state.axes}
+            submittedEvidence={state.submittedEvidence}
+            evidencePackets={state.evidencePackets}
+            claimInvestigation={state.claimInvestigation}
+          />
+        )}
         <section aria-labelledby="credit-evidence-heading" className="space-y-2">
           <h3 id="credit-evidence-heading" className="text-sm font-medium">
             {intl.formatMessage(messages.creditEvidence)}
@@ -244,11 +303,29 @@ function CreditEvidence({
   }
   return (
     <div className="space-y-4">
+      <EvidenceCaseBrief
+        summary={state.caseSummary}
+        submittedEvidence={state.submittedEvidence}
+        verificationRequests={state.verificationRequests}
+        assessmentCurrency={state.assessmentCurrency}
+      />
+      {showCaseRecord && (
+        <CaseReviewTrail
+          transcript={state.interviewTranscript}
+          applicantConfirmation={state.applicantConfirmation}
+          applicantHumanReview={state.applicantHumanReview}
+          axes={state.axes}
+          submittedEvidence={state.submittedEvidence}
+          evidencePackets={state.evidencePackets}
+          claimInvestigation={state.claimInvestigation}
+        />
+      )}
       <SubmittedDocuments
         submittedEvidence={state.submittedEvidence}
         evidencePackets={state.evidencePackets}
         invoiceAssessment={state.invoiceAssessment}
         verificationRequests={state.verificationRequests}
+        showVerificationRequests={false}
         openingEvidenceReference={openingEvidenceReference}
         onOpenEvidence={onOpenEvidence}
         reviewingEvidenceReference={reviewingEvidenceReference}
@@ -260,6 +337,8 @@ function CreditEvidence({
 }
 
 export function QuoteDocuments({
+  embedded = false,
+  showCaseRecord = true,
   billAttachments,
   requestToMintFiles,
   creditEvidence,
@@ -273,38 +352,55 @@ export function QuoteDocuments({
   const intl = useIntl();
   const [isExpanded, setIsExpanded] = useState(false);
   const billFileCount = billAttachments.length + requestToMintFiles.length;
-  const evidenceSummary =
-    creditEvidence.status === "loading"
+  const applicantRequestCount =
+    creditEvidence.status === "available"
+      ? creditEvidence.verificationRequests.filter(
+          (request) => request.owner === "applicant" || request.resolutionAction === "request_applicant_information"
+        ).length
+      : 0;
+  const evidenceSummary = embedded
+    ? ""
+    : creditEvidence.status === "loading"
       ? intl.formatMessage(messages.evidenceLoadingSummary)
       : creditEvidence.status === "unavailable"
         ? intl.formatMessage(messages.evidenceUnavailableSummary)
         : creditEvidence.status === "absent"
           ? intl.formatMessage(messages.noAssessmentSummary)
-          : intl.formatMessage(messages.evidenceCount, { count: creditEvidence.submittedEvidence.length });
+          : creditEvidence.assessmentCurrency === "historical"
+            ? intl.formatMessage(messages.historicalPolicySummary)
+            : applicantRequestCount > 0
+              ? intl.formatMessage(messages.openRequestSummary, {
+                  requests: applicantRequestCount,
+                  documents: creditEvidence.submittedEvidence.length,
+                })
+              : intl.formatMessage(messages.completeSummary, { documents: creditEvidence.submittedEvidence.length });
 
   return (
-    <Card id="documents-and-evidence" className="scroll-mt-4">
-      <CardHeader className="p-0">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-4 p-6 text-left"
-          onClick={() => setIsExpanded((value) => !value)}
-          aria-expanded={isExpanded}
-        >
-          <span className="min-w-0">
-            <CardTitle>{intl.formatMessage(messages.title)}</CardTitle>
-            <span className="mt-1 block truncate text-sm text-muted-foreground">{evidenceSummary}</span>
-          </span>
-          <span className="flex h-8 shrink-0 items-center gap-1 px-2 py-0">
-            <span className="text-xs text-muted-foreground">{intl.formatMessage(isExpanded ? messages.hide : messages.show)}</span>
-            {isExpanded ? <AppIcon icon={ChevronUp} size="sm" /> : <AppIcon icon={ChevronDown} size="sm" />}
-          </span>
-        </button>
-      </CardHeader>
+    <Card id="documents-and-evidence" className={embedded ? "scroll-mt-4 border-0 bg-transparent shadow-none" : "scroll-mt-4"}>
+      {!embedded && (
+        <CardHeader className="p-0">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-4 p-6 text-left"
+            onClick={() => setIsExpanded((value) => !value)}
+            aria-expanded={isExpanded}
+          >
+            <span className="min-w-0">
+              <CardTitle>{intl.formatMessage(messages.title)}</CardTitle>
+              <span className="mt-1 block truncate text-sm text-muted-foreground">{evidenceSummary}</span>
+            </span>
+            <span className="flex h-8 shrink-0 items-center gap-1 px-2 py-0">
+              <span className="text-xs text-muted-foreground">{intl.formatMessage(isExpanded ? messages.hide : messages.show)}</span>
+              {isExpanded ? <AppIcon icon={ChevronUp} size="sm" /> : <AppIcon icon={ChevronDown} size="sm" />}
+            </span>
+          </button>
+        </CardHeader>
+      )}
 
-      {isExpanded && (
-        <CardContent className="space-y-4 border-t border-border pt-5">
+      {(embedded || isExpanded) && (
+        <CardContent className={embedded ? "space-y-5 p-0" : "space-y-4 border-t border-border pt-5"}>
           <CreditEvidence
+            showCaseRecord={showCaseRecord}
             state={creditEvidence}
             openingEvidenceReference={openingEvidenceReference}
             onOpenEvidence={onOpenEvidence}

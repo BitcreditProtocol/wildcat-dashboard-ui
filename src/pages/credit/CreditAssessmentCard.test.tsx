@@ -156,14 +156,6 @@ const offerCase = caseFixture({
   ],
 });
 
-const isolatedIssue = {
-  billId: "synthetic-bill-a",
-  caseId: "synthetic-case-a",
-  mintQuoteId: "da82cf03-b166-426d-b062-b3b9fbf4bd6f",
-  reasonCode: "bill_state_mismatch",
-  detectedAt: "2026-09-02T09:30:00.000Z",
-} as const;
-
 const withDocuments: DecisionCase = {
   ...offerCase,
   applicantConfirmation: {
@@ -290,19 +282,16 @@ describe("CreditAssessmentCard", () => {
     expect(feeDisclosure?.textContent).toContain("Uncertainty marginSelected from the admissible evidence quality1.00%");
     expect(feeDisclosure?.textContent).toContain("Return objectiveMint’s target annual return1.00%");
     expect(feeDisclosure?.textContent).toContain("SubsidyPolicy subsidy, subtracted from the rate−0.00%");
-    expect(feeDisclosure?.textContent).toContain(
-      "Annualized Minting fee rateFunding + expected loss + uncertainty + return − subsidy5.40%"
-    );
+    expect(feeDisclosure?.textContent).toContain("Annual pricing rateFunding + expected loss + uncertainty + return − subsidy5.40%");
     expect(feeDisclosure?.textContent).not.toContain("1.00% funding +");
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat × 5.40% × 180 / 360 = 216,000 sat");
     expect(feeDisclosure?.textContent).toContain("ReimbursementFixed reimbursement for this case50,000 sat");
     expect(feeDisclosure?.textContent).toContain("216,000 sat time-based fee + 50,000 sat reimbursement = 266,000 sat");
     expect(feeDisclosure?.textContent).toContain("266,000 sat ÷ 8,000,000 sat = 3.33%");
     expect(feeDisclosure?.textContent).toContain(
-      "Annualized Minting fee rateComparison metric including reimbursement266,000 sat ÷ (7,734,000 sat × 180 / 360) = 6.88%"
+      "Effective annualized costComparison metric including reimbursement266,000 sat ÷ (7,734,000 sat × 180 / 360) = 6.88%"
     );
     expect(feeDisclosure?.textContent).toContain("8,000,000 sat − 266,000 sat = 7,734,000 sat");
-    expect(feeDisclosure?.textContent).toContain("Repayment & recourse");
     expect(feeDisclosure?.textContent).not.toContain("Deterministic pricing trace");
   });
 
@@ -436,7 +425,7 @@ describe("CreditAssessmentCard", () => {
     const confirmation = Array.from(container.querySelectorAll("details")).find((details) =>
       details.querySelector("summary")?.textContent?.includes("Applicant-confirmed application")
     );
-    expect(confirmation?.textContent).toContain("Who pays the invoice at maturityCooperativa compradora");
+    expect(confirmation?.textContent).toContain("Who owes the accepted eBill at maturityCooperativa compradora");
     expect(confirmation?.textContent).toContain("Documents includedgoods-invoice.pdfdelivery-photo.jpg");
     expect(confirmation?.textContent).toContain("Confirmed their answers are true and complete");
     expect(container.textContent).not.toContain("No current server receipt");
@@ -482,6 +471,14 @@ describe("CreditAssessmentCard", () => {
   });
 });
 
+const isolatedIssue = {
+  billId: "synthetic-bill-a",
+  caseId: "synthetic-case-a",
+  mintQuoteId: "da82cf03-b166-426d-b062-b3b9fbf4bd6f",
+  reasonCode: "bill_state_mismatch",
+  detectedAt: "2026-09-02T09:30:00.000Z",
+} as const;
+
 describe("QuoteCreditAssessment", () => {
   beforeEach(() => {
     container = document.createElement("div");
@@ -491,7 +488,7 @@ describe("QuoteCreditAssessment", () => {
   });
 
   it("renders the assessment for the quote's own bill", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     const button = container.querySelector("button");
@@ -507,7 +504,7 @@ describe("QuoteCreditAssessment", () => {
   });
 
   it("says so quietly when the adapter holds no decision for the bill", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="bitcrt-some-real-bill" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("No AI Credit assessment for this bill.");
@@ -522,7 +519,7 @@ describe("QuoteCreditAssessment", () => {
   });
 
   it("fails closed instead of showing stale terms when a refresh fails", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: new Error("offline") });
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: new Error("offline") });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toContain("Assessment unavailable");
@@ -538,12 +535,14 @@ describe("QuoteCreditAssessment", () => {
   });
 
   it("does not reuse a same-bill assessment for a different Mint quote", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-2" />);
 
     expect(container.textContent).toBe("No AI Credit assessment for this bill.");
   });
+});
 
+describe("CreditAssessmentBadge", () => {
   it("shows an isolated case as a concise operator action instead of an absent assessment", () => {
     mockUseQuery.mockReturnValue({
       data: { cases: [{ ...offerCase, mintQuoteId: isolatedIssue.mintQuoteId }], issues: [isolatedIssue] },
@@ -556,37 +555,6 @@ describe("QuoteCreditAssessment", () => {
     expect(container.querySelector('[role="status"]')).not.toBeNull();
     expect(container.querySelector("button")).toBeNull();
   });
-});
-
-describe("CreditAssessmentBadge", () => {
-  beforeEach(() => {
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    root = createRoot(container);
-    mockUseQuery.mockReset();
-  });
-
-  it("marks a quote list row with the outcome", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
-    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
-
-    expect(container.textContent).toBe("Ready for decision");
-  });
-
-  it("shows verification rather than an outcome while blocked", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [blockedCase], issues: [] }, isLoading: false, error: null });
-    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
-
-    expect(container.textContent).toBe("Verification required");
-  });
-
-  it("keeps the normal pending label for unassessed quotes", () => {
-    mockUseQuery.mockReturnValue({ data: { cases: [offerCase], issues: [] }, isLoading: false, error: null });
-    render(<CreditAssessmentBadge billId="bitcrt-a-real-bill" mintQuoteId="quote-1" />);
-
-    expect(container.textContent).toBe("Pending");
-  });
-
   it("marks an isolated submitted case as requiring verification", () => {
     mockUseQuery.mockReturnValue({
       data: { cases: [{ ...offerCase, mintQuoteId: isolatedIssue.mintQuoteId }], issues: [isolatedIssue] },
@@ -597,10 +565,67 @@ describe("CreditAssessmentBadge", () => {
 
     expect(container.textContent).toBe("Verification required");
   });
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    mockUseQuery.mockReset();
+  });
+
+  it("marks a quote list row with the outcome", () => {
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
+
+    expect(container.textContent).toBe("Ready for decision");
+  });
+
+  it("shows verification rather than an outcome while blocked", () => {
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [blockedCase] }, isLoading: false, error: null });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
+
+    expect(container.textContent).toBe("Verification required");
+  });
+
+  it("does not call an answered but unreviewed case ready", () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        issues: [],
+        cases: [
+          {
+            ...offerCase,
+            informationNeeds: [
+              {
+                schemaVersion: "information-need-v1",
+                caseId: offerCase.snapshot.caseId,
+                preparedInputId: "11111111-1111-4111-8111-111111111111",
+                needId: `sha256:${"f".repeat(64)}`,
+                question: "What supports the sales?",
+                objective: { kind: "sales_evidence", sources: [{ answerIndex: 0, quote: "Coffee sales" }] },
+                response: "I expect good sales.",
+                status: "open",
+                reviewIsStale: false,
+              },
+            ],
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
+    expect(container.textContent).toBe("Verification required");
+  });
+
+  it("keeps the normal pending label for unassessed quotes", () => {
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
+    render(<CreditAssessmentBadge billId="bitcrt-a-real-bill" mintQuoteId="quote-1" />);
+
+    expect(container.textContent).toBe("Pending");
+  });
 
   it("never lets an unreadable payload look like a refusal", () => {
     const strange = { ...offerCase, result: { ...offerCase.result, recommendation: "something_new" as never } };
-    mockUseQuery.mockReturnValue({ data: { cases: [strange], issues: [] }, isLoading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [strange] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("Assessment unavailable");

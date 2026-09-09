@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { defineMessages, useIntl } from "react-intl";
 import { useCreditAssessmentForBill } from "./use-credit-assessment";
+import { pendingCaseInvestigation, pendingEvidenceQuestionCount } from "./evidence-review-readiness";
 
 /**
  * The AI Credit outcome for a bill, compact enough for a quote list row. Absent when the local
@@ -36,10 +37,25 @@ export function CreditAssessmentBadge({ billId, mintQuoteId }: { billId: string 
   const intl = useIntl();
   const assessment = useCreditAssessmentForBill(billId, mintQuoteId);
   if (assessment.status === "isolated") return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
-  if (assessment.status !== "assessed") return <Badge variant="default">{intl.formatMessage(messages.pending)}</Badge>;
+  const { decisionCase } = assessment;
+  if (decisionCase === undefined) return <Badge variant="default">{intl.formatMessage(messages.pending)}</Badge>;
+  if (decisionCase.assessmentCurrency !== "current")
+    return (
+      <Badge variant="pending">
+        {intl.formatMessage({
+          id: "credit.assessment.historicalAssessment",
+          defaultMessage: "Historical assessment · read-only",
+          description: "Status for a retained assessment that cannot authorize operator actions, without inferring why it is historical",
+        })}
+      </Badge>
+    );
 
-  const { result } = assessment.decisionCase;
-  if (result.assessmentStatus === "blocked_pending_verification") {
+  const { result } = decisionCase;
+  if (
+    result.assessmentStatus === "blocked_pending_verification" ||
+    pendingEvidenceQuestionCount(decisionCase) > 0 ||
+    pendingCaseInvestigation(decisionCase)
+  ) {
     return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
   }
   if (result.recommendation === "offer_available") {

@@ -19,6 +19,11 @@ import { buildMempoolTransactionUrl } from "@/utils/mempool";
 import { ApiError } from "@/lib/api-error";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import {
+  pendingCaseInvestigation,
+  pendingEvidenceQuestionCount,
+  pendingEvidenceRequiredItems,
+} from "@/pages/credit/evidence-review-readiness";
+import {
   operatorMayRecordDecision,
   recordMintRiskAssessment,
   retryOperatorVerificationSources,
@@ -147,6 +152,19 @@ export function QuoteActions({
   });
   const hasApplicantHumanReview = decisionCase?.applicantHumanReview !== undefined;
   const hasCurrentAssessment = decisionCase?.assessmentCurrency === "current";
+  const evidenceSubmissionDigest = decisionCase?.submissionDigest;
+  const hasUnresolvedEvidenceQuestions = pendingEvidenceQuestionCount(decisionCase) > 0;
+  const hasIncompletePreparation = hasUnresolvedEvidenceQuestions || pendingCaseInvestigation(decisionCase);
+  useEffect(() => {
+    governanceGeneration.current += 1;
+    recordedGovernance.current = undefined;
+    setOfferFormData(undefined);
+    setOfferFormDrawerOpen(false);
+    setOfferConfirmDrawerOpen(false);
+    setDenyConfirmDrawerOpen(false);
+    setReturnInfoDrawerOpen(false);
+    setUnableToAssessDrawerOpen(false);
+  }, [evidenceSubmissionDigest]);
   const retainedMintDenial =
     recordedMintDenial?.billId === billId &&
     recordedMintDenial.mintQuoteId === value.id &&
@@ -173,7 +191,7 @@ export function QuoteActions({
     });
   }, [billId, decisionCase?.mintDenial, decisionCase?.snapshot.caseId, value.id]);
   useEffect(() => {
-    if (!hasApplicantHumanReview && hasCurrentAssessment) return;
+    if (!hasApplicantHumanReview && hasCurrentAssessment && !hasIncompletePreparation) return;
     governanceGeneration.current += 1;
     recordedGovernance.current = undefined;
     setOfferFormData(undefined);
@@ -183,7 +201,7 @@ export function QuoteActions({
     setReturnInfoDrawerOpen(false);
     setRiskAssessmentDrawerOpen(false);
     setUnableToAssessDrawerOpen(false);
-  }, [hasApplicantHumanReview, hasCurrentAssessment]);
+  }, [hasApplicantHumanReview, hasCurrentAssessment, hasIncompletePreparation]);
   const hasQuoteBoundCreditProgram =
     decisionCase?.mintQuoteId === value.id &&
     decisionCase.creditProgram !== undefined &&
@@ -197,6 +215,7 @@ export function QuoteActions({
     !(governedOfferExpiresAt > Date.now());
   const showGovernedOffer =
     showPendingActions &&
+    !hasIncompletePreparation &&
     hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
     decisionCase?.result.assessmentStatus === "ready_for_decision" &&
@@ -206,11 +225,18 @@ export function QuoteActions({
     showPendingActions &&
     hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
-    decisionCase?.result.assessmentStatus === "blocked_pending_verification";
-  const requiredVerificationItems = decisionCase?.result.verificationRequests?.map((request) => request.requiredItem) ?? [];
-  const applicantVerificationItems =
-    decisionCase?.result.verificationRequests?.filter((request) => request.owner === "applicant").map((request) => request.requiredItem) ??
-    [];
+    (decisionCase?.result.assessmentStatus === "blocked_pending_verification" || hasUnresolvedEvidenceQuestions);
+  const evidenceRequiredItems = pendingEvidenceRequiredItems(decisionCase);
+  const requiredVerificationItems = [
+    ...(decisionCase?.result.verificationRequests?.map((request) => request.requiredItem) ?? []),
+    ...evidenceRequiredItems,
+  ];
+  const applicantVerificationItems = [
+    ...(decisionCase?.result.verificationRequests
+      ?.filter((request) => request.owner === "applicant")
+      .map((request) => request.requiredItem) ?? []),
+    ...evidenceRequiredItems,
+  ];
   const hasMintRiskRequest =
     decisionCase?.result.verificationRequests?.some(
       (request) => request.owner === "mint_risk" && request.resolutionAction === "record_acceptor_risk_assessment"
@@ -282,8 +308,8 @@ export function QuoteActions({
       title: intl.formatMessage(
         {
           id: "quotes.toast.governance.error",
-          defaultMessage: "Decision not recorded: {error}. Nothing was sent to the Mint; your inputs were kept.",
-          description: "Safe exact backend error shown when AI Credit rejects or cannot record an operator action",
+          defaultMessage: "Could not confirm the decision: {error}. Check the current status before retrying; your inputs were kept.",
+          description: "Unconfirmed operator command outcome; a timeout does not prove that the command had no effect",
         },
         { error }
       ),
@@ -327,14 +353,28 @@ export function QuoteActions({
       governanceFailed(roleUnavailableReason);
       return null;
     }
-    const inputKey = JSON.stringify(input);
+    if (hasIncompletePreparation && (input.action === "confirm_proposed_quote" || input.action === "propose_adjustment_and_requote")) {
+      governanceFailed(
+        intl.formatMessage({
+          id: "credit.preparation.offerBlocked",
+          defaultMessage: "Complete evidence review before offering terms.",
+          description: "Incomplete investigation or unresolved evidence questions block an offer, not an adverse credit decision",
+        })
+      );
+      return null;
+    }
+    const boundInput = {
+      ...input,
+      ...(currentDecisionCase.submissionDigest === undefined ? {} : { submissionDigest: currentDecisionCase.submissionDigest }),
+    };
+    const inputKey = JSON.stringify(boundInput);
     if (recordedGovernance.current?.key === inputKey) return recordedGovernance.current.result;
     if (governanceInFlight.current) return null;
     governanceInFlight.current = true;
     setIsGovernancePending(true);
     const generation = governanceGeneration.current;
     try {
-      const recorded = await recordOperatorDecision(input, operatorCapability.capability, {
+      const recorded = await recordOperatorDecision(boundInput, operatorCapability.capability, {
         mintQuoteId: value.id,
         mintId: currentDecisionCase.snapshot.mintId,
       });
@@ -431,7 +471,7 @@ export function QuoteActions({
     }
   };
   const submitGovernedReturn = async (writtenBasis: string) => {
-    if (decisionCase?.result.assessmentStatus !== "blocked_pending_verification" || applicantVerificationItems.length === 0) return;
+    if (decisionCase === undefined || !showGovernedResolution || applicantVerificationItems.length === 0) return;
     const recorded = await recordGovernance({
       billId,
       caseId: decisionCase.snapshot.caseId,
@@ -448,8 +488,8 @@ export function QuoteActions({
     toast({
       title: intl.formatMessage({
         id: "quotes.toast.returnForInformation.recorded",
-        defaultMessage: "Information request recorded. No notification was sent.",
-        description: "Success message after recording an applicant information request without claiming notification delivery",
+        defaultMessage: "Information request recorded for eBill delivery.",
+        description: "Success message after durably recording an applicant request for retryable delivery through the eBill flow",
       }),
       variant: "success",
     });
@@ -487,7 +527,7 @@ export function QuoteActions({
     }
   };
   const submitUnableToAssess = async (writtenBasis: string) => {
-    if (decisionCase?.result.assessmentStatus !== "blocked_pending_verification" || requiredVerificationItems.length === 0) return;
+    if (decisionCase === undefined || !showGovernedResolution || requiredVerificationItems.length === 0) return;
     const recorded = await recordGovernance({
       billId,
       caseId: decisionCase.snapshot.caseId,
@@ -530,6 +570,15 @@ export function QuoteActions({
 
   return (
     <>
+      {showPendingActions && hasUnresolvedEvidenceQuestions && (
+        <a href="#evidence-questions" className="text-sm font-medium text-signal-alert underline underline-offset-4">
+          {intl.formatMessage({
+            id: "credit.needs.reviewBeforeOffer",
+            defaultMessage: "Review evidence questions before offering",
+            description: "Opens the current evidence questions rather than allowing an offer",
+          })}
+        </a>
+      )}
       {mintDenial === undefined ? null : (
         <div role="status" className="flex items-center gap-2 text-sm">
           <Badge variant={mintDenial.state === "syncing" ? "pending" : "success"}>
@@ -549,29 +598,32 @@ export function QuoteActions({
         </div>
       )}
       {showPendingActions || showRequestToPayAction ? (
-        <div className="flex items-center gap-2">
-          {showPendingActions && decisionCase?.result.assessmentStatus === "ready_for_decision" && !offerTermsExpired && (
-            <DenyConfirmDrawer
-              title={denyTitle}
-              materialEvidenceOptions={declineMaterialEvidenceOptions}
-              open={denyConfirmDrawerOpen}
-              requireMaterialEvidence={denyAction === "decline_application"}
-              onOpenChange={setDenyConfirmDrawerOpen}
-              isPending={isGovernancePending}
-              onSubmit={(writtenBasis, materialEvidence) => {
-                void submitGovernedDeny(writtenBasis, materialEvidence);
-              }}
-            >
-              <Button
-                className="min-w-24"
-                disabled={isFetching || isGovernancePending || !denyGovernanceAvailable}
-                title={denyGovernanceAvailable ? undefined : denyUnavailableReason}
-                variant="destructive"
+        <div className="flex flex-wrap items-center gap-2">
+          {showPendingActions &&
+            !hasUnresolvedEvidenceQuestions &&
+            decisionCase?.result.assessmentStatus === "ready_for_decision" &&
+            !offerTermsExpired && (
+              <DenyConfirmDrawer
+                title={denyTitle}
+                materialEvidenceOptions={declineMaterialEvidenceOptions}
+                open={denyConfirmDrawerOpen}
+                requireMaterialEvidence={denyAction === "decline_application"}
+                onOpenChange={setDenyConfirmDrawerOpen}
+                isPending={isGovernancePending}
+                onSubmit={(writtenBasis, materialEvidence) => {
+                  void submitGovernedDeny(writtenBasis, materialEvidence);
+                }}
               >
-                {denyButtonLabel} {isGovernancePending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
-              </Button>
-            </DenyConfirmDrawer>
-          )}
+                <Button
+                  className="min-w-24"
+                  disabled={isFetching || isGovernancePending || !denyGovernanceAvailable}
+                  title={denyGovernanceAvailable ? undefined : denyUnavailableReason}
+                  variant="destructive"
+                >
+                  {denyButtonLabel} {isGovernancePending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
+                </Button>
+              </DenyConfirmDrawer>
+            )}
 
           {showGovernedOffer && (
             <OfferFormDrawer
@@ -621,7 +673,7 @@ export function QuoteActions({
                 {intl.formatMessage({
                   id: "quotes.actions.returnForInformation.button",
                   defaultMessage: "Request information from applicant",
-                  description: "Action that records information the applicant must provide without claiming notification delivery",
+                  description: "Action that records information for the governed eBill applicant clarification loop",
                 })}
               </Button>
             </DenyConfirmDrawer>
