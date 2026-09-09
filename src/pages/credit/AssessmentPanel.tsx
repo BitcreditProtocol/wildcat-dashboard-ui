@@ -1,4 +1,4 @@
-import { defineMessages, useIntl } from "react-intl";
+import { defineMessages, type IntlShape, useIntl } from "react-intl";
 import { axisLabels, operatorVisibleAxes, percentFromBps, traceLine, words, type DecisionCase } from "./decision-types";
 
 const messages = defineMessages({
@@ -21,6 +21,11 @@ const messages = defineMessages({
     defaultMessage: "Duplicate financing",
     description: "Duplicate-financing check label",
   },
+  duplicateNotFound: {
+    id: "credit.assessment.duplicateNotFound",
+    defaultMessage: "Not found in checked Mint records",
+    description: "Scoped result for a clear Mint-local duplicate-financing check",
+  },
   contradictions: {
     id: "credit.assessment.contradictions",
     defaultMessage: "Contradictions",
@@ -33,7 +38,63 @@ const messages = defineMessages({
     description: "Evidence validity date",
   },
   unavailable: { id: "credit.assessment.unavailable", defaultMessage: "Not verified", description: "Missing governed value" },
+  acceptedBillEligible: {
+    id: "credit.assessment.rule.acceptedBillEligible",
+    defaultMessage: "Accepted bill meets eligibility rules",
+    description: "Operator label for an eligible accepted bill",
+  },
+  acceptorRiskInputsAccepted: {
+    id: "credit.assessment.rule.acceptorRiskInputsAccepted",
+    defaultMessage: "Acceptor risk inputs accepted by policy",
+    description: "Operator label for admissible acceptor risk inputs without implying external truth verification",
+  },
+  pricingComponentsApplied: {
+    id: "credit.assessment.rule.pricingComponentsApplied",
+    defaultMessage: "Pricing components applied",
+    description: "Operator label for deterministic pricing inputs",
+  },
+  duplicateCheckClear: {
+    id: "credit.assessment.rule.duplicateCheckClear",
+    defaultMessage: "No duplicate found in checked Mint records",
+    description: "Operator label scoped to the records actually checked by the Mint",
+  },
+  invoiceConsistent: {
+    id: "credit.assessment.rule.invoiceConsistent",
+    defaultMessage: "Current invoice matches eBill",
+    description: "Operator label for current invoice and eBill field consistency",
+  },
+  recourseAcknowledged: {
+    id: "credit.assessment.rule.recourseAcknowledged",
+    defaultMessage: "Whole-face recourse acknowledged",
+    description: "Operator label for applicant acknowledgement without implying legal enforceability",
+  },
+  evidenceRequirementsMet: {
+    id: "credit.assessment.rule.evidenceRequirementsMet",
+    defaultMessage: "Evidence meets policy requirements",
+    description: "Operator label for the policy evidence threshold",
+  },
+  wholeBillOffer: {
+    id: "credit.assessment.rule.wholeBillOffer",
+    defaultMessage: "Whole-bill offer available",
+    description: "Operator label for the whole-bill offer rule",
+  },
 });
+
+function operatorRuleLabel(code: string, intl: IntlShape): string {
+  const labels: Record<string, (typeof messages)[keyof typeof messages]> = {
+    accepted_bill_eligible: messages.acceptedBillEligible,
+    acceptor_loss_parameters_verified: messages.acceptorRiskInputsAccepted,
+    pricing_components: messages.pricingComponentsApplied,
+    pricing_components_applied: messages.pricingComponentsApplied,
+    duplicate_check_clear: messages.duplicateCheckClear,
+    bill_and_invoice_consistent: messages.invoiceConsistent,
+    whole_face_recourse_acknowledged: messages.recourseAcknowledged,
+    evidence_admissible: messages.evidenceRequirementsMet,
+    whole_bill_offer: messages.wholeBillOffer,
+  };
+  const label = labels[code];
+  return label === undefined ? words(code) : intl.formatMessage(label);
+}
 
 export interface AssessmentPanelProps {
   decisionCase: DecisionCase;
@@ -101,7 +162,11 @@ export function AssessmentPanel({ decisionCase }: AssessmentPanelProps) {
         </div>
         <div className="border-b border-border px-4 py-3 sm:border-r sm:border-b-0">
           <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.duplicate)}</dt>
-          <dd className="mt-1 text-sm font-semibold">{words(snapshot.duplicateCheck.result)}</dd>
+          <dd className="mt-1 text-sm font-semibold">
+            {snapshot.duplicateCheck.result === "clear"
+              ? intl.formatMessage(messages.duplicateNotFound)
+              : words(snapshot.duplicateCheck.result)}
+          </dd>
           <div className="mt-0.5 text-xs text-muted-foreground">
             {intl.formatMessage(messages.validThrough, { date: snapshot.duplicateCheck.validThrough })}
           </div>
@@ -129,7 +194,9 @@ export function AssessmentPanel({ decisionCase }: AssessmentPanelProps) {
           >
             <span className="font-medium">{axisLabels[finding.axis] ?? words(finding.axis)}</span>
             <span className="min-w-0 text-muted-foreground">
-              {finding.reasonCodes.length === 0 ? intl.formatMessage(messages.noReasons) : finding.reasonCodes.map(words).join("; ")}
+              {finding.reasonCodes.length === 0
+                ? intl.formatMessage(messages.noReasons)
+                : finding.reasonCodes.map((code) => operatorRuleLabel(code, intl)).join("; ")}
             </span>
             <span className={`whitespace-nowrap font-medium ${statusClass(finding.status)}`}>{words(finding.status)}</span>
           </li>
@@ -143,7 +210,7 @@ export function AssessmentPanel({ decisionCase }: AssessmentPanelProps) {
         <div className="mt-2 flex flex-col gap-2">
           {result.assessmentTrace.map((step) => (
             <div key={step.ruleId + step.reasonCode} className="border-l-2 border-divider-100 pl-3 text-xs">
-              <span className="font-medium">{words(step.ruleId)}</span>
+              <span className="font-medium">{operatorRuleLabel(step.ruleId, intl)}</span>
               <span className="text-muted-foreground"> — {words(step.outcome)}</span>
               <div className="break-words font-mono text-[11px] text-muted-foreground">
                 {intl.formatMessage(messages.observed)} {traceLine(step.observed)}

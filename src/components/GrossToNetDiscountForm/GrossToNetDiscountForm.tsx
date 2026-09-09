@@ -49,7 +49,7 @@ const GrossToNetDiscountForm = ({
   });
   const discountRateLabel = intl.formatMessage({
     id: "discountForm.discountRate",
-    defaultMessage: "Minting fee rate",
+    defaultMessage: "Annualized face-value discount rate",
   });
   const netAmountLabel = intl.formatMessage({
     id: "discountForm.netAmount",

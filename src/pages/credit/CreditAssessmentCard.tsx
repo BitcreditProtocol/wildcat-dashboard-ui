@@ -33,23 +33,13 @@ const messages = defineMessages({
   },
   annualizedCost: {
     id: "credit.fee.annualizedCost",
-    defaultMessage: "Annualized Minting fee rate",
-    description: "Annualized Minting fee rate label",
+    defaultMessage: "Effective annualized cost",
+    description: "Annualized all-in cost on the amount available for minting",
   },
   annualizedCostHelp: {
     id: "credit.fee.annualizedCostHelp",
     defaultMessage: "Comparison metric including reimbursement",
     description: "Explanation of the annualized all-in cost",
-  },
-  repayment: {
-    id: "credit.quote.repayment",
-    defaultMessage: "Acceptor pays at maturity. Holder recourse applies only on dishonour; its legal form remains under review.",
-    description: "Compact repayment and contingent-recourse disclosure",
-  },
-  repaymentHeading: {
-    id: "credit.quote.repaymentHeading",
-    defaultMessage: "Repayment & recourse",
-    description: "Heading above the repayment and contingent-recourse disclosure",
   },
   reviewDetails: {
     id: "credit.details.applicationReview",
@@ -123,8 +113,8 @@ const messages = defineMessages({
   },
   annualDiscount: {
     id: "credit.fee.annualDiscount",
-    defaultMessage: "Annualized Minting fee rate",
-    description: "Annualized Minting fee rate label",
+    defaultMessage: "Annual pricing rate",
+    description: "Annual rate formed from the named pricing components before fixed reimbursement",
   },
   annualDiscountHelp: {
     id: "credit.fee.annualDiscountHelp",
@@ -259,8 +249,8 @@ const messages = defineMessages({
   },
   assessed: {
     id: "credit.audit.freshness",
-    defaultMessage: "Assessed {asOf} · evidence valid through {validThrough}",
-    description: "Visible freshness of the deterministic assessment and its earliest evidence expiry",
+    defaultMessage: "Assessed {asOf} · risk inputs valid through {validThrough}",
+    description: "Visible freshness of the deterministic assessment and its earliest risk-input expiry",
   },
   historicalAssessment: {
     id: "credit.assessment.historicalAssessment",
@@ -299,12 +289,29 @@ function DecisionException({ decisionCase, formatSat }: { decisionCase: Decision
         </>
       ) : result.recommendation === "no_current_product_fit" ? (
         <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <NoFitMath decisionCase={decisionCase} formatSat={formatSat} />
-          <p>{intl.formatMessage(messages.noFitReasons, { reasons: result.reasonCodes.map(words).join("; ") })}</p>
+          <NoFitExplanation decisionCase={decisionCase} formatSat={formatSat} />
         </div>
       ) : (
         <p className="font-medium text-signal-alert">{intl.formatMessage(messages.unknownSummary)}</p>
       )}
+    </div>
+  );
+}
+
+export function NoFitExplanation({ decisionCase, formatSat }: { decisionCase: DecisionCase; formatSat: (value: string) => string }) {
+  const intl = useIntl();
+  return (
+    <div className="space-y-1 text-sm">
+      <NoFitMath decisionCase={decisionCase} formatSat={formatSat} />
+      <p className="text-muted-foreground">
+        {decisionCase.result.reasonCodes.length > 0
+          ? intl.formatMessage(messages.noFitReasons, { reasons: decisionCase.result.reasonCodes.map(words).join("; ") })
+          : intl.formatMessage({
+              id: "credit.quote.noFitReasonMissing",
+              defaultMessage: "Reason not recorded · review required",
+              description: "No-fit result has no recorded policy reason; do not invent one",
+            })}
+      </p>
     </div>
   );
 }
@@ -536,20 +543,21 @@ function FeeCalculation({ decisionCase, formatSat }: { decisionCase: DecisionCas
           })}
         </FeeRow>
       </dl>
-
-      <div className="border-t border-border pt-3">
-        <div className="text-xs font-medium">{intl.formatMessage(messages.repaymentHeading)}</div>
-        <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</p>
-      </div>
     </div>
   );
 }
 
-export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionCase }) {
+export function CreditAssessmentCard({
+  decisionCase,
+  consolidatedRequirements = false,
+}: {
+  decisionCase: DecisionCase;
+  consolidatedRequirements?: boolean;
+}) {
   const intl = useIntl();
   const formatSat = (value: string) => `${intl.formatNumber(Number(value))} sat`;
   const { snapshot, policyPack } = decisionCase;
-  const isHistoricalAssessment = decisionCase.assessmentCurrency === "historical";
+  const isHistoricalAssessment = decisionCase.assessmentCurrency !== "current";
   const offerTerms =
     !isHistoricalAssessment &&
     decisionCase.result.assessmentStatus === "ready_for_decision" &&
@@ -563,16 +571,18 @@ export function CreditAssessmentCard({ decisionCase }: { decisionCase: DecisionC
   return (
     <div className="text-sm">
       <div className="flex flex-col gap-3 px-6 py-5">
-        {isHistoricalAssessment && (
+        {decisionCase.assessmentCurrency === "historical" && (
           <p role="status" className="font-medium text-signal-alert">
             {intl.formatMessage(messages.historicalAssessment)}
           </p>
         )}
         <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.assessed, { asOf: snapshot.asOfDate, validThrough })}</p>
         {decisionCase.mintQuoteId !== null && decisionCase.creditProgram === undefined && (
-          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{intl.formatMessage(messages.legacyReadOnly)}</p>
+          <p className="text-xs font-medium text-signal-alert">{intl.formatMessage(messages.legacyReadOnly)}</p>
         )}
-        {offerTerms === null && <DecisionException decisionCase={decisionCase} formatSat={formatSat} />}
+        {offerTerms === null && !(consolidatedRequirements && decisionCase.result.assessmentStatus === "blocked_pending_verification") && (
+          <DecisionException decisionCase={decisionCase} formatSat={formatSat} />
+        )}
         <AssessmentPanel decisionCase={decisionCase} />
       </div>
 

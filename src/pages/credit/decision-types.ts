@@ -19,6 +19,8 @@ import type {
   EvidenceDocumentCitation as SharedEvidenceDocumentCitation,
   EvidenceReference,
   InvoiceExtractionProposal,
+  InterviewTranscript as SharedInterviewTranscript,
+  OperatorWorkbenchDecisionCase,
   MintQuoteDenialReceipt as SharedMintQuoteDenialReceipt,
   MintQuoteDenialStatus as SharedMintQuoteDenialStatus,
   OperatorMaterialEvidenceSelection as SharedOperatorMaterialEvidenceSelection,
@@ -81,6 +83,20 @@ export type ApplicantMaterialEvidence = SharedApplicantMaterialEvidence;
 export type OperatorMaterialEvidenceSelection = SharedOperatorMaterialEvidenceSelection;
 export type DecisionTerms = SharedDecisionTerms;
 export type SubmittedEvidence = EvidenceReference;
+export type InterviewTranscript = SharedInterviewTranscript;
+export type LiveInterviewProgress = NonNullable<OperatorWorkbenchDecisionCase["liveInterview"]>;
+
+/** Questions are recorded observations, never evidence that the concern was resolved. */
+export function countAnswerReviewFollowUps(...transcripts: readonly (Pick<InterviewTranscript, "messages"> | undefined)[]): number {
+  return new Set(
+    transcripts.flatMap(
+      (transcript) =>
+        transcript?.messages.flatMap((message) =>
+          message.role === "assistant" && message.followUp !== undefined ? [message.messageId] : []
+        ) ?? []
+    )
+  ).size;
+}
 
 export type ClaimInvestigationStart = SharedClaimInvestigationStart;
 export type ClaimInvestigationProposal = SharedClaimInvestigationProposal;
@@ -116,6 +132,7 @@ export type MintQuoteDenialReceipt = SharedMintQuoteDenialReceipt;
 export type MintQuoteDenialStatus = SharedMintQuoteDenialStatus;
 
 export interface DecisionCase {
+  submissionDigest?: string;
   assessmentCurrency: AssessmentCurrency;
   mintQuoteId: string | null;
   policyFileName: string;
@@ -186,6 +203,11 @@ export interface DecisionCase {
   evidencePackets?: EvidencePacket[];
   claimInvestigation?: ClaimInvestigationState;
   applicantConfirmation?: ApplicantConfirmation;
+  interviewTranscript?: InterviewTranscript;
+  interviewHistory?: InterviewTranscript[];
+  liveInterview?: LiveInterviewProgress;
+  informationNeeds?: OperatorWorkbenchDecisionCase["informationNeeds"];
+  caseInvestigation?: OperatorWorkbenchDecisionCase["caseInvestigation"];
   availableMaterialEvidence?: ApplicantMaterialEvidence[];
   applicantHumanReview?: ApplicantHumanReviewRecord;
   mintDenial?: MintQuoteDenialStatus;
@@ -231,8 +253,8 @@ export const axisLabels: Record<string, string> = {
   instrument_eligibility: "Instrument eligibility",
   acceptor_repayment_risk: "Acceptor repayment risk",
   transaction_integrity: "Transaction integrity",
-  applicant_recourse_risk: "Holder endorsement risk",
-  evidence_sufficiency: "Evidence sufficiency",
+  applicant_recourse_risk: "Recourse acknowledgement",
+  evidence_sufficiency: "Evidence threshold",
   mint_exposure_capacity: "Mint exposure capacity",
 };
 
