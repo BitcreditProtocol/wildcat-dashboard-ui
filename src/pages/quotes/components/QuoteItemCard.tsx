@@ -16,6 +16,7 @@ import { HighlightText } from "@/components/ui/highlight-text";
 import { useIntl } from "react-intl";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { Currency } from "@/components/Currency";
+import { humanReadableDurationDays } from "@/utils/dates";
 
 const RETRY_COUNT = 2;
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
@@ -35,6 +36,8 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
 
   const { data: quoteDetails, isLoading: isLoadingDetails, error: detailsError } = queryResult;
   const bill = quoteDetails?.bill;
+  const maturityDate = bill?.maturity_date ? new Date(bill.maturity_date) : null;
+  const maturityLabel = maturityDate ? humanReadableDurationDays(intl.locale, maturityDate) : null;
 
   const handleQuoteClick = (e: React.MouseEvent) => {
     if (detailsError) {
@@ -71,16 +74,54 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
   return (
     <Card className="text-sm">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 px-4 pt-4">
-        <CardTitle className="text-xl min-w-0">
-          <div className="items-center flex gap-1">
-            <span className="font-mono pt-2 break-all">
-              <Link to={`/quotes/${quote.id}`} onClick={handleQuoteClick}>
-                <HighlightText text={quote.id} highlight={searchQuery} />
-              </Link>
-            </span>
-            <span></span>
-          </div>
-        </CardTitle>
+        <div className="flex min-w-0 flex-col gap-1">
+          <CardTitle className="text-xl min-w-0">
+            <div className="items-center flex gap-1">
+              <span className="font-mono pt-2 break-all">
+                <Link to={`/quotes/${quote.id}`} onClick={handleQuoteClick}>
+                  <HighlightText text={quote.id} highlight={searchQuery} />
+                </Link>
+              </span>
+              <span></span>
+            </div>
+          </CardTitle>
+          {bill && (
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+              <span className="flex min-w-0 gap-1">
+                <span className="shrink-0">
+                  {intl.formatMessage({
+                    id: "quotes.card.billId",
+                    defaultMessage: "Bill ID:",
+                  })}
+                </span>
+                <span className="font-mono break-all">
+                  <HighlightText text={bill.id} highlight={searchQuery} />
+                </span>
+              </span>
+              <span className="flex min-w-0 gap-1">
+                <span className="shrink-0">
+                  {intl.formatMessage({
+                    id: "quotes.card.maturityDate",
+                    defaultMessage: "Maturity:",
+                  })}
+                </span>
+                {bill.maturity_date ? (
+                  <span className="whitespace-nowrap">
+                    <HighlightText text={bill.maturity_date} highlight={searchQuery} />
+                    {maturityLabel && ` (${maturityLabel})`}
+                  </span>
+                ) : (
+                  <span>
+                    {intl.formatMessage({
+                      id: "quotes.common.unknown",
+                      defaultMessage: "Unknown",
+                    })}
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="leading-none font-semibold tracking-tight text-3xl">
             <Currency

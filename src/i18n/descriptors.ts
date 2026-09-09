@@ -20,6 +20,16 @@ export const participantRoleMessages = defineMessages({
   bearer: { id: "participants.role.bearer", defaultMessage: "Bearer" },
 });
 
+export const contactTypeMessages = defineMessages({
+  Person: { id: "participants.type.person", defaultMessage: "Person" },
+  Company: { id: "participants.type.company", defaultMessage: "Company" },
+  Anon: { id: "participants.type.anon", defaultMessage: "Anonymous" },
+});
+
 export function getQuoteStatusMessage(status: string) {
   return quoteStatusMessages[status as keyof typeof quoteStatusMessages] ?? quoteStatusMessages.Pending;
+}
+
+export function getContactTypeMessage(type: string | undefined) {
+  return contactTypeMessages[type as keyof typeof contactTypeMessages];
 }
