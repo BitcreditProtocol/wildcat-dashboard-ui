@@ -316,7 +316,7 @@ describe("parseDecisionCasesResponse", () => {
     );
   });
 
-  it("requires an explicit assessment currency and accepts the historical applicant-response state", () => {
+  it("requires an explicit assessment currency and normalizes validated legacy history to a non-actionable projection", () => {
     const decisionCase = validCase();
     const { assessmentCurrency: _omitted, ...missingCurrency } = decisionCase;
     void _omitted;
@@ -325,7 +325,7 @@ describe("parseDecisionCasesResponse", () => {
       parseDecisionCasesResponse({
         cases: [{ ...decisionCase, assessmentCurrency: "historical_pending_applicant_response" }],
       }).cases[0]?.assessmentCurrency
-    ).toBe("historical_pending_applicant_response");
+    ).toBe("historical");
     expect(() => parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentCurrency: "stale" }] })).toThrow(
       "invalid governed decision response"
     );
