@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { ClaimInvestigationPanel } from "@/pages/credit/ClaimInvestigationPanel";
 import type {
+  AssessmentCurrency,
   ClaimInvestigationState,
   DecisionInvoice,
   EvidencePacket,
@@ -22,7 +23,7 @@ export type CreditEvidenceState =
       status: "available";
       caseId: string;
       resultDigest: string;
-      assessmentCurrency: "current" | "historical_pending_applicant_response";
+      assessmentCurrency: AssessmentCurrency;
       submittedEvidence: readonly SubmittedEvidence[];
       evidencePackets: readonly EvidencePacket[];
       invoiceAssessment: DecisionInvoice | null;
