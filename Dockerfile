@@ -10,6 +10,7 @@ ENV VITE_MODE=${VITE_MODE:-production}
 WORKDIR /app
 
 COPY package*.json ./
+COPY vendor/ ./vendor/
 
 RUN npm ci --no-fund --no-audit --include=dev
 
