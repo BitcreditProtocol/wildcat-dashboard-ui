@@ -4,3 +4,15 @@ dist/
 Dockerfile
 .dockerignore
 /*.md
+
+# Local configuration must not enter image layers or build caches.
+**/.git
+**/.git/**
+**/.codex
+**/.claude
+**/.env*
+!.env.development
+!.env.example
+test-results/
+playwright-report/
+coverage/

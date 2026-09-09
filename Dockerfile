@@ -1,7 +1,7 @@
 ARG NODE_ENV
 ARG VITE_MODE
 
-FROM node:25-slim AS builder
+FROM node:25-bookworm-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370 AS builder
 ARG NODE_ENV
 ARG VITE_MODE
 ENV NODE_ENV=${NODE_ENV:-production}
@@ -10,8 +10,9 @@ ENV VITE_MODE=${VITE_MODE:-production}
 WORKDIR /app
 
 COPY package*.json ./
+COPY vendor/ ./vendor/
 
-RUN npm install --no-fund --no-audit --include=dev
+RUN npm ci --no-fund --no-audit --include=dev
 
 COPY . .
 
