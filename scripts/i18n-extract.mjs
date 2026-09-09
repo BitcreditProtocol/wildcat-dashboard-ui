@@ -22,6 +22,7 @@ const extractResult = spawnSync(
   [
     "extract",
     "src/**/*.{ts,tsx}",
+    "node_modules/@bitcredit/ai-credit-operator-ui/dist/*.js",
     "--ignore=**/*.d.ts",
     `--out-file=${tempOutputPath}`,
     "--id-interpolation-pattern",

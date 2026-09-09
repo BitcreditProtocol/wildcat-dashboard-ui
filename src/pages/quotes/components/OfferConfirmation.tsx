@@ -57,7 +57,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
           <Text variant="label" className="w-48">
             {intl.formatMessage({
               id: "quotes.detail.discount.relative",
-              defaultMessage: "Minting fee rate:",
+              defaultMessage: "Fee as share of bill:",
             })}
           </Text>
           <Text variant="caption" className="text-right">

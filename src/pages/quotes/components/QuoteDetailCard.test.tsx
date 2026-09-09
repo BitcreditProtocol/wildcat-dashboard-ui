@@ -99,17 +99,6 @@ const baseQuote: InfoReply = {
   keyset_id: keysetId,
 };
 
-const evidenceSummary = {
-  documents: 2,
-  citedClaims: 10,
-  openRequests: 0,
-  investigation: {
-    status: "available",
-    findings: 3,
-    sources: 4,
-  },
-} as const;
-
 beforeEach(() => {
   vi.clearAllMocks();
   storageData = {};
@@ -136,7 +125,7 @@ beforeEach(() => {
 });
 
 describe("QuoteDetailCard", () => {
-  it("labels retained history as read-only without inferring an applicant response or recommending stale terms", () => {
+  it("labels retained history as awaiting applicant evidence and suppresses stale recommended terms", () => {
     const page = renderWithProviders(
       <QuoteDetailCard
         quote={{
@@ -160,14 +149,11 @@ describe("QuoteDetailCard", () => {
           repaymentSource: "Coffee sales",
           readyForDecision: true,
           recommendation: "offer_available",
-          passedChecks: 6,
-          failedChecks: 0,
-          notAssessedChecks: 0,
-          totalChecks: 6,
-          answersAffirmed: true,
-          recourseAcknowledged: true,
-          unresolvedContradictions: 0,
-          evidenceSummary,
+          decisionBasis: {
+            counterargument: "Repayment source not independently confirmed",
+            counterargumentOpen: true,
+            answerReviewFollowUpCount: 2,
+          },
           recommendedTerms: {
             mintingFee: 266_000,
             amountAvailableForMinting: 7_734_000,
@@ -179,9 +165,9 @@ describe("QuoteDetailCard", () => {
       />
     );
 
-    expect(page.textContent).toContain("Hold");
+    expect(page.textContent).toContain("Evidence required");
     expect(page.textContent).toContain("Historical assessment · read-only");
-    expect(page.textContent).not.toContain("Awaiting applicant evidence");
+    expect(page.textContent).toContain("Answer-review follow-ups · resolution not independently checked");
     expect(page.textContent).not.toContain("7,734,000");
     expect(page.textContent).not.toContain("Offer valid until");
   });
@@ -202,18 +188,12 @@ describe("QuoteDetailCard", () => {
           assessmentCurrency: "current",
           useOfFunds: "Fertilizer and seasonal workers",
           repaymentSource: "Coffee harvest sales",
-          acceptor: "Coffee cooperative",
-          goodsDescription: "Coffee crop inputs",
           readyForDecision: true,
           recommendation: "offer_available",
-          passedChecks: 6,
-          failedChecks: 0,
-          notAssessedChecks: 0,
-          totalChecks: 6,
-          answersAffirmed: true,
-          recourseAcknowledged: true,
-          unresolvedContradictions: 0,
-          evidenceSummary,
+          decisionBasis: {
+            counterargument: "Repayment source not independently confirmed",
+            counterargumentOpen: true,
+          },
           billAcceptanceState: "accepted",
         }}
       />
@@ -221,16 +201,24 @@ describe("QuoteDetailCard", () => {
 
     expect(page.textContent).toContain("Available to mint80,000,000sat");
     expect(page.textContent).toContain("Fee20,000,000sat");
-    expect(page.textContent).toContain("Use of proceedsFertilizer and seasonal workers");
-    expect(page.textContent).toContain("Repayment sourceCoffee harvest sales");
-    expect(page.textContent).toContain("Payer at maturityACME Corp");
-    expect(page.textContent).toContain("Underlying tradeCoffee crop inputs");
+    expect(page.textContent).toContain("Fertilizer and seasonal workers");
+    expect(page.textContent).toContain("Coffee harvest sales");
+    expect(page.textContent).toContain("Payer at maturity (eBill): ACME Corp");
+    expect(page.textContent).toContain("Business caseApplicant answers · not independently confirmed");
     expect(page.textContent).toContain("Accepted");
-    const businessCase = Array.from(page.querySelectorAll("details")).find((details) =>
-      details.querySelector("summary")?.textContent?.includes("Business case")
-    );
-    expect(businessCase?.open).toBe(false);
-    expect(businessCase?.querySelector("summary")?.textContent).toContain("Coffee crop inputs · Fertilizer and seasonal workers");
+    expect(page.textContent).not.toContain("Decision basis");
+
+    expect(page.textContent).not.toContain("6/6 checks passed");
+
+    expect(page.textContent).toContain("Residual uncertaintyRepayment source not independently confirmed");
+    const statements = page.querySelectorAll<HTMLDetailsElement>("details[data-print-statement]");
+    expect(statements).toHaveLength(2);
+    expect(statements[0].open).toBe(false);
+    expect(statements[1].querySelector("summary")?.textContent).toContain("Coffee harvest sales");
+    act(() => {
+      statements[1].open = true;
+    });
+    expect(statements[1].querySelector("p")?.textContent).toBe("Coffee harvest sales");
     expect(page.textContent).not.toContain("Automated preparation");
     expect(page.textContent).not.toContain("AI proposal");
     expect(page.textContent).not.toContain("Synthetic testnet inputs");
@@ -284,18 +272,9 @@ describe("QuoteDetailCard", () => {
           repaymentSource: "Coffee sales",
           readyForDecision: true,
           recommendation: "offer_available",
-          passedChecks: 6,
-          failedChecks: 0,
-          notAssessedChecks: 0,
-          totalChecks: 6,
-          answersAffirmed: true,
-          recourseAcknowledged: true,
-          unresolvedContradictions: 0,
-          evidenceSummary: {
-            ...evidenceSummary,
-            documents: 1,
-            citedClaims: 8,
-            investigation: { status: "not_run", findings: 0, sources: 0 },
+          decisionBasis: {
+            counterargument: "Repayment source not independently confirmed",
+            counterargumentOpen: true,
           },
           recommendedTerms: {
             mintingFee: 272_000,
@@ -311,9 +290,10 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("Fee272,000sat");
     expect(page.textContent).toContain("3.32% of bill over 180 days");
     expect(page.textContent).toContain("Available to mint7,928,000sat");
-    expect(page.textContent).toContain("Ready · terms valid to 2099-08-24");
-    expect(page.textContent).toContain("Policy 6/6");
-    expect(page.textContent).toContain("1 document");
+    expect(page.textContent).toContain("Ready for operator decision");
+    expect(page.textContent).toContain("Terms valid through 2099-08-24");
+    expect(page.textContent).not.toContain("6/6 checks passed");
+    expect(page.textContent).not.toContain("Policy 6/6");
   });
 
   it("holds an expired governed offer instead of presenting it as actionable", () => {
@@ -340,14 +320,6 @@ describe("QuoteDetailCard", () => {
           repaymentSource: "Coffee sales",
           readyForDecision: true,
           recommendation: "offer_available",
-          passedChecks: 6,
-          failedChecks: 0,
-          notAssessedChecks: 0,
-          totalChecks: 6,
-          answersAffirmed: true,
-          recourseAcknowledged: true,
-          unresolvedContradictions: 0,
-          evidenceSummary,
           recommendedTerms: {
             mintingFee: 272_000,
             amountAvailableForMinting: 7_928_000,
@@ -360,9 +332,11 @@ describe("QuoteDetailCard", () => {
     );
 
     expect(page.textContent).toContain("Terms expired");
-    expect(page.textContent).toContain("Expired 2000-01-01 · Awaiting applicant");
-    expect(page.textContent).not.toContain("Hold");
-    expect(page.textContent).not.toContain("Ready for decision");
+    expect(page.textContent).toContain("Expired 2000-01-01 · awaiting applicant request");
+    expect(page.textContent).not.toContain("Ready for operator decision");
+    expect(page.textContent).toContain("Fee—");
+    expect(page.textContent).toContain("Available to mint—");
+    expect(page.textContent).not.toContain("7,928,000");
   });
 
   it("distinguishes a no-fit assessment from an offer-ready case", () => {
@@ -389,26 +363,15 @@ describe("QuoteDetailCard", () => {
           repaymentSource: "Coffee sales",
           readyForDecision: true,
           recommendation: "no_current_product_fit",
-          passedChecks: 5,
-          failedChecks: 1,
-          notAssessedChecks: 0,
-          totalChecks: 6,
-          answersAffirmed: true,
-          recourseAcknowledged: true,
-          unresolvedContradictions: 0,
-          evidenceSummary: {
-            ...evidenceSummary,
-            investigation: { status: "not_run", findings: 0, sources: 0 },
-          },
         }}
       />
     );
 
-    expect(page.textContent).toContain("No current product fit");
-    expect(page.textContent).not.toContain("Ready for decision");
+    expect(page.textContent).toContain("Ready for operator decision");
+    expect(page.textContent).toContain("No offer recommended");
   });
 
-  it("shows the next applicant request and an exact collapsed reassessment diff", () => {
+  it("shows the current applicant request without exposing internal reassessment iterations", () => {
     const page = renderWithProviders(
       <QuoteDetailCard
         quote={{
@@ -432,29 +395,14 @@ describe("QuoteDetailCard", () => {
           repaymentSource: "Coffee sales",
           readyForDecision: false,
           recommendation: null,
-          passedChecks: 4,
-          failedChecks: 0,
-          notAssessedChecks: 2,
-          totalChecks: 6,
-          answersAffirmed: true,
-          recourseAcknowledged: false,
-          unresolvedContradictions: 0,
-          evidenceSummary: { ...evidenceSummary, openRequests: 1 },
           applicantRequests: [{ axis: "applicant_recourse_risk", requiredItem: "Acknowledge whole-face recourse" }],
-          reassessmentChanges: [
-            {
-              field: "required_information",
-              before: "Upload signed delivery receipt",
-              after: "Acknowledge whole-face recourse",
-            },
-          ],
         }}
       />
     );
 
-    expect(page.textContent).toContain("Blocking itemsAcknowledge whole-face recourse");
-    expect(page.textContent).toContain("Changed since last assessment (1)");
-    expect(page.textContent).toContain("Required informationBeforeUpload signed delivery receiptAfterAcknowledge whole-face recourse");
+    expect(page.textContent).toContain("Before a decisionAcknowledge whole-face recourse");
+    expect(page.textContent).not.toContain("Previous assessment");
+    expect(page.textContent).not.toContain("Current assessment");
     expect(page.querySelector("details")?.open).toBe(false);
   });
 

@@ -37,8 +37,8 @@ const messages = defineMessages({
   saidUse: { id: "credit.said.use", defaultMessage: "What the money is for", description: "Applicant-reviewed use-of-funds label" },
   saidAcceptor: {
     id: "credit.said.acceptor",
-    defaultMessage: "Who pays the invoice at maturity",
-    description: "Applicant-reviewed payer label, shown only when the applicant volunteered one",
+    defaultMessage: "Who owes the accepted eBill at maturity",
+    description: "Applicant-reviewed eBill obligor label, shown only when the applicant volunteered one",
   },
   saidRepayment: {
     id: "credit.said.repayment",

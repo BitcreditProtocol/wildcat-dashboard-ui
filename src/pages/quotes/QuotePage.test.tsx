@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter, Route, Routes } from "react-router";
 import QuotePage from "./QuotePage";
+import type { DecisionCase } from "@/pages/credit/decision-types";
 
 interface QueryKeyEntry {
   _id: string;
@@ -105,7 +106,7 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
-let quoteStatus: "Accepted" | "MintingEnabled" = "Accepted";
+let quoteStatus: "Accepted" | "MintingEnabled" | "Pending" = "Accepted";
 const quoteId = "97e45adf-fc86-4b30-9322-afae434c3287";
 const secondQuoteId = "87e45adf-fc86-4b30-9322-afae434c3288";
 const errorQuoteId = "77e45adf-fc86-4b30-9322-afae434c3289";
@@ -196,7 +197,7 @@ beforeEach(() => {
             maturity_date: "2026-03-01",
             drawee: {},
             drawer: {},
-            payee: {},
+            payee: { Ident: { name: "Payee", node_id: "payee-node" } },
             endorsees: [],
           },
         },
@@ -260,7 +261,154 @@ beforeEach(() => {
   });
 });
 
+function caseWithoutConfirmation(): DecisionCase {
+  return {
+    assessmentCurrency: "current",
+    mintQuoteId: quoteId,
+    policyFileName: "test-policy.json",
+    resultDigest: "sha256:test",
+    policyPack: {
+      policyPackVersion: "test",
+      policyPackDigest: "sha256:test",
+      calculationVersion: "test",
+      product: "seasonal_coffee_accepted_ebill_discount",
+      country: "GT",
+      industry: "coffee_production",
+      maximumEffectiveAnnualBps: 1500,
+      maximumFeeRatioBps: 3000,
+    },
+    snapshot: {
+      schemaVersion: "decision-input-snapshot-v9",
+      snapshotDigest: "sha256:test",
+      caseId: "test-case",
+      applicantRef: "test-applicant",
+      mintId: "test-mint",
+      asOfDate: "2026-09-05",
+      product: "seasonal_coffee_accepted_ebill_discount",
+      country: "GT",
+      industry: "coffee_production",
+      isSynthetic: true,
+      confirmedClaims: {
+        useOfFunds: "Test",
+        acceptorRef: "test",
+        repaymentSource: "Test",
+        wholeFaceRecourseAcknowledged: false,
+        evidenceState: "applicant_confirmed",
+      },
+      contradictions: [],
+      invoice: null,
+      bill: {
+        billId: "bill-1",
+        billStateDigest: "sha256:test",
+        acceptanceState: "accepted",
+        holderRef: "test",
+        acceptorRef: "test",
+        faceValueSat: "100",
+        acceptedDate: "2026-09-01",
+        maturityDate: "2027-03-01",
+        alreadyFinanced: false,
+      },
+      acceptor: {
+        probabilityOfDefaultBps: 600,
+        lossGivenDefaultBps: 4000,
+        evidenceState: "source_unavailable",
+        validThrough: "2026-12-01",
+      },
+      duplicateCheck: { result: "unknown", evidenceState: "source_unavailable", validThrough: "2026-12-01" },
+      mintCapacity: {
+        existingExposureSat: null,
+        exposureLimitSat: null,
+        evidenceState: "source_unavailable",
+        validThrough: "2026-12-01",
+      },
+    },
+    result: {
+      assessmentStatus: "blocked_pending_verification",
+      recommendation: null,
+      axes: [],
+      terms: null,
+      reasonCodes: [],
+      assessmentTrace: [],
+      calculationTrace: [],
+      verificationRequests: [
+        {
+          code: "test-mint",
+          axis: "acceptor_repayment_risk",
+          requiredItem: "Refresh acceptor evidence",
+          owner: "mint_risk",
+          reasonCode: "source_unavailable",
+        },
+        {
+          code: "test-applicant",
+          axis: "applicant_recourse_risk",
+          requiredItem: "Confirm recourse",
+          owner: "applicant",
+          reasonCode: "recourse_missing",
+        },
+      ],
+    },
+  };
+}
+
 describe("QuotePage", () => {
+  it("keeps all blockers visible without applicant confirmation", () => {
+    const blocked = caseWithoutConfirmation();
+    const original = mockUseQuery.getMockImplementation();
+    mockUseQuery.mockImplementation((options) =>
+      options.queryKey[0]._id === undefined
+        ? { data: { issues: [], cases: [blocked] }, isLoading: false, error: null }
+        : (original?.(options) ?? { data: undefined, isLoading: false, error: null })
+    );
+    quoteStatus = "Pending";
+    const page = renderPage(`/quotes/${quoteId}`);
+    const summary = page.querySelector("#minting-summary");
+    expect(summary?.textContent).toContain("Before a decision");
+    expect(summary?.textContent).toContain("Refresh acceptor evidence");
+    expect(summary?.textContent).toContain("Confirm recourse");
+    expect(summary?.textContent).toContain("No answer recorded");
+    expect(summary?.textContent?.match(/Refresh acceptor evidence/g)).toHaveLength(1);
+  });
+
+  it("shows a non-ceiling no-fit reason in the executive summary", () => {
+    const fixture = caseWithoutConfirmation();
+    const noFit: DecisionCase = {
+      ...fixture,
+      result: {
+        ...fixture.result,
+        assessmentStatus: "ready_for_decision",
+        recommendation: "no_current_product_fit",
+        verificationRequests: [],
+        reasonCodes: ["product_unavailable"],
+      },
+    };
+    const original = mockUseQuery.getMockImplementation();
+    mockUseQuery.mockImplementation((options) =>
+      options.queryKey[0]._id === undefined
+        ? { data: { issues: [], cases: [noFit] }, isLoading: false, error: null }
+        : (original?.(options) ?? { data: undefined, isLoading: false, error: null })
+    );
+    quoteStatus = "Pending";
+    const page = renderPage(`/quotes/${quoteId}`);
+    const summary = page.querySelector("#minting-summary");
+    expect(summary?.textContent).toContain("No offer recommended");
+    expect(summary?.textContent).toContain("Product unavailable");
+    expect(summary?.textContent).not.toContain("Repayment source not independently confirmed");
+  });
+
+  it("prints assessment failure as unavailable, not an absent case", () => {
+    const original = mockUseQuery.getMockImplementation();
+    mockUseQuery.mockImplementation((options) =>
+      options.queryKey[0]._id === undefined
+        ? { data: undefined, isLoading: false, error: new Error("Unavailable") }
+        : (original?.(options) ?? { data: undefined, isLoading: false, error: null })
+    );
+    quoteStatus = "Pending";
+    const page = renderPage(`/quotes/${quoteId}`);
+    const summary = page.querySelector("#minting-summary");
+    expect(summary?.querySelector("header h1")?.textContent).toBe("Assessment unavailable");
+    expect(summary?.querySelector('[role="alert"]')?.textContent).toContain("Do not offer");
+    expect(summary?.textContent).not.toContain("No business assessment");
+  });
   it("provides a compact Executive summary", () => {
     const page = renderPage(`/quotes/${quoteId}`);
 
@@ -355,7 +503,7 @@ describe("QuotePage", () => {
               maturity_date: "2026-03-10",
               drawee: {},
               drawer: {},
-              payee: {},
+              payee: { Ident: { name: "Payee", node_id: "payee-node" } },
               endorsees: [],
             },
           },
@@ -377,21 +525,20 @@ describe("QuotePage", () => {
     expect(keysetLink).toBeNull();
   });
 
-  it("puts actions before the collapsed evidence section", () => {
+  it("puts one action surface before the open evidence workspace", () => {
     const page = renderPage(`/quotes/${quoteId}`);
     expect(page.textContent).toContain("Evidence");
-    expect(page.textContent).toContain("Show details");
-    expect(page.textContent).not.toContain("invoice.pdf");
+    expect(page.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Evidence");
+    expect(page.querySelectorAll('[role="tab"]')).toHaveLength(5);
+    expect(page.textContent?.match(/QuoteActionsMock/g)).toHaveLength(1);
     const content = page.textContent ?? "";
     expect(content.indexOf("QuoteActionsMock")).toBeLessThan(content.indexOf("Evidence"));
   });
 
   it("opens minted bill documents with the attachment endpoint", async () => {
     const page = renderPage(`/quotes/${quoteId}`);
-    const toggleButton = page.querySelector('button[aria-expanded="false"]');
-
     act(() => {
-      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      page.querySelector("#documents-and-evidence details")?.setAttribute("open", "");
     });
 
     const buttons = Array.from(page.querySelectorAll("button"));
@@ -427,7 +574,7 @@ describe("QuotePage", () => {
               maturity_date: "2026-03-01",
               drawee: {},
               drawer: {},
-              payee: {},
+              payee: { Ident: { name: "Payee", node_id: "payee-node" } },
               endorsees: [],
               file_urls: ["https://files.example.com/invoices/invoice-preview.pdf"],
             },
@@ -463,10 +610,8 @@ describe("QuotePage", () => {
     });
 
     const page = renderPage(`/quotes/${quoteId}`);
-    const toggleButton = page.querySelector('button[aria-expanded="false"]');
-
     act(() => {
-      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      page.querySelector("#documents-and-evidence details")?.setAttribute("open", "");
     });
 
     expect(page.textContent).toContain("invoice-preview.pdf");
@@ -503,7 +648,7 @@ describe("QuotePage", () => {
               maturity_date: "2026-03-01",
               drawee: {},
               drawer: {},
-              payee: {},
+              payee: { Ident: { name: "Payee", node_id: "payee-node" } },
               endorsees: [],
               file_urls: ["https://files.example.com/invoices/request-copy.pdf"],
             },

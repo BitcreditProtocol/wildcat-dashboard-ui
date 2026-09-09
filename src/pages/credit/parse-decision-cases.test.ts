@@ -316,16 +316,19 @@ describe("parseDecisionCasesResponse", () => {
     );
   });
 
-  it("requires an explicit assessment currency and normalizes validated legacy history to a non-actionable projection", () => {
+  it("accepts the literal historical shared wire state without inferring an applicant response", () => {
     const decisionCase = validCase();
     const { assessmentCurrency: _omitted, ...missingCurrency } = decisionCase;
     void _omitted;
     expect(() => parseDecisionCasesResponse({ cases: [missingCurrency] })).toThrow("invalid governed decision response");
     expect(
       parseDecisionCasesResponse({
-        cases: [{ ...decisionCase, assessmentCurrency: "historical_pending_applicant_response" }],
+        cases: [{ ...decisionCase, assessmentCurrency: "historical" }],
       }).cases[0]?.assessmentCurrency
     ).toBe("historical");
+    expect(() =>
+      parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentCurrency: "historical_pending_applicant_response" }] })
+    ).toThrow("invalid governed decision response");
     expect(() => parseDecisionCasesResponse({ cases: [{ ...decisionCase, assessmentCurrency: "stale" }] })).toThrow(
       "invalid governed decision response"
     );
@@ -334,6 +337,8 @@ describe("parseDecisionCasesResponse", () => {
   it("accepts only bounded assessment history whose last revision is current", () => {
     const decisionCase = validCase();
     const current = {
+      schemaVersion: "assessment-revision-v1",
+      revisionDigest: `sha256:${"7".repeat(64)}`,
       snapshot: decisionCase.snapshot,
       result: decisionCase.result,
       resultDigest: decisionCase.resultDigest,

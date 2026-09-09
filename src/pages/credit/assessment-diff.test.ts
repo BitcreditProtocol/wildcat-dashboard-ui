@@ -93,7 +93,7 @@ describe("assessmentChanges", () => {
     expect(changes.map(({ field }) => field)).not.toContain("snapshotDigest");
   });
 
-  it("shows changed applicant claims and exact document lineage", () => {
+  it("shows changed applicant claims and document names without operator-facing digests", () => {
     const previous = revision("pass", false);
     const current = structuredClone(previous);
     current.snapshot.confirmedClaims.useOfFunds = "Harvest and transport";
@@ -118,9 +118,14 @@ describe("assessmentChanges", () => {
       {
         field: "documents",
         before: "",
-        after: `corrected-invoice.pdf [corrected-invoice.pdf] sha256:${"e".repeat(64)}`,
+        after: "corrected-invoice.pdf",
       },
     ]);
+    expect(
+      assessmentChanges(previous, current)
+        .map(({ after }) => after)
+        .join(" ")
+    ).not.toContain("sha256:");
   });
 
   it("shows an invoice correction without upgrading unconfirmed evidence", () => {

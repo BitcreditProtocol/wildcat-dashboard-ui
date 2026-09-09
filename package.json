@@ -27,7 +27,7 @@
     "crowdin:status": "crowdin status"
   },
   "dependencies": {
-    "@bitcredit/ai-credit-shared": "file:vendor/ai-credit/bitcredit-ai-credit-shared-0.1.0-testnet.10.tgz",
+    "@bitcredit/ai-credit-shared": "file:vendor/ai-credit/bitcredit-ai-credit-shared-0.1.0-testnet.11.tgz",
     "@bitcredit/ui-library": "^0.1.14-bugfix",
     "@radix-ui/react-collapsible": "^1.1.20",
     "@radix-ui/react-dialog": "^1.1.23",
@@ -54,7 +54,8 @@
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "@bitcredit/ai-credit-operator-ui": "file:vendor/ai-credit/bitcredit-ai-credit-operator-ui-0.1.0-testnet.11.tgz"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.10",

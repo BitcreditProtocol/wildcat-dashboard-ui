@@ -26,15 +26,21 @@ function Harness({
   return null;
 }
 
-async function renderHook(billId = "bill-a", mintQuoteId = "quote-a"): Promise<() => CreditAssessmentState | undefined> {
+async function renderHook(
+  billId = "bill-a",
+  mintQuoteId = "quote-a",
+  cached?: { cases: unknown[]; issues: unknown[] }
+): Promise<() => CreditAssessmentState | undefined> {
   const states: CreditAssessmentState[] = [];
   const onChange = (state: CreditAssessmentState) => states.push(state);
   const container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  if (cached !== undefined) client.setQueryData(["ai-credit", "decisions"], cached, { updatedAt: 1 });
   act(() => {
     root?.render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider client={client}>
         <Harness billId={billId} mintQuoteId={mintQuoteId} onChange={onChange} />
       </QueryClientProvider>
     );
@@ -49,6 +55,33 @@ async function renderHook(billId = "bill-a", mintQuoteId = "quote-a"): Promise<(
 }
 
 describe("useCreditAssessmentForBill", () => {
+  it.each(["quote-a", "other-quote"])("scopes a stale view-only conversation to the exact quote (%s)", async (cachedQuote) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response(null, { status: 503 })))
+    );
+    // Represents an already validated query result; never a second API parsing path.
+    const record = { mintQuoteId: cachedQuote, snapshot: { bill: { billId: "bill-a" } } };
+    const latest = await renderHook("bill-a", "quote-a", { cases: [record], issues: [] });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+    });
+    expect(latest()?.status).toBe("unavailable");
+    expect(latest()?.decisionCase).toBeUndefined();
+    expect(latest()?.recordedDecisionCase).toEqual(cachedQuote === "quote-a" ? record : undefined);
+  });
+  it("does not revive an isolated cached assessment after a failed read", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response(null, { status: 503 })))
+    );
+    const latest = await renderHook("bill-a", "quote-a", {
+      cases: [{ mintQuoteId: "quote-a", snapshot: { bill: { billId: "bill-a" } } }],
+      issues: [{ billId: "bill-a", mintQuoteId: "quote-a", reasonCode: "bill_state_mismatch" }],
+    });
+    expect(latest()?.decisionCase).toBeUndefined();
+    expect(latest()?.recordedDecisionCase).toBeUndefined();
+  });
   afterEach(() => {
     act(() => root?.unmount());
     root = null;

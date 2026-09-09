@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@source "../node_modules/@bitcredit/ai-credit-operator-ui/dist";
+
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark, .dark *));
@@ -161,7 +163,12 @@
     font-size: 10pt;
   }
 
-  #minting-summary details,
+  #minting-summary [data-statement-preview] {
+    display: block !important;
+    -webkit-line-clamp: unset;
+  }
+
+  #minting-summary details:not([data-print-statement]),
   #minting-summary [data-print-detail] {
     display: none !important;
   }

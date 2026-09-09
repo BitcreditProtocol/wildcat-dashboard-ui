@@ -16,7 +16,7 @@ const request = {
 
 let root: Root | undefined;
 
-function render(state: ClaimInvestigationState, queryClient = new QueryClient(), readOnly = false) {
+function render(state: ClaimInvestigationState, queryClient = new QueryClient()) {
   const mount = document.createElement("div");
   document.body.append(mount);
   root = createRoot(mount);
@@ -24,7 +24,7 @@ function render(state: ClaimInvestigationState, queryClient = new QueryClient(),
     root?.render(
       <QueryClientProvider client={queryClient}>
         <IntlProvider locale="en">
-          <ClaimInvestigationPanel state={state} readOnly={readOnly} />
+          <ClaimInvestigationPanel state={state} />
         </IntlProvider>
       </QueryClientProvider>
     );
@@ -39,16 +39,24 @@ afterEach(() => {
 });
 
 describe("ClaimInvestigationPanel", () => {
-  it("shows automatic progress without exposing a manual research command", () => {
+  it("does not promise worker activity or expose a manual research command", () => {
     const { mount } = render({ status: "idle", modelId: "codex:gpt-5.6-luna", request });
 
-    expect(mount.textContent).toContain("In progress");
+    expect(mount.textContent).toContain("Not started");
     expect(mount.textContent).not.toContain("Research public context");
     expect(mount.querySelector("button")).toBeNull();
   });
 
+  it("keeps a failed supplemental investigation visible without blocking the case", () => {
+    const { mount } = render({ status: "unavailable", modelId: "codex:gpt-5.6-luna", request });
+
+    expect(mount.textContent).toContain("Unavailable");
+    expect(mount.textContent).toContain("Public context");
+    expect(mount.querySelector("button")).toBeNull();
+  });
+
   it("does not offer public research for a retained historical assessment", () => {
-    const { mount } = render({ status: "idle", modelId: "codex:gpt-5.6-luna", request }, new QueryClient(), true);
+    const { mount } = render({ status: "idle", modelId: "codex:gpt-5.6-luna", request });
 
     expect(mount.textContent).not.toContain("Research public context");
     expect(mount.querySelector("button")).toBeNull();
@@ -99,7 +107,7 @@ describe("ClaimInvestigationPanel", () => {
     });
 
     expect(mount.textContent).toContain("1 finding · 1 source");
-    expect(mount.textContent).toContain("Supplemental");
+    expect(mount.textContent).toContain("Public context");
     expect(mount.textContent).toContain("Context found");
     expect(mount.textContent).not.toContain("AI proposal");
     expect(mount.textContent).toContain("https://example.com/cooperatives/buyer");

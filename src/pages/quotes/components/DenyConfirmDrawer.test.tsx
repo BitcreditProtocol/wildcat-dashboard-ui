@@ -56,7 +56,7 @@ describe("DenyConfirmDrawer", () => {
     });
 
     expect(container.textContent).toContain("Required information");
-    expect(confirmDrawerProps.current?.description).toContain("No notification is sent from this screen.");
+    expect(confirmDrawerProps.current?.description).toContain("through the eBill application flow");
     expect(container.textContent).toContain("Signed delivery receipt");
     expect(container.textContent).toContain("Current acceptor financials");
     act(() => root.unmount());

@@ -5,6 +5,7 @@ import {
   operatorMayRecordDecision,
   recordMintRiskAssessment,
   reviewInvoiceEvidence,
+  reviewInformationNeed,
   recordApplicantHumanReviewUpdate,
   recordOperatorDecision,
   signedAuthorizationMatchesOffer,
@@ -17,6 +18,36 @@ vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: R
 
 const approver = { ready: true, operatorId: "operator-123", operatorRole: "approver" } satisfies OperatorCapability;
 const reviewer = { ready: true, operatorId: "reviewer-123", operatorRole: "reviewer" } satisfies OperatorCapability;
+
+describe("information review safe failure codes", () => {
+  const input = {
+    billId: "bill-a",
+    caseId: "case-a",
+    submissionDigest: `sha256:${"a".repeat(64)}`,
+    decisionResultDigest: `sha256:${"b".repeat(64)}`,
+    needId: `sha256:${"c".repeat(64)}`,
+    outcome: "exhausted",
+    basis: "Supporting evidence is still unavailable.",
+    evidenceDigests: [],
+  } satisfies Parameters<typeof reviewInformationNeed>[0];
+  it("requires the validated capability before fetching", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    await expect(reviewInformationNeed(input, undefined)).resolves.toEqual({ ok: false, errorCode: "reviewer_required" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each([400, 409, 500, 503])("does not display upstream error prose for HTTP %s", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: "PRIVATE upstream details" }, { status })));
+    await expect(reviewInformationNeed(input, reviewer)).resolves.toEqual({
+      ok: false,
+      errorCode: status >= 500 ? "review_unconfirmed" : "review_rejected",
+    });
+  });
+  it("does not claim a timed-out command had no effect", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("PRIVATE network detail")));
+    await expect(reviewInformationNeed(input, reviewer)).resolves.toEqual({ ok: false, errorCode: "review_unconfirmed" });
+  });
+});
 const command: OperatorDecisionInput = {
   billId: "bill-1",
   caseId: "case-1",

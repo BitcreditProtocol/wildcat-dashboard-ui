@@ -1,4 +1,5 @@
 import { authenticatedFetch } from "@/lib/api-client";
+import type { InformationNeedReview } from "@bitcredit/ai-credit-shared";
 import type { MintQuoteDenialStatus, OperatorMaterialEvidenceSelection, SubmittedEvidence } from "./decision-types";
 import { parseMintDenialStatus } from "./parse-decision-cases";
 
@@ -12,6 +13,7 @@ export type OperatorDecisionAction =
   | "close_unable_to_assess";
 
 export interface OperatorDecisionInput {
+  submissionDigest?: string;
   billId: string;
   caseId: string;
   decisionResultDigest: string;
@@ -341,6 +343,36 @@ export async function reviewInvoiceEvidence(
     return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
   } catch {
     return { ok: false, error: "The AI Credit operator service is not reachable" };
+  }
+}
+
+export type InformationNeedReviewFailure = "reviewer_required" | "review_rejected" | "review_unconfirmed";
+
+export async function reviewInformationNeed(
+  input: {
+    submissionDigest: string;
+    billId: string;
+    caseId: string;
+    decisionResultDigest: string;
+    needId: string;
+    outcome: "resolved" | "exhausted";
+    basis: string;
+    evidenceDigests: string[];
+    expectedReview?: InformationNeedReview;
+  },
+  capability: OperatorCapability | undefined
+): Promise<{ ok: true } | { ok: false; errorCode: InformationNeedReviewFailure }> {
+  if (capability === undefined) return { ok: false, errorCode: "reviewer_required" };
+  try {
+    const response = await authenticatedFetch("/api/ai-credit/operator-verifications", {
+      body: JSON.stringify({ ...input, action: "review_information_need" }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+      signal: AbortSignal.timeout(30_000),
+    });
+    return response.ok ? { ok: true } : { ok: false, errorCode: response.status >= 500 ? "review_unconfirmed" : "review_rejected" };
+  } catch {
+    return { ok: false, errorCode: "review_unconfirmed" };
   }
 }
 

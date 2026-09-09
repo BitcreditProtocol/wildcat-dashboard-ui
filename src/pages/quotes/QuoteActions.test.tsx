@@ -16,6 +16,13 @@ import type {
 import type { InfoReply } from "@/generated/client/types.gen";
 import { ApiError } from "@/lib/api-error";
 import Big from "big.js";
+import { informationNeedRequiredItems, type InformationNeed } from "@bitcredit/ai-credit-shared";
+
+const { mockToast } = vi.hoisted(() => ({ mockToast: vi.fn<(input: { title: string; variant: string }) => void>() }));
+vi.mock("@bitcredit/ui-library", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bitcredit/ui-library")>()),
+  toast: mockToast,
+}));
 
 interface MockQueryOptions {
   queryKey: [{ _id: string; path?: { bid: string } }];
@@ -460,6 +467,38 @@ beforeEach(() => {
 });
 
 describe("QuoteActions", () => {
+  it.each(["open", "exhausted"] as const)("routes %s evidence to non-adverse actions instead of Offer", async (status) => {
+    const need: InformationNeed = {
+      schemaVersion: "information-need-v1",
+      caseId: governedOffer.snapshot.caseId,
+      preparedInputId: "11111111-1111-4111-8111-111111111111",
+      needId: `sha256:${"f".repeat(64)}`,
+      question: "What supports the sales?",
+      objective: { kind: "sales_evidence", sources: [{ answerIndex: 0, quote: "Coffee sales" }] },
+      status,
+      reviewIsStale: false,
+    };
+    decisionCase = { ...governedOffer, informationNeeds: [need] };
+    const page = renderComponent(pendingQuote);
+    const buttons = Array.from(page.querySelectorAll("button")).map((button) => button.textContent);
+    expect(buttons).not.toContain("Offer");
+    expect(buttons).not.toContain("Deny");
+    expect(buttons).toContain("Request information from applicant");
+    expect(buttons).toContain("Close — unable to assess");
+    expect(page.querySelector('a[href="#evidence-questions"]')).not.toBeNull();
+    await act(async () => {
+      returnInfoSubmit?.("Please provide the supporting sales records or explain their absence.");
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "return_for_information",
+        requiredItems: informationNeedRequiredItems([need], { caseId: need.caseId, resultDigest: governedOffer.resultDigest }),
+      })
+    );
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+  });
+
   it.each([governedOffer, governedVerification])(
     "keeps a retained historical assessment read-only regardless of its outcome",
     (assessment) => {
@@ -935,6 +974,8 @@ describe("QuoteActions", () => {
     });
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();
     expect(offerConfirmationOpen).toBe(true);
+    expect(mockToast.mock.lastCall?.[0].title).toContain("Could not confirm the decision:");
+    expect(mockToast.mock.lastCall?.[0].title).not.toContain("Nothing was sent");
   });
 
   it("coalesces rapid final confirmations into one governance and Mint action", async () => {
@@ -1032,6 +1073,31 @@ describe("QuoteActions", () => {
     expect(mockHandleDenyQuote).not.toHaveBeenCalled();
     expect(offerPage.textContent).toContain("Denial syncing with Mint");
   });
+
+  it.each(["queued", "running", "stopped"] as const)(
+    "keeps evidence-based denial available during %s investigation but blocks offers",
+    async (status) => {
+      decisionCase = { ...governedOffer, caseInvestigation: { status, runs: [] }, informationNeeds: [] };
+      const page = renderComponent(pendingQuote);
+      const labels = Array.from(page.querySelectorAll("button")).map((button) => button.textContent?.trim());
+      expect(labels).toContain("Deny");
+      expect(labels).not.toContain("Offer");
+      expect(closeUnableSubmit).toBeUndefined();
+      await act(async () => {
+        denySubmit?.("Decline on the reviewed invoice evidence, not the incomplete investigation.", [
+          { kind: "submitted_document", reference: "invoice-a" },
+        ]);
+        await Promise.resolve();
+      });
+      expect(mockRecordOperatorDecision).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "decline_application",
+          materialEvidence: [{ kind: "submitted_document", reference: "invoice-a" }],
+        })
+      );
+      expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+    }
+  );
 
   it("shows fail-closed Deny and governs Return for information with the named verification items", async () => {
     decisionCase = governedVerification;

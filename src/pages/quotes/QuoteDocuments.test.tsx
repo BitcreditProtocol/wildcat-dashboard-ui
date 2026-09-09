@@ -2,6 +2,8 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
+import type { EvidenceCaseSummary } from "@/pages/credit/EvidenceCaseBrief";
+import { EvidenceCaseBrief } from "@/pages/credit/EvidenceCaseBrief";
 import { QuoteDocuments } from "./QuoteDocuments";
 
 let root: Root | null = null;
@@ -45,7 +47,48 @@ beforeEach(() => {
   }
 });
 
+const evidenceCaseSummary = {
+  snapshot: {
+    confirmedClaims: {
+      useOfFunds: "Coffee harvest",
+      acceptorRef: "acceptor-1",
+      repaymentSource: "Coffee sale proceeds",
+      wholeFaceRecourseAcknowledged: true,
+      evidenceState: "applicant_confirmed",
+    },
+    contradictions: [],
+    bill: {
+      billId: "bill-1",
+      billStateDigest: `sha256:${"1".repeat(64)}`,
+      acceptanceState: "accepted",
+      holderRef: "holder-1",
+      acceptorRef: "acceptor-1",
+      faceValueSat: "8100000",
+      acceptedDate: "2026-08-22",
+      maturityDate: "2027-02-22",
+      alreadyFinanced: false,
+    },
+    invoice: null,
+  },
+  assessmentStatus: "blocked_pending_verification",
+  recommendation: null,
+} satisfies EvidenceCaseSummary;
+
 describe("QuoteDocuments", () => {
+  it("keeps answer-review concerns separate from deterministic checks with no recorded conflict", () => {
+    const page = renderWithIntl(
+      <EvidenceCaseBrief
+        summary={{ ...evidenceCaseSummary, answerReviewFollowUpCount: 2 }}
+        submittedEvidence={[]}
+        verificationRequests={[]}
+        assessmentCurrency="current"
+      />
+    );
+    expect(page.textContent).toContain("No conflict recorded by deterministic checks");
+    expect(page.textContent).toContain("2 targeted follow-ups");
+    expect(page.textContent).toContain("Resolution not independently checked");
+    expect(page.textContent).not.toContain("No internal conflicts");
+  });
   it("renders collapsed by default", () => {
     const page = renderWithIntl(
       <QuoteDocuments
@@ -62,6 +105,7 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
+          caseSummary: evidenceCaseSummary,
           submittedEvidence: [],
           evidencePackets: [],
           invoiceAssessment: null,
@@ -76,7 +120,7 @@ describe("QuoteDocuments", () => {
 
     expect(page.textContent).toContain("Evidence");
     expect(page.querySelector("#documents-and-evidence")).not.toBeNull();
-    expect(page.textContent).toContain("No submitted credit evidence");
+    expect(page.textContent).toContain("0 documents · no open applicant request");
     expect(page.textContent).toContain("Show details");
     expect(page.textContent).not.toContain("invoice.pdf");
   });
@@ -145,6 +189,35 @@ describe("QuoteDocuments", () => {
     });
   });
 
+  it("keeps technical request-to-mint digests out of the operator-facing file list", () => {
+    const digest = "a".repeat(64);
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[
+          {
+            name: digest,
+            hash: `https://example.com/${digest}`,
+            source: "requestToMint",
+            fileUrl: `https://example.com/${digest}`,
+          },
+        ]}
+        creditEvidence={{ status: "absent" }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
+      />
+    );
+
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(page.textContent).toContain("Submitted file 1");
+    expect(page.textContent).not.toContain(digest);
+  });
+
   it("distinguishes unavailable credit evidence from an empty evidence set", () => {
     const page = renderWithIntl(
       <QuoteDocuments
@@ -176,6 +249,7 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
+          caseSummary: evidenceCaseSummary,
           submittedEvidence: [
             {
               reference: "invoice-ref",
@@ -222,6 +296,7 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
+          caseSummary: evidenceCaseSummary,
           submittedEvidence: [evidence],
           evidencePackets: [{ evidence, status: "quarantined", byteLength: 42 }],
           invoiceAssessment: null,
@@ -265,6 +340,7 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
+          caseSummary: evidenceCaseSummary,
           submittedEvidence: [evidence],
           evidencePackets: [
             {
@@ -342,6 +418,7 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
+          caseSummary: evidenceCaseSummary,
           submittedEvidence: [evidence],
           evidencePackets: [
             {
@@ -400,7 +477,7 @@ describe("QuoteDocuments", () => {
       page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(page.textContent).toContain("Matched");
+    expect(page.textContent).toContain("Fields match eBill");
     expect(page.textContent).toContain("6 cited claims");
     expect(page.textContent).toContain("InvoiceDEMO-42");
     expect(page.textContent).toContain("Total8,100,000 sat");
@@ -417,5 +494,324 @@ describe("QuoteDocuments", () => {
     expect(technical?.open).toBe(false);
     expect(technical?.textContent).not.toContain(evidence.contentDigest);
     expect(technical?.textContent).not.toContain("sha256:derivative");
+  });
+
+  it("keeps resolved applicant evidence requests out of the current decision view", () => {
+    const evidence = {
+      reference: "corrected-invoice-ref",
+      label: "corrected-commercial-invoice.pdf",
+      contentDigest: `sha256:${"e".repeat(64)}`,
+      origin: "applicant_upload" as const,
+    };
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          assessmentCurrency: "historical",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
+          caseSummary: {
+            ...evidenceCaseSummary,
+            snapshot: {
+              ...evidenceCaseSummary.snapshot,
+              invoice: {
+                reference: evidence.reference,
+                invoiceNumber: "DEMO-43",
+                goodsDescription: "Coffee crop inputs",
+                sellerRef: "holder-1",
+                buyerRef: "acceptor-1",
+                issueDate: "2026-08-22",
+                totalSat: "8000000",
+                plausibility: "plausible",
+                billAndClaimsConsistency: "mismatch",
+                evidenceState: "unconfirmed",
+                methodologyVersion: "invoice-v1",
+                assessedBy: "credit_evidence_gateway",
+                validThrough: "2026-11-20",
+              },
+              contradictions: [{ code: "invoice_amount_mismatch", state: "unresolved", evidenceState: "contradicted" }],
+            },
+          },
+          submittedEvidence: [evidence],
+          evidencePackets: [{ evidence, status: "quarantined", byteLength: 920 }],
+          invoiceAssessment: null,
+          verificationRequests: [
+            {
+              code: "invoice_consistency",
+              axis: "transaction_integrity",
+              requiredItem: "Clarify the invoice and eBill amount difference",
+              reasonCode: "verification_invoice_consistency_required",
+              owner: "applicant",
+              resolutionAction: "request_applicant_information",
+            },
+          ],
+        }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
+      />
+    );
+
+    expect(page.textContent).toContain("Archived assessment · view only");
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(page.textContent).toContain("Claim coverage");
+    expect(page.textContent).toContain("Underlying tradeCoffee crop inputs · 8,000,000 satcorrected-commercial-invoice.pdfConflict");
+    expect(page.textContent).toContain("Next evidence requestHistorical assessment · read-only");
+    expect(page.textContent).toContain("Correct answers · upload supporting document");
+    expect(page.textContent).toContain("eBill notification and application");
+    expect(page.textContent).not.toContain("Previous assessment");
+    expect(page.textContent).not.toContain("Current assessment");
+    expect(page.textContent).not.toContain(evidence.contentDigest);
+  });
+
+  it("retains a compact completed applicant evidence loop after the request is resolved", () => {
+    const originalEvidence = {
+      reference: "original-invoice-ref",
+      label: "commercial-invoice.pdf",
+      contentDigest: `sha256:${"a".repeat(64)}`,
+      origin: "applicant_upload" as const,
+    };
+    const correctedEvidence = {
+      reference: "corrected-invoice-ref",
+      label: "corrected-commercial-invoice.pdf",
+      contentDigest: `sha256:${"b".repeat(64)}`,
+      origin: "applicant_upload" as const,
+    };
+    const mismatchSnapshot = {
+      ...evidenceCaseSummary.snapshot,
+      invoice: {
+        reference: originalEvidence.reference,
+        invoiceNumber: "DEMO-43",
+        goodsDescription: "Coffee crop inputs",
+        sellerRef: "holder-1",
+        buyerRef: "acceptor-1",
+        issueDate: "2026-08-22",
+        totalSat: "7800000",
+        plausibility: "plausible" as const,
+        billAndClaimsConsistency: "mismatch" as const,
+        evidenceState: "unconfirmed",
+        methodologyVersion: "invoice-v1",
+        assessedBy: "credit_evidence_gateway",
+        validThrough: "2026-11-20",
+      },
+    };
+    const currentSnapshot = {
+      ...evidenceCaseSummary.snapshot,
+      invoice: {
+        ...mismatchSnapshot.invoice,
+        reference: correctedEvidence.reference,
+        totalSat: "8100000",
+        billAndClaimsConsistency: "match" as const,
+        evidenceState: "corroborated",
+      },
+    };
+    const blockedResult = {
+      assessmentStatus: "blocked_pending_verification" as const,
+      recommendation: null,
+      axes: [],
+      terms: null,
+      verificationRequests: [
+        {
+          code: "invoice_consistency" as const,
+          axis: "transaction_integrity" as const,
+          requiredItem: "Clarify the invoice and eBill amount difference",
+          reasonCode: "verification_invoice_consistency_required",
+          owner: "applicant" as const,
+          resolutionAction: "request_applicant_information" as const,
+        },
+      ],
+      reasonCodes: [],
+      assessmentTrace: [],
+      calculationTrace: [],
+    };
+    const readyResult = {
+      ...blockedResult,
+      assessmentStatus: "ready_for_decision" as const,
+      recommendation: "offer_available" as const,
+      verificationRequests: [],
+    };
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          assessmentCurrency: "current",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
+          caseSummary: {
+            ...evidenceCaseSummary,
+            snapshot: currentSnapshot,
+            assessmentStatus: "ready_for_decision",
+            recommendation: "offer_available",
+            assessmentHistory: [
+              { snapshot: mismatchSnapshot, result: blockedResult, submittedEvidence: [originalEvidence] },
+              { snapshot: currentSnapshot, result: readyResult, submittedEvidence: [correctedEvidence] },
+            ],
+          },
+          submittedEvidence: [correctedEvidence],
+          evidencePackets: [{ evidence: correctedEvidence, status: "quarantined", byteLength: 920 }],
+          invoiceAssessment: currentSnapshot.invoice,
+          verificationRequests: [],
+        }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
+      />
+    );
+
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(page.textContent).not.toContain("Applicant evidence loop");
+    expect(page.textContent).not.toContain("Invoice and eBill do not align");
+    expect(page.textContent).toContain("Fields match eBill");
+    expect(page.textContent).toContain("corrected-commercial-invoice.pdf");
+  });
+
+  it("shows the exact applicant interview and distinguishes each review authority", () => {
+    const preparedInputId = "2798c386-935b-4f5e-a2ea-a5323454de0a";
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          assessmentCurrency: "current",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
+          caseSummary: evidenceCaseSummary,
+          submittedEvidence: [],
+          evidencePackets: [],
+          invoiceAssessment: null,
+          verificationRequests: [],
+          applicantConfirmation: {
+            schemaVersion: "applicant-confirmation-summary-v1",
+            preparedInputId,
+            useOfFunds: "Fertilizer and harvest labour",
+            acceptor: "Buyer cooperative",
+            repaymentSource: "Accepted invoice at maturity",
+            answersAffirmed: true,
+            recourseAcknowledged: true,
+          },
+          interviewTranscript: {
+            schemaVersion: "interview-transcript-v1",
+            caseId: "case-1",
+            preparedInputId,
+            language: "en",
+            questionGraphVersion: "question-graph-v1",
+            promptVersion: "prompt-v1",
+            modelId: "scripted-interviewer-v1",
+            messages: [
+              {
+                messageId: "message-1",
+                role: "assistant",
+                templateId: "aiCredit.interview.welcome",
+                text: "What will you use the money for?",
+              },
+              { messageId: "message-2", role: "applicant", text: "Fertilizer and harvest labour" },
+              {
+                messageId: "message-3",
+                role: "assistant",
+                templateId: "aiCredit.interview.repayment",
+                text: "What funds will repay the bill at maturity?",
+              },
+              { messageId: "message-4", role: "applicant", text: "Accepted invoice at maturity" },
+              {
+                messageId: "message-5",
+                role: "assistant",
+                templateId: "aiCredit.interview.review",
+                text: "Review the extracted answers.",
+              },
+            ],
+          },
+          axes: [
+            { axis: "instrument_eligibility", status: "pass", reasonCodes: [] },
+            { axis: "evidence_sufficiency", status: "blocked", reasonCodes: ["verification_invoice_required"] },
+          ],
+        }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
+      />
+    );
+
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const caseRecord = Array.from(page.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("Case record")
+    );
+    expect(caseRecord).not.toBeUndefined();
+    expect(caseRecord?.querySelector("summary")?.textContent).toContain("Interview and review record");
+    act(() => {
+      caseRecord?.querySelector("summary")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(caseRecord?.textContent).toContain("What will you use the money for?");
+    expect(caseRecord?.textContent).toContain("Fertilizer and harvest labour");
+    expect(caseRecord?.textContent).toContain("What funds will repay the bill at maturity?");
+    expect(caseRecord?.textContent).toContain("Accepted invoice at maturity");
+    expect(caseRecord?.textContent).toContain("Policy checks1/2 passedDeterministic");
+    expect(caseRecord?.textContent).toContain("Document analysis0 documents · 0 cited claimsEvidence-bound");
+    expect(caseRecord?.textContent).toContain("Public researchNot runSupplemental AI");
+    expect(caseRecord?.textContent).not.toContain("reasoning");
+  });
+
+  it("does not describe confirmed legacy fields as a conversation that was never stored", () => {
+    const page = renderWithIntl(
+      <QuoteDocuments
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          assessmentCurrency: "current",
+          caseId: "legacy-case",
+          resultDigest: "sha256:result",
+          caseSummary: evidenceCaseSummary,
+          submittedEvidence: [],
+          evidencePackets: [],
+          invoiceAssessment: null,
+          verificationRequests: [],
+          applicantConfirmation: {
+            schemaVersion: "applicant-confirmation-summary-v1",
+            preparedInputId: "2798c386-935b-4f5e-a2ea-a5323454de0a",
+            useOfFunds: "Fertilizer",
+            acceptor: "Buyer cooperative",
+            repaymentSource: "Coffee sales",
+            answersAffirmed: true,
+            recourseAcknowledged: true,
+          },
+          claimInvestigation: {
+            status: "running",
+            modelId: "codex:gpt-5.6-luna",
+            inputDigest: `sha256:${"c".repeat(64)}`,
+          },
+        }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
+      />
+    );
+
+    act(() => {
+      page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const caseRecord = Array.from(page.querySelectorAll("details")).find((details) =>
+      details.querySelector("summary")?.textContent?.includes("Case record")
+    );
+    expect(caseRecord?.querySelector("summary")?.textContent).toContain("Confirmed answers only · transcript unavailable");
+    expect(caseRecord?.querySelector("summary")?.textContent).not.toContain("reviews");
+    act(() => {
+      caseRecord?.querySelector("summary")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(caseRecord?.textContent).toContain("Public researchIn progressSupplemental AI");
   });
 });
