@@ -99,7 +99,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             className="flex-1 max-w-md"
             placeholder={intl.formatMessage({
               id: "quotes.search.placeholder",
-              defaultMessage: "Search by quote ID, participant, status, amount, or maturity...",
+              defaultMessage: "Search by quote ID, bill ID, participant, status, amount, or maturity...",
             })}
             onSearch={setSearchQuery}
             onChange={setSearchQuery}

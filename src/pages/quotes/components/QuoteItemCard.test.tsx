@@ -12,6 +12,8 @@ interface MockQuoteQuery {
   data:
     | {
         bill: {
+          id?: string;
+          maturity_date?: string;
           drawee: object;
           drawer: object;
           payee: object;
@@ -199,5 +201,41 @@ describe("QuoteItemCard", () => {
     expect(page.textContent).toContain("12,345");
     expect(page.textContent).toContain("sat");
     expect(page.textContent).not.toContain("usd");
+  });
+
+  it("renders bill id and maturity date when bill details are available", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 400, statusText: "Bad Request", text: () => Promise.resolve("") })
+    );
+    mockUseQuery.mockReturnValue({
+      data: {
+        bill: {
+          id: "bill-abc-123",
+          maturity_date: "2099-01-31",
+          drawee: {},
+          drawer: {},
+          payee: {},
+          endorsees: [],
+        },
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    const page = renderWithProviders(
+      <QuoteItemCard
+        quote={{ id: "quote-1", status: "Accepted", sum: 1_000 } satisfies LightInfo}
+        effectiveStatus="Accepted"
+        searchQuery=""
+      />
+    );
+
+    await flush();
+
+    expect(page.textContent).toContain("Bill ID:");
+    expect(page.textContent).toContain("bill-abc-123");
+    expect(page.textContent).toContain("Maturity:");
+    expect(page.textContent).toContain("2099-01-31");
   });
 });

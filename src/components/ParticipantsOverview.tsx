@@ -1,10 +1,20 @@
-import { Avatar, AvatarFallback, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@bitcredit/ui-library";
+import {
+  Avatar,
+  AvatarFallback,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@bitcredit/ui-library";
 import { getDeterministicColor, getInitials } from "@/utils/strings";
 import type { BillIdentParticipant, BillParticipant, BillAnonParticipant } from "@/generated/client/types.gen";
 import { cn } from "@bitcredit/ui-library";
 import { NodeIdDisplay, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { UserAnonymousIcon } from "@/components/icons/UserAnonymous";
-import { participantRoleMessages } from "@/i18n/descriptors";
+import { getContactTypeMessage, participantRoleMessages } from "@/i18n/descriptors";
 import type React from "react";
 import { useIntl } from "react-intl";
 
@@ -12,74 +22,103 @@ type IdentityPublicData = BillIdentParticipant;
 type AnonPublicData = BillAnonParticipant;
 type IdentOrAnonParticipant = BillParticipant;
 
-function AnonPublicAvatar({ value, tooltip }: { value?: AnonPublicData; tooltip?: React.ReactNode }) {
+const TOOLTIP_DELAY_MS = 150;
+
+const AVATAR_INTERACTIVE_CLASS = "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+/**
+ * Shows the participant details on hover and keeps them pinned in a popover on click, so they stay
+ * readable long enough to be selected or copied (and are reachable on touch devices).
+ */
+function AvatarDetails({ details, children }: { details?: React.ReactNode; children: React.ReactNode }) {
+  if (!details) {
+    return <>{children}</>;
+  }
+
+  return (
+    <Popover>
+      <TooltipProvider delayDuration={TOOLTIP_DELAY_MS}>
+        <Tooltip>
+          <PopoverTrigger asChild>
+            <TooltipTrigger asChild>{children}</TooltipTrigger>
+          </PopoverTrigger>
+          <TooltipContent>{details}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <PopoverContent className="w-auto max-w-xs p-3 text-sm">{details}</PopoverContent>
+    </Popover>
+  );
+}
+
+function AnonPublicAvatar({ value, details }: { value?: AnonPublicData; details?: React.ReactNode }) {
   const initials = "?";
   const backgroundColor = getDeterministicColor(value?.node_id);
 
-  const avatar = (
-    <Avatar className="h-8 w-8 rounded-full">
-      <AvatarFallback className="text-white font-semibold text-sm bg-transparent" style={{ backgroundColor }}>
-        {initials}
-      </AvatarFallback>
-    </Avatar>
-  );
-
-  if (!tooltip) {
-    return avatar;
-  }
-
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{avatar}</TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <AvatarDetails details={details}>
+      <Avatar className={cn("h-8 w-8 rounded-full", details && AVATAR_INTERACTIVE_CLASS)} tabIndex={details ? 0 : undefined}>
+        <AvatarFallback className="text-white font-semibold text-sm bg-transparent" style={{ backgroundColor }}>
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+    </AvatarDetails>
   );
 }
 
-function IdentityPublicAvatar({ value, tooltip }: { value?: IdentityPublicData; tooltip?: React.ReactNode }) {
+function IdentityPublicAvatar({ value, details }: { value?: IdentityPublicData; details?: React.ReactNode }) {
   const initials = getInitials(value?.name);
   const backgroundColor = getDeterministicColor(value?.name ?? value?.node_id);
-  const isCompany = (value?.type as unknown as number) === 1;
+  const isCompany = value?.type === "Company";
   const shapeClass = isCompany ? "rounded-lg" : "rounded-full";
 
-  const avatar = (
-    <Avatar className={cn("h-8 w-8", shapeClass)}>
-      <AvatarFallback className={cn("text-white font-semibold text-sm bg-transparent", shapeClass)} style={{ backgroundColor }}>
-        {initials}
-      </AvatarFallback>
-    </Avatar>
-  );
-
-  if (!tooltip) {
-    return avatar;
-  }
-
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{avatar}</TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <AvatarDetails details={details}>
+      <Avatar className={cn("h-8 w-8", shapeClass, details && AVATAR_INTERACTIVE_CLASS)} tabIndex={details ? 0 : undefined}>
+        <AvatarFallback className={cn("text-white font-semibold text-sm bg-transparent", shapeClass)} style={{ backgroundColor }}>
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+    </AvatarDetails>
   );
 }
 
-function IdentOrAnonAvatar({ value, tooltip }: { value?: IdentOrAnonParticipant; tooltip?: React.ReactNode }) {
+function IdentOrAnonAvatar({ value, details }: { value?: IdentOrAnonParticipant; details?: React.ReactNode }) {
   if (!value) {
     return null;
   }
 
   if ("Ident" in value) {
     const identData = value.Ident;
-    return <IdentityPublicAvatar value={identData} tooltip={tooltip} />;
+    return <IdentityPublicAvatar value={identData} details={details} />;
   } else if ("Anon" in value) {
     const anonData = value.Anon;
-    return <AnonPublicAvatar value={anonData} tooltip={tooltip} />;
+    return <AnonPublicAvatar value={anonData} details={details} />;
   }
 
   return null;
+}
+
+function ParticipantSummary({ role, participant }: { role: string; participant: IdentityPublicData | IdentOrAnonParticipant }) {
+  const intl = useIntl();
+
+  const ident = "Ident" in participant ? participant.Ident : "Anon" in participant ? undefined : participant;
+  const nodeId = ident?.node_id ?? ("Anon" in participant ? participant.Anon?.node_id : undefined);
+  const typeMessage = getContactTypeMessage(ident?.type ?? "Anon");
+
+  return (
+    <div className="flex flex-col gap-1 max-w-xs">
+      <div className="font-semibold break-words">{role}</div>
+      <div className="break-words">{ident?.name ?? intl.formatMessage(participantRoleMessages.bearer)}</div>
+      {typeMessage && <div className="text-xs break-words">{intl.formatMessage(typeMessage)}</div>}
+      {ident?.email && <div className="text-xs break-words">{ident.email}</div>}
+      {ident?.city && ident.country && (
+        <div className="text-xs break-words">
+          {ident.city}, {ident.country}
+        </div>
+      )}
+      {nodeId && <div className="text-xs font-mono break-all">{nodeId}</div>}
+    </div>
+  );
 }
 
 export function ParticipantsOverviewCard({
@@ -99,86 +138,31 @@ export function ParticipantsOverviewCard({
   const getRoleLabel = (role: "drawee" | "drawer" | "payee" | "holder") => {
     return intl.formatMessage(participantRoleMessages[role]);
   };
-  const bearerLabel = intl.formatMessage({
-    id: "participants.role.bearer",
-    defaultMessage: "Bearer",
-  });
 
-  const getIdentTooltip = (data: IdentityPublicData | undefined, role: string) => {
-    if (!data) {
-      return role;
-    }
-    return (
-      <div className="flex flex-col gap-1 max-w-xs">
-        <div className="font-semibold break-words">{role}</div>
-        <div className="break-words">{data.name}</div>
-        {data.email && <div className="text-xs break-words">{data.email}</div>}
-        {data.city && data.country && (
-          <div className="text-xs break-words">
-            {data.city}, {data.country}
-          </div>
-        )}
-        <div className="text-xs font-mono break-all">{data.node_id}</div>
-      </div>
-    );
-  };
-
-  const getIdentOrAnonTooltip = (data: IdentOrAnonParticipant | undefined, role: string) => {
-    if (!data) {
-      return role;
-    }
-
-    if ("Ident" in data) {
-      const identData = data.Ident;
-      return (
-        <div className="flex flex-col gap-1 max-w-xs">
-          <div className="font-semibold break-words">{role}</div>
-          <div className="break-words">{identData.name}</div>
-          {identData.email && <div className="text-xs break-words">{identData.email}</div>}
-          {identData.city && identData.country && (
-            <div className="text-xs break-words">
-              {identData.city}, {identData.country}
-            </div>
-          )}
-          <div className="text-xs font-mono break-all">{identData.node_id}</div>
-        </div>
-      );
-    } else if ("Anon" in data) {
-      const anonData = data.Anon;
-      return (
-        <div className="flex flex-col gap-1 max-w-xs">
-          <div className="font-semibold break-words">{role}</div>
-          <div className="break-words">{bearerLabel}</div>
-          {anonData?.node_id && <div className="text-xs font-mono break-all">{anonData.node_id}</div>}
-        </div>
-      );
-    }
-
-    return role;
-  };
+  const latestHolder = holder && holder.length > 0 ? holder[holder.length - 1] : undefined;
 
   return (
     <span className={cn("flex gap-1 items-center", className)}>
       {drawee && (
         <div>
-          <IdentityPublicAvatar value={drawee} tooltip={getIdentTooltip(drawee, getRoleLabel("drawee"))} />
+          <IdentityPublicAvatar value={drawee} details={<ParticipantSummary role={getRoleLabel("drawee")} participant={drawee} />} />
         </div>
       )}
       {drawer && (
         <div>
-          <IdentityPublicAvatar value={drawer} tooltip={getIdentTooltip(drawer, getRoleLabel("drawer"))} />
+          <IdentityPublicAvatar value={drawer} details={<ParticipantSummary role={getRoleLabel("drawer")} participant={drawer} />} />
         </div>
       )}
       {payee && (
         <div>
-          <IdentOrAnonAvatar value={payee} tooltip={getIdentOrAnonTooltip(payee, getRoleLabel("payee"))} />
+          <IdentOrAnonAvatar value={payee} details={<ParticipantSummary role={getRoleLabel("payee")} participant={payee} />} />
         </div>
       )}
-      {holder && holder.length > 0 && (
+      {latestHolder && (
         <div>
           <IdentOrAnonAvatar
-            value={holder[holder.length - 1]}
-            tooltip={getIdentOrAnonTooltip(holder[holder.length - 1], getRoleLabel("holder"))}
+            value={latestHolder}
+            details={<ParticipantSummary role={getRoleLabel("holder")} participant={latestHolder} />}
           />
         </div>
       )}

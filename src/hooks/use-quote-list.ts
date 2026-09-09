@@ -255,6 +255,7 @@ export function useQuoteList(status?: QuoteStatus) {
       quote.id,
       effectiveStatus,
       quote.sum.toString(),
+      bill?.id ?? "",
       bill?.maturity_date ?? "",
       ...getParticipantSearchValues(bill),
       payment?.requested_to_pay ? "request to pay requested requested to pay req to pay" : "",
