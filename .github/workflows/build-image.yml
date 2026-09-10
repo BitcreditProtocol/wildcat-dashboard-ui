@@ -7,18 +7,48 @@ on:
         description: "docker/metadata-action tag directives"
         required: true
         type: string
+      expected_sha:
+        description: Exact master SHA captured by the nightly candidate
+        required: false
+        type: string
+        default: ""
+      candidate_run_id:
+        description: Original central nightly candidate run ID
+        required: false
+        type: string
+        default: ""
+      record_nightly:
+        description: Record source-specific nightly image digests
+        required: false
+        type: boolean
+        default: false
 
 env:
   IMAGE_NAME: "bcr-wdc-dashboard-ui"
 
 jobs:
   build:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
+      - name: Verify candidate source
+        if: inputs.record_nightly
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/master || exit 1
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+            [[ "$CANDIDATE_RUN_ID" =~ ^[1-9][0-9]*$ ]] || exit 1
+            test "$GITHUB_SHA" = "$EXPECTED_SHA" || exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -52,3 +82,40 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ github.repository }}/${{ env.IMAGE_NAME }}
           cache-to: type=gha,mode=max,scope=${{ github.repository }}/${{ env.IMAGE_NAME }}
+
+      - name: Record source-specific image digests
+        if: inputs.record_nightly
+        id: resolved
+        env:
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+        run: |
+          python3 - <<'PY_IMAGE'
+          import json, os, pathlib, re, subprocess
+          e = os.environ
+          tag = f"source-{e['GITHUB_SHA']}-{e['GITHUB_RUN_ID']}-{e['GITHUB_RUN_ATTEMPT']}"
+          references = {}
+          for registry, prefix in (("ghcr", "ghcr.io/" + e["GITHUB_REPOSITORY_OWNER"].lower()),):
+              image = prefix + "/" + e["IMAGE_NAME"]
+              data = json.loads(subprocess.check_output(["docker", "buildx", "imagetools", "inspect", image + ":" + tag, "--format", "{{json .Manifest}}"], text=True))
+              digest = data.get("digest")
+              if not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+                  raise SystemExit("Registry returned an invalid image digest")
+              references[registry] = image + "@" + digest
+              with open(e["GITHUB_OUTPUT"], "a") as output:
+                  output.write(f"{registry}_digest={digest}\n")
+          manifest = dict(schema=1, repository=e["GITHUB_REPOSITORY"], sha=e["GITHUB_SHA"],
+                          run_id=e["GITHUB_RUN_ID"], run_attempt=int(e["GITHUB_RUN_ATTEMPT"]),
+                          candidate_run_id=e.get("CANDIDATE_RUN_ID", ""), image=e["IMAGE_NAME"],
+                          source_tag=tag, references=references)
+          pathlib.Path("nightly-image.json").write_text(json.dumps(manifest, sort_keys=True) + "\n")
+          PY_IMAGE
+
+      - name: Save the image result
+        if: inputs.record_nightly
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-image-${{ env.IMAGE_NAME }}-${{ github.run_attempt }}
+          path: nightly-image.json
+          if-no-files-found: error
+          retention-days: 90
+          overwrite: false
