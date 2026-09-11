@@ -158,6 +158,17 @@ export function useQuoteList(status?: QuoteStatus) {
   const quotes = React.useMemo(() => data?.pages.flatMap((page) => getPageQuotes(page)) ?? [], [data]);
   const totalQuotes = data?.pages[0]?.total ?? quotes.length;
   const usesLegacyFallback = data?.pages.some((page) => !isPaginatedPage(page)) ?? false;
+  const shouldLoadAllPages = normalizedSearchQuery.length > 0 || quickFilter !== "all";
+  const isLoadingAllPages = shouldLoadAllPages && (hasNextPage || isFetchingNextPage);
+
+  React.useEffect(() => {
+    if (!shouldLoadAllPages || !hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    void fetchNextPage();
+  }, [shouldLoadAllPages, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const shouldFetchEbills =
     shouldFetchEbillsForStatusPage(status) ||
     quickFilter === "requested-to-pay" ||
@@ -419,6 +430,7 @@ export function useQuoteList(status?: QuoteStatus) {
     noQuotesMessage,
     isFetching,
     isFetchingNextPage,
+    isLoadingAllPages,
     hasNextPage,
     fetchNextPage,
     isLoading,

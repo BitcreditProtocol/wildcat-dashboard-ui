@@ -157,8 +157,15 @@ function changeSearchValue(page: HTMLDivElement, value: string) {
   if (!(input instanceof HTMLInputElement)) {
     throw new Error("Missing search input");
   }
+  // React tracks the last value it wrote, so assigning `input.value` directly would make
+  // it skip the change event. Go through the native setter to look like real typing.
+  const setNativeValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.bind(input);
+  if (!setNativeValue) {
+    throw new Error("Missing native input value setter");
+  }
+
   act(() => {
-    input.value = value;
+    setNativeValue(value);
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
@@ -532,12 +539,96 @@ describe("StatusQuotePage", () => {
     expect(fetchNextPageSpy).toHaveBeenCalled();
   });
 
+  it("loads the remaining pages so a search covers quotes that are not loaded yet", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            data: [{ id: "quote-accepted", status: "Accepted", sum: 300 }],
+            total: 2,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: true,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+
+    const page = renderPage();
+    expect(fetchNextPageSpy).not.toHaveBeenCalled();
+
+    changeSearchValue(page, "quote-pending");
+
+    expect(fetchNextPageSpy).toHaveBeenCalled();
+    expect(page.textContent).toContain("Searching all quotes...");
+    // The manual control and the no-match state would both be wrong mid auto-load.
+    expect(page.textContent).not.toContain("Load more");
+    expect(page.textContent).not.toContain("No quotes match your search criteria");
+  });
+
+  it("loads the remaining pages so a quick filter covers quotes that are not loaded yet", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            data: [{ id: "quote-accepted", status: "Accepted", sum: 300 }],
+            total: 2,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: true,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+
+    const page = renderPage();
+    clickSelectItem(page, "maturity-today");
+
+    expect(fetchNextPageSpy).toHaveBeenCalled();
+  });
+
+  it("keeps the load more control when no search or filter is active", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            data: [{ id: "quote-accepted", status: "Accepted", sum: 300 }],
+            total: 2,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: true,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+
+    const page = renderPage();
+
+    expect(fetchNextPageSpy).not.toHaveBeenCalled();
+    expect(page.textContent).toContain("Load more");
+    expect(page.textContent).not.toContain("Searching all quotes...");
+  });
+
   it("searches by participant name", () => {
     const page = renderPage();
     changeSearchValue(page, "Charlie");
 
     expect(page.textContent).toContain("quote-accepted");
     expect(page.textContent).toContain("quote-pending");
+
+    changeSearchValue(page, "Dorothy");
+
+    expect(page.textContent).not.toContain("quote-accepted");
+    expect(page.textContent).not.toContain("quote-pending");
   });
 
   it("filters quotes that were requested to pay", () => {

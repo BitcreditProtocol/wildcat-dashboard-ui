@@ -1,22 +1,43 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { useQuery } from "@tanstack/react-query";
-import { listKeysetInfosOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { listKeysetInfosInfiniteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Heading, Search as SearchComponent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
 import { SortButtons } from "@/components/SortButtons";
 import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
 import { KeysetCard } from "@/pages/keysets/components/KeysetCard";
 import { useKeysetFiltering } from "@/hooks/use-keyset-filtering";
+import { getNextKeysetPageOffset, getPageKeysets } from "@/utils/keyset-pages";
+import * as React from "react";
 
 const KEYSETS_POLL_INTERVAL_MS = 10_000;
+const KEYSETS_PAGE_SIZE = 100;
 
 function PageBody() {
   const intl = useIntl();
-  const { data: keysetsResponse, isLoading: keysetsLoading } = useQuery({
-    ...listKeysetInfosOptions(),
+  const {
+    data,
+    isLoading: keysetsLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    ...listKeysetInfosInfiniteOptions({ query: { limit: KEYSETS_PAGE_SIZE } }),
     refetchInterval: KEYSETS_POLL_INTERVAL_MS,
+    initialPageParam: 0,
+    getNextPageParam: getNextKeysetPageOffset,
   });
-  const keysets = keysetsResponse?.data ?? [];
+
+  const keysets = React.useMemo(() => data?.pages.flatMap((page) => getPageKeysets(page)) ?? [], [data]);
+  const isLoadingAllPages = hasNextPage || isFetchingNextPage;
+
+  React.useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const {
     searchQuery,
@@ -79,7 +100,17 @@ function PageBody() {
         <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
       </div>
 
-      {sortedKeysets.length === 0 ? (
+      {isLoadingAllPages && (
+        <div className="text-center text-sm text-muted-foreground">
+          <FormattedMessage
+            id="keysets.pagination.loadingAll"
+            defaultMessage="Loading all keysets..."
+            description="Shown while the remaining keyset pages are loaded so search and filters cover every keyset"
+          />
+        </div>
+      )}
+
+      {sortedKeysets.length === 0 && !isLoadingAllPages ? (
         <div className="p-4 text-muted-foreground text-center">
           <FormattedMessage id="keysets.search.noMatch" defaultMessage="No keysets match your search criteria" />
         </div>

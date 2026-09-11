@@ -4,27 +4,47 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
 
-interface QueryOptions {
-  queryKey: { _id: string }[];
+interface KeysetPage {
+  data: unknown[];
+  total: number;
 }
-interface QueryResult {
-  data: unknown;
+interface QueryOptions {
+  queryKey: { _id: string; query?: { limit?: number } }[];
+}
+interface InfiniteQueryResult {
+  data: { pages: KeysetPage[] } | undefined;
   isLoading: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  fetchNextPage: () => Promise<unknown>;
 }
 
-const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
+const mockUseInfiniteQuery = vi.fn<(options: QueryOptions) => InfiniteQueryResult>();
+const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
 let nextSearchQuery = "";
+
+function mockKeysetPages(pages: KeysetPage[], options: { hasNextPage?: boolean } = {}) {
+  mockUseInfiniteQuery.mockReturnValue({
+    data: { pages },
+    isLoading: false,
+    hasNextPage: options.hasNextPage ?? false,
+    isFetchingNextPage: false,
+    fetchNextPage: fetchNextPageSpy,
+  });
+}
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
-    useQuery: (options: QueryOptions) => mockUseQuery(options),
+    useInfiniteQuery: (options: QueryOptions) => mockUseInfiniteQuery(options),
   };
 });
 
 vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
-  listKeysetInfosOptions: () => ({ queryKey: [{ _id: "listKeysetInfos" }] }),
+  listKeysetInfosInfiniteOptions: (options: { query?: { limit?: number } }) => ({
+    queryKey: [{ _id: "listKeysetInfos", query: options.query }],
+  }),
 }));
 
 vi.mock("@bitcredit/ui-library", async () => {
@@ -152,6 +172,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-02-20T00:00:00.000Z"));
   nextSearchQuery = "";
+  fetchNextPageSpy.mockResolvedValue(undefined);
 
   if (root && container) {
     act(() => {
@@ -165,18 +186,15 @@ beforeEach(() => {
 
 describe("KeysetsPage", () => {
   it("shows empty state when no keysets are returned", () => {
-    mockUseQuery.mockReturnValue({
-      data: { data: [], total: 0 },
-      isLoading: false,
-    });
+    mockKeysetPages([{ data: [], total: 0 }]);
 
     const page = renderPage();
     expect(page.textContent).toContain("No keysets found");
   });
 
   it("renders inactive keyset without expiry", () => {
-    mockUseQuery.mockReturnValue({
-      data: {
+    mockKeysetPages([
+      {
         data: [
           {
             id: "keyset-no-expiry",
@@ -187,8 +205,7 @@ describe("KeysetsPage", () => {
         ],
         total: 1,
       },
-      isLoading: false,
-    });
+    ]);
 
     const page = renderPage();
     expect(page.textContent).toContain("Inactive");
@@ -197,8 +214,8 @@ describe("KeysetsPage", () => {
   });
 
   it("filters out all rows and shows no-match state from search", () => {
-    mockUseQuery.mockReturnValue({
-      data: {
+    mockKeysetPages([
+      {
         data: [
           {
             id: "keyset-aaa",
@@ -215,8 +232,7 @@ describe("KeysetsPage", () => {
         ],
         total: 2,
       },
-      isLoading: false,
-    });
+    ]);
     nextSearchQuery = "definitely-missing";
 
     const page = renderPage();
@@ -226,8 +242,8 @@ describe("KeysetsPage", () => {
   });
 
   it("sorts by maturity, then currency, then status via sort controls", () => {
-    mockUseQuery.mockReturnValue({
-      data: {
+    mockKeysetPages([
+      {
         data: [
           {
             id: "keyset-expired",
@@ -250,8 +266,7 @@ describe("KeysetsPage", () => {
         ],
         total: 3,
       },
-      isLoading: false,
-    });
+    ]);
 
     const page = renderPage();
 
@@ -268,8 +283,8 @@ describe("KeysetsPage", () => {
   });
 
   it("filters keysets through the dropdown", () => {
-    mockUseQuery.mockReturnValue({
-      data: {
+    mockKeysetPages([
+      {
         data: [
           {
             id: "keyset-active",
@@ -286,12 +301,80 @@ describe("KeysetsPage", () => {
         ],
         total: 2,
       },
-      isLoading: false,
-    });
+    ]);
 
     const page = renderPage();
     clickSelectItem(page, "inactive");
 
     expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-inactive"]);
+  });
+
+  it("searches keysets that live on a later page", () => {
+    mockKeysetPages([
+      {
+        data: [
+          {
+            id: "keyset-first-page",
+            active: true,
+            final_expiry: 1798761600,
+            unit: "sat",
+          },
+        ],
+        total: 2,
+      },
+      {
+        data: [
+          {
+            id: "keyset-second-page",
+            active: true,
+            final_expiry: 1798761600,
+            unit: { Custom: "usd" },
+          },
+        ],
+        total: 2,
+      },
+    ]);
+    nextSearchQuery = "keyset-second-page";
+
+    const page = renderPage();
+    clickButtonByText(page, "SearchMock");
+
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-second-page"]);
+  });
+
+  it("keeps loading keyset pages while the mint has more of them", () => {
+    mockKeysetPages(
+      [
+        {
+          data: [
+            {
+              id: "keyset-first-page",
+              active: true,
+              final_expiry: 1798761600,
+              unit: "sat",
+            },
+          ],
+          total: 2,
+        },
+      ],
+      { hasNextPage: true }
+    );
+    nextSearchQuery = "keyset-second-page";
+
+    const page = renderPage();
+    clickButtonByText(page, "SearchMock");
+
+    expect(fetchNextPageSpy).toHaveBeenCalled();
+    expect(page.textContent).toContain("Loading all keysets...");
+    // The no-match state would be wrong while pages are still on their way in.
+    expect(page.textContent).not.toContain("No keysets match your search criteria");
+  });
+
+  it("requests keysets in pages", () => {
+    mockKeysetPages([{ data: [], total: 0 }]);
+
+    renderPage();
+
+    expect(mockUseInfiniteQuery.mock.calls[0]?.[0]?.queryKey?.[0]?.query).toMatchObject({ limit: 100 });
   });
 });
