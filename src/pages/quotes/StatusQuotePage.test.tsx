@@ -1,7 +1,7 @@
 import { act, type ReactElement } from "react";
 import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
 import StatusQuotePage from "./StatusQuotePage";
@@ -193,9 +193,9 @@ function lastQuotesQuery() {
   return mockUseInfiniteQuery.mock.calls[mockUseInfiniteQuery.mock.calls.length - 1]?.[0]?.queryKey?.[0]?.query;
 }
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  fetchNextPageSpy.mockResolvedValue(undefined);
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
   if (root && container) {
     act(() => {
       root?.unmount();
@@ -204,6 +204,11 @@ beforeEach(() => {
     root = null;
     container = null;
   }
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  fetchNextPageSpy.mockResolvedValue(undefined);
 
   mockUseInfiniteQuery.mockReturnValue({
     data: {

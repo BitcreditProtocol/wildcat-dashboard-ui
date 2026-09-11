@@ -1,6 +1,6 @@
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { FeeTokenQRCodeModal, QRCode, QRCodeModal } from "./QRCodeWithErrorBoundary";
 
@@ -56,6 +56,19 @@ function renderWithIntl(element: ReactElement): HTMLDivElement {
   return renderIntoDom(<IntlProvider locale="en">{element}</IntlProvider>);
 }
 
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
+  if (root && container) {
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
+    root = null;
+    container = null;
+  }
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockCanGenerateQRCode.mockReturnValue(true);
@@ -66,15 +79,6 @@ beforeEach(() => {
   mockDynamicQrProgress.mockImplementation(({ currentFrameIndex, totalFrames }) => (
     <div role="progressbar" aria-valuemax={totalFrames} data-current-frame={currentFrameIndex} />
   ));
-
-  if (root && container) {
-    act(() => {
-      root?.unmount();
-    });
-    container.remove();
-    root = null;
-    container = null;
-  }
 });
 
 describe("QRCodeWithErrorBoundary", () => {
