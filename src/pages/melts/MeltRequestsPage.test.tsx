@@ -1,6 +1,6 @@
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
 import type { DeniedMeltOp } from "@/generated/client/types.gen";
@@ -202,6 +202,19 @@ function mockOpsQuery(ops: DeniedMeltOp[], overrides: Partial<QueryResult> = {})
   });
 }
 
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
+  if (root && container) {
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
+    root = null;
+    container = null;
+  }
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
@@ -214,15 +227,6 @@ beforeEach(() => {
   mockDeleteHookReturn.closeDeleteConfirmation = vi.fn();
   mockDeleteHookReturn.deletingId = undefined;
   mockDeleteHookReturn.isDeleting = false;
-
-  if (root && container) {
-    act(() => {
-      root?.unmount();
-    });
-    container.remove();
-    root = null;
-    container = null;
-  }
 });
 
 describe("MeltRequestsPage", () => {
