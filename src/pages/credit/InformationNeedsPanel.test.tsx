@@ -109,6 +109,19 @@ it("discards a review draft when evidence changes without changing calculated te
   expect(reviewInformationNeed).not.toHaveBeenCalled();
 });
 
+it("shows governed response paths as localized operator copy instead of internal tokens", () => {
+  const page = render({
+    ...need,
+    acceptableResponses: ["correct_answer", "upload_supporting_document", "explain_evidence_unavailable"],
+  });
+  expect(page.textContent).toContain("Correct the answer");
+  expect(page.textContent).toContain("Upload supporting evidence");
+  expect(page.textContent).toContain("Explain why evidence is unavailable");
+  expect(page.textContent).not.toContain("correct_answer");
+  expect(page.textContent).not.toContain("upload_supporting_document");
+  expect(page.textContent).not.toContain("explain_evidence_unavailable");
+});
+
 it("coalesces repeated submit events while the exact evidence review is in flight", async () => {
   const page = render(need, true);
   enterExhaustedReview(page);
