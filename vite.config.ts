@@ -79,6 +79,7 @@ export default defineViteConfig(({ mode }) => {
       },
     ],
     resolve: {
+      dedupe: ["react", "react-dom", "react-intl", "lucide-react"],
       alias: {
         "@": path.resolve(rootDir, "./src"),
       },

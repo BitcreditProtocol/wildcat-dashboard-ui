@@ -43,6 +43,7 @@ import { isQuotePollingCompleteStatus } from "@/utils/quote-status";
 import { CaseWorkspace } from "./components/CaseWorkspace";
 import { InformationNeedsPanel } from "@/pages/credit/InformationNeedsPanel";
 import { CaseReviewTrail } from "@/pages/credit/CaseReviewTrail";
+import type { InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
 
 interface LocationState {
   from?: string;
@@ -75,6 +76,7 @@ function PageBody({ id }: { id: string }) {
   const [openingEvidenceReference, setOpeningEvidenceReference] = useState<string | null>(null);
   const [reviewingEvidenceReference, setReviewingEvidenceReference] = useState<string | null>(null);
   const [signedAuthorizationReceipt, setSignedAuthorizationReceipt] = useState<VerifiedAuthorizationReceipt | null>(null);
+  const [selectedInvestigationNeeds, setSelectedInvestigationNeeds] = useState<InvestigationNeedSelection[]>([]);
 
   const previewUrlRef = useRef<string | null>(null);
   const blobUrlTimerRef = useRef<number | null>(null);
@@ -119,6 +121,9 @@ function PageBody({ id }: { id: string }) {
   } = useQuoteDetail(id);
   const creditAssessment = useCreditAssessmentForBill(billId, id);
   const operatorCapability = useOperatorCapability();
+  useEffect(() => {
+    setSelectedInvestigationNeeds([]);
+  }, [creditAssessment.decisionCase?.resultDigest, creditAssessment.decisionCase?.submissionDigest]);
   const creditEvidence: CreditEvidenceState = creditAssessment.isLoading
     ? { status: "loading" }
     : creditAssessment.error !== null
@@ -425,6 +430,8 @@ function PageBody({ id }: { id: string }) {
                 timeOfRequestToPay={timeOfRequestToPay}
                 historyBlocks={historyBlocks}
                 onAuthorizationVerified={setSignedAuthorizationReceipt}
+                selectedInvestigationNeeds={selectedInvestigationNeeds}
+                onInvestigationNeedsSubmitted={() => setSelectedInvestigationNeeds([])}
               />
             </div>
           }
@@ -492,7 +499,20 @@ function PageBody({ id }: { id: string }) {
           />
         )}
         <CaseWorkspace
-          investigation={<CaseInvestigationPanel decisionCase={decisionCase} />}
+          investigation={
+            <CaseInvestigationPanel
+              decisionCase={decisionCase}
+              selectedNeeds={selectedInvestigationNeeds}
+              onSelectedNeedsChange={setSelectedInvestigationNeeds}
+              selectionDisabled={
+                operatorCapability.capability?.operatorRole !== "approver" ||
+                effectiveQuoteStatus !== "Pending" ||
+                decisionCase?.assessmentCurrency !== "current" ||
+                decisionCase?.mintQuoteId !== id ||
+                decisionCase?.applicantHumanReview !== undefined
+              }
+            />
+          }
           evidence={
             <QuoteDocuments
               embedded

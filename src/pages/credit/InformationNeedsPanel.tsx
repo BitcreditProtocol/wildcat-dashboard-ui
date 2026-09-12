@@ -53,6 +53,17 @@ const messages = defineMessages({
     description: "Previous evidence review is no longer current",
   },
   response: { id: "credit.needs.response", defaultMessage: "Applicant answer", description: "Untrusted reply to this question" },
+  purpose: { id: "credit.needs.purpose", defaultMessage: "Why this is needed", description: "Governed purpose of an evidence question" },
+  alternatives: {
+    id: "credit.needs.alternatives",
+    defaultMessage: "Accepted response paths",
+    description: "Governed alternatives the applicant may use to respond",
+  },
+  resolution: {
+    id: "credit.needs.resolution",
+    defaultMessage: "Completion rule",
+    description: "Governed criterion for completing an evidence question",
+  },
   basis: {
     id: "credit.needs.basis",
     defaultMessage: "Review basis",
@@ -169,6 +180,24 @@ function NeedRow({
             {source.quote}
           </blockquote>
         ))}
+        {need.purpose !== undefined && (
+          <div>
+            <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.purpose)}</p>
+            <p className="mt-1 break-words">{need.purpose}</p>
+          </div>
+        )}
+        {need.acceptableResponses !== undefined && (
+          <div>
+            <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.alternatives)}</p>
+            <p className="mt-1 break-words">{need.acceptableResponses.join(" · ")}</p>
+          </div>
+        )}
+        {need.resolutionCriterion !== undefined && (
+          <div>
+            <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.resolution)}</p>
+            <p className="mt-1 break-words">{need.resolutionCriterion}</p>
+          </div>
+        )}
         {need.response !== undefined && (
           <div>
             <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.response)}</p>

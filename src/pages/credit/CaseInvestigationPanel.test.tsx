@@ -21,14 +21,22 @@ const run = caseInvestigationRunSchema.parse({
   stoppingReason: "review_completed",
   needs: [{ kind: "cost_breakdown", sources: [{ answerIndex: 0, quote: '<img src="bad" onerror="steal()">' }] }],
 });
-function render(decisionCase: Parameters<typeof CaseInvestigationPanel>[0]["decisionCase"]) {
+function render(
+  decisionCase: Parameters<typeof CaseInvestigationPanel>[0]["decisionCase"],
+  options: Partial<Omit<Parameters<typeof CaseInvestigationPanel>[0], "decisionCase">> = {}
+) {
   const page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
   act(() => {
     root?.render(
       <IntlProvider locale="en">
-        <CaseInvestigationPanel decisionCase={decisionCase} />
+        <CaseInvestigationPanel
+          decisionCase={decisionCase}
+          selectedNeeds={options.selectedNeeds ?? []}
+          onSelectedNeedsChange={options.onSelectedNeedsChange ?? (() => undefined)}
+          selectionDisabled={options.selectionDisabled ?? false}
+        />
       </IntlProvider>
     );
   });
@@ -40,7 +48,7 @@ afterEach(() => {
 });
 it("does not manufacture agent work for cases without receipts", () => {
   const page = render(undefined);
-  expect(page.textContent).toContain("No answer investigation recorded");
+  expect(page.textContent).toContain("No optional answer review");
   expect(page.querySelectorAll("article")).toHaveLength(0);
 });
 it("shows actual source-bound proposals, escapes source content and links to the real conversation", () => {
@@ -50,11 +58,27 @@ it("shows actual source-bound proposals, escapes source content and links to the
     caseInvestigation: { status: "completed", runs: [run] },
   });
   expect(page.textContent).toContain("Proposed follow-up");
-  expect(page.textContent).toContain("no external verification");
+  expect(page.textContent).toContain("no claim verification");
   expect(page.textContent).not.toContain("Previous input");
   expect(page.querySelector("img")).toBeNull();
   expect(page.querySelector("blockquote")?.textContent).toContain("<img");
   expect(page.querySelector('a[href="#case-conversation"]')).not.toBeNull();
+});
+it("lets an authorized host select a current proposal without turning model prose into a request", () => {
+  let selected: Parameters<typeof CaseInvestigationPanel>[0]["selectedNeeds"] = [];
+  const page = render(
+    {
+      resultDigest: run.resultDigest,
+      submissionDigest: run.submissionDigest,
+      caseInvestigation: { status: "completed", runs: [run] },
+    },
+    { onSelectedNeedsChange: (value) => (selected = value) }
+  );
+  const checkbox = page.querySelector<HTMLInputElement>('input[type="checkbox"]');
+  expect(checkbox).not.toBeNull();
+  act(() => checkbox?.click());
+  expect(selected).toEqual([{ runId: run.runId, needIndex: 0 }]);
+  expect(page.querySelector("img")).toBeNull();
 });
 it("marks old findings as previous input and does not imply an interrupted run succeeded", () => {
   const stopped = { ...run, status: "interrupted" as const, needs: [], stoppingReason: "interrupted" as const };
@@ -64,6 +88,6 @@ it("marks old findings as previous input and does not imply an interrupted run s
     caseInvestigation: { status: "stopped", runs: [stopped] },
   });
   expect(page.textContent).toContain("Previous input");
-  expect(page.textContent).toContain("operator attention needed");
+  expect(page.textContent).toContain("Interrupted");
   expect(page.textContent).not.toContain("No additional question proposed");
 });

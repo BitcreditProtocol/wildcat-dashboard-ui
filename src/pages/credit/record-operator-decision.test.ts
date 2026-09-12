@@ -320,7 +320,7 @@ describe("recordOperatorDecision", () => {
     );
     const request = fetch.mock.calls[0]?.[1] as RequestInit;
     if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
-    expect(request.body).toBe(JSON.stringify({ ...command, materialEvidence: [], requiredItems: [] }));
+    expect(request.body).toBe(JSON.stringify({ ...command, materialEvidence: [], requiredItems: [], investigationNeeds: [] }));
   });
 
   it("forwards only the selected material-evidence identities for a discretionary decline", async () => {
@@ -348,7 +348,7 @@ describe("recordOperatorDecision", () => {
 
     const request = fetch.mock.calls[0]?.[1] as RequestInit;
     if (typeof request.body !== "string") throw new Error("Expected a JSON request body");
-    expect(request.body).toBe(JSON.stringify({ ...decline, materialEvidence, requiredItems: [] }));
+    expect(request.body).toBe(JSON.stringify({ ...decline, materialEvidence, requiredItems: [], investigationNeeds: [] }));
   });
 
   it("fails closed on malformed or differently bound Mint denial responses", async () => {
