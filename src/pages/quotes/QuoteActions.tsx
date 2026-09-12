@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { AppIcon, Button, toast } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
+import { informationNeedRequestItem, type InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
 import { getEbillOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen";
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer";
@@ -48,6 +49,8 @@ interface QuoteActionsProps {
   paymentDeadlineTs?: number | null;
   timeOfRequestToPay?: number | null;
   onAuthorizationVerified?: (receipt: VerifiedAuthorizationReceipt) => void;
+  selectedInvestigationNeeds?: readonly InvestigationNeedSelection[];
+  onInvestigationNeedsSubmitted?: () => void;
 }
 
 export function QuoteActions({
@@ -59,6 +62,8 @@ export function QuoteActions({
   paymentDeadlineTs,
   timeOfRequestToPay,
   onAuthorizationVerified,
+  selectedInvestigationNeeds = [],
+  onInvestigationNeedsSubmitted,
 }: QuoteActionsProps) {
   const intl = useIntl();
   const queryClient = useQueryClient();
@@ -221,22 +226,37 @@ export function QuoteActions({
     decisionCase?.result.assessmentStatus === "ready_for_decision" &&
     decisionCase.result.recommendation === "offer_available" &&
     governedOfferExpiresAt > Date.now();
+  const selectedInvestigationItems = selectedInvestigationNeeds.flatMap((selection) => {
+    const run = decisionCase?.caseInvestigation?.runs.find((entry) => entry.runId === selection.runId);
+    const need = run?.needs[selection.needIndex];
+    return run?.status === "completed" &&
+      run.submissionDigest === decisionCase?.submissionDigest &&
+      run.resultDigest === decisionCase.resultDigest &&
+      need !== undefined
+      ? [informationNeedRequestItem(need.kind)]
+      : [];
+  });
   const showGovernedResolution =
     showPendingActions &&
     hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
-    (decisionCase?.result.assessmentStatus === "blocked_pending_verification" || hasUnresolvedEvidenceQuestions);
+    (decisionCase?.result.assessmentStatus === "blocked_pending_verification" ||
+      hasUnresolvedEvidenceQuestions ||
+      selectedInvestigationItems.length > 0);
   const evidenceRequiredItems = pendingEvidenceRequiredItems(decisionCase);
   const requiredVerificationItems = [
     ...(decisionCase?.result.verificationRequests?.map((request) => request.requiredItem) ?? []),
     ...evidenceRequiredItems,
   ];
-  const applicantVerificationItems = [
-    ...(decisionCase?.result.verificationRequests
-      ?.filter((request) => request.owner === "applicant")
-      .map((request) => request.requiredItem) ?? []),
-    ...evidenceRequiredItems,
-  ];
+  const applicantVerificationItems = Array.from(
+    new Set([
+      ...(decisionCase?.result.verificationRequests
+        ?.filter((request) => request.owner === "applicant")
+        .map((request) => request.requiredItem) ?? []),
+      ...evidenceRequiredItems,
+      ...selectedInvestigationItems,
+    ])
+  );
   const hasMintRiskRequest =
     decisionCase?.result.verificationRequests?.some(
       (request) => request.owner === "mint_risk" && request.resolutionAction === "record_acceptor_risk_assessment"
@@ -480,10 +500,12 @@ export function QuoteActions({
       reasonCode: "operator_returned_for_information",
       writtenBasis,
       requiredItems: applicantVerificationItems,
+      investigationNeeds: [...selectedInvestigationNeeds],
     });
     if (recorded === null) return;
     recordedGovernance.current = undefined;
     setReturnInfoDrawerOpen(false);
+    onInvestigationNeedsSubmitted?.();
     void queryClient.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
     toast({
       title: intl.formatMessage({
