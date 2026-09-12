@@ -16,7 +16,13 @@ import type {
 import type { InfoReply } from "@/generated/client/types.gen";
 import { ApiError } from "@/lib/api-error";
 import Big from "big.js";
-import { informationNeedRequiredItems, type InformationNeed } from "@bitcredit/ai-credit-shared";
+import {
+  caseInvestigationRunSchema,
+  informationNeedRequestItem,
+  informationNeedRequiredItems,
+  type InformationNeed,
+  type InvestigationNeedSelection,
+} from "@bitcredit/ai-credit-shared";
 
 const { mockToast } = vi.hoisted(() => ({ mockToast: vi.fn<(input: { title: string; variant: string }) => void>() }));
 vi.mock("@bitcredit/ui-library", async (importOriginal) => ({
@@ -381,7 +387,12 @@ const completedMintDenial = {
   },
 } as const;
 
-function renderComponent(value = acceptedQuote, onAuthorizationVerified?: (receipt: VerifiedAuthorizationReceipt) => void) {
+function renderComponent(
+  value = acceptedQuote,
+  onAuthorizationVerified?: (receipt: VerifiedAuthorizationReceipt) => void,
+  selectedInvestigationNeeds: readonly InvestigationNeedSelection[] = [],
+  onInvestigationNeedsSubmitted?: () => void
+) {
   const mount = document.createElement("div");
   document.body.appendChild(mount);
   const mountRoot = createRoot(mount);
@@ -395,6 +406,8 @@ function renderComponent(value = acceptedQuote, onAuthorizationVerified?: (recei
           isMintComplete={false}
           requestedToPay={false}
           onAuthorizationVerified={onAuthorizationVerified}
+          selectedInvestigationNeeds={selectedInvestigationNeeds}
+          onInvestigationNeedsSubmitted={onInvestigationNeedsSubmitted}
         />
       </IntlProvider>
     );
@@ -526,6 +539,47 @@ describe("QuoteActions", () => {
       expect(mockRetryOperatorVerificationSources).not.toHaveBeenCalled();
     }
   );
+
+  it("admits an exact current investigator proposal through the governed information return", async () => {
+    const submissionDigest = `sha256:${"9".repeat(64)}`;
+    const run = caseInvestigationRunSchema.parse({
+      schemaVersion: "case-investigation-run-v1",
+      runId: "22222222-2222-4222-8222-222222222222",
+      caseId: governedOffer.snapshot.caseId,
+      preparedInputId: "11111111-1111-4111-8111-111111111111",
+      submissionDigest,
+      resultDigest: governedOffer.resultDigest,
+      modelId: "bounded-answer-reviewer",
+      promptVersion: "case-answer-review-v1",
+      status: "completed",
+      startedAt: "2026-09-12T10:00:00Z",
+      finishedAt: "2026-09-12T10:00:01Z",
+      stoppingReason: "review_completed",
+      needs: [{ kind: "sales_evidence", sources: [{ answerIndex: 1, quote: "Milk sales fund repayment" }] }],
+    });
+    decisionCase = { ...governedOffer, submissionDigest, caseInvestigation: { status: "completed", runs: [run] } };
+    const submitted = vi.fn();
+    const selection = [{ runId: run.runId, needIndex: 0 }];
+    const page = renderComponent(pendingQuote, undefined, selection, submitted);
+    expect(page.textContent).toContain("Request information from applicant");
+
+    await act(async () => {
+      returnInfoSubmit?.("Confirm the sales relied on by the repayment story through the applicant evidence channel.");
+      await Promise.resolve();
+    });
+    expect(mockRecordOperatorDecision).toHaveBeenCalledWith({
+      billId: "bill-1",
+      caseId: "case-offer",
+      decisionResultDigest: governedOffer.resultDigest,
+      action: "return_for_information",
+      reasonCode: "operator_returned_for_information",
+      writtenBasis: "Confirm the sales relied on by the repayment story through the applicant evidence channel.",
+      requiredItems: [informationNeedRequestItem("sales_evidence")],
+      investigationNeeds: selection,
+      submissionDigest,
+    });
+    expect(submitted).toHaveBeenCalledTimes(1);
+  });
 
   it.each([
     ["requested", null],
@@ -1078,7 +1132,7 @@ describe("QuoteActions", () => {
     expect(offerPage.textContent).toContain("Denial syncing with Mint");
   });
 
-  it.each(["queued", "running", "stopped"] as const)(
+  it.each(["queued", "running"] as const)(
     "keeps evidence-based denial available during %s investigation but blocks offers",
     async (status) => {
       decisionCase = { ...governedOffer, caseInvestigation: { status, runs: [] }, informationNeeds: [] };
@@ -1102,6 +1156,15 @@ describe("QuoteActions", () => {
       expect(mockHandleOfferQuote).not.toHaveBeenCalled();
     }
   );
+
+  it("treats a stopped optional investigation as fail-neutral", () => {
+    decisionCase = { ...governedOffer, caseInvestigation: { status: "stopped", runs: [] }, informationNeeds: [] };
+    const page = renderComponent(pendingQuote);
+    const labels = Array.from(page.querySelectorAll("button")).map((button) => button.textContent?.trim());
+    expect(labels).toContain("Deny");
+    expect(labels).toContain("Offer");
+    expect(closeUnableSubmit).toBeUndefined();
+  });
 
   it("shows fail-closed Deny and governs Return for information with the named verification items", async () => {
     decisionCase = governedVerification;
@@ -1134,6 +1197,7 @@ describe("QuoteActions", () => {
       reasonCode: "operator_returned_for_information",
       writtenBasis: "The named verification items must be supplied before a decision.",
       requiredItems: ["Signed delivery receipt", "Current acceptor financials"],
+      investigationNeeds: [],
     });
     expect(mockHandleDenyQuote).not.toHaveBeenCalled();
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();

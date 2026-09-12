@@ -1,5 +1,5 @@
 import { authenticatedFetch } from "@/lib/api-client";
-import type { InformationNeedReview } from "@bitcredit/ai-credit-shared";
+import type { InformationNeedReview, InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
 import type { MintQuoteDenialStatus, OperatorMaterialEvidenceSelection, SubmittedEvidence } from "./decision-types";
 import { parseMintDenialStatus } from "./parse-decision-cases";
 
@@ -24,6 +24,7 @@ export interface OperatorDecisionInput {
   writtenBasis: string;
   materialEvidence?: OperatorMaterialEvidenceSelection[];
   requiredItems?: string[];
+  investigationNeeds?: InvestigationNeedSelection[];
 }
 
 export interface OperatorCapability {
@@ -408,6 +409,7 @@ export async function recordOperatorDecision(
         ...input,
         materialEvidence: input.materialEvidence ?? [],
         requiredItems: input.requiredItems ?? [],
+        investigationNeeds: input.investigationNeeds ?? [],
       }),
       headers: { "content-type": "application/json" },
       method: "POST",
