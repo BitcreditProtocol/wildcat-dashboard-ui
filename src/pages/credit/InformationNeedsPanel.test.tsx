@@ -21,11 +21,12 @@ const need: InformationNeed = {
   reviewIsStale: false,
 };
 function render(
-  one: InformationNeed = need,
+  one: InformationNeed | InformationNeed[] = need,
   writable = false,
   submissionDigest = `sha256:${"5".repeat(64)}`,
   previous?: HTMLDivElement,
-  messages: Record<string, string> = {}
+  messages: Record<string, string> = {},
+  currentPreparedInputId?: string
 ) {
   const container = previous ?? document.createElement("div");
   if (previous === undefined) {
@@ -54,7 +55,20 @@ function render(
               assessmentCurrency: "current",
               resultDigest: `sha256:${"2".repeat(64)}`,
               submissionDigest,
-              informationNeeds: [one],
+              informationNeeds: Array.isArray(one) ? one : [one],
+              ...(currentPreparedInputId === undefined
+                ? {}
+                : {
+                    applicantConfirmation: {
+                      schemaVersion: "applicant-confirmation-summary-v1",
+                      preparedInputId: currentPreparedInputId,
+                      useOfFunds: "Harvest costs",
+                      acceptor: "Buyer",
+                      repaymentSource: "Coffee sales",
+                      answersAffirmed: true,
+                      recourseAcknowledged: true,
+                    },
+                  }),
             }}
             capability={writable ? { ready: true, operatorId: "reviewer", operatorRole: "reviewer" } : undefined}
           />
@@ -70,7 +84,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function enterExhaustedReview(page: HTMLDivElement) {
+function enterExhaustedReview(page: Element) {
   const select = page.querySelector("select");
   const textarea = page.querySelector("textarea");
   if (select === null || textarea === null) throw new Error("Missing review form");
@@ -180,6 +194,92 @@ it("shows answered questions as unverified and is read-only without a capability
   expect(page.textContent).toContain("Answered · unverified");
   expect(page.textContent).toContain("No buyer proof available");
   expect(page.querySelector("form")).toBeNull();
+});
+
+it("labels retained unresolved concerns without collapsing current, answered, open or reviewed rows", async () => {
+  const earlierPreparedInputId = "22222222-2222-4222-8222-222222222222";
+  const reviewed = (index: number, outcome: "resolved" | "exhausted"): InformationNeed => {
+    const needId = `sha256:${String(index).repeat(64)}`;
+    return {
+      ...need,
+      needId,
+      preparedInputId: earlierPreparedInputId,
+      status: outcome,
+      review: {
+        schemaVersion: "information-need-review-v2",
+        needId,
+        caseId: need.caseId,
+        resultDigest: `sha256:${"2".repeat(64)}`,
+        submissionDigest: `sha256:${"5".repeat(64)}`,
+        outcome,
+        basis: "The reviewer checked the submitted supporting records.",
+        evidenceDigests: outcome === "resolved" ? [`sha256:${"4".repeat(64)}`] : [],
+        reviewedAt: "2026-09-04T12:00:00Z",
+        reviewedBy: "reviewer",
+        reviewerRole: "reviewer",
+      },
+    };
+  };
+  const olderOpen = { ...need, needId: `sha256:${"4".repeat(64)}`, preparedInputId: earlierPreparedInputId, response: undefined };
+  const needs = [
+    need,
+    { ...need, needId: `sha256:${"2".repeat(64)}`, response: undefined },
+    { ...need, needId: `sha256:${"3".repeat(64)}`, preparedInputId: earlierPreparedInputId },
+    olderOpen,
+    reviewed(5, "exhausted"),
+    reviewed(6, "resolved"),
+  ];
+  const page = render(needs, true, undefined, undefined, {}, need.preparedInputId);
+  const rows = [...page.querySelectorAll("details")];
+  expect(rows).toHaveLength(6);
+  expect(rows.map((row) => row.querySelector("summary")?.textContent?.includes("Earlier submission · unresolved"))).toEqual([
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+  ]);
+  expect(rows.map((row) => row.querySelector("summary")?.textContent)).toEqual([
+    `${need.question}Answered · unverified`,
+    `${need.question}Open`,
+    `${need.question}Earlier submission · unresolvedAnswered · unverified`,
+    `${need.question}Earlier submission · unresolvedOpen`,
+    `${need.question}Earlier submission · unresolvedUnresolved · evidence unavailable`,
+    `${need.question}Support reviewed`,
+  ]);
+  expect(rows.map((row) => row.querySelector("blockquote")?.textContent)).toEqual(needs.map(() => "Coffee sales"));
+  expect(rows.map((row) => row.querySelector("form") !== null)).toEqual([true, true, true, true, true, false]);
+  const olderOpenRow = rows[3];
+  if (olderOpenRow === undefined) throw new Error("Missing retained open question");
+  enterExhaustedReview(olderOpenRow);
+  vi.mocked(reviewInformationNeed).mockResolvedValue({ ok: false, errorCode: "review_rejected" });
+  await act(async () => {
+    olderOpenRow.querySelector("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    await Promise.resolve();
+  });
+  expect(reviewInformationNeed).toHaveBeenCalledWith(
+    expect.objectContaining({ needId: olderOpen.needId, submissionDigest: `sha256:${"5".repeat(64)}` }),
+    expect.objectContaining({ operatorRole: "reviewer" })
+  );
+});
+
+it("does not infer an earlier submission without the current prepared-input binding", () => {
+  const page = render({ ...need, preparedInputId: "22222222-2222-4222-8222-222222222222" });
+  expect(page.textContent).not.toContain("Earlier submission");
+  expect(page.textContent).toContain("Answered · unverified");
+});
+
+it("localizes the retained-question label through the host catalog", () => {
+  const page = render(
+    need,
+    false,
+    undefined,
+    undefined,
+    { "credit.needs.earlierSubmission": "Frühere Einreichung · ungeklärt" },
+    "22222222-2222-4222-8222-222222222222"
+  );
+  expect(page.querySelector("summary")?.textContent).toContain("Frühere Einreichung · ungeklärt");
 });
 
 it.each([
