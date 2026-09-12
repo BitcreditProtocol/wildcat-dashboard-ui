@@ -353,6 +353,7 @@
   "credit.needs.answered": "Answered · unverified",
   "credit.needs.basis": "Review basis",
   "credit.needs.choose": "Select outcome",
+  "credit.needs.earlierSubmission": "Earlier submission · unresolved",
   "credit.needs.error.rejected": "Review not accepted. Refresh the case and check the current evidence before retrying.",
   "credit.needs.error.reviewerRequired": "An authenticated evidence reviewer is required.",
   "credit.needs.error.unconfirmed": "Could not confirm the review. Check the current case before retrying; your inputs were kept.",

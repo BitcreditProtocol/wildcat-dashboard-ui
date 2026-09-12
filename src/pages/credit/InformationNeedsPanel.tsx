@@ -32,6 +32,11 @@ const messages = defineMessages({
     defaultMessage: "Answered · unverified",
     description: "Applicant reply does not prove the claim",
   },
+  earlierSubmission: {
+    id: "credit.needs.earlierSubmission",
+    defaultMessage: "Earlier submission · unresolved",
+    description: "An unresolved evidence concern retained from an earlier applicant submission",
+  },
   resolved: {
     id: "credit.needs.resolved",
     defaultMessage: "Support reviewed",
@@ -69,7 +74,7 @@ const messages = defineMessages({
 
 type NeedCase = Pick<
   DecisionCase,
-  "resultDigest" | "submissionDigest" | "assessmentCurrency" | "submittedEvidence" | "informationNeeds"
+  "resultDigest" | "submissionDigest" | "assessmentCurrency" | "submittedEvidence" | "informationNeeds" | "applicantConfirmation"
 > & {
   snapshot: Pick<DecisionCase["snapshot"], "bill">;
 };
@@ -93,6 +98,8 @@ function NeedRow({
   const [pending, setPending] = useState(false);
   const inFlight = useRef(false);
   const [error, setError] = useState<InformationNeedReviewFailure | null>(null);
+  const isEarlierSubmission =
+    decisionCase.applicantConfirmation !== undefined && need.preparedInputId !== decisionCase.applicantConfirmation.preparedInputId;
   const status = need.reviewIsStale
     ? messages.stale
     : need.status === "resolved"
@@ -149,7 +156,12 @@ function NeedRow({
     <details className="border-t border-border py-3">
       <summary className="flex cursor-pointer flex-wrap items-start justify-between gap-2 text-sm">
         <span className="min-w-0 flex-1 break-words">{need.question}</span>
-        <span className="text-xs text-muted-foreground">{intl.formatMessage(status)}</span>
+        <span className="text-xs text-muted-foreground">
+          {isEarlierSubmission && need.status !== "resolved" && (
+            <span className="block">{intl.formatMessage(messages.earlierSubmission)}</span>
+          )}
+          <span className="block">{intl.formatMessage(status)}</span>
+        </span>
       </summary>
       <div className="mt-3 space-y-3 text-sm">
         {need.objective.sources.map((source) => (
