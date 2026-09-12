@@ -80,6 +80,25 @@ it("lets an authorized host select a current proposal without turning model pros
   expect(selected).toEqual([{ runId: run.runId, needIndex: 0 }]);
   expect(page.querySelector("img")).toBeNull();
 });
+it("previews governed admission guidance with human-readable response paths", () => {
+  const page = render(
+    {
+      resultDigest: run.resultDigest,
+      submissionDigest: run.submissionDigest,
+      caseInvestigation: { status: "completed", runs: [run] },
+    },
+    { selectedNeeds: [{ runId: run.runId, needIndex: 0 }] }
+  );
+  expect(page.textContent).toContain("Applicant request preview");
+  expect(page.textContent).toContain("Establish the composition of the applicant's stated costs.");
+  expect(page.textContent).toContain("Correct the answer");
+  expect(page.textContent).toContain("Upload supporting evidence");
+  expect(page.textContent).toContain("Explain why evidence is unavailable");
+  expect(page.textContent).toContain("A reviewer reconciles the cost breakdown to cited evidence");
+  expect(page.textContent).not.toContain("correct_answer");
+  expect(page.textContent).not.toContain("upload_supporting_document");
+  expect(page.textContent).not.toContain("explain_evidence_unavailable");
+});
 it("marks old findings as previous input and does not imply an interrupted run succeeded", () => {
   const stopped = { ...run, status: "interrupted" as const, needs: [], stoppingReason: "interrupted" as const };
   const page = render({
