@@ -273,8 +273,16 @@ export async function fetchOperatorCapability(): Promise<OperatorCapability> {
 
 /** Client affordance only. The operator service remains authoritative for every command. */
 export function operatorMayRecordDecision(capability: OperatorCapability | undefined, action: OperatorDecisionAction): boolean {
-  if (capability === undefined) return false;
-  return capability.operatorRole === "approver" || action === "return_for_information";
+  if (capability?.operatorRole !== "approver") return false;
+  switch (action) {
+    case "confirm_proposed_quote":
+    case "confirm_no_current_product_fit":
+    case "decline_application":
+    case "propose_adjustment_and_requote":
+    case "return_for_information":
+    case "close_unable_to_assess":
+      return true;
+  }
 }
 
 export async function recordMintRiskAssessment(
