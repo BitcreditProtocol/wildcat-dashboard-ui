@@ -116,8 +116,8 @@ describe("operator capability", () => {
     await expect(fetchOperatorCapability()).resolves.toEqual(approver);
   });
 
-  it("lets reviewers return a case but keeps quote decisions approver-only", () => {
-    expect(operatorMayRecordDecision(reviewer, "return_for_information")).toBe(true);
+  it("keeps every operator action approver-only", () => {
+    expect(operatorMayRecordDecision(reviewer, "return_for_information")).toBe(false);
     expect(operatorMayRecordDecision(reviewer, "confirm_proposed_quote")).toBe(false);
     expect(operatorMayRecordDecision(approver, "propose_adjustment_and_requote")).toBe(true);
     expect(operatorMayRecordDecision(undefined, "return_for_information")).toBe(false);
@@ -391,7 +391,7 @@ describe("recordOperatorDecision", () => {
   it("keeps return-for-information unsigned", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1" })));
 
-    await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, reviewer)).resolves.toEqual({ ok: true });
+    await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, approver)).resolves.toEqual({ ok: true });
   });
 
   it("rejects any authorization field on a non-offer decision", async () => {
@@ -400,7 +400,7 @@ describe("recordOperatorDecision", () => {
       vi.fn().mockResolvedValue(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1", signedAuthorization: {} }))
     );
 
-    await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, reviewer)).resolves.toEqual({
+    await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, approver)).resolves.toEqual({
       ok: false,
       error: "The AI Credit operator service signed a non-offer decision",
     });
