@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import type { InformationNeed } from "@bitcredit/ai-credit-shared";
 import type { DecisionCase } from "./decision-types";
+import { informationNeedResponseLabel } from "./information-need-response-labels";
 import { reviewInformationNeed, type InformationNeedReviewFailure, type OperatorCapability } from "./record-operator-decision";
 
 const failureMessages = defineMessages({
@@ -189,7 +190,14 @@ function NeedRow({
         {need.acceptableResponses !== undefined && (
           <div>
             <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.alternatives)}</p>
-            <p className="mt-1 break-words">{need.acceptableResponses.join(" · ")}</p>
+            <p className="mt-1 break-words">
+              {intl.formatList(
+                need.acceptableResponses.map((response) => informationNeedResponseLabel(intl, response)),
+                {
+                  type: "disjunction",
+                }
+              )}
+            </p>
           </div>
         )}
         {need.resolutionCriterion !== undefined && (
