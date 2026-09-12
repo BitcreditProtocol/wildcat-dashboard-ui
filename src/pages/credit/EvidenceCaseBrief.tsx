@@ -317,10 +317,14 @@ function claimRows(summary: EvidenceCaseSummary, submittedEvidence: readonly Sub
   const invoiceConflict = invoice?.plausibility === "implausible" || invoice?.billAndClaimsConsistency === "mismatch";
   const invoiceSupported =
     invoice?.plausibility === "plausible" && invoice.billAndClaimsConsistency === "match" && invoice.evidenceState === "corroborated";
+  // Invoice consistency is a separate governed check, not an entry in snapshot.contradictions.
+  // Unknown consistency and model-directed questions do not establish a conflict.
+  const deterministicConflicts = [
+    ...snapshot.contradictions.map(({ code }) => words(code)),
+    ...(invoice?.billAndClaimsConsistency === "mismatch" ? [intl.formatMessage(messages.reasonInvoiceConsistency)] : []),
+  ];
   const contradictionValue =
-    snapshot.contradictions.length === 0
-      ? intl.formatMessage(messages.noContradictions)
-      : snapshot.contradictions.map(({ code }) => words(code)).join(" · ");
+    deterministicConflicts.length === 0 ? intl.formatMessage(messages.noContradictions) : deterministicConflicts.join(" · ");
 
   const rows: ClaimRow[] = [
     {
@@ -373,8 +377,8 @@ function claimRows(summary: EvidenceCaseSummary, submittedEvidence: readonly Sub
       claim: intl.formatMessage(messages.contradictions),
       value: contradictionValue,
       source: intl.formatMessage(messages.deterministicChecks),
-      conclusion: snapshot.contradictions.length === 0 ? intl.formatMessage(messages.clear) : intl.formatMessage(messages.open),
-      tone: snapshot.contradictions.length === 0 ? "success" : "alert",
+      conclusion: deterministicConflicts.length === 0 ? intl.formatMessage(messages.clear) : intl.formatMessage(messages.open),
+      tone: deterministicConflicts.length === 0 ? "success" : "alert",
     },
   ];
   if ((summary.answerReviewFollowUpCount ?? 0) > 0)
