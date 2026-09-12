@@ -41,6 +41,7 @@ import { CaseWorkspace } from "./components/CaseWorkspace";
 import { InformationNeedsPanel } from "@/pages/credit/InformationNeedsPanel";
 import { CaseReviewTrail } from "@/pages/credit/CaseReviewTrail";
 import type { InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
+import { currentUnadmittedInvestigationProposals } from "@/pages/credit/investigation-proposals";
 
 interface LocationState {
   from?: string;
@@ -365,6 +366,7 @@ function PageBody({ id }: { id: string }) {
 
   const durableAuthorizationReceipt = durableAuthorizationReceiptFromQuote(quote, quote.id, bill.id);
   const decisionCase = creditAssessment.decisionCase;
+  const unadmittedInvestigationProposals = decisionCase === undefined ? [] : currentUnadmittedInvestigationProposals(decisionCase);
   const firstOpenRequest = decisionCase?.result.verificationRequests[0];
   const decisionBasis =
     decisionCase === undefined
@@ -454,6 +456,14 @@ function PageBody({ id }: { id: string }) {
                     !pendingCaseInvestigation(decisionCase),
                   investigationPending: pendingCaseInvestigation(decisionCase),
                   pendingEvidenceQuestions: pendingEvidenceQuestionCount(decisionCase),
+                  investigationProposals: {
+                    available: unadmittedInvestigationProposals.length,
+                    selected: selectedInvestigationNeeds.filter((selection) =>
+                      unadmittedInvestigationProposals.some(
+                        (proposal) => proposal.runId === selection.runId && proposal.needIndex === selection.needIndex
+                      )
+                    ).length,
+                  },
                   recommendation: decisionCase.result.recommendation,
                   decisionBasis,
                   applicantRequests: decisionCase.result.verificationRequests.map(({ axis, requiredItem, owner }) => ({

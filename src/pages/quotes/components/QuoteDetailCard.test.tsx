@@ -130,6 +130,50 @@ beforeEach(() => {
 });
 
 describe("QuoteDetailCard", () => {
+  it("surfaces unadmitted investigator proposals before the Offer action", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        actions={<button type="button">Offer</button>}
+        quote={{
+          id: baseQuote.id,
+          bill: baseQuote.bill,
+          submitted: "2026-08-21T10:00:00.000Z",
+          suggested_expiration: "2026-08-23T23:59:59.999Z",
+          status: "Pending",
+        }}
+        effectiveQuoteStatus="Pending"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        decisionSummary={{
+          assessmentCurrency: "current",
+          readyForDecision: true,
+          recommendation: "offer_available",
+          investigationProposals: { available: 2, selected: 1 },
+          recommendedTerms: {
+            mintingFee: 272_000,
+            amountAvailableForMinting: 7_928_000,
+            feeRatioBps: 332,
+            tenorDays: 180,
+            offerExpiresOn: "2099-08-24",
+          },
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("2 investigator follow-ups ready for review");
+    expect(page.textContent).toContain("1 selected for the applicant request");
+    expect(page.querySelector('a[href="#case-investigation"]')?.textContent).toBe("Review follow-ups");
+    const reviewPosition = page.textContent?.indexOf("Review follow-ups") ?? -1;
+    const offerPosition = page.textContent?.indexOf("Offer") ?? -1;
+    expect(reviewPosition).toBeGreaterThan(-1);
+    expect(offerPosition).toBeGreaterThan(reviewPosition);
+  });
+
   it("labels retained history as awaiting applicant evidence and suppresses stale recommended terms", () => {
     const page = renderWithProviders(
       <QuoteDetailCard
