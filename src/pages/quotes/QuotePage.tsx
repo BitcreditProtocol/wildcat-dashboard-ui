@@ -454,6 +454,9 @@ function PageBody({ id }: { id: string }) {
                     decisionCase.result.assessmentStatus === "ready_for_decision" &&
                     pendingEvidenceQuestionCount(decisionCase) === 0 &&
                     !pendingCaseInvestigation(decisionCase),
+                  closedWithoutAssessment:
+                    decisionCase.result.assessmentStatus === "blocked_pending_verification" &&
+                    decisionCase.mintDenial?.state === "completed",
                   investigationPending: pendingCaseInvestigation(decisionCase),
                   pendingEvidenceQuestions: pendingEvidenceQuestionCount(decisionCase),
                   investigationProposals: {

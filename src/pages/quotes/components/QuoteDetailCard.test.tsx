@@ -297,6 +297,36 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).not.toContain("Fee:80,000,000sat");
   });
 
+  it("labels a closed evidence-insufficient quote without presenting an adverse denial", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{ id: baseQuote.id, bill: baseQuote.bill, status: "Denied", tstamp: "2026-09-13T00:00:00.000Z" }}
+        effectiveQuoteStatus="Denied"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        decisionSummary={{
+          assessmentCurrency: "current",
+          readyForDecision: false,
+          closedWithoutAssessment: true,
+          recommendation: null,
+          decisionBasis: {
+            counterargument: "Sales evidence unavailable",
+            counterargumentOpen: true,
+          },
+        }}
+      />
+    );
+
+    expect(page.textContent).toContain("Unable to assess");
+    expect(page.textContent).toContain("Material evidence unavailable · no adverse finding");
+    expect(page.querySelector("h1")?.textContent).not.toBe("Denied");
+  });
+
   it("shows governed recommended terms while the Mint quote is pending", () => {
     const page = renderWithProviders(
       <QuoteDetailCard
