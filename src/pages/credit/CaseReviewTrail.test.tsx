@@ -124,6 +124,7 @@ describe("operator conversation spectator", () => {
     );
     expect(priorRecord?.open).toBe(false);
     expect(priorRecord?.textContent).toContain("In December, after the harvest.");
+    expect(page.textContent?.match(/Submitted conversation/g)).toHaveLength(1);
   });
 
   it("marks interrupted updates without discarding the last received conversation", () => {
@@ -132,7 +133,7 @@ describe("operator conversation spectator", () => {
     expect(page.textContent).toContain("The corrected invoice is attached.");
   });
 
-  it("retains earlier submitted conversations without fabricating a time or resolution", () => {
+  it("renders every submitted conversation as one oldest-first chronology without fabricating a time or resolution", () => {
     const page = render({
       transcript,
       interviewHistory: [
@@ -143,9 +144,16 @@ describe("operator conversation spectator", () => {
         },
       ],
     });
-    expect(page.textContent).toContain("Previous submitted conversations (1)");
+    expect(page.textContent).toContain("Submitted conversations (2)");
     expect(page.textContent).toContain("The first budget was incomplete.");
     expect(page.textContent).toContain("In December, after the harvest.");
+    expect(page.textContent.indexOf("The first budget was incomplete.")).toBeLessThan(
+      page.textContent.indexOf("In December, after the harvest.")
+    );
+    expect(Array.from(page.querySelectorAll("h5"), (heading) => heading.textContent)).toEqual([
+      "Submission 1 · Scripted interview",
+      "Submission 2 · Scripted interview",
+    ]);
     expect(page.textContent).not.toContain("Resolved");
   });
 

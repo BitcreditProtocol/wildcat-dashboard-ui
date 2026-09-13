@@ -145,7 +145,7 @@
   "credit.caseRecord.notSubmitted": "Not submitted · current assessment unchanged",
   "credit.caseRecord.policyChecks": "Policy checks",
   "credit.caseRecord.priorConversation": "Submission {number}",
-  "credit.caseRecord.priorConversations": "Previous submitted conversations ({count})",
+  "credit.caseRecord.priorConversations": "Submitted conversations ({count})",
   "credit.caseRecord.publicResearch": "Public research",
   "credit.caseRecord.publicResearchResult": "{findings, plural, one {# finding} other {# findings}} · {sources, plural, one {# source} other {# sources}}",
   "credit.caseRecord.questionUnavailable": "Question text not recorded",
