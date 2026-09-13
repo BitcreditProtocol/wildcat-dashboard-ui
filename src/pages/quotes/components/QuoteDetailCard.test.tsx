@@ -174,6 +174,39 @@ describe("QuoteDetailCard", () => {
     expect(offerPosition).toBeGreaterThan(reviewPosition);
   });
 
+  it("does not suggest applicant follow-ups after the Mint denial is complete", () => {
+    const page = renderWithProviders(
+      <QuoteDetailCard
+        quote={{
+          id: baseQuote.id,
+          bill: baseQuote.bill,
+          submitted: "2026-08-21T10:00:00.000Z",
+          suggested_expiration: "2026-08-23T23:59:59.999Z",
+          status: "Pending",
+        }}
+        effectiveQuoteStatus="Denied"
+        ebillPaid={false}
+        isMintComplete={false}
+        isMintCompleteLoading={false}
+        showPayment={false}
+        rejectedToPay={false}
+        isInMempool={false}
+        requestedToPay={false}
+        decisionSummary={{
+          assessmentCurrency: "current",
+          readyForDecision: false,
+          recommendation: null,
+          closedWithoutAssessment: true,
+          investigationProposals: { available: 2, selected: 0 },
+        }}
+      />
+    );
+
+    expect(page.textContent).not.toContain("investigator follow-ups ready for review");
+    expect(page.textContent).not.toContain("Not sent to the applicant");
+    expect(page.querySelector('a[href="#case-investigation"]')).toBeNull();
+  });
+
   it("labels retained history as awaiting applicant evidence and suppresses stale recommended terms", () => {
     const page = renderWithProviders(
       <QuoteDetailCard

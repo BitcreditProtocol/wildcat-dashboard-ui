@@ -427,48 +427,51 @@ export function QuoteDetailCard({
               <Printer className="size-4" aria-hidden="true" />
             </Button>
           </div>
-          {showDecisionStatus && investigationProposals !== undefined && investigationProposals.available > 0 && (
-            <section className="mt-4 rounded-lg border border-border bg-background/60 p-3 text-sm print:hidden">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-medium">
-                    {intl.formatMessage(
-                      {
-                        id: "quotes.summary.investigationProposals",
-                        defaultMessage:
-                          "{count, plural, one {# investigator follow-up} other {# investigator follow-ups}} ready for review",
-                        description: "Count of current completed investigator proposals not yet admitted into the applicant request",
-                      },
-                      { count: investigationProposals.available }
-                    )}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {investigationProposals.selected > 0
-                      ? intl.formatMessage(
-                          {
-                            id: "quotes.summary.investigationSelected",
-                            defaultMessage: "{count} selected for the applicant request",
-                            description: "Count of investigator proposals selected but not yet admitted",
-                          },
-                          { count: investigationProposals.selected }
-                        )
-                      : intl.formatMessage({
-                          id: "quotes.summary.investigationNotSent",
-                          defaultMessage: "Not sent to the applicant",
-                          description: "Investigator proposals require explicit approver admission",
-                        })}
-                  </p>
+          {showDecisionStatus &&
+            effectiveQuoteStatus !== "Denied" &&
+            investigationProposals !== undefined &&
+            investigationProposals.available > 0 && (
+              <section className="mt-4 rounded-lg border border-border bg-background/60 p-3 text-sm print:hidden">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium">
+                      {intl.formatMessage(
+                        {
+                          id: "quotes.summary.investigationProposals",
+                          defaultMessage:
+                            "{count, plural, one {# investigator follow-up} other {# investigator follow-ups}} ready for review",
+                          description: "Count of current completed investigator proposals not yet admitted into the applicant request",
+                        },
+                        { count: investigationProposals.available }
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {investigationProposals.selected > 0
+                        ? intl.formatMessage(
+                            {
+                              id: "quotes.summary.investigationSelected",
+                              defaultMessage: "{count} selected for the applicant request",
+                              description: "Count of investigator proposals selected but not yet admitted",
+                            },
+                            { count: investigationProposals.selected }
+                          )
+                        : intl.formatMessage({
+                            id: "quotes.summary.investigationNotSent",
+                            defaultMessage: "Not sent to the applicant",
+                            description: "Investigator proposals require explicit approver admission",
+                          })}
+                    </p>
+                  </div>
+                  <a className="shrink-0 font-medium text-primary hover:underline" href="#case-investigation">
+                    {intl.formatMessage({
+                      id: "quotes.summary.reviewInvestigationProposals",
+                      defaultMessage: "Review follow-ups",
+                      description: "Open the investigation panel before deciding whether to offer",
+                    })}
+                  </a>
                 </div>
-                <a className="shrink-0 font-medium text-primary hover:underline" href="#case-investigation">
-                  {intl.formatMessage({
-                    id: "quotes.summary.reviewInvestigationProposals",
-                    defaultMessage: "Review follow-ups",
-                    description: "Open the investigation panel before deciding whether to offer",
-                  })}
-                </a>
-              </div>
-            </section>
-          )}
+              </section>
+            )}
           {actions && <div className="mt-4 print:hidden">{actions}</div>}
         </header>
 
