@@ -213,6 +213,15 @@ export interface DecisionCase {
   mintDenial?: MintQuoteDenialStatus;
 }
 
+/** A completed Mint denial is non-adverse when it only closes unresolved evidence work. */
+export function isEvidenceInsufficientClosure(decisionCase: DecisionCase | undefined): boolean {
+  return (
+    decisionCase?.assessmentCurrency === "current" &&
+    decisionCase.result.assessmentStatus === "blocked_pending_verification" &&
+    decisionCase.mintDenial?.state === "completed"
+  );
+}
+
 export interface AssessmentRevision {
   snapshot: DecisionCase["snapshot"];
   result: DecisionCase["result"];

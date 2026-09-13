@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { defineMessages, useIntl } from "react-intl";
 import { useCreditAssessmentForBill } from "./use-credit-assessment";
 import { pendingCaseInvestigation, pendingEvidenceQuestionCount } from "./evidence-review-readiness";
+import { isEvidenceInsufficientClosure } from "./decision-types";
 
 /**
  * The AI Credit outcome for a bill, compact enough for a quote list row. Absent when the local
@@ -25,6 +26,11 @@ const messages = defineMessages({
     defaultMessage: "No product fit",
     description: "List-row badge when policy produced no terms",
   },
+  unableToAssess: {
+    id: "credit.badge.unableToAssess",
+    defaultMessage: "Unable to assess",
+    description: "List-row outcome when unresolved evidence closed the quote without an adverse credit finding",
+  },
   unknown: {
     id: "credit.badge.unknown",
     defaultMessage: "Assessment unavailable",
@@ -33,11 +39,28 @@ const messages = defineMessages({
   pending: { id: "quote.status.Pending", defaultMessage: "Pending" },
 });
 
-export function CreditAssessmentBadge({ billId, mintQuoteId }: { billId: string | undefined; mintQuoteId: string | undefined }) {
+export function CreditAssessmentBadge({
+  billId,
+  mintQuoteId,
+  quoteStatus = "Pending",
+}: {
+  billId: string | undefined;
+  mintQuoteId: string | undefined;
+  quoteStatus?: "Pending" | "Denied";
+}) {
   const intl = useIntl();
   const assessment = useCreditAssessmentForBill(billId, mintQuoteId);
-  if (assessment.status === "isolated") return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
   const { decisionCase } = assessment;
+
+  if (quoteStatus === "Denied") {
+    return isEvidenceInsufficientClosure(decisionCase) ? (
+      <Badge variant="secondary">{intl.formatMessage(messages.unableToAssess)}</Badge>
+    ) : (
+      <Badge variant="destructive">{intl.formatMessage({ id: "quote.status.Denied", defaultMessage: "Denied" })}</Badge>
+    );
+  }
+
+  if (assessment.status === "isolated") return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
   if (decisionCase === undefined) return <Badge variant="default">{intl.formatMessage(messages.pending)}</Badge>;
   if (decisionCase.assessmentCurrency !== "current")
     return (

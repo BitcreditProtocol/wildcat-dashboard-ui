@@ -586,6 +586,48 @@ describe("CreditAssessmentBadge", () => {
     expect(container.textContent).toBe("Verification required");
   });
 
+  it("distinguishes an evidence-insufficient closure from an adverse denial", () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        issues: [],
+        cases: [
+          {
+            ...blockedCase,
+            mintDenial: {
+              state: "completed",
+              operationId: `sha256:${"c".repeat(64)}`,
+              receipt: {
+                receiptVersion: "credit-authorization-receipt-v1",
+                operationId: `sha256:${"c".repeat(64)}`,
+                commandId: `sha256:${"d".repeat(64)}`,
+                status: "completed",
+                mintId: blockedCase.snapshot.mintId,
+                billId: blockedCase.snapshot.bill?.billId ?? "synthetic-bill-a",
+                action: "deny_governed_quote",
+                effectId: "quote-denial-1",
+                resultDigest: blockedCase.resultDigest,
+                completedAt: "2026-09-13T00:00:00.000Z",
+                synthetic: true,
+              },
+            },
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" quoteStatus="Denied" />);
+
+    expect(container.textContent).toBe("Unable to assess");
+  });
+
+  it("keeps an ordinary terminal quote denial labelled as denied", () => {
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" quoteStatus="Denied" />);
+
+    expect(container.textContent).toBe("Denied");
+  });
+
   it("does not call an answered but unreviewed case ready", () => {
     mockUseQuery.mockReturnValue({
       data: {
