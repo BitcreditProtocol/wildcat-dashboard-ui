@@ -33,6 +33,7 @@ interface QuoteDetailCardProps {
     useOfFunds?: string;
     repaymentSource?: string;
     readyForDecision: boolean;
+    closedWithoutAssessment?: boolean;
     investigationPending?: boolean;
     pendingEvidenceQuestions?: number;
     investigationProposals?: {
@@ -285,10 +286,16 @@ export function QuoteDetailCard({
   const hasDurableReceipt = durableAuthorizationReceipt !== null && durableAuthorizationReceipt !== undefined;
   const hasSignedVerification = signedAuthorizationReceipt !== null && signedAuthorizationReceipt !== undefined;
   const durableExecutionCompleted = durableAuthorizationReceipt?.status === "completed";
-  const showDecisionStatus = effectiveQuoteStatus === "Pending" && decisionSummary !== undefined;
+  const showDecisionStatus =
+    decisionSummary !== undefined && (effectiveQuoteStatus === "Pending" || decisionSummary.closedWithoutAssessment === true);
   const pendingEvidenceQuestions = decisionSummary?.pendingEvidenceQuestions ?? 0;
-  const decisionHeadline =
-    decisionSummary?.investigationPending && !isHistoricalAssessment && !offerExpired
+  const decisionHeadline = decisionSummary?.closedWithoutAssessment
+    ? intl.formatMessage({
+        id: "quotes.summary.unableToAssess",
+        defaultMessage: "Unable to assess",
+        description: "Primary operator status when unresolved evidence prevents a credit assessment without an adverse inference",
+      })
+    : decisionSummary?.investigationPending && !isHistoricalAssessment && !offerExpired
       ? intl.formatMessage({
           id: "quotes.summary.investigationPending",
           defaultMessage: "Investigation incomplete",
@@ -323,8 +330,13 @@ export function QuoteDetailCard({
                   defaultMessage: "Evidence required",
                   description: "Primary operator status while current evidence work remains open",
                 });
-  const decisionStatusLine =
-    decisionSummary?.investigationPending && !isHistoricalAssessment && !offerExpired
+  const decisionStatusLine = decisionSummary?.closedWithoutAssessment
+    ? intl.formatMessage({
+        id: "quotes.summary.unableToAssessCompact",
+        defaultMessage: "Material evidence unavailable · no adverse finding",
+        description: "Closed evidence-insufficient case distinguished from an adverse credit denial",
+      })
+    : decisionSummary?.investigationPending && !isHistoricalAssessment && !offerExpired
       ? intl.formatMessage({
           id: "quotes.summary.investigationOfferBlocked",
           defaultMessage: "Check Investigation · offer blocked",
