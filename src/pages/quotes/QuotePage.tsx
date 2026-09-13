@@ -20,7 +20,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { beginPdfDownload } from "@/lib/download";
 import { authenticatedFetch } from "@/lib/api-client";
 import { type CreditEvidenceState, QuoteDocuments } from "./QuoteDocuments";
-import { countAnswerReviewFollowUps, type SubmittedEvidence, words } from "@/pages/credit/decision-types";
+import { countAnswerReviewFollowUps, isEvidenceInsufficientClosure, type SubmittedEvidence, words } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { EndorseeList } from "./components/EndorseeList";
@@ -454,9 +454,7 @@ function PageBody({ id }: { id: string }) {
                     decisionCase.result.assessmentStatus === "ready_for_decision" &&
                     pendingEvidenceQuestionCount(decisionCase) === 0 &&
                     !pendingCaseInvestigation(decisionCase),
-                  closedWithoutAssessment:
-                    decisionCase.result.assessmentStatus === "blocked_pending_verification" &&
-                    decisionCase.mintDenial?.state === "completed",
+                  closedWithoutAssessment: isEvidenceInsufficientClosure(decisionCase),
                   investigationPending: pendingCaseInvestigation(decisionCase),
                   pendingEvidenceQuestions: pendingEvidenceQuestionCount(decisionCase),
                   investigationProposals: {

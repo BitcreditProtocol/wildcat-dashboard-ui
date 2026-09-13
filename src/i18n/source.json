@@ -101,6 +101,7 @@
   "credit.audit.snapshotDigest": "Snapshot digest",
   "credit.badge.noFit": "No product fit",
   "credit.badge.offer": "Ready for decision",
+  "credit.badge.unableToAssess": "Unable to assess",
   "credit.badge.unknown": "Assessment unavailable",
   "credit.badge.verification": "Verification required",
   "credit.caseRecord.activeSession": "Unconfirmed clarification receipt",

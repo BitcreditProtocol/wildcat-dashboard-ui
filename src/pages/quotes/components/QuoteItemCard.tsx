@@ -135,8 +135,8 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
             />
           </div>
           <div className="flex flex-wrap items-center justify-end gap-1.5">
-            {effectiveStatus === "Pending" ? (
-              <CreditAssessmentBadge billId={bill?.id} mintQuoteId={quote.id} />
+            {effectiveStatus === "Pending" || effectiveStatus === "Denied" ? (
+              <CreditAssessmentBadge billId={bill?.id} mintQuoteId={quote.id} quoteStatus={effectiveStatus} />
             ) : (
               <Badge variant={getQuoteStatusVariant(effectiveStatus)}>
                 <HighlightText text={intl.formatMessage(getQuoteStatusMessage(effectiveStatus))} highlight={searchQuery} />
