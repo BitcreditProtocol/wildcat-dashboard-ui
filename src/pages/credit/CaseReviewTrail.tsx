@@ -74,6 +74,11 @@ const promptObjectives = defineMessages({
     defaultMessage: "Support sales claims",
     description: "Recorded support sales claims prompt objective, not exact question wording",
   },
+  "aiCredit.interview.governedClarification": {
+    id: "credit.livePrompt.governedClarification",
+    defaultMessage: "Answer the Mint's evidence request",
+    description: "Recorded objective for an exact governed Mint clarification request",
+  },
 } satisfies Record<InterviewAssistantTemplate, { id: string; defaultMessage: string; description: string }>);
 
 const messages = defineMessages({
