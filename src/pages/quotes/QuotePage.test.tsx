@@ -1,7 +1,7 @@
 import { act, type ReactElement } from "react";
 import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter, Route, Routes } from "react-router";
 import QuotePage from "./QuotePage";
@@ -21,7 +21,7 @@ interface QueryResult {
   error: Error | null;
 }
 interface MutationResult {
-  mutate: (value: { body: { token: string } }) => void;
+  mutate: (value: { body: Record<string, unknown> }) => void;
   isPending: boolean;
   isSuccess: boolean;
   isError: boolean;
@@ -35,6 +35,7 @@ const { mockGetEbillAttachment, mockGetEbillFileFromRequestToMint } = vi.hoisted
 
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const mockUseMutation = vi.fn<() => MutationResult>();
+const mutateSpy = vi.fn<(value: { body: Record<string, unknown> }) => void>();
 
 vi.mock("@bitcredit/ui-library", async () => {
   const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
@@ -98,6 +99,7 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getEbillOptions: ({ path }: { path: { bid: string } }) => ({
     queryKey: [{ _id: "getEbill", path }],
   }),
+  syncEbillChainMutation: () => ({ mutationKey: [{ _id: "syncEbillChain" }] }),
 }));
 
 let root: Root | null = null;
@@ -132,8 +134,21 @@ function renderPage(entry: string | { pathname: string; state?: Record<string, u
   );
 }
 
-beforeEach(() => {
-  vi.clearAllMocks();
+function findButtonByText(page: HTMLDivElement, text: string): HTMLButtonElement | undefined {
+  return Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.trim() === text);
+}
+
+function clickButtonByText(page: HTMLDivElement, text: string) {
+  const button = findButtonByText(page, text);
+  expect(button).not.toBeUndefined();
+  act(() => {
+    button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
+
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
   if (root && container) {
     act(() => {
       root?.unmount();
@@ -142,9 +157,13 @@ beforeEach(() => {
     root = null;
     container = null;
   }
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
 
   mockUseMutation.mockReturnValue({
-    mutate: vi.fn<(value: { body: { token: string } }) => void>(),
+    mutate: mutateSpy,
     isPending: false,
     isSuccess: false,
     isError: false,
@@ -430,6 +449,50 @@ describe("QuotePage", () => {
       parseAs: "blob",
     });
     expect(mockGetEbillAttachment).not.toHaveBeenCalled();
+  });
+
+  it("re-syncs the bill chain from nostr when refresh is clicked", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    clickButtonByText(page, "Refresh bill");
+
+    expect(mutateSpy).toHaveBeenCalledWith({
+      body: { bill_id: "bill-1", from_nostr: true },
+    });
+  });
+
+  it("disables refresh while a sync is in flight", () => {
+    mockUseMutation.mockReturnValue({
+      mutate: mutateSpy,
+      isPending: true,
+      isSuccess: false,
+      isError: false,
+      data: undefined,
+    });
+
+    const page = renderPage(`/quotes/${quoteId}`);
+    const refreshButton = findButtonByText(page, "Refresh bill");
+
+    expect(refreshButton?.disabled).toBe(true);
+
+    act(() => {
+      refreshButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(mutateSpy).not.toHaveBeenCalled();
+  });
+
+  it("disables refresh until the bill id is known", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => ({
+      data: opts.queryKey[0]._id === "getQuote" ? { id: quoteId, status: "Pending" } : undefined,
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    }));
+
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    expect(findButtonByText(page, "Refresh bill")?.disabled).toBe(true);
   });
 
   it("shows not found for malformed quote ids", () => {

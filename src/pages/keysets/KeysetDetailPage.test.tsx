@@ -1,7 +1,7 @@
 import { act, type ReactElement } from "react";
 import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter, Route, Routes } from "react-router";
 import KeysetDetailPage from "./KeysetDetailPage";
@@ -181,8 +181,9 @@ function quoteDetails(keysetIdObject: unknown, billId: string): unknown {
   };
 }
 
-beforeEach(() => {
-  vi.clearAllMocks();
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
   if (root && container) {
     act(() => {
       root?.unmount();
@@ -191,6 +192,10 @@ beforeEach(() => {
     root = null;
     container = null;
   }
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
 });
 
 describe("KeysetDetailPage", () => {

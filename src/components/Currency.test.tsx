@@ -2,7 +2,7 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntlProvider } from "react-intl";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { Currency } from "./Currency";
 
@@ -42,6 +42,19 @@ async function flush() {
   }
 }
 
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
+  if (root && container) {
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
+    root = null;
+    container = null;
+  }
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   storageData = {};
@@ -61,14 +74,6 @@ beforeEach(() => {
     },
   });
   vi.useRealTimers();
-  if (root && container) {
-    act(() => {
-      root?.unmount();
-    });
-    container.remove();
-    root = null;
-    container = null;
-  }
 });
 
 describe("Currency", () => {

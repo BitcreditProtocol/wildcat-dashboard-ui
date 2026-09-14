@@ -52,6 +52,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     noQuotesMessage,
     isFetching,
     isFetchingNextPage,
+    isLoadingAllPages,
     hasNextPage,
     fetchNextPage,
     isLoading,
@@ -182,8 +183,18 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         )}
       </div>
 
+      {isLoadingAllPages && (
+        <div className="text-center text-sm text-muted-foreground">
+          {intl.formatMessage({
+            id: "quotes.pagination.loadingAll",
+            defaultMessage: "Searching all quotes...",
+            description: "Shown while the remaining quote pages are loaded so search and filters cover every quote",
+          })}
+        </div>
+      )}
+
       <div className="flex flex-col gap-1.5 my-2">
-        {sortedQuotes.length === 0 && hasActiveFilters && (
+        {sortedQuotes.length === 0 && hasActiveFilters && !isLoadingAllPages && (
           <div className="py-2 text-center text-muted-foreground">
             {intl.formatMessage({
               id: "quotes.search.noMatch",
@@ -205,7 +216,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
           ))}
       </div>
 
-      {hasNextPage && (
+      {hasNextPage && !isLoadingAllPages && (
         <div className="flex justify-center px-4 pt-2">
           <Button
             type="button"

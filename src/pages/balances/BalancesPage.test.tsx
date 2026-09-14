@@ -2,7 +2,7 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import BalancesPage from "./BalancesPage";
@@ -129,6 +129,19 @@ async function flush() {
   }
 }
 
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
+  if (root && container) {
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
+    root = null;
+    container = null;
+  }
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseCollectFeesQuery.mockReturnValue({
@@ -153,14 +166,6 @@ beforeEach(() => {
       },
     },
   });
-  if (root && container) {
-    act(() => {
-      root?.unmount();
-    });
-    container.remove();
-    root = null;
-    container = null;
-  }
 });
 
 describe("BalancesPage", () => {

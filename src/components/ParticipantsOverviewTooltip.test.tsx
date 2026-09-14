@@ -1,6 +1,6 @@
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { ParticipantsOverviewCard } from "./ParticipantsOverview";
 
@@ -38,7 +38,9 @@ async function click(trigger: Element) {
   });
 }
 
-beforeEach(() => {
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
   if (root && container) {
     act(() => {
       root?.unmount();
