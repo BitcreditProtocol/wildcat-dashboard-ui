@@ -637,59 +637,59 @@ export default function QuotePage() {
       </Breadcrumbs>
 
       <div className="flex items-center justify-end gap-2 pt-2 print:hidden">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={syncBillChain}
-            disabled={!canSync}
-            className="inline-flex items-center gap-1 leading-none"
-          >
-            <AppIcon icon={RefreshCwIcon} weight="thin" className={cn("h-4 w-4", { "animate-spin": isSyncing })} />
-            <span className="relative top-px leading-none">
-              {intl.formatMessage({
-                id: "quotes.detail.refreshBill",
-                defaultMessage: "Refresh bill",
-                description: "Re-fetches the bill chain from nostr and reloads the bill view",
-              })}
-            </span>
-          </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={syncBillChain}
+          disabled={!canSync}
+          className="inline-flex items-center gap-1 leading-none"
+        >
+          <AppIcon icon={RefreshCwIcon} weight="thin" className={cn("h-4 w-4", { "animate-spin": isSyncing })} />
+          <span className="relative top-px leading-none">
+            {intl.formatMessage({
+              id: "quotes.detail.refreshBill",
+              defaultMessage: "Refresh bill",
+              description: "Re-fetches the bill chain from nostr and reloads the bill view",
+            })}
+          </span>
+        </Button>
 
-          {fromKeyset && keysetIdFromState ? (
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to={`/keysets/${keysetIdFromState}`}
-                state={{ from: `/quotes/${quoteId}` }}
-                className="inline-flex items-center gap-1 leading-none"
-              >
-                <span className="relative top-px leading-none">
-                  {intl.formatMessage({
-                    id: "quotes.detail.backToKeyset",
-                    defaultMessage: "Back to keyset",
-                  })}
-                </span>
-                <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
-              </Link>
-            </Button>
-          ) : hasKeysetId ? (
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
-                state={{ from: `/quotes/${quoteId}` }}
-                className="inline-flex items-center gap-1 leading-none"
-              >
-                <span className="relative top-px leading-none">
-                  {intl.formatMessage({
-                    id: "quotes.detail.goToKeyset",
-                    defaultMessage: "Go to keyset",
-                  })}
-                </span>
-                <span className="inline-flex items-center font-mono leading-none">
-                  {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
-                </span>
-              </Link>
-            </Button>
-          ) : null}
-        </div>
+        {fromKeyset && keysetIdFromState ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              to={`/keysets/${keysetIdFromState}`}
+              state={{ from: `/quotes/${quoteId}` }}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.backToKeyset",
+                  defaultMessage: "Back to keyset",
+                })}
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
+            </Link>
+          </Button>
+        ) : hasKeysetId ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
+              state={{ from: `/quotes/${quoteId}` }}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.goToKeyset",
+                  defaultMessage: "Go to keyset",
+                })}
+              </span>
+              <span className="inline-flex items-center font-mono leading-none">
+                {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
+              </span>
+            </Link>
+          </Button>
+        ) : null}
+      </div>
       <PageBody id={quoteId} />
     </>
   );
