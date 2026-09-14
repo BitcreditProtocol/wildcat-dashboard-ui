@@ -416,7 +416,9 @@ export function QuoteDetailCard({
               </h1>
               {showDecisionStatus && <p className="mt-1 text-sm text-muted-foreground">{decisionStatusLine}</p>}
               <Link to={`/bills/${quote.bill.id}`} className="mt-2 block min-w-0">
-                <Text variant="mono" monoSize="sm" className="break-all underline underline-offset-4">{quote.bill.id}</Text>
+                <Text variant="mono" monoSize="sm" className="break-all underline underline-offset-4">
+                  {quote.bill.id}
+                </Text>
               </Link>
             </div>
             <Button

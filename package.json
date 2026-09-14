@@ -27,6 +27,7 @@
     "crowdin:status": "crowdin status"
   },
   "dependencies": {
+    "@bitcredit/ai-credit-operator-ui": "file:vendor/ai-credit/bitcredit-ai-credit-operator-ui-0.1.0-testnet.11.tgz",
     "@bitcredit/ai-credit-shared": "file:vendor/ai-credit/bitcredit-ai-credit-shared-0.1.0-testnet.11.tgz",
     "@bitcredit/ui-library": "^0.1.16",
     "@radix-ui/react-collapsible": "^1.1.20",
@@ -49,13 +50,13 @@
     "react-dom": "^19.3.0",
     "react-hook-form": "^7.88.0",
     "react-intl": "10.2.2",
+    "react-is": "^19.3.0",
     "react-router": "^8.3.1",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
-    "tailwindcss-animate": "^1.0.7",
-    "@bitcredit/ai-credit-operator-ui": "file:vendor/ai-credit/bitcredit-ai-credit-operator-ui-0.1.0-testnet.11.tgz"
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
@@ -63,6 +64,7 @@
     "@eslint/plugin-kit": "^0.7.3",
     "@formatjs/cli": "^6.16.27",
     "@hey-api/openapi-ts": "^0.99.0",
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@types/big.js": "^7.0.0",
     "@types/node": "^26.5.1",
