@@ -291,7 +291,7 @@ export default function QuotePage() {
     enabled: validQuoteId,
   });
 
-  const { syncBillChain, isSyncing, canSync } = useSyncBillChain({
+  const { syncBillChain, isSyncing, canSync, hasSyncableBill } = useSyncBillChain({
     quoteId,
     billId: quoteData?.bill?.id,
   });
@@ -333,22 +333,24 @@ export default function QuotePage() {
           </span>
         </Heading>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={syncBillChain}
-            disabled={!canSync}
-            className="inline-flex items-center gap-1 leading-none"
-          >
-            <AppIcon icon={RefreshCwIcon} weight="thin" className={cn("h-4 w-4", { "animate-spin": isSyncing })} />
-            <span className="relative top-px leading-none">
-              {intl.formatMessage({
-                id: "quotes.detail.refreshBill",
-                defaultMessage: "Refresh bill",
-                description: "Re-fetches the bill chain from nostr and reloads the bill view",
-              })}
-            </span>
-          </Button>
+          {hasSyncableBill && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={syncBillChain}
+              disabled={!canSync}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <AppIcon icon={RefreshCwIcon} weight="thin" className={cn("h-4 w-4", { "animate-spin": isSyncing })} />
+              <span className="relative top-px leading-none">
+                {intl.formatMessage({
+                  id: "quotes.detail.refreshBill",
+                  defaultMessage: "Refresh bill",
+                  description: "Re-fetches the bill chain from nostr and reloads the bill view",
+                })}
+              </span>
+            </Button>
+          )}
 
           {fromKeyset && keysetIdFromState ? (
             <Button variant="outline" size="sm" asChild>

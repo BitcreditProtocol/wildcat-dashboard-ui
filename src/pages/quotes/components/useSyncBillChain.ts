@@ -1,5 +1,5 @@
 import { toast } from "@bitcredit/ui-library";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   syncEbillChainMutation,
   getQuoteOptions,
@@ -25,12 +25,20 @@ export interface UseSyncBillChainResult {
   syncBillChain: () => void;
   isSyncing: boolean;
   canSync: boolean;
+  hasSyncableBill: boolean;
 }
 
 export function useSyncBillChain({ quoteId, billId }: UseSyncBillChainArgs): UseSyncBillChainResult {
   const intl = useIntl();
   const queryClient = useQueryClient();
   const syncToastRef = useRef<ReturnType<typeof toast> | null>(null);
+
+  const { data: ebills } = useQuery({
+    ...listEbillsOptions(),
+    retry: 1,
+    enabled: Boolean(billId),
+  });
+  const hasSyncableBill = Boolean(billId && ebills?.some((ebill) => ebill.id === billId));
 
   const syncMutation = useMutation({
     ...syncEbillChainMutation(),
@@ -89,7 +97,7 @@ export function useSyncBillChain({ quoteId, billId }: UseSyncBillChainArgs): Use
   });
 
   const syncBillChain = () => {
-    if (!billId || syncMutation.isPending) {
+    if (!billId || !hasSyncableBill || syncMutation.isPending) {
       return;
     }
 
@@ -104,6 +112,7 @@ export function useSyncBillChain({ quoteId, billId }: UseSyncBillChainArgs): Use
   return {
     syncBillChain,
     isSyncing: syncMutation.isPending,
-    canSync: Boolean(billId) && !syncMutation.isPending,
+    canSync: hasSyncableBill && !syncMutation.isPending,
+    hasSyncableBill,
   };
 }

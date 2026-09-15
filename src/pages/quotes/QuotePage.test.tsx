@@ -482,7 +482,7 @@ describe("QuotePage", () => {
     expect(mutateSpy).not.toHaveBeenCalled();
   });
 
-  it("disables refresh until the bill id is known", () => {
+  it("hides refresh until the bill id is known", () => {
     mockUseQuery.mockImplementation((opts: QueryOptions) => ({
       data: opts.queryKey[0]._id === "getQuote" ? { id: quoteId, status: "Pending" } : undefined,
       isLoading: false,
@@ -492,7 +492,43 @@ describe("QuotePage", () => {
 
     const page = renderPage(`/quotes/${quoteId}`);
 
-    expect(findButtonByText(page, "Refresh bill")?.disabled).toBe(true);
+    expect(findButtonByText(page, "Refresh bill")).toBeUndefined();
+  });
+
+  it("hides refresh while the bill has not reached the mint", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      if (opts.queryKey[0]._id === "getQuote") {
+        return {
+          data: {
+            id: quoteId,
+            status: "Pending",
+            bill: {
+              id: "bill-not-here-yet",
+              sum: 100,
+              maturity_date: "2026-03-01",
+              drawee: {},
+              drawer: {},
+              payee: {},
+              endorsees: [],
+            },
+          },
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        };
+      }
+
+      // The mint holds other bills, just not the one this quote was requested for.
+      if (opts.queryKey[0]._id === "listEbills") {
+        return { data: [{ id: "bill-1" }], isLoading: false, error: null };
+      }
+
+      return { data: undefined, isLoading: false, isFetching: false, error: null };
+    });
+
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    expect(findButtonByText(page, "Refresh bill")).toBeUndefined();
   });
 
   it("shows not found for malformed quote ids", () => {
