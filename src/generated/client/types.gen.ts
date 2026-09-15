@@ -596,10 +596,43 @@ export type PaymentStatus = {
 };
 
 /**
+ * An outage the Beta mints still hold against this Alpha mint, with the swaps it owes once it recovers
+ */
+export type PendingOutage = {
+    /**
+     * Digest of the outage evidence the Betas hold
+     */
+    evidence_digest: Array<number>;
+    /**
+     * The elected substitute Beta, hex-encoded public key; `null` while no substitute is elected.
+     */
+    substitute?: string | null;
+    /**
+     * How many Betas still hold this outage.
+     */
+    betas_holding: number;
+    /**
+     * Number of swaps the Alpha still has to make, each counted once.
+     */
+    pending_exchanges: number;
+    /**
+     * Total of the pending swaps, in satoshis.
+     */
+    pending_amount: number;
+};
+
+/**
  * Reflects what the majority of Beta mints think about the current Alpha mint
  */
 export type PerceivedState = {
+    /**
+     * Mirrors the substitute of the most widely held pending outage; `null` once the Alpha is online again.
+     */
     substitute_beta?: string | null;
+    /**
+     * One entry per outage the Betas still hold against this Alpha; empty once the Alpha is online again.
+     */
+    pending_outages?: Array<PendingOutage>;
     alpha_state: MintState;
     /**
      * Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.
