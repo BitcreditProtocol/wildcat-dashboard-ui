@@ -2,8 +2,10 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { listKeysetInfosInfiniteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
-import { Heading, Search as SearchComponent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
-import { SortButtons } from "@/components/SortButtons";
+import { Heading, Search as SearchComponent } from "@bitcredit/ui-library";
+import { ListFilters, type FilterGroup } from "@/components/ListFilters";
+import { createSortGroup } from "@/components/sort-filter-group";
+import { filterGroupMessages } from "@/i18n/descriptors";
 import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
 import { KeysetCard } from "@/pages/keysets/components/KeysetCard";
 import { useKeysetFiltering } from "@/hooks/use-keyset-filtering";
@@ -64,40 +66,39 @@ function PageBody() {
     );
   }
 
+  const filterGroups: FilterGroup[] = [
+    {
+      id: "show",
+      title: intl.formatMessage(filterGroupMessages.show),
+      value: keysetFilter,
+      options: filterOptions.map((option) => ({ value: option.value, label: option.label })),
+      onSelect: (value) => {
+        setKeysetFilter(value as typeof keysetFilter);
+      },
+    },
+    createSortGroup({
+      title: intl.formatMessage(filterGroupMessages.sortBy),
+      sortBy,
+      options: sortOptions,
+      onSortChange: toggleSort,
+    }),
+  ];
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-          <SearchComponent
-            value={searchQuery}
-            className="flex-1 max-w-md"
-            placeholder={intl.formatMessage({
-              id: "keysets.search.placeholder",
-              defaultMessage: "Search by keyset ID, currency, maturity date, or status...",
-            })}
-            onSearch={setSearchQuery}
-            onChange={setSearchQuery}
-            size="sm"
-          />
-          <Select value={keysetFilter} onValueChange={(value) => setKeysetFilter(value as typeof keysetFilter)}>
-            <SelectTrigger className="h-11 w-full sm:min-w-0 sm:max-w-64" label="">
-              <SelectValue
-                placeholder={intl.formatMessage({
-                  id: "keysets.filter.label",
-                  defaultMessage: "Filter",
-                })}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {filterOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
+      <div className="flex items-center gap-3">
+        <SearchComponent
+          value={searchQuery}
+          className="flex-1 max-w-md"
+          placeholder={intl.formatMessage({
+            id: "keysets.search.placeholder",
+            defaultMessage: "Search by keyset ID, currency, maturity date, or status...",
+          })}
+          onSearch={setSearchQuery}
+          onChange={setSearchQuery}
+          size="sm"
+        />
+        <ListFilters groups={filterGroups} hasActiveFilters={keysetFilter !== "all"} />
       </div>
 
       {isLoadingAllPages && (

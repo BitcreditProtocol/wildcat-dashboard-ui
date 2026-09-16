@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
 import StatusQuotePage from "./StatusQuotePage";
+import type { FilterGroup } from "@/components/ListFilters";
 
 interface QueryKeyEntry {
   _id: string;
@@ -104,6 +105,35 @@ vi.mock("@bitcredit/ui-library", async () => {
   };
 });
 
+// The real panel lives in a drawer; the groups it is given are what the page wires up,
+// so the mock renders them flat and keeps the drawer itself out of the test.
+vi.mock("@/components/ListFilters", async () => {
+  const actual = await vi.importActual<typeof import("@/components/ListFilters")>("@/components/ListFilters");
+  return {
+    ...actual,
+    ListFilters: ({ groups }: { groups: FilterGroup[] }) => (
+      <div>
+        {groups.map((group) => (
+          <div key={group.id} data-filter-group={group.id} data-filter-value={group.value}>
+            {group.options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                data-filter-option={option.value}
+                onClick={() => {
+                  group.onSelect(option.value);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    ),
+  };
+});
+
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
@@ -170,15 +200,19 @@ function changeSearchValue(page: HTMLDivElement, value: string) {
   });
 }
 
-function clickSelectItem(page: HTMLDivElement, value: string) {
-  const button = page.querySelector(`[data-select-item="${value}"]`);
-  expect(button).not.toBeNull();
+function clickFilterOption(page: HTMLDivElement, value: string) {
+  const button = page.querySelector(`[data-filter-option="${value}"]`);
+  expect(button, `Filter option "${value}" not found`).not.toBeNull();
   if (!(button instanceof HTMLButtonElement)) {
-    throw new Error(`Missing select item: ${value}`);
+    throw new Error(`Missing filter option: ${value}`);
   }
   act(() => {
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
+}
+
+function filterGroupValue(page: HTMLDivElement, groupId: string) {
+  return page.querySelector(`[data-filter-group="${groupId}"]`)?.getAttribute("data-filter-value");
 }
 
 function clickButtonByText(page: HTMLDivElement, text: string) {
@@ -312,26 +346,22 @@ describe("StatusQuotePage", () => {
   it("shows all quotes page title when no status filter is passed", () => {
     const page = renderPage();
     expect(page.textContent).toContain("All quotes");
-    expect(page.textContent).toContain("Items per page");
-    expect(page.textContent).toContain("All");
+    expect(filterGroupValue(page, "rowsPerPage")).toBe("25");
     expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_asc" });
   });
 
   it("passes backend quote sort order for maturity and last status change", () => {
     const page = renderPage();
 
-    clickButtonByText(page, "Maturity");
+    // Maturity is the field already sorted on, so picking it again flips the direction.
+    clickFilterOption(page, "maturity");
     expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_desc" });
 
-    clickButtonByText(page, "Last status change");
+    clickFilterOption(page, "statusChange");
     expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_asc" });
-    expect(
-      Array.from(page.querySelectorAll("button"))
-        .find((button) => button.textContent?.trim() === "Status")
-        ?.getAttribute("class")
-    ).toContain("outline");
+    expect(filterGroupValue(page, "sort")).toBe("statusChange");
 
-    clickButtonByText(page, "Last status change");
+    clickFilterOption(page, "statusChange");
     expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_desc" });
   });
 
@@ -502,7 +532,7 @@ describe("StatusQuotePage", () => {
     const page = renderPage();
     expect(page.textContent).toContain("quote-legacy");
     expect(page.textContent).toContain("quote-legacy-2");
-    expect(page.textContent).not.toContain("Items per page");
+    expect(page.querySelector('[data-filter-group="rowsPerPage"]')).toBeNull();
   });
 
   it("loads the next page when load more is clicked", () => {
@@ -593,7 +623,7 @@ describe("StatusQuotePage", () => {
     });
 
     const page = renderPage();
-    clickSelectItem(page, "maturity-today");
+    clickFilterOption(page, "maturity-today");
 
     expect(fetchNextPageSpy).toHaveBeenCalled();
   });
@@ -686,7 +716,7 @@ describe("StatusQuotePage", () => {
     });
 
     const page = renderPage();
-    clickSelectItem(page, "requested-to-pay");
+    clickFilterOption(page, "requested-to-pay");
 
     expect(page.textContent).toContain("quote-accepted");
     expect(page.textContent).not.toContain("quote-pending");
@@ -794,7 +824,7 @@ describe("StatusQuotePage", () => {
     );
 
     const page = renderPage();
-    clickSelectItem(page, "ready-to-request-to-pay");
+    clickFilterOption(page, "ready-to-request-to-pay");
 
     expect(page.textContent).toContain("quote-ready");
     expect(page.textContent).not.toContain("quote-requested");
@@ -856,7 +886,7 @@ describe("StatusQuotePage", () => {
 
     const page = renderPage();
     await act(async () => {
-      clickSelectItem(page, "active-fee-token");
+      clickFilterOption(page, "active-fee-token");
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -922,7 +952,7 @@ describe("StatusQuotePage", () => {
     );
 
     const page = renderPage();
-    clickSelectItem(page, "maturity-today");
+    clickFilterOption(page, "maturity-today");
 
     expect(page.textContent).toContain("quote-today");
     expect(page.textContent).not.toContain("quote-later");

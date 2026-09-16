@@ -1,16 +1,17 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { AppIcon, Button, Heading } from "@bitcredit/ui-library";
-import { Skeleton, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
+import { Skeleton } from "@bitcredit/ui-library";
 import { LoaderIcon } from "lucide-react";
 import { Link } from "react-router";
 import { cn } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
-import { SortButtons } from "@/components/SortButtons";
+import { ListFilters, type FilterGroup } from "@/components/ListFilters";
+import { createSortGroup } from "@/components/sort-filter-group";
 import { Search as SearchComponent } from "@bitcredit/ui-library";
 import { useQuoteList, PAGE_SIZE_OPTIONS, ALL_PAGE_SIZE_VALUE } from "@/hooks/use-quote-list";
 import type { QuoteStatus, QuickFilter } from "@/hooks/use-quote-list";
-import { getQuoteStatusMessage } from "@/i18n/descriptors";
+import { filterGroupMessages, getQuoteStatusMessage } from "@/i18n/descriptors";
 import { QuoteItemCard } from "./components/QuoteItemCard";
 
 interface StatusQuotePageProps {
@@ -91,10 +92,50 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     return <Loader />;
   }
 
+  const filterGroups: FilterGroup[] = [
+    {
+      id: "show",
+      title: intl.formatMessage(filterGroupMessages.show),
+      value: quickFilter,
+      options: quickFilterOptions.map((option) => ({ value: option.value, label: option.label })),
+      onSelect: (value) => {
+        setQuickFilter(value as QuickFilter);
+      },
+    },
+    createSortGroup({
+      title: intl.formatMessage(filterGroupMessages.sortBy),
+      sortBy,
+      options: sortOptions,
+      onSortChange: toggleSort,
+    }),
+  ];
+
+  if (!usesLegacyFallback) {
+    filterGroups.push({
+      id: "rowsPerPage",
+      title: intl.formatMessage(filterGroupMessages.rowsPerPage),
+      value: String(itemsPerPage),
+      columns: 5,
+      options: [
+        ...PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: String(size) })),
+        {
+          value: ALL_PAGE_SIZE_VALUE,
+          label: intl.formatMessage({
+            id: "quotes.pagination.all",
+            defaultMessage: "All",
+          }),
+        },
+      ],
+      onSelect: (value) => {
+        setItemsPerPage(value === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_VALUE : Number(value));
+      },
+    });
+  }
+
   return (
     <>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 items-center gap-3">
           <SearchComponent
             value={searchQuery}
             className="flex-1 max-w-md"
@@ -106,25 +147,19 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             onChange={setSearchQuery}
             size="sm"
           />
-          <Select value={quickFilter} onValueChange={(value) => setQuickFilter(value as QuickFilter)}>
-            <SelectTrigger className="h-11 w-full sm:min-w-0 sm:max-w-64" label="">
-              <SelectValue
-                placeholder={intl.formatMessage({
-                  id: "quotes.filter.label",
-                  defaultMessage: "Quick filter",
-                })}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {quickFilterOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ListFilters groups={filterGroups} hasActiveFilters={quickFilter !== "all"} />
         </div>
-        <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
+        {totalQuotes > 0 && (
+          <div className="text-sm text-muted-foreground">
+            {intl.formatMessage(
+              {
+                id: "quotes.pagination.count",
+                defaultMessage: "Showing {loaded} of {total} quotes",
+              },
+              { loaded: quotes.length, total: totalQuotes }
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-center">
@@ -136,51 +171,6 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             invisible: (!isFetching && !isFetchingNextPage) || isLoading,
           })}
         />
-      </div>
-
-      <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
-        {!usesLegacyFallback && (
-          <div className="flex items-center gap-2">
-            <span>
-              {intl.formatMessage({
-                id: "quotes.pagination.itemsPerPage",
-                defaultMessage: "Items per page",
-              })}
-            </span>
-            <Select
-              value={String(itemsPerPage)}
-              onValueChange={(value) => setItemsPerPage(value === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_VALUE : Number(value))}
-            >
-              <SelectTrigger className="h-8 w-24" label="">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <SelectItem key={size} value={String(size)}>
-                    {size}
-                  </SelectItem>
-                ))}
-                <SelectItem value={ALL_PAGE_SIZE_VALUE}>
-                  {intl.formatMessage({
-                    id: "quotes.pagination.all",
-                    defaultMessage: "All",
-                  })}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        {totalQuotes > 0 && (
-          <div>
-            {intl.formatMessage(
-              {
-                id: "quotes.pagination.count",
-                defaultMessage: "Showing {loaded} of {total} quotes",
-              },
-              { loaded: quotes.length, total: totalQuotes }
-            )}
-          </div>
-        )}
       </div>
 
       {isLoadingAllPages && (
