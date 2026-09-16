@@ -6,7 +6,6 @@ import { Heading, Text } from "@bitcredit/ui-library";
 
 const versionMessages = defineMessages({
   wildcat: { id: "home.mint.version.wildcat", defaultMessage: "Wildcat" },
-  ebillCore: { id: "home.mint.version.ebillCore", defaultMessage: "BCR eBill Core" },
   cdkMintd: { id: "home.mint.version.cdkMintd", defaultMessage: "CDK Mintd" },
   clowder: { id: "home.mint.version.clowder", defaultMessage: "Clowder" },
 });
@@ -76,7 +75,6 @@ export function MintInfoCard() {
               {(
                 [
                   [versionMessages.wildcat, mintData.versions.wildcat],
-                  [versionMessages.ebillCore, mintData.versions.bcr_ebill_core],
                   [versionMessages.cdkMintd, mintData.versions.cdk_mintd],
                   [versionMessages.clowder, mintData.versions.clowder],
                 ] as const
