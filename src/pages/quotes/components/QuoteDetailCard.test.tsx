@@ -2,6 +2,7 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntlProvider } from "react-intl";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import type { BillIdentParticipant, BillParticipant, Id, InfoReply } from "@/generated/client/types.gen";
@@ -65,7 +66,9 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
   return renderIntoDom(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <IntlProvider locale="en-US">
-        <PreferencesProvider>{element}</PreferencesProvider>
+        <MemoryRouter>
+          <PreferencesProvider>{element}</PreferencesProvider>
+        </MemoryRouter>
       </IntlProvider>
     </QueryClientProvider>
   );

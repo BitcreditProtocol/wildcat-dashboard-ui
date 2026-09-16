@@ -17,7 +17,8 @@ import { useIntl } from "react-intl";
 const logger = createLogger("sync-bill-chain");
 
 export interface UseSyncBillChainArgs {
-  quoteId: string;
+  /** Absent when the sync is triggered from a bill's own page. */
+  quoteId?: string;
   billId: string | undefined;
 }
 
@@ -78,8 +79,9 @@ export function useSyncBillChain({ quoteId, billId }: UseSyncBillChainArgs): Use
       });
 
       const syncedQueryKeys = [
-        getQuoteOptions({ path: { qid: quoteId } }).queryKey,
-        getSharedEbillHistoryOptions({ path: { qid: quoteId } }).queryKey,
+        ...(quoteId
+          ? [getQuoteOptions({ path: { qid: quoteId } }).queryKey, getSharedEbillHistoryOptions({ path: { qid: quoteId } }).queryKey]
+          : []),
         listEbillsOptions().queryKey,
         ...(billId
           ? [

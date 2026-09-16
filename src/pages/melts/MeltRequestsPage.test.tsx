@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
 import type { DeniedMeltOp } from "@/generated/client/types.gen";
+import type { FilterGroup } from "@/components/ListFilters";
 
 interface QueryOptions {
   queryKey: { _id: string }[];
@@ -120,17 +121,34 @@ vi.mock("@bitcredit/ui-library", async () => {
   };
 });
 
-vi.mock("@/components/SortButtons", () => ({
-  SortButtons: ({ options, onSortChange }: { options: { field: string; label: string }[]; onSortChange: (field: string) => void }) => (
-    <div>
-      {options.map((option) => (
-        <button key={option.field} type="button" onClick={() => onSortChange(option.field)}>
-          {`sort-${option.field}`}
-        </button>
-      ))}
-    </div>
-  ),
-}));
+// The real panel lives in a drawer; the groups it is given are what the page wires up,
+// so the mock renders them flat and keeps the drawer itself out of the test.
+vi.mock("@/components/ListFilters", async () => {
+  const actual = await vi.importActual<typeof import("@/components/ListFilters")>("@/components/ListFilters");
+  return {
+    ...actual,
+    ListFilters: ({ groups }: { groups: FilterGroup[] }) => (
+      <div>
+        {groups.map((group) => (
+          <div key={group.id} data-filter-group={group.id} data-filter-value={group.value}>
+            {group.options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                data-filter-option={option.value}
+                onClick={() => {
+                  group.onSelect(option.value);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    ),
+  };
+});
 
 import MeltRequestsPage from "./MeltRequestsPage";
 
@@ -175,11 +193,11 @@ function clickButtonByText(page: HTMLDivElement, label: string) {
   });
 }
 
-function clickSelectItem(page: HTMLDivElement, value: string) {
-  const button = page.querySelector(`[data-select-item="${value}"]`);
-  expect(button, `Select item "${value}" not found`).not.toBeNull();
+function clickFilterOption(page: HTMLDivElement, value: string) {
+  const button = page.querySelector(`[data-filter-option="${value}"]`);
+  expect(button, `Filter option "${value}" not found`).not.toBeNull();
   if (!(button instanceof HTMLButtonElement)) {
-    throw new Error(`Missing select item: ${value}`);
+    throw new Error(`Missing filter option: ${value}`);
   }
   act(() => {
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -287,7 +305,7 @@ describe("MeltRequestsPage", () => {
     it("'Created today' filter shows only operations created today (UTC)", () => {
       mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
       const page = renderPage();
-      clickSelectItem(page, "today");
+      clickFilterOption(page, "today");
       const links = orderedOperationIds(page);
       expect(links).toContain("op-today");
       expect(links).not.toContain("op-lastweek");
@@ -297,7 +315,7 @@ describe("MeltRequestsPage", () => {
     it("'Last 7 days' filter excludes operations older than 7 UTC days", () => {
       mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
       const page = renderPage();
-      clickSelectItem(page, "last-7-days");
+      clickFilterOption(page, "last-7-days");
       const links = orderedOperationIds(page);
       expect(links).toContain("op-today");
       expect(links).toContain("op-lastweek");
@@ -311,7 +329,7 @@ describe("MeltRequestsPage", () => {
       mockOpsQuery([OP_TODAY, opNewDay]);
 
       const page = renderPage();
-      clickSelectItem(page, "today");
+      clickFilterOption(page, "today");
       // Before midnight: only OP_TODAY qualifies for "today"
       expect(orderedOperationIds(page)).toEqual(["op-today"]);
 
@@ -337,11 +355,11 @@ describe("MeltRequestsPage", () => {
       const page = renderPage();
 
       // First click: amount-asc (0, 500, 1000)
-      clickButtonByText(page, "sort-amount");
+      clickFilterOption(page, "amount");
       expect(orderedOperationIds(page)).toEqual(["op-lastweek", "op-today", "op-old"]);
 
       // Second click: amount-desc (1000, 500, 0)
-      clickButtonByText(page, "sort-amount");
+      clickFilterOption(page, "amount");
       expect(orderedOperationIds(page)).toEqual(["op-old", "op-today", "op-lastweek"]);
     });
 
@@ -349,7 +367,7 @@ describe("MeltRequestsPage", () => {
       mockOpsQuery([OP_OLD, OP_LAST_WEEK, OP_TODAY]);
       const page = renderPage();
 
-      clickButtonByText(page, "sort-id");
+      clickFilterOption(page, "id");
       // op-lastweek, op-old, op-today (lexicographic)
       expect(orderedOperationIds(page)).toEqual(["op-lastweek", "op-old", "op-today"]);
     });
@@ -410,7 +428,7 @@ describe("MeltRequestsPage", () => {
     it("shows filtered count when a filter is active", () => {
       mockOpsQuery([OP_TODAY, OP_LAST_WEEK, OP_OLD]);
       const page = renderPage();
-      clickSelectItem(page, "today");
+      clickFilterOption(page, "today");
       expect(page.textContent).toContain("Showing 1 of 3 requests");
     });
   });

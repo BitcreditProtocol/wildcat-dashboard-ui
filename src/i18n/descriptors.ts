@@ -12,6 +12,12 @@ export const quoteStatusMessages = defineMessages({
   MintingEnabled: { id: "quote.status.MintingEnabled", defaultMessage: "Minting enabled" },
 });
 
+export const filterGroupMessages = defineMessages({
+  show: { id: "listFilters.group.show", defaultMessage: "Show" },
+  sortBy: { id: "listFilters.group.sortBy", defaultMessage: "Sort by" },
+  rowsPerPage: { id: "listFilters.group.rowsPerPage", defaultMessage: "Rows per page" },
+});
+
 export const participantRoleMessages = defineMessages({
   drawee: { id: "participants.role.drawee", defaultMessage: "Drawee" },
   drawer: { id: "participants.role.drawer", defaultMessage: "Drawer" },

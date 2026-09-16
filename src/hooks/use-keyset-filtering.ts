@@ -8,11 +8,14 @@ type SortBy = `${SortField}-${SortDirection}`;
 
 export type KeysetFilter = "all" | "active" | "inactive" | "expired" | "no-expiry";
 
+export const DEFAULT_KEYSET_FILTER: KeysetFilter = "all";
+export const DEFAULT_KEYSET_SORT: SortBy = "maturity-asc";
+
 export function useKeysetFiltering(keysets: KeySetInfo[]) {
   const intl = useIntl();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
-  const [keysetFilter, setKeysetFilter] = useState<KeysetFilter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>(DEFAULT_KEYSET_SORT);
+  const [keysetFilter, setKeysetFilter] = useState<KeysetFilter>(DEFAULT_KEYSET_FILTER);
 
   const now = new Date();
 
@@ -127,13 +130,28 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
   });
 
   const toggleSort = (field: SortField) => {
-    if (sortBy.startsWith(field)) {
-      const nextDirection: SortDirection = sortBy.endsWith("asc") ? "desc" : "asc";
-      setSortBy(`${field}-${nextDirection}`);
+    if (sortBy === `${field}-asc`) {
+      setSortBy(`${field}-desc`);
+      return;
+    }
+
+    if (sortBy === `${field}-desc`) {
+      setSortBy(DEFAULT_KEYSET_SORT);
       return;
     }
 
     setSortBy(`${field}-asc`);
+  };
+
+  const toggleKeysetFilter = (value: KeysetFilter) => {
+    setKeysetFilter(value === keysetFilter ? DEFAULT_KEYSET_FILTER : value);
+  };
+
+  const hasNonDefaultFilters = keysetFilter !== DEFAULT_KEYSET_FILTER || sortBy !== DEFAULT_KEYSET_SORT;
+
+  const resetFilters = () => {
+    setKeysetFilter(DEFAULT_KEYSET_FILTER);
+    setSortBy(DEFAULT_KEYSET_SORT);
   };
 
   const sortOptions = [
@@ -160,14 +178,8 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
     },
   ];
 
+  // No "all" option: nothing selected is what shows every keyset.
   const filterOptions = [
-    {
-      value: "all" as const,
-      label: intl.formatMessage({
-        id: "keysets.filter.all",
-        defaultMessage: "All keysets",
-      }),
-    },
     {
       value: "active" as const,
       label: intl.formatMessage({
@@ -203,6 +215,9 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
     setSearchQuery,
     keysetFilter,
     setKeysetFilter,
+    toggleKeysetFilter,
+    hasNonDefaultFilters,
+    resetFilters,
     sortBy,
     toggleSort,
     sortedKeysets,

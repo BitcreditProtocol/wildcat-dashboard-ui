@@ -14,9 +14,11 @@ import { truncateString } from "@/utils/strings";
 import { EndorsementChain } from "@/components/EndorsementChain";
 import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { QuoteDocuments } from "./QuoteDocuments";
+import { type QuoteDocumentPreview, QuoteDocumentViewer } from "./QuoteDocumentViewer";
+import { resolveDocumentMimeType } from "@/utils/document-preview";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { EndorseeList } from "./components/EndorseeList";
@@ -52,16 +54,23 @@ const QUOTE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
   const [openingDocumentHash, setOpeningDocumentHash] = useState<string | null>(null);
+  const [documentPreview, setDocumentPreview] = useState<QuoteDocumentPreview | null>(null);
 
-  const blobUrlTimerRef = useRef<number | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (blobUrlTimerRef.current !== null) {
-        clearTimeout(blobUrlTimerRef.current);
-      }
-    };
+  const releasePreviewUrl = useCallback(() => {
+    if (previewUrlRef.current !== null) {
+      window.URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
   }, []);
+
+  useEffect(() => releasePreviewUrl, [releasePreviewUrl]);
+
+  const handleClosePreview = useCallback(() => {
+    setDocumentPreview(null);
+    releasePreviewUrl();
+  }, [releasePreviewUrl]);
 
   const {
     quoteData,
@@ -176,24 +185,15 @@ function PageBody({ id }: { id: string }) {
         );
       }
 
+      releasePreviewUrl();
       const blobUrl = window.URL.createObjectURL(resolvedAttachment);
-      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      previewUrlRef.current = blobUrl;
 
-      if (!openedWindow) {
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.click();
-      }
-
-      if (blobUrlTimerRef.current !== null) {
-        clearTimeout(blobUrlTimerRef.current);
-      }
-      blobUrlTimerRef.current = window.setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl);
-        blobUrlTimerRef.current = null;
-      }, 60_000);
+      setDocumentPreview({
+        name: documentFile.name,
+        url: blobUrl,
+        mimeType: resolveDocumentMimeType(resolvedAttachment.type, documentFile.name),
+      });
     } catch (error) {
       toast({
         title: intl.formatMessage({
@@ -246,6 +246,8 @@ function PageBody({ id }: { id: string }) {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
+
+          <QuoteDocumentViewer preview={documentPreview} onClose={handleClosePreview} />
 
           <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
         </div>
