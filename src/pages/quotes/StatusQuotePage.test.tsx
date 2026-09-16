@@ -111,7 +111,7 @@ vi.mock("@/components/ListFilters", async () => {
   const actual = await vi.importActual<typeof import("@/components/ListFilters")>("@/components/ListFilters");
   return {
     ...actual,
-    ListFilters: ({ groups }: { groups: FilterGroup[] }) => (
+    ListFilters: ({ groups, onReset }: { groups: FilterGroup[]; onReset?: () => void }) => (
       <div>
         {groups.map((group) => (
           <div key={group.id} data-filter-group={group.id} data-filter-value={group.value}>
@@ -129,6 +129,11 @@ vi.mock("@/components/ListFilters", async () => {
             ))}
           </div>
         ))}
+        {onReset && (
+          <button type="button" onClick={onReset}>
+            Reset all
+          </button>
+        )}
       </div>
     ),
   };
@@ -221,6 +226,14 @@ function clickButtonByText(page: HTMLDivElement, text: string) {
   act(() => {
     button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
+}
+
+function orderedQuoteIds(page: HTMLDivElement): string[] {
+  // The status chips link under /quotes too, so skip them and keep the card links.
+  const ids = Array.from(page.querySelectorAll('a[href^="/quotes/"]:not([data-quote-status-chip])')).map(
+    (node) => node.getAttribute("href")?.replace("/quotes/", "") ?? ""
+  );
+  return ids.filter((id, index) => ids.indexOf(id) === index);
 }
 
 function lastQuotesQuery() {
@@ -347,13 +360,132 @@ describe("StatusQuotePage", () => {
     const page = renderPage();
     expect(page.textContent).toContain("All quotes");
     expect(filterGroupValue(page, "rowsPerPage")).toBe("25");
+    // Priority is the default rather than an option, so no sort field is selected, and it
+    // needs the pages in arrival order to rank them.
+    expect(filterGroupValue(page, "sort")).toBe("");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_asc" });
+  });
+
+  it("links every status from the chips, and the active chip goes back to all quotes", () => {
+    const page = renderPage("Pending");
+    const chips = Array.from(page.querySelectorAll("[data-quote-status-chip]"));
+
+    expect(chips.map((chip) => chip.getAttribute("data-quote-status-chip"))).toEqual([
+      "Pending",
+      "Offered",
+      "OfferExpired",
+      "Accepted",
+      "MintingEnabled",
+      "Denied",
+      "Rejected",
+      "Canceled",
+    ]);
+
+    const pendingChip = chips.find((chip) => chip.getAttribute("data-quote-status-chip") === "Pending");
+    expect(pendingChip?.getAttribute("aria-current")).toBe("page");
+    expect(pendingChip?.getAttribute("href")).toBe("/quotes");
+    expect(chips.find((chip) => chip.getAttribute("data-quote-status-chip") === "Denied")?.getAttribute("href")).toBe("/quotes/denied");
+  });
+
+  it("shows no quick filter until one is picked, and picking it again clears it", () => {
+    const page = renderPage();
+    const chips = () => Array.from(page.querySelectorAll('[role="group"][aria-label="Show"] button'));
+    const pressed = () => chips().map((chip) => chip.getAttribute("aria-pressed"));
+
+    // Nothing selected is what shows every quote, so there is no "All quotes" chip.
+    expect(chips().map((chip) => chip.textContent)).toEqual([
+      "Requested to pay",
+      "Ready to request to pay",
+      "Paid",
+      "Active fee token",
+      "Maturity today",
+    ]);
+    expect(pressed()).toEqual(["false", "false", "false", "false", "false"]);
+
+    const clickRequestedToPay = () => {
+      const chip = chips()[0];
+      act(() => {
+        chip?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+    };
+
+    clickRequestedToPay();
+    expect(pressed()).toEqual(["true", "false", "false", "false", "false"]);
+
+    clickRequestedToPay();
+    expect(pressed()).toEqual(["false", "false", "false", "false", "false"]);
+  });
+
+  it("cycles a sort field through ascending, descending and back to the default", () => {
+    const page = renderPage();
+
+    clickFilterOption(page, "maturity");
     expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_asc" });
+
+    clickFilterOption(page, "maturity");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_desc" });
+
+    clickFilterOption(page, "maturity");
+    expect(filterGroupValue(page, "sort")).toBe("");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_asc" });
+  });
+
+  it("does not offer priority as a sort field, since it is where sorting starts", () => {
+    const page = renderPage();
+
+    expect(page.querySelector('[data-filter-option="priority"]')).toBeNull();
+    expect(Array.from(page.querySelectorAll('[role="group"][aria-label="Sort by"] button')).map((chip) => chip.textContent)).toEqual([
+      "Amount",
+      "Maturity",
+      "Status",
+      "Last status change",
+    ]);
+  });
+
+  it("puts every filter back with reset all", () => {
+    const page = renderPage();
+
+    clickFilterOption(page, "paid");
+    clickFilterOption(page, "50");
+    clickFilterOption(page, "status");
+    expect(lastQuotesQuery()).toMatchObject({ limit: 50 });
+
+    clickButtonByText(page, "Reset all");
+
+    expect(filterGroupValue(page, "show")).toBe("all");
+    expect(filterGroupValue(page, "sort")).toBe("");
+    expect(filterGroupValue(page, "rowsPerPage")).toBe("25");
+    expect(lastQuotesQuery()).toMatchObject({ limit: 25, sort: "submitted_asc" });
+  });
+
+  it("offers sorting and page size as chip rows too, each naming itself", () => {
+    const page = renderPage();
+    const activeChip = (group: string) =>
+      Array.from(page.querySelectorAll(`[role="group"][aria-label="${group}"] button`)).find(
+        (chip) => chip.getAttribute("aria-pressed") === "true"
+      );
+
+    expect(page.querySelector('[role="group"][aria-label="Sort by"]')?.textContent).toContain("Sort by");
+    expect(activeChip("Sort by")).toBeUndefined();
+    expect(activeChip("Rows per page")?.textContent).toBe("25");
+
+    act(() => {
+      Array.from(page.querySelectorAll('[role="group"][aria-label="Rows per page"] button'))
+        .find((chip) => chip.textContent === "50")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(activeChip("Rows per page")?.textContent).toBe("50");
+    expect(lastQuotesQuery()).toMatchObject({ limit: 50 });
   });
 
   it("passes backend quote sort order for maturity and last status change", () => {
     const page = renderPage();
 
-    // Maturity is the field already sorted on, so picking it again flips the direction.
+    clickFilterOption(page, "maturity");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_asc" });
+
+    // Picking the field already sorted on flips the direction.
     clickFilterOption(page, "maturity");
     expect(lastQuotesQuery()).toMatchObject({ sort: "bill_maturity_date_desc" });
 
@@ -363,6 +495,85 @@ describe("StatusQuotePage", () => {
 
     clickFilterOption(page, "statusChange");
     expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_desc" });
+  });
+
+  it("puts quotes waiting on a decision first by default, the longest wait at the top", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            data: [
+              { id: "quote-denied", status: "Denied", sum: 100 },
+              { id: "quote-pending-new", status: "Pending", sum: 200 },
+              { id: "quote-accepted", status: "Accepted", sum: 300 },
+              { id: "quote-pending-old", status: "Pending", sum: 400 },
+              { id: "quote-offered", status: "Offered", sum: 500 },
+            ],
+            total: 5,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+
+    const timestamps: Record<string, string> = {
+      "quote-denied": "2026-02-19T10:00:00.000Z",
+      "quote-pending-new": "2026-02-18T10:00:00.000Z",
+      "quote-accepted": "2026-02-17T10:00:00.000Z",
+      "quote-pending-old": "2026-02-10T10:00:00.000Z",
+      "quote-offered": "2026-02-16T10:00:00.000Z",
+    };
+
+    const statuses: Record<string, string> = {
+      "quote-denied": "Denied",
+      "quote-pending-new": "Pending",
+      "quote-accepted": "Accepted",
+      "quote-pending-old": "Pending",
+      "quote-offered": "Offered",
+    };
+
+    mockUseQueries.mockImplementation(({ queries }: UseQueriesArgs) =>
+      queries.map((query) => {
+        const firstKey = query.queryKey?.[0];
+        const qid =
+          typeof firstKey === "object" &&
+          firstKey !== null &&
+          "path" in firstKey &&
+          typeof firstKey.path === "object" &&
+          firstKey.path !== null &&
+          "qid" in firstKey.path
+            ? String(firstKey.path.qid)
+            : "x";
+        const status = statuses[qid] ?? "Pending";
+
+        return {
+          data: {
+            id: qid,
+            status,
+            // A pending quote carries its arrival time; the rest carry their last change.
+            ...(status === "Pending" ? { submitted: timestamps[qid] } : { tstamp: timestamps[qid] }),
+            bill: {
+              id: `bill-${qid}`,
+              maturity_date: "2026-02-20",
+              drawee: { name: "Alice", node_id: "drawee-node" },
+              drawer: { name: "Bob", node_id: "drawer-node" },
+              payee: { Ident: { name: "Charlie", node_id: "payee-node" } },
+              endorsees: [],
+            },
+          },
+          isLoading: false,
+        };
+      })
+    );
+
+    const page = renderPage();
+
+    expect(orderedQuoteIds(page)).toEqual(["quote-pending-old", "quote-pending-new", "quote-offered", "quote-accepted", "quote-denied"]);
   });
 
   it("keeps amount and status sorting local, without a backend sort order", () => {
@@ -717,6 +928,62 @@ describe("StatusQuotePage", () => {
 
     const page = renderPage();
     clickFilterOption(page, "requested-to-pay");
+
+    expect(page.textContent).toContain("quote-accepted");
+    expect(page.textContent).not.toContain("quote-pending");
+  });
+
+  it("filters quotes whose e-bill is paid, whatever stage the quote is at", () => {
+    mockUseQuery.mockImplementation((opts: GetQuoteQueryOptions) => {
+      if (opts.queryKey[0]._id === "getQuote") {
+        const quoteId = opts.queryKey[0].path?.qid ?? "x";
+        return {
+          data: {
+            id: quoteId,
+            status: quoteId === "quote-accepted" ? "Accepted" : "Pending",
+            keyset_id: "keyset-1",
+            bill: {
+              id: `bill-${quoteId}`,
+              maturity_date: "2026-02-20",
+              drawee: { name: "Alice", node_id: "drawee-node" },
+              drawer: { name: "Bob", node_id: "drawer-node" },
+              payee: { Ident: { name: "Charlie", node_id: "payee-node" } },
+              endorsees: [],
+            },
+          },
+          isLoading: false,
+          error: null,
+        };
+      }
+
+      if (opts.queryKey[0]._id === "listEbills") {
+        return {
+          data: [
+            {
+              id: "bill-quote-accepted",
+              status: { payment: { requested_to_pay: true, paid: true } },
+            },
+            {
+              id: "bill-quote-pending",
+              status: { payment: { requested_to_pay: true, paid: false } },
+            },
+          ],
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        };
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        error: null,
+      };
+    });
+
+    const page = renderPage();
+    clickFilterOption(page, "paid");
 
     expect(page.textContent).toContain("quote-accepted");
     expect(page.textContent).not.toContain("quote-pending");

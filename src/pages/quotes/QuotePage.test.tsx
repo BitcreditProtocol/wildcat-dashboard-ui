@@ -340,6 +340,11 @@ describe("QuotePage", () => {
     expect(keysetLink).toBeNull();
   });
 
+  it("links the bill id to the bill's own page", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    expect(page.querySelector('a[href="/bills/bill-1"]')).not.toBeNull();
+  });
+
   it("shows a collapsible documents section", () => {
     const page = renderPage(`/quotes/${quoteId}`);
     expect(page.textContent).toContain("Documents");

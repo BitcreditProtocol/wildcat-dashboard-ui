@@ -99,7 +99,7 @@ vi.mock("@/components/ListFilters", async () => {
   const actual = await vi.importActual<typeof import("@/components/ListFilters")>("@/components/ListFilters");
   return {
     ...actual,
-    ListFilters: ({ groups }: { groups: FilterGroup[] }) => (
+    ListFilters: ({ groups, onReset }: { groups: FilterGroup[]; onReset?: () => void }) => (
       <div>
         {groups.map((group) => (
           <div key={group.id} data-filter-group={group.id} data-filter-value={group.value}>
@@ -117,6 +117,11 @@ vi.mock("@/components/ListFilters", async () => {
             ))}
           </div>
         ))}
+        {onReset && (
+          <button type="button" onClick={onReset}>
+            Reset all
+          </button>
+        )}
       </div>
     ),
   };
@@ -323,6 +328,32 @@ describe("KeysetsPage", () => {
     clickFilterOption(page, "inactive");
 
     expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-inactive"]);
+  });
+
+  it("clears the filter when the active one is picked again, and resets everything", () => {
+    mockKeysetPages([
+      {
+        data: [
+          { id: "keyset-active", active: true, final_expiry: 1798761600, unit: "sat" },
+          { id: "keyset-inactive", active: false, final_expiry: null, unit: { Custom: "usd" } },
+        ],
+        total: 2,
+      },
+    ]);
+
+    const page = renderPage();
+
+    clickFilterOption(page, "inactive");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-inactive"]);
+
+    // Picking the active filter again clears it, as on the quotes page.
+    clickFilterOption(page, "inactive");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-active", "/keysets/keyset-inactive"]);
+
+    clickFilterOption(page, "inactive");
+    clickFilterOption(page, "currency");
+    clickButtonByText(page, "Reset all");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-active", "/keysets/keyset-inactive"]);
   });
 
   it("searches keysets that live on a later page", () => {

@@ -68,14 +68,12 @@ export function FilterGroupSection({ group }: { group: FilterGroup }) {
 interface ListFiltersProps {
   groups: FilterGroup[];
   hasActiveFilters?: boolean;
+  className?: string;
+  onReset?: () => void;
+  canReset?: boolean;
 }
 
-/**
- * Filters for a list view, kept in a drawer behind one button next to the search.
- * Laid out in a row the controls grew with their longest label and pushed the list
- * sideways; here every group opens downwards in space of its own.
- */
-export function ListFilters({ groups, hasActiveFilters = false }: ListFiltersProps) {
+export function ListFilters({ groups, hasActiveFilters = false, className, onReset, canReset = true }: ListFiltersProps) {
   const intl = useIntl();
   const title = intl.formatMessage({
     id: "listFilters.title",
@@ -85,7 +83,14 @@ export function ListFilters({ groups, hasActiveFilters = false }: ListFiltersPro
   return (
     <Drawer>
       <DrawerTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className="relative h-11 w-11 shrink-0 p-0" aria-label={title} title={title}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn("relative h-11 w-11 shrink-0 p-0", className)}
+          aria-label={title}
+          title={title}
+        >
           <AppIcon icon={SlidersHorizontal} size="sm" />
           {hasActiveFilters && <span aria-hidden="true" className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-text-300" />}
         </Button>
@@ -103,6 +108,14 @@ export function ListFilters({ groups, hasActiveFilters = false }: ListFiltersPro
         {groups.map((group) => (
           <FilterGroupSection key={group.id} group={group} />
         ))}
+        {onReset && (
+          <Button type="button" variant="outline" size="sm" className="min-h-11 w-full" onClick={onReset} disabled={!canReset}>
+            {intl.formatMessage({
+              id: "listFilters.reset",
+              defaultMessage: "Reset all",
+            })}
+          </Button>
+        )}
       </DrawerContent>
     </Drawer>
   );

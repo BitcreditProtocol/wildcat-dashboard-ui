@@ -6,6 +6,7 @@ import { Link } from "react-router";
 import { cn } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
+import { FilterChipRow } from "@/components/FilterChipRow";
 import { ListFilters, type FilterGroup } from "@/components/ListFilters";
 import { createSortGroup } from "@/components/sort-filter-group";
 import { Search as SearchComponent } from "@bitcredit/ui-library";
@@ -13,6 +14,7 @@ import { useQuoteList, PAGE_SIZE_OPTIONS, ALL_PAGE_SIZE_VALUE } from "@/hooks/us
 import type { QuoteStatus, QuickFilter } from "@/hooks/use-quote-list";
 import { filterGroupMessages, getQuoteStatusMessage } from "@/i18n/descriptors";
 import { QuoteItemCard } from "./components/QuoteItemCard";
+import { QuoteStatusChips } from "./components/QuoteStatusChips";
 
 interface StatusQuotePageProps {
   status?: QuoteStatus;
@@ -32,6 +34,34 @@ function Loader() {
   );
 }
 
+function LoadError({ message }: { message: string }) {
+  const intl = useIntl();
+
+  return (
+    <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+      <div className="text-red-800 font-semibold">
+        {intl.formatMessage({
+          id: "quotes.error.loadQuotes.title",
+          defaultMessage: "Failed to load quotes",
+        })}
+      </div>
+      <div className="text-red-600 text-sm">
+        {message ||
+          intl.formatMessage({
+            id: "quotes.error.unknown",
+            defaultMessage: "Unknown error occurred",
+          })}
+      </div>
+      <div className="text-xs text-red-500">
+        {intl.formatMessage({
+          id: "quotes.error.checkApi",
+          defaultMessage: "Check if the API server is running and accessible",
+        })}
+      </div>
+    </div>
+  );
+}
+
 function QuoteList({ status }: { status?: QuoteStatus }) {
   const intl = useIntl();
   const {
@@ -39,7 +69,9 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     setSearchQuery,
     sortBy,
     quickFilter,
-    setQuickFilter,
+    toggleQuickFilter,
+    hasNonDefaultFilters,
+    resetFilters,
     itemsPerPage,
     setItemsPerPage,
     quotes,
@@ -61,36 +93,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
     toggleSort,
   } = useQuoteList(status);
 
-  if (error) {
-    const errorMessage = (error as { message?: string }).message ?? String(error);
-    return (
-      <div className="flex flex-col gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <div className="text-red-800 font-semibold">
-          {intl.formatMessage({
-            id: "quotes.error.loadQuotes.title",
-            defaultMessage: "Failed to load quotes",
-          })}
-        </div>
-        <div className="text-red-600 text-sm">
-          {errorMessage ||
-            intl.formatMessage({
-              id: "quotes.error.unknown",
-              defaultMessage: "Unknown error occurred",
-            })}
-        </div>
-        <div className="text-xs text-red-500">
-          {intl.formatMessage({
-            id: "quotes.error.checkApi",
-            defaultMessage: "Check if the API server is running and accessible",
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return <Loader />;
-  }
+  const errorMessage = error ? ((error as { message?: string }).message ?? String(error)) : undefined;
 
   const filterGroups: FilterGroup[] = [
     {
@@ -99,7 +102,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       value: quickFilter,
       options: quickFilterOptions.map((option) => ({ value: option.value, label: option.label })),
       onSelect: (value) => {
-        setQuickFilter(value as QuickFilter);
+        toggleQuickFilter(value as QuickFilter);
       },
     },
     createSortGroup({
@@ -147,7 +150,13 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             onChange={setSearchQuery}
             size="sm"
           />
-          <ListFilters groups={filterGroups} hasActiveFilters={quickFilter !== "all"} />
+          <ListFilters
+            groups={filterGroups}
+            hasActiveFilters={hasNonDefaultFilters}
+            onReset={resetFilters}
+            canReset={hasNonDefaultFilters}
+            className="lg:hidden"
+          />
         </div>
         {totalQuotes > 0 && (
           <div className="text-sm text-muted-foreground">
@@ -162,70 +171,85 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
         )}
       </div>
 
-      <div className="flex items-center justify-center">
-        <AppIcon
-          icon={LoaderIcon}
-          weight="thin"
-          className={cn({
-            "animate-spin": (isFetching || isFetchingNextPage) && !isLoading,
-            invisible: (!isFetching && !isFetchingNextPage) || isLoading,
-          })}
-        />
+      <div className="my-4 flex flex-col gap-2">
+        <QuoteStatusChips status={status} />
+        {filterGroups.map((group) => (
+          <FilterChipRow key={group.id} group={group} withLabel={group.id !== "show"} className="hidden lg:flex" />
+        ))}
       </div>
 
-      {isLoadingAllPages && (
-        <div className="text-center text-sm text-muted-foreground">
-          {intl.formatMessage({
-            id: "quotes.pagination.loadingAll",
-            defaultMessage: "Searching all quotes...",
-            description: "Shown while the remaining quote pages are loaded so search and filters cover every quote",
-          })}
-        </div>
-      )}
+      {errorMessage !== undefined && <LoadError message={errorMessage} />}
 
-      <div className="flex flex-col gap-1.5 my-2">
-        {sortedQuotes.length === 0 && hasActiveFilters && !isLoadingAllPages && (
-          <div className="py-2 text-center text-muted-foreground">
-            {intl.formatMessage({
-              id: "quotes.search.noMatch",
-              defaultMessage: "No quotes match your search criteria",
-            })}
+      {errorMessage === undefined && isLoading && <Loader />}
+
+      {errorMessage === undefined && !isLoading && (
+        <>
+          <div className="flex items-center justify-center">
+            <AppIcon
+              icon={LoaderIcon}
+              weight="thin"
+              className={cn({
+                "animate-spin": isFetching || isFetchingNextPage,
+                invisible: !isFetching && !isFetchingNextPage,
+              })}
+            />
           </div>
-        )}
-        {sortedQuotes.length === 0 && !hasActiveFilters && <div className="py-2 font-bold">{noQuotesMessage}</div>}
-        {sortedQuotes
-          .filter((q) => q.id)
-          .map((quote) => (
-            <div key={quote.id}>
-              <QuoteItemCard
-                quote={quote}
-                effectiveStatus={effectiveStatusByQuoteId.get(quote.id) ?? quote.status}
-                searchQuery={searchQuery}
-              />
-            </div>
-          ))}
-      </div>
 
-      {hasNextPage && !isLoadingAllPages && (
-        <div className="flex justify-center px-4 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-12 w-full max-w-sm"
-            onClick={() => void fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage
-              ? intl.formatMessage({
-                  id: "quotes.pagination.loadingMore",
-                  defaultMessage: "Loading more...",
-                })
-              : intl.formatMessage({
-                  id: "quotes.pagination.loadMore",
-                  defaultMessage: "Load more",
+          {isLoadingAllPages && (
+            <div className="text-center text-sm text-muted-foreground">
+              {intl.formatMessage({
+                id: "quotes.pagination.loadingAll",
+                defaultMessage: "Searching all quotes...",
+                description: "Shown while the remaining quote pages are loaded so search and filters cover every quote",
+              })}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1.5 my-2">
+            {sortedQuotes.length === 0 && hasActiveFilters && !isLoadingAllPages && (
+              <div className="py-2 text-center text-muted-foreground">
+                {intl.formatMessage({
+                  id: "quotes.search.noMatch",
+                  defaultMessage: "No quotes match your search criteria",
                 })}
-          </Button>
-        </div>
+              </div>
+            )}
+            {sortedQuotes.length === 0 && !hasActiveFilters && <div className="py-2 font-bold">{noQuotesMessage}</div>}
+            {sortedQuotes
+              .filter((q) => q.id)
+              .map((quote) => (
+                <div key={quote.id}>
+                  <QuoteItemCard
+                    quote={quote}
+                    effectiveStatus={effectiveStatusByQuoteId.get(quote.id) ?? quote.status}
+                    searchQuery={searchQuery}
+                  />
+                </div>
+              ))}
+          </div>
+
+          {hasNextPage && !isLoadingAllPages && (
+            <div className="flex justify-center px-4 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-12 w-full max-w-sm"
+                onClick={() => void fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage
+                  ? intl.formatMessage({
+                      id: "quotes.pagination.loadingMore",
+                      defaultMessage: "Loading more...",
+                    })
+                  : intl.formatMessage({
+                      id: "quotes.pagination.loadMore",
+                      defaultMessage: "Load more",
+                    })}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </>
   );
@@ -233,7 +257,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
 function PageBody({ status }: { status?: QuoteStatus }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <div>
         <QuoteList status={status} />
       </div>

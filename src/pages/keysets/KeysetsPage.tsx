@@ -3,6 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { listKeysetInfosInfiniteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Heading, Search as SearchComponent } from "@bitcredit/ui-library";
+import { FilterChipRow } from "@/components/FilterChipRow";
 import { ListFilters, type FilterGroup } from "@/components/ListFilters";
 import { createSortGroup } from "@/components/sort-filter-group";
 import { filterGroupMessages } from "@/i18n/descriptors";
@@ -45,7 +46,9 @@ function PageBody() {
     searchQuery,
     setSearchQuery,
     keysetFilter,
-    setKeysetFilter,
+    toggleKeysetFilter,
+    hasNonDefaultFilters,
+    resetFilters,
     sortBy,
     toggleSort,
     sortedKeysets,
@@ -73,7 +76,7 @@ function PageBody() {
       value: keysetFilter,
       options: filterOptions.map((option) => ({ value: option.value, label: option.label })),
       onSelect: (value) => {
-        setKeysetFilter(value as typeof keysetFilter);
+        toggleKeysetFilter(value as typeof keysetFilter);
       },
     },
     createSortGroup({
@@ -98,7 +101,19 @@ function PageBody() {
           onChange={setSearchQuery}
           size="sm"
         />
-        <ListFilters groups={filterGroups} hasActiveFilters={keysetFilter !== "all"} />
+        <ListFilters
+          groups={filterGroups}
+          hasActiveFilters={hasNonDefaultFilters}
+          onReset={resetFilters}
+          canReset={hasNonDefaultFilters}
+          className="lg:hidden"
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {filterGroups.map((group) => (
+          <FilterChipRow key={group.id} group={group} withLabel={group.id !== "show"} className="hidden lg:flex" />
+        ))}
       </div>
 
       {isLoadingAllPages && (

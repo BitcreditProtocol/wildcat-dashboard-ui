@@ -3,6 +3,7 @@ import { useIntl } from "react-intl";
 import {
   AppIcon,
   Button,
+  cn,
   Dialog,
   DialogClose,
   DialogContent,
@@ -44,7 +45,7 @@ export function QuoteDocumentViewer({ preview, onClose }: QuoteDocumentViewerPro
         }
       }}
     >
-      <DialogContent className="flex h-[90vh] w-[95vw] max-w-4xl flex-col gap-4 p-4 sm:p-6">
+      <DialogContent className={cn("flex w-[95vw] max-w-4xl flex-col gap-3 p-4", mode === "pdf" ? "h-[85vh]" : "max-h-[90vh]")}>
         <DialogHeader className="min-w-0">
           <DialogTitle className="truncate text-base">{preview?.name}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -55,24 +56,18 @@ export function QuoteDocumentViewer({ preview, onClose }: QuoteDocumentViewerPro
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-auto rounded-lg border bg-muted/30">
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto">
           {preview && mode === "pdf" && <iframe src={preview.url} title={preview.name} className="h-full w-full border-0" />}
 
-          {preview && mode === "image" && (
-            <div className="flex h-full items-center justify-center p-2">
-              <img src={preview.url} alt={preview.name} className="max-h-full max-w-full object-contain" />
-            </div>
-          )}
+          {preview && mode === "image" && <img src={preview.url} alt={preview.name} className="max-h-full max-w-full object-contain" />}
 
           {preview && mode === "download" && (
-            <div className="flex h-full items-center justify-center p-6 text-center">
-              <Text variant="body">
-                {intl.formatMessage({
-                  id: "quotes.documents.preview.unsupported",
-                  defaultMessage: "This file type cannot be previewed here. Download it to open it with another app.",
-                })}
-              </Text>
-            </div>
+            <Text variant="body" className="p-6 text-center">
+              {intl.formatMessage({
+                id: "quotes.documents.preview.unsupported",
+                defaultMessage: "This file type cannot be previewed here. Download it to open it with another app.",
+              })}
+            </Text>
           )}
         </div>
 

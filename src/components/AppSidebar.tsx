@@ -1,4 +1,4 @@
-import { AlignVerticalJustifyCenterIcon, Ban, Bitcoin, Globe, Home, Inbox, Key, Wand2Icon } from "lucide-react";
+import { AlignVerticalJustifyCenterIcon, Ban, Bitcoin, Globe, Home, Inbox, Key, ReceiptText, Wand2Icon } from "lucide-react";
 import { useContext, useState } from "react";
 import {
   AppIcon,
@@ -25,13 +25,7 @@ const navMessages = defineMessages({
   balances: { id: "nav.balances", defaultMessage: "Balances" },
   deniedMeltRequests: { id: "nav.deniedMeltRequests", defaultMessage: "Melt requests" },
   quotes: { id: "nav.quotes", defaultMessage: "Quotes" },
-  quotesPending: { id: "nav.quotes.pending", defaultMessage: "Pending" },
-  quotesOffered: { id: "nav.quotes.offered", defaultMessage: "Offered" },
-  quotesOfferExpired: { id: "nav.quotes.offerExpired", defaultMessage: "Offer expired" },
-  quotesAccepted: { id: "nav.quotes.accepted", defaultMessage: "Accepted" },
-  quotesDenied: { id: "nav.quotes.denied", defaultMessage: "Denied" },
-  quotesRejected: { id: "nav.quotes.rejected", defaultMessage: "Rejected" },
-  quotesCanceled: { id: "nav.quotes.canceled", defaultMessage: "Canceled" },
+  bills: { id: "nav.bills", defaultMessage: "Bills" },
   keysets: { id: "nav.keysets", defaultMessage: "Keysets" },
 });
 
@@ -64,36 +58,11 @@ const data = {
       title: navMessages.quotes,
       url: "/quotes",
       icon: Inbox,
-      items: [
-        {
-          title: navMessages.quotesPending,
-          url: "/quotes/pending",
-        },
-        {
-          title: navMessages.quotesOffered,
-          url: "/quotes/offered",
-        },
-        {
-          title: navMessages.quotesOfferExpired,
-          url: "/quotes/offerexpired",
-        },
-        {
-          title: navMessages.quotesAccepted,
-          url: "/quotes/accepted",
-        },
-        {
-          title: navMessages.quotesDenied,
-          url: "/quotes/denied",
-        },
-        {
-          title: navMessages.quotesRejected,
-          url: "/quotes/rejected",
-        },
-        {
-          title: navMessages.quotesCanceled,
-          url: "/quotes/canceled",
-        },
-      ],
+    },
+    {
+      title: navMessages.bills,
+      url: "/bills",
+      icon: ReceiptText,
     },
     {
       title: navMessages.keysets,
