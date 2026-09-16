@@ -54,6 +54,18 @@ export type BillAnonParticipant = {
     nostr_relays: Array<string>;
 };
 
+export type BillBalanceEntry = {
+    id: string;
+    issue_date: string;
+    maturity_date: string;
+    sum: string;
+    paid: boolean;
+};
+
+export type BillBalanceResponse = {
+    bills: Array<BillBalanceEntry>;
+};
+
 export type BillCallerPayment = {
     Sell: {
         buyer: BillParticipant;
@@ -250,6 +262,10 @@ export type BitcreditBill = {
     data: BillData;
     status: BillStatus;
     current_waiting_state?: null | BillCurrentWaitingState;
+};
+
+export type CheckBillPaymentPayload = {
+    bill_id: string;
 };
 
 /**
@@ -1135,6 +1151,43 @@ export type ListEbillsResponses = {
 };
 
 export type ListEbillsResponse = ListEbillsResponses[keyof ListEbillsResponses];
+
+export type GetBillsBalanceHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/ebill/balance';
+};
+
+export type GetBillsBalanceHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: BillBalanceResponse;
+};
+
+export type GetBillsBalanceHistoryResponse = GetBillsBalanceHistoryResponses[keyof GetBillsBalanceHistoryResponses];
+
+export type CheckBillPaymentData = {
+    body: CheckBillPaymentPayload;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/ebill/check_payment';
+};
+
+export type CheckBillPaymentErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type CheckBillPaymentResponses = {
+    /**
+     * Successful response
+     */
+    200: unknown;
+};
 
 export type GetEbillEndorsementsData = {
     body?: never;
