@@ -587,6 +587,55 @@
         }
       }
     },
+    "/v1/admin/ebill/balance": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_bills_balance_history",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillBalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/check_payment": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "check_bill_payment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckBillPaymentPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
+          }
+        }
+      }
+    },
     "/v1/admin/ebill/endorsements/{bid}": {
       "get": {
         "tags": [
@@ -1326,6 +1375,49 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "BillBalanceEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "issue_date",
+          "maturity_date",
+          "sum",
+          "paid"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "issue_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "maturity_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "sum": {
+            "type": "string"
+          },
+          "paid": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BillBalanceResponse": {
+        "type": "object",
+        "required": [
+          "bills"
+        ],
+        "properties": {
+          "bills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillBalanceEntry"
             }
           }
         }
@@ -2173,6 +2265,17 @@
                 "$ref": "#/components/schemas/BillCurrentWaitingState"
               }
             ]
+          }
+        }
+      },
+      "CheckBillPaymentPayload": {
+        "type": "object",
+        "required": [
+          "bill_id"
+        ],
+        "properties": {
+          "bill_id": {
+            "type": "string"
           }
         }
       },

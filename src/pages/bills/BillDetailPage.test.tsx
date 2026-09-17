@@ -38,9 +38,22 @@ vi.mock("@/pages/quotes/components/useSyncBillChain", () => ({
   }),
 }));
 
+const checkPaymentSpy = vi.fn<(value: { body: Record<string, unknown> }) => void>();
+
+vi.mock("@/hooks/use-check-bill-payment", () => ({
+  useCheckBillPayment: ({ billId }: { billId?: string }) => ({
+    checkBillPayment: () => {
+      checkPaymentSpy({ body: { bill_id: billId } });
+    },
+    isCheckingPayment: false,
+    canCheckPayment: true,
+  }),
+}));
+
 vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getEbillOptions: ({ path }: { path: { bid: string } }) => ({ queryKey: [{ _id: "getEbill", path }] }),
   getEbillHistoryOptions: ({ path }: { path: { bid: string } }) => ({ queryKey: [{ _id: "getEbillHistory", path }] }),
+  getEbillPaymentstatusOptions: ({ path }: { path: { bid: string } }) => ({ queryKey: [{ _id: "getEbillPaymentstatus", path }] }),
   listQuotesOptions: ({ query }: { query: { bill_id: string } }) => ({ queryKey: [{ _id: "listQuotes", query }] }),
 }));
 
@@ -175,6 +188,42 @@ describe("BillDetailPage", () => {
     });
 
     expect(syncSpy).toHaveBeenCalledWith({ body: { bill_id: billId, quote_id: quoteId } });
+  });
+
+  it("offers a payment check once payment has been requested and not yet received", () => {
+    const page = renderPage();
+    const checkButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Check payment"));
+
+    // The fixture has not been requested to pay, so there is nothing to check yet.
+    expect(checkButton).toBeUndefined();
+
+    const previous = mockUseQuery.getMockImplementation();
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      const result = previous?.(opts) ?? { data: undefined, isLoading: false, error: null };
+      if (opts.queryKey[0]._id === "getEbill") {
+        const bill = result.data as { status: { payment: Record<string, boolean> } };
+        return { ...result, data: { ...bill, status: { ...bill.status, payment: { ...bill.status.payment, requested_to_pay: true } } } };
+      }
+      return result;
+    });
+
+    act(() => {
+      root?.unmount();
+    });
+    container?.remove();
+    root = null;
+    container = null;
+
+    const requestedPage = renderPage();
+    const requestedButton = Array.from(requestedPage.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Check payment")
+    );
+    expect(requestedButton).not.toBeUndefined();
+
+    act(() => {
+      requestedButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(checkPaymentSpy).toHaveBeenCalledWith({ body: { bill_id: billId } });
   });
 
   it("leaves the quote link out while no quote references the bill", () => {

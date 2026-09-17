@@ -102,6 +102,10 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
     queryKey: [{ _id: "getEbill", path }],
   }),
   syncEbillChainMutation: () => ({ mutationKey: [{ _id: "syncEbillChain" }] }),
+  checkBillPaymentMutation: () => ({ mutationKey: [{ _id: "checkBillPayment" }] }),
+  getEbillPaymentstatusOptions: ({ path }: { path: { bid: string } }) => ({
+    queryKey: [{ _id: "getEbillPaymentstatus", path }],
+  }),
 }));
 
 let root: Root | null = null;
@@ -338,6 +342,26 @@ describe("QuotePage", () => {
     const page = renderPage(`/quotes/${secondQuoteId}`);
     const keysetLink = page.querySelector('a[href^="/keysets/"]');
     expect(keysetLink).toBeNull();
+  });
+
+  it("offers a payment check on the quote once payment has been requested", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    expect(Array.from(page.querySelectorAll("button")).some((button) => button.textContent?.includes("Check payment"))).toBe(false);
+
+    const previous = mockUseQuery.getMockImplementation();
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      if (opts.queryKey[0]._id === "getEbill") {
+        return {
+          data: { id: "bill-1", status: { payment: { requested_to_pay: true, paid: false } } },
+          isLoading: false,
+          error: null,
+        };
+      }
+      return previous?.(opts) ?? { data: undefined, isLoading: false, error: null };
+    });
+
+    const requestedPage = renderPage(`/quotes/${quoteId}`);
+    expect(Array.from(requestedPage.querySelectorAll("button")).some((button) => button.textContent?.includes("Check payment"))).toBe(true);
   });
 
   it("links the bill id to the bill's own page", () => {
