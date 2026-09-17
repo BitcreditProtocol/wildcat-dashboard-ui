@@ -25,6 +25,10 @@ export function statusKind(state?: SimpleAlphaState): StatusKind {
   return "unknown";
 }
 
+export function hasSubstituteRole(kind: StatusKind): boolean {
+  return kind === "offline" || kind === "interim";
+}
+
 export function statusTimestamp(state?: SimpleAlphaState): number | undefined {
   if (!state) return undefined;
   if ("Online" in state) return state.Online;
