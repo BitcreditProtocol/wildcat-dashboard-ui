@@ -33,6 +33,8 @@ const { mockGetEbillAttachment, mockGetEbillFileFromRequestToMint } = vi.hoisted
   mockGetEbillFileFromRequestToMint: vi.fn(),
 }));
 
+const mockWindowOpen = vi.fn();
+const mockRevokeObjectURL = vi.fn<(url: string) => void>();
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const mockUseMutation = vi.fn<() => MutationResult>();
 const mutateSpy = vi.fn<(value: { body: Record<string, unknown> }) => void>();
@@ -173,12 +175,9 @@ beforeEach(() => {
   mockGetEbillFileFromRequestToMint.mockReset();
   mockGetEbillAttachment.mockResolvedValue(new Blob(["attachment"]));
   mockGetEbillFileFromRequestToMint.mockResolvedValue(new Blob(["request-to-mint"]));
-  vi.stubGlobal(
-    "open",
-    vi.fn(() => ({ closed: false }) as Window)
-  );
+  vi.stubGlobal("open", mockWindowOpen);
   globalThis.URL.createObjectURL = vi.fn(() => "blob:test-url");
-  globalThis.URL.revokeObjectURL = vi.fn();
+  globalThis.URL.revokeObjectURL = mockRevokeObjectURL;
 
   mockUseQuery.mockImplementation((opts: QueryOptions) => {
     const id = opts.queryKey[0]._id;
@@ -341,6 +340,11 @@ describe("QuotePage", () => {
     expect(keysetLink).toBeNull();
   });
 
+  it("links the bill id to the bill's own page", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    expect(page.querySelector('a[href="/bills/bill-1"]')).not.toBeNull();
+  });
+
   it("shows a collapsible documents section", () => {
     const page = renderPage(`/quotes/${quoteId}`);
     expect(page.textContent).toContain("Documents");
@@ -449,6 +453,59 @@ describe("QuotePage", () => {
       parseAs: "blob",
     });
     expect(mockGetEbillAttachment).not.toHaveBeenCalled();
+  });
+
+  it("previews the document in the app instead of handing a blob url to a new window", async () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+
+    act(() => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const viewButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "View");
+
+    await act(async () => {
+      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    // A standalone PWA has no tab to hand a blob: URL to, so nothing may leave the app.
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+
+    const frame = document.body.querySelector("iframe");
+    expect(frame?.getAttribute("src")).toBe("blob:test-url");
+    expect(frame?.getAttribute("title")).toBe("invoice.pdf");
+
+    const downloadLink = document.body.querySelector("a[download]");
+    expect(downloadLink?.getAttribute("download")).toBe("invoice.pdf");
+    expect(downloadLink?.getAttribute("href")).toBe("blob:test-url");
+  });
+
+  it("releases the object url when the preview is closed", async () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+
+    act(() => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const viewButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "View");
+
+    await act(async () => {
+      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    const closeButton = Array.from(document.body.querySelectorAll("button")).find((button) => button.textContent === "Close");
+
+    await act(async () => {
+      closeButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mockRevokeObjectURL).toHaveBeenCalledWith("blob:test-url");
+    expect(document.body.querySelector("iframe")).toBeNull();
   });
 
   it("re-syncs the bill chain from nostr when refresh is clicked", () => {

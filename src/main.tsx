@@ -10,10 +10,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import InfoPage from "./pages/info/InfoPage";
 import QuotePage from "./pages/quotes/QuotePage";
 import StatusQuotePage from "./pages/quotes/StatusQuotePage";
+import { QUOTE_STATUS_ROUTES } from "./pages/quotes/quote-status-routes";
 import EarningsPage from "./pages/balances/EarningsPage";
 import CashFlowPage from "./pages/balances/CashFlowPage";
 import { initKeycloak } from "./keycloak";
 import { client as apiClient } from "./lib/api-client";
+import BillsPage from "@/pages/bills/BillsPage";
+import BillDetailPage from "@/pages/bills/BillDetailPage";
 import KeysetsPage from "@/pages/keysets/KeysetsPage";
 import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import MeltRequestsPage from "@/pages/melts/MeltRequestsPage";
@@ -41,14 +44,12 @@ function App() {
             <Route path="earnings/cashflow" element={<CashFlowPage />} />
             <Route path="melt-requests" element={<MeltRequestsPage />} />
             <Route path="quotes" element={<StatusQuotePage />} />
-            <Route path="quotes/pending" element={<StatusQuotePage status="Pending" />} />
-            <Route path="quotes/accepted" element={<StatusQuotePage status="Accepted" />} />
-            <Route path="quotes/canceled" element={<StatusQuotePage status="Canceled" />} />
-            <Route path="quotes/offered" element={<StatusQuotePage status="Offered" />} />
-            <Route path="quotes/offerexpired" element={<StatusQuotePage status="OfferExpired" />} />
-            <Route path="quotes/denied" element={<StatusQuotePage status="Denied" />} />
-            <Route path="quotes/rejected" element={<StatusQuotePage status="Rejected" />} />
+            {QUOTE_STATUS_ROUTES.map((route) => (
+              <Route key={route.status} path={route.path} element={<StatusQuotePage status={route.status} />} />
+            ))}
             <Route path="quotes/:id" element={<QuotePage />} />
+            <Route path="bills" element={<BillsPage />} />
+            <Route path="bills/:billId" element={<BillDetailPage />} />
             <Route path="keysets" element={<KeysetsPage />} />
             <Route path="keysets/:keysetId" element={<KeysetDetailPage />} />
             <Route path="info" element={<InfoPage />} />

@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
+import type { FilterGroup } from "@/components/ListFilters";
 
 interface KeysetPage {
   data: unknown[];
@@ -92,23 +93,39 @@ vi.mock("@bitcredit/ui-library", async () => {
   };
 });
 
-vi.mock("@/components/SortButtons", () => ({
-  SortButtons: ({
-    options,
-    onSortChange,
-  }: {
-    options: { field: "maturity" | "status" | "currency"; label: string }[];
-    onSortChange: (field: "maturity" | "status" | "currency") => void;
-  }) => (
-    <div>
-      {options.map((option) => (
-        <button key={option.field} onClick={() => onSortChange(option.field)} type="button">
-          {`sort-${option.field}`}
-        </button>
-      ))}
-    </div>
-  ),
-}));
+// The real panel lives in a drawer; the groups it is given are what the page wires up,
+// so the mock renders them flat and keeps the drawer itself out of the test.
+vi.mock("@/components/ListFilters", async () => {
+  const actual = await vi.importActual<typeof import("@/components/ListFilters")>("@/components/ListFilters");
+  return {
+    ...actual,
+    ListFilters: ({ groups, onReset }: { groups: FilterGroup[]; onReset?: () => void }) => (
+      <div>
+        {groups.map((group) => (
+          <div key={group.id} data-filter-group={group.id} data-filter-value={group.value}>
+            {group.options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                data-filter-option={option.value}
+                onClick={() => {
+                  group.onSelect(option.value);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ))}
+        {onReset && (
+          <button type="button" onClick={onReset}>
+            Reset all
+          </button>
+        )}
+      </div>
+    ),
+  };
+});
 
 import KeysetsPage from "./KeysetsPage";
 
@@ -145,11 +162,11 @@ function clickButtonByText(page: HTMLDivElement, label: string) {
   });
 }
 
-function clickSelectItem(page: HTMLDivElement, value: string) {
-  const button = page.querySelector(`[data-select-item="${value}"]`);
+function clickFilterOption(page: HTMLDivElement, value: string) {
+  const button = page.querySelector(`[data-filter-option="${value}"]`);
   expect(button).not.toBeNull();
   if (!(button instanceof HTMLButtonElement)) {
-    throw new Error(`Missing select item: ${value}`);
+    throw new Error(`Missing filter option: ${value}`);
   }
   act(() => {
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -278,15 +295,15 @@ describe("KeysetsPage", () => {
     expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-expired", "/keysets/keyset-future", "/keysets/keyset-no-expiry"]);
 
     // Currency-asc: eur, sat, usd.
-    clickButtonByText(page, "sort-currency");
+    clickFilterOption(page, "currency");
     expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-no-expiry", "/keysets/keyset-expired", "/keysets/keyset-future"]);
 
     // Status-asc in this implementation sorts active first.
-    clickButtonByText(page, "sort-status");
+    clickFilterOption(page, "status");
     expect(orderedKeysetHrefs(page)[0]).toBe("/keysets/keyset-expired");
   });
 
-  it("filters keysets through the dropdown", () => {
+  it("filters keysets through the filters panel", () => {
     mockKeysetPages([
       {
         data: [
@@ -308,9 +325,35 @@ describe("KeysetsPage", () => {
     ]);
 
     const page = renderPage();
-    clickSelectItem(page, "inactive");
+    clickFilterOption(page, "inactive");
 
     expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-inactive"]);
+  });
+
+  it("clears the filter when the active one is picked again, and resets everything", () => {
+    mockKeysetPages([
+      {
+        data: [
+          { id: "keyset-active", active: true, final_expiry: 1798761600, unit: "sat" },
+          { id: "keyset-inactive", active: false, final_expiry: null, unit: { Custom: "usd" } },
+        ],
+        total: 2,
+      },
+    ]);
+
+    const page = renderPage();
+
+    clickFilterOption(page, "inactive");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-inactive"]);
+
+    // Picking the active filter again clears it, as on the quotes page.
+    clickFilterOption(page, "inactive");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-active", "/keysets/keyset-inactive"]);
+
+    clickFilterOption(page, "inactive");
+    clickFilterOption(page, "currency");
+    clickButtonByText(page, "Reset all");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-active", "/keysets/keyset-inactive"]);
   });
 
   it("searches keysets that live on a later page", () => {

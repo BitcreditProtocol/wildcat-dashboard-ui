@@ -5,6 +5,7 @@ import { useIntl } from "react-intl";
 import type { ConnectedMintResponse, SimpleAlphaState } from "@/generated/client/types.gen";
 import { ClowderForeignSubstituteError } from "@/lib/clowder-foreign-status";
 import {
+  hasSubstituteRole,
   mintLabel,
   peerMessages,
   statusDetail,
@@ -106,7 +107,7 @@ export function PeerDetailPanel({
           {detail && <PeerDetailField label={intl.formatMessage(peerMessages.statusDetail)} value={detail} title={detail} />}
         </div>
 
-        {showsSubstitute && (
+        {showsSubstitute && hasSubstituteRole(kind) && (
           <div className="flex flex-col gap-3 border-t pt-4">
             <Heading as="h5" variant="sub">
               {intl.formatMessage(peerMessages.substituteInformation)}
