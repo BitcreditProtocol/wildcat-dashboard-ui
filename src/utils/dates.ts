@@ -65,35 +65,11 @@ export const formatDate = (locale: string, date: Date): string => {
   return `${day}-${month}-${year}`;
 };
 
-export const formatDateLong = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-};
-
 export const formatDateShort = (date: Date, locale: string): string => {
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-};
-
-export const formatMonthLong = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, {
-    month: "long",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-};
-
-export const formatMonthYear = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "long",
     timeZone: UTC_TIME_ZONE,
   }).format(date);
 };

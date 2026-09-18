@@ -2,15 +2,16 @@ import { PropsWithChildren, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton } from "@bitcredit/ui-library";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { Amount } from "@/generated/client/types.gen";
-import { FormattedMessage, useIntl } from "react-intl";
+import { FormattedMessage } from "react-intl";
 import { Currency } from "@/components/Currency";
 import { isSourceCurrencyCode } from "@/lib/currency";
 import { CollectFeesCard } from "./CollectFeesCard";
 import { AddReserveCard } from "./AddReserveCard";
+import { OnChainBalanceChart } from "./OnChainBalanceChart";
+import { EbillCollateralChart } from "./EbillCollateralChart";
+import { KeysetBalanceChart } from "./KeysetBalanceChart";
 
 function Loader() {
   return (
@@ -25,122 +26,12 @@ function Loader() {
         <Skeleton className="h-96 rounded-lg" />
         <Skeleton className="h-96 rounded-lg" />
       </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <Skeleton className="h-80 rounded-lg" />
+        <Skeleton className="h-80 rounded-lg" />
+      </div>
+      <Skeleton className="h-80 rounded-lg" />
     </div>
-  );
-}
-
-const getMonthLabels = (intl: ReturnType<typeof useIntl>) => [
-  intl.formatMessage({ id: "month.jan.short", defaultMessage: "Jan" }),
-  intl.formatMessage({ id: "month.feb.short", defaultMessage: "Feb" }),
-  intl.formatMessage({ id: "month.mar.short", defaultMessage: "Mar" }),
-  intl.formatMessage({ id: "month.apr.short", defaultMessage: "Apr" }),
-  intl.formatMessage({ id: "month.may.short", defaultMessage: "May" }),
-  intl.formatMessage({ id: "month.jun.short", defaultMessage: "Jun" }),
-  intl.formatMessage({ id: "month.jul.short", defaultMessage: "Jul" }),
-  intl.formatMessage({ id: "month.aug.short", defaultMessage: "Aug" }),
-  intl.formatMessage({ id: "month.sep.short", defaultMessage: "Sep" }),
-  intl.formatMessage({ id: "month.oct.short", defaultMessage: "Oct" }),
-  intl.formatMessage({ id: "month.nov.short", defaultMessage: "Nov" }),
-  intl.formatMessage({ id: "month.dec.short", defaultMessage: "Dec" }),
-];
-
-export function BitcoinBalanceChart() {
-  const intl = useIntl();
-  const config = {
-    bitcoin: {
-      label: intl.formatMessage({
-        id: "balances.chart.bitcoin",
-        defaultMessage: "Bitcoin",
-      }),
-      color: "var(--color-chart-1)",
-    },
-  } satisfies ChartConfig;
-
-  const months = getMonthLabels(intl);
-
-  const data = [
-    { month: months[0], bitcoin: 186 },
-    { month: months[1], bitcoin: 305 },
-    { month: months[2], bitcoin: 237 },
-    { month: months[3], bitcoin: 73 },
-    { month: months[4], bitcoin: 209 },
-    { month: months[5], bitcoin: 214 },
-    { month: months[6], bitcoin: 21 },
-    { month: months[7], bitcoin: 32 },
-    { month: months[8], bitcoin: 0 },
-    { month: months[9], bitcoin: 0 },
-    { month: months[10], bitcoin: 0 },
-    { month: months[11], bitcoin: 0 },
-  ];
-
-  return (
-    <ChartContainer config={config} className="min-h-[200px] w-full">
-      <BarChart accessibilityLayer data={data}>
-        <CartesianGrid vertical={false} />
-        <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value: string) => value} />
-        <YAxis dataKey="bitcoin" tickLine={false} tickMargin={10} axisLine={false} />
-        <Bar dataKey="bitcoin" fill="var(--color-bitcoin)" radius={4} />
-        <ChartLegend content={<ChartLegendContent />} />
-      </BarChart>
-    </ChartContainer>
-  );
-}
-
-export function OtherBalanceChart() {
-  const intl = useIntl();
-  const config = {
-    eIOU: {
-      label: intl.formatMessage({
-        id: "balances.chart.eiou",
-        defaultMessage: "e-IOU",
-      }),
-      color: "var(--color-chart-2)",
-    },
-    credit: {
-      label: intl.formatMessage({
-        id: "balances.chart.creditToken",
-        defaultMessage: "Credit token",
-      }),
-      color: "var(--color-chart-3)",
-    },
-    debit: {
-      label: intl.formatMessage({
-        id: "balances.chart.debitToken",
-        defaultMessage: "Debit token",
-      }),
-      color: "var(--color-chart-4)",
-    },
-  } satisfies ChartConfig;
-
-  const months = getMonthLabels(intl);
-
-  const data = [
-    { month: months[0], credit: 121, debit: 0 },
-    { month: months[1], credit: 231, debit: 0 },
-    { month: months[2], credit: 321, debit: 51 },
-    { month: months[3], credit: 603, debit: 186 },
-    { month: months[4], credit: 583, debit: 486 },
-    { month: months[5], credit: 893, debit: 359 },
-    { month: months[6], credit: 1023, debit: 192 },
-    { month: months[7], credit: 2023, debit: 521 },
-    { month: months[8], credit: 1821, debit: 789 },
-    { month: months[9], credit: 1782, debit: 1232 },
-    { month: months[10], credit: 0, debit: 0 },
-    { month: months[11], credit: 0, debit: 0 },
-  ];
-
-  return (
-    <ChartContainer config={config} className="min-h-[200px] w-full">
-      <BarChart accessibilityLayer data={data}>
-        <CartesianGrid vertical={false} />
-        <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value: string) => value} />
-        <YAxis dataKey="credit" tickLine={false} tickMargin={10} axisLine={false} />
-        <YAxis dataKey="debit" tickLine={false} tickMargin={10} axisLine={false} />
-        <Bar dataKey="credit" fill="var(--color-credit)" radius={4} />
-        <Bar dataKey="debit" fill="var(--color-debit)" radius={4} />
-        <ChartLegend content={<ChartLegendContent />} />
-      </BarChart>
-    </ChartContainer>
   );
 }
 
@@ -297,19 +188,11 @@ function PageBodyWithDevSection() {
           <AddReserveCard />
         </div>
 
-        {/*
-          TODO Charts display mock data - will be updated when historical data endpoint is available
-          TODO Mint fees display pending - endpoint TBD
-          https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/129
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="py-4">
-            <BitcoinBalanceChart />
-          </Card>
-          <Card className="py-4">
-            <OtherBalanceChart />
-          </Card>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <OnChainBalanceChart />
+          <EbillCollateralChart />
         </div>
-        */}
+        <KeysetBalanceChart />
       </div>
     </>
   );

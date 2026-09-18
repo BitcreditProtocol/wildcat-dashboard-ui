@@ -29,8 +29,17 @@ interface MockFeesToken {
   refetch: ReturnType<typeof vi.fn>;
 }
 
+interface MockHistory {
+  data?: unknown;
+  isPending: boolean;
+  error: unknown;
+}
+
 const mockUseCoverageQuery = vi.fn<() => MockCoverage>();
 const mockUseCollectFeesQuery = vi.fn<() => MockFeesToken>();
+const mockUseHistoryQuery = vi.fn<(queryId: string) => MockHistory>();
+
+const HISTORY_QUERY_IDS = new Set(["onchainHistory", "billsBalanceHistory", "keysetsBalance"]);
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -48,6 +57,9 @@ vi.mock("@tanstack/react-query", async () => {
       }
       if (queryId === "addReserveStatus") {
         return { data: undefined, error: null, isError: false, refetch: vi.fn() };
+      }
+      if (typeof queryId === "string" && HISTORY_QUERY_IDS.has(queryId)) {
+        return mockUseHistoryQuery(queryId);
       }
       return mockUseCoverageQuery();
     },
@@ -67,6 +79,15 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getAddReserveStatusOptions: () => ({
     queryKey: [{ _id: "addReserveStatus" }],
   }),
+  getOnchainHistoryOptions: () => ({
+    queryKey: [{ _id: "onchainHistory" }],
+  }),
+  getBillsBalanceHistoryOptions: () => ({
+    queryKey: [{ _id: "billsBalanceHistory" }],
+  }),
+  getKeysetsBalanceOptions: () => ({
+    queryKey: [{ _id: "keysetsBalance" }],
+  }),
 }));
 
 vi.mock("@/components/Breadcrumbs", () => ({
@@ -81,9 +102,13 @@ vi.mock("@/components/ui/chart", () => ({
   ChartContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   ChartLegend: () => null,
   ChartLegendContent: () => null,
+  ChartTooltip: () => null,
+  ChartTooltipContent: () => null,
 }));
 
 vi.mock("recharts", () => ({
+  Area: () => null,
+  AreaChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Bar: () => null,
   BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CartesianGrid: () => null,
@@ -153,6 +178,11 @@ beforeEach(() => {
     isFetching: false,
     refetch: vi.fn(),
   });
+  mockUseHistoryQuery.mockImplementation((queryId) => ({
+    data: queryId === "onchainHistory" ? { operations: [] } : queryId === "billsBalanceHistory" ? { bills: [] } : { balances: [] },
+    isPending: false,
+    error: null,
+  }));
   storageData = {};
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
@@ -243,5 +273,53 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("sat");
     expect(page.textContent).not.toContain("$");
     expect(page.textContent).not.toContain("usd");
+  });
+
+  it("tells each history chart apart when its endpoint has nothing to plot", async () => {
+    mockUseCoverageQuery.mockReturnValue({
+      data: {
+        onchain_collateral: 0,
+        ebill_collateral: 0,
+        eiou_collateral: 0,
+        credit_circulating_supply: 0,
+        debit_circulating_supply: 0,
+      },
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.textContent).toContain("No on-chain operations have settled yet.");
+    expect(page.textContent).toContain("The mint holds no e-bills yet.");
+    expect(page.textContent).toContain("No keyset carries an outstanding balance.");
+  });
+
+  it("keeps a failing history endpoint inside its own chart", async () => {
+    mockUseCoverageQuery.mockReturnValue({
+      data: {
+        onchain_collateral: 0,
+        ebill_collateral: 0,
+        eiou_collateral: 0,
+        credit_circulating_supply: 0,
+        debit_circulating_supply: 0,
+      },
+      isError: false,
+      refetch: vi.fn(),
+    });
+    mockUseHistoryQuery.mockImplementation((queryId) =>
+      queryId === "onchainHistory"
+        ? { data: undefined, isPending: false, error: new Error("aggregator unreachable") }
+        : { data: queryId === "billsBalanceHistory" ? { bills: [] } : { balances: [] }, isPending: false, error: null }
+    );
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.textContent).toContain("Failed to load history: aggregator unreachable");
+    // The other two charts are unaffected by their neighbour's failure.
+    expect(page.textContent).toContain("The mint holds no e-bills yet.");
+    expect(page.textContent).toContain("No keyset carries an outstanding balance.");
   });
 });

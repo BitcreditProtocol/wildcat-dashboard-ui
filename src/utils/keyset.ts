@@ -1,4 +1,4 @@
-import type { Id, IdBytes, InfoReply, InfoReplyDiscriminants, KeySetVersion } from "@/generated/client/types.gen";
+import type { Id, InfoReply, InfoReplyDiscriminants } from "@/generated/client/types.gen";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("keyset");
@@ -73,39 +73,4 @@ export function serializeKeysetId(id: Id | string): string {
   const versionPrefix = id.version === "Version00" ? "00" : "01";
 
   return `${versionPrefix}${hexString}`;
-}
-
-export function deserializeKeysetId(serializedId: string): Id | null {
-  if (serializedId.length < 4 || serializedId.length % 2 !== 0) {
-    return null;
-  }
-
-  const versionByPrefix: Record<string, KeySetVersion> = {
-    "00": "Version00",
-    "01": "Version01",
-  };
-  const version = versionByPrefix[serializedId.slice(0, 2)];
-
-  if (!version) {
-    return null;
-  }
-
-  const hexBytes = serializedId.slice(2);
-  const bytes: number[] = [];
-
-  const validHexByte = /^[0-9a-fA-F]{2}$/;
-
-  for (let index = 0; index < hexBytes.length; index += 2) {
-    const chunk = hexBytes.slice(index, index + 2);
-
-    if (!validHexByte.test(chunk)) {
-      return null;
-    }
-
-    bytes.push(Number.parseInt(chunk, 16));
-  }
-
-  const id: IdBytes = version === "Version00" ? { V1: bytes } : { V2: bytes };
-
-  return { version, id };
 }
