@@ -55,7 +55,7 @@ function LoadError({ message }: { message: string }) {
       <div className="text-xs text-red-500">
         {intl.formatMessage({
           id: "quotes.error.checkApi",
-          defaultMessage: "Check if the API server is running and accessible",
+          defaultMessage: "Try again. If the problem continues, contact support.",
         })}
       </div>
     </div>

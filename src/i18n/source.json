@@ -848,7 +848,7 @@
   "quotes.documentsAndEvidence.unavailableEvidence": "Credit evidence is unavailable. Do not treat this as an absence of evidence.",
   "quotes.documentsAndEvidence.view": "View",
   "quotes.empty.noQuoteData": "No quote data available",
-  "quotes.error.checkApi": "Check if the API server is running and accessible",
+  "quotes.error.checkApi": "Try again. If the problem continues, contact support.",
   "quotes.error.loadQuote.title": "Failed to load quote",
   "quotes.error.loadQuotes.title": "Failed to load quotes",
   "quotes.error.tryAgain": "Please try again later.",

@@ -397,7 +397,7 @@ describe("StatusQuotePage", () => {
       "Requested to pay",
       "Ready to request to pay",
       "Paid",
-      "Active fee token",
+      "Fees ready to collect",
       "Maturity today",
     ]);
     expect(pressed()).toEqual(["false", "false", "false", "false", "false"]);
