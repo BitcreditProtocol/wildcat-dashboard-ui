@@ -16,6 +16,7 @@ import { defineMessages, useIntl } from "react-intl";
 import { InformationNeedsPanel } from "./InformationNeedsPanel";
 import type { OperatorCapability } from "./record-operator-decision";
 import type { InterviewAssistantTemplate } from "@bitcredit/ai-credit-shared";
+import { mergeInterviewMessages, creditClarificationRequiredItemText } from "@bitcredit/ai-credit-shared";
 
 // Reviewed objective labels, never reconstructed question wording.
 const promptObjectives = defineMessages({
@@ -167,7 +168,7 @@ const messages = defineMessages({
   },
   priorConversations: {
     id: "credit.caseRecord.priorConversations",
-    defaultMessage: "Submitted conversations ({count})",
+    defaultMessage: "Submission snapshots ({count})",
     description: "All retained submissions in oldest-first order, with no invented timestamps",
   },
   priorConversation: {
@@ -336,6 +337,13 @@ function TranscriptMessages({
                 <p className="mt-2">{intl.formatMessage(messages.questionUnverified)}</p>
               </details>
             )}
+            {message.role === "assistant" && message.governedClarification !== undefined && (
+              <ul className="mt-2 border-l-2 border-border pl-3 text-sm text-muted-foreground">
+                {message.governedClarification.requiredItems.map((item, index) => (
+                  <li key={index}>{typeof item === "string" ? item : creditClarificationRequiredItemText(item.requestCode)}</li>
+                ))}
+              </ul>
+            )}
           </li>
         )
       )}
@@ -410,26 +418,36 @@ export function CaseReviewTrail({
   const submittedConversationRecord =
     submittedConversations.length === 0 ? null : (
       <div className="mt-3">
-        {liveInterview === undefined && (
+        {submittedConversations.length === 1 && liveInterview === undefined && (
           <p className="text-xs text-muted-foreground">
             {submittedConversations.length === 1
               ? intl.formatMessage(submittedConversations[0]?.modelId.startsWith("scripted") ? messages.scripted : messages.recorded)
               : intl.formatMessage(messages.priorConversations, { count: submittedConversations.length })}
           </p>
         )}
-        <div className={submittedConversations.length > 1 ? "mt-3 space-y-5" : ""}>
-          {submittedConversations.map((submitted, index) => (
-            <section key={submitted.preparedInputId}>
-              {submittedConversations.length > 1 && (
-                <h5 className="text-sm font-medium">
-                  {intl.formatMessage(messages.priorConversation, { number: index + 1 })}
-                  {submitted.modelId.startsWith("scripted") ? ` · ${intl.formatMessage(messages.scripted)}` : ""}
-                </h5>
-              )}
-              <TranscriptMessages transcript={submitted} />
-            </section>
-          ))}
-        </div>
+        <TranscriptMessages
+          transcript={{ messages: mergeInterviewMessages(submittedConversations.map((submitted) => submitted.messages)) }}
+        />
+        {submittedConversations.length > 1 && (
+          <details className="mt-4 border-t border-border pt-3">
+            <summary className="cursor-pointer text-xs text-muted-foreground">
+              {intl.formatMessage(messages.priorConversations, { count: submittedConversations.length })}
+            </summary>
+            <div className="mt-3 space-y-5">
+              {submittedConversations.map((submitted, index) => (
+                <section key={submitted.preparedInputId}>
+                  {submittedConversations.length > 1 && (
+                    <h5 className="text-sm font-medium">
+                      {intl.formatMessage(messages.priorConversation, { number: index + 1 })}
+                      {submitted.modelId.startsWith("scripted") ? ` · ${intl.formatMessage(messages.scripted)}` : ""}
+                    </h5>
+                  )}
+                  <TranscriptMessages transcript={submitted} />
+                </section>
+              ))}
+            </div>
+          </details>
+        )}
       </div>
     );
 
@@ -485,6 +503,7 @@ export function CaseReviewTrail({
             {intl.formatMessage(liveInterview === undefined ? messages.interview : messages.activeSession)}
           </h4>
           <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.viewOnly)}</p>
+          {submittedConversationRecord}
           {liveInterview !== undefined && (
             <div className="mt-3">
               {liveInterview.attempt > 1 && (
@@ -522,18 +541,7 @@ export function CaseReviewTrail({
                 </dl>
               )}
             </div>
-          ) : submittedConversationRecord === null ? null : liveInterview === undefined ? (
-            submittedConversationRecord
-          ) : (
-            <details className="mt-4 border-t border-border pt-3">
-              <summary className="cursor-pointer text-sm font-medium">
-                {submittedConversations.length === 1
-                  ? intl.formatMessage(messages.recorded)
-                  : intl.formatMessage(messages.priorConversations, { count: submittedConversations.length })}
-              </summary>
-              {submittedConversationRecord}
-            </details>
-          )}
+          ) : null}
         </section>
 
         {!embedded && (
