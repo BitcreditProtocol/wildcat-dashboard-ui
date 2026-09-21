@@ -119,12 +119,10 @@ describe("operator conversation spectator", () => {
     expect(page.textContent).toContain("Unconfirmed clarification receipt");
     expect(page.textContent).toContain("Not submitted · current assessment unchanged");
     expect(page.textContent).toContain("The corrected invoice is attached.");
-    const priorRecord = Array.from(page.querySelectorAll("details")).find(
-      (node) => node.querySelector("summary")?.textContent === "Submitted conversation"
+    expect(page.textContent).toContain("In December, after the harvest.");
+    expect(page.textContent.indexOf("In December, after the harvest.")).toBeLessThan(
+      page.textContent.indexOf("The corrected invoice is attached.")
     );
-    expect(priorRecord?.open).toBe(false);
-    expect(priorRecord?.textContent).toContain("In December, after the harvest.");
-    expect(page.textContent?.match(/Submitted conversation/g)).toHaveLength(1);
   });
 
   it("marks interrupted updates without discarding the last received conversation", () => {
@@ -144,7 +142,11 @@ describe("operator conversation spectator", () => {
         },
       ],
     });
-    expect(page.textContent).toContain("Submitted conversations (2)");
+    expect(page.textContent).toContain("Submission snapshots (2)");
+    const snapshots = Array.from(page.querySelectorAll("details")).find(
+      (node) => node.querySelector("summary")?.textContent === "Submission snapshots (2)"
+    );
+    expect(snapshots?.open).toBe(false);
     expect(page.textContent).toContain("The first budget was incomplete.");
     expect(page.textContent).toContain("In December, after the harvest.");
     expect(page.textContent.indexOf("The first budget was incomplete.")).toBeLessThan(
@@ -155,6 +157,16 @@ describe("operator conversation spectator", () => {
       "Submission 2 · Scripted interview",
     ]);
     expect(page.textContent).not.toContain("Resolved");
+  });
+
+  it("shows carried answers once in the conversation but preserves both audit snapshots", () => {
+    const page = render({ transcript, interviewHistory: [{ ...transcript, preparedInputId: "previous-input" }] });
+    const conversation = page.querySelector('ol[aria-label="Applicant interview"]');
+    expect(conversation?.textContent?.match(/In December, after the harvest\./g)).toHaveLength(1);
+    const snapshots = Array.from(page.querySelectorAll("details")).find(
+      (node) => node.querySelector("summary")?.textContent === "Submission snapshots (2)"
+    );
+    expect(snapshots?.textContent?.match(/In December, after the harvest\./g)).toHaveLength(2);
   });
 
   it("shows the applicant statement behind a follow-up without claiming verification", () => {
