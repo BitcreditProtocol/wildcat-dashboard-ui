@@ -1,0 +1,20 @@
+name: Sync master into dev
+
+# Runs when master moves, which is the moment dev can fall behind, and on demand.
+# The shared workflow exits without writing when master is already an ancestor of
+# dev, so an aligned repository costs one short run and no pull request.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+permissions: {}
+
+jobs:
+  sync:
+    uses: BitcreditProtocol/.github/.github/workflows/sync-master-to-dev.yml@9a662b22ba5744c9f69abff713ecef4e900623f1
+    secrets:
+      AUTOMATION_APP_CLIENT_ID: ${{ vars.AUTOMATION_APP_CLIENT_ID }}
+      AUTOMATION_APP_PRIVATE_KEY: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
