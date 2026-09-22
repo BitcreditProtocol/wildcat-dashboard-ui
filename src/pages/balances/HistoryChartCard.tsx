@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Text } from "@bitcredit/ui-library";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Text, cn } from "@bitcredit/ui-library";
 import { FormattedMessage } from "react-intl";
 import { normalizeApiError } from "@/lib/api-error";
+
+export const CHART_BODY_CLASS = "h-[65dvh] min-h-64 w-full";
 
 function errorDetail(error: unknown): string {
   const apiError = normalizeApiError(error);
@@ -53,9 +55,9 @@ export function HistoryChartCard({
             />
           </p>
         ) : isPending ? (
-          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className={cn(CHART_BODY_CLASS, "rounded-lg")} />
         ) : isEmpty ? (
-          <div className="flex h-64 items-center justify-center">
+          <div className={cn(CHART_BODY_CLASS, "flex items-center justify-center")}>
             <Text as="p" variant="caption" className="text-muted-foreground">
               {emptyMessage}
             </Text>

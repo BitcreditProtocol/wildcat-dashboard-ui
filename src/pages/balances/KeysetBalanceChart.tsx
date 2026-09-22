@@ -4,17 +4,29 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { FormattedMessage, useIntl } from "react-intl";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getKeysetsBalanceOptions } from "@/generated/client/@tanstack/react-query.gen";
-import { clipKeysetBalances, keysetBalanceSeries } from "@/utils/balance-history";
+import { clipKeysetBalances, keysetBalanceSeries, keysetBalancesForToken } from "@/utils/balance-history";
 import { useAmountFormatter } from "@/utils/amount-format";
 import { formatDateShort } from "@/utils/dates";
+import type { RangeDirection } from "@/utils/chart-range";
+import type { TokenKind } from "@/utils/keyset";
 import { ChartRangeToggle } from "./ChartRangeToggle";
 import { useChartRange } from "./use-chart-range";
-import { HistoryChartCard } from "./HistoryChartCard";
+import { CHART_BODY_CLASS, HistoryChartCard } from "./HistoryChartCard";
 
-export function KeysetBalanceChart() {
+const KEYSET_CHART_DIRECTION: Record<TokenKind, RangeDirection> = {
+  credit: "future",
+  debit: "past",
+};
+
+interface KeysetBalanceChartProps {
+  token: TokenKind;
+}
+
+export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
-  const { range, setRange, picked, setPicked, bounds } = useChartRange("future");
+  const direction = KEYSET_CHART_DIRECTION[token];
+  const { range, setRange, picked, setPicked, bounds } = useChartRange();
 
   const { data, isPending, error } = useQuery({
     ...getKeysetsBalanceOptions(),
@@ -22,7 +34,11 @@ export function KeysetBalanceChart() {
     refetchInterval: 60_000,
   });
 
-  const series = useMemo(() => clipKeysetBalances(keysetBalanceSeries(data?.balances ?? []), bounds), [bounds, data]);
+  const series = useMemo(() => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+
+    return clipKeysetBalances(keysetBalancesForToken(keysetBalanceSeries(data?.balances ?? []), token, nowSeconds), bounds);
+  }, [bounds, data, token]);
   const expiryByKeyset = useMemo(() => new Map(series.map((point) => [point.keysetId, point.expiry])), [series]);
 
   const config = {
@@ -57,9 +73,9 @@ export function KeysetBalanceChart() {
           <FormattedMessage id="balances.history.range.empty" defaultMessage="Nothing in the selected time range." />
         )
       }
-      actions={<ChartRangeToggle value={range} onChange={setRange} direction="future" picked={picked} onPickedChange={setPicked} />}
+      actions={<ChartRangeToggle value={range} onChange={setRange} direction={direction} picked={picked} onPickedChange={setPicked} />}
     >
-      <ChartContainer config={config} className="h-64 w-full">
+      <ChartContainer config={config} className={CHART_BODY_CLASS}>
         <BarChart accessibilityLayer data={series} margin={{ top: 5, right: 12, left: 5, bottom: 5 }}>
           <CartesianGrid vertical={false} />
           <XAxis

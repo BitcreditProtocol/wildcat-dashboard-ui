@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from "recharts";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
   type ChartConfig,
@@ -11,12 +11,12 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { getBillsBalanceHistoryOptions } from "@/generated/client/@tanstack/react-query.gen";
-import { clipMaturityBuckets, ebillCollateralByMaturity } from "@/utils/balance-history";
+import { clipMaturityBuckets, ebillCollateralByMaturity, withTodayMarker } from "@/utils/balance-history";
 import { useAmountFormatter } from "@/utils/amount-format";
-import { formatDateShort, getUtcStartOfDate } from "@/utils/dates";
+import { formatDateShort, getUtcStartOfDate, toUtcDateKey } from "@/utils/dates";
 import { ChartRangeToggle } from "./ChartRangeToggle";
 import { useChartRange } from "./use-chart-range";
-import { HistoryChartCard } from "./HistoryChartCard";
+import { CHART_BODY_CLASS, HistoryChartCard } from "./HistoryChartCard";
 
 function formatMaturity(maturityDate: string, locale: string): string {
   const utcStart = getUtcStartOfDate(maturityDate);
@@ -27,7 +27,7 @@ function formatMaturity(maturityDate: string, locale: string): string {
 export function EbillCollateralChart() {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
-  const { range, setRange, picked, setPicked, bounds } = useChartRange("future");
+  const { range, setRange, picked, setPicked, bounds } = useChartRange();
 
   const { data, isPending, error } = useQuery({
     ...getBillsBalanceHistoryOptions(),
@@ -35,7 +35,11 @@ export function EbillCollateralChart() {
     refetchInterval: 60_000,
   });
 
-  const buckets = useMemo(() => clipMaturityBuckets(ebillCollateralByMaturity(data?.bills ?? []), bounds), [bounds, data]);
+  const todayKey = toUtcDateKey(new Date());
+  const buckets = useMemo(
+    () => clipMaturityBuckets(withTodayMarker(ebillCollateralByMaturity(data?.bills ?? []), todayKey), bounds),
+    [bounds, data, todayKey]
+  );
 
   const config = {
     outstanding: {
@@ -59,7 +63,7 @@ export function EbillCollateralChart() {
       }
       isPending={isPending}
       error={error}
-      isEmpty={buckets.length === 0}
+      isEmpty={buckets.every((bucket) => bucket.paid === 0 && bucket.outstanding === 0)}
       emptyMessage={
         range === "all" ? (
           <FormattedMessage id="balances.history.ebill.empty" defaultMessage="The mint holds no e-bills yet." />
@@ -67,9 +71,9 @@ export function EbillCollateralChart() {
           <FormattedMessage id="balances.history.range.empty" defaultMessage="Nothing in the selected time range." />
         )
       }
-      actions={<ChartRangeToggle value={range} onChange={setRange} direction="future" picked={picked} onPickedChange={setPicked} />}
+      actions={<ChartRangeToggle value={range} onChange={setRange} direction="both" picked={picked} onPickedChange={setPicked} />}
     >
-      <ChartContainer config={config} className="h-64 w-full">
+      <ChartContainer config={config} className={CHART_BODY_CLASS}>
         <BarChart accessibilityLayer data={buckets} margin={{ top: 5, right: 12, left: 5, bottom: 5 }}>
           <CartesianGrid vertical={false} />
           <XAxis
@@ -88,6 +92,17 @@ export function EbillCollateralChart() {
           />
           <Bar dataKey="outstanding" stackId="collateral" fill="var(--color-outstanding)" radius={[0, 0, 4, 4]} />
           <Bar dataKey="paid" stackId="collateral" fill="var(--color-paid)" radius={[4, 4, 0, 0]} />
+          <ReferenceLine
+            x={todayKey}
+            stroke="var(--color-muted-foreground)"
+            strokeDasharray="4 4"
+            label={{
+              value: intl.formatMessage({ id: "balances.history.ebill.today", defaultMessage: "Today" }),
+              position: "top",
+              fill: "var(--color-muted-foreground)",
+              fontSize: 12,
+            }}
+          />
           <ChartLegend content={<ChartLegendContent />} />
         </BarChart>
       </ChartContainer>

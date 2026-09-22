@@ -81,6 +81,11 @@ export const formatYearNumeric = (date: Date, locale: string): string => {
   }).format(date);
 };
 
+/** The `YYYY-MM-DD` key a date falls under in UTC, the form maturity dates arrive in. */
+export const toUtcDateKey = (date: Date): string => {
+  return date.toISOString().slice(0, 10);
+};
+
 export const toUtcEndOfDay = (date: Date): Date => {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
 };

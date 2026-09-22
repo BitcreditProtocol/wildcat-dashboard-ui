@@ -14,6 +14,19 @@ export function canQuoteHaveKeyset(status: InfoReplyDiscriminants): boolean {
   return KEYSET_BEARING_QUOTE_STATUSES.has(status);
 }
 
+/** The two kinds of eCash the mint issues: credit against e-bills, debit against its own reserves. */
+export type TokenKind = "credit" | "debit";
+
+/**
+ * Which token a keyset issues, read from the expiry it runs to — the balance endpoint reports no
+ * unit, and the expiry separates the two on its own: credit eCash runs against an e-bill that has
+ * not matured yet, so its keyset expires ahead of now, while a keyset whose expiry has passed is
+ * debit eCash.
+ */
+export function keysetTokenKind(expiry: number, nowSeconds: number): TokenKind {
+  return expiry <= nowSeconds ? "debit" : "credit";
+}
+
 /**
  * Serialized id of the keyset a quote was offered under, or null when it has none yet.
  */

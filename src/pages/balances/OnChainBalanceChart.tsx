@@ -9,7 +9,7 @@ import { useAmountFormatter } from "@/utils/amount-format";
 import { formatDateShort } from "@/utils/dates";
 import { ChartRangeToggle } from "./ChartRangeToggle";
 import { useChartRange } from "./use-chart-range";
-import { HistoryChartCard } from "./HistoryChartCard";
+import { CHART_BODY_CLASS, HistoryChartCard } from "./HistoryChartCard";
 
 function tooltipTimestamp(payload: unknown): number | null {
   if (!Array.isArray(payload)) {
@@ -29,7 +29,7 @@ function tooltipTimestamp(payload: unknown): number | null {
 export function OnChainBalanceChart() {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
-  const { range, setRange, picked, setPicked, bounds } = useChartRange("past");
+  const { range, setRange, picked, setPicked, bounds } = useChartRange();
 
   const { data, isPending, error } = useQuery({
     ...getOnchainHistoryOptions(),
@@ -67,7 +67,7 @@ export function OnChainBalanceChart() {
       }
       actions={<ChartRangeToggle value={range} onChange={setRange} direction="past" picked={picked} onPickedChange={setPicked} />}
     >
-      <ChartContainer config={config} className="h-64 w-full">
+      <ChartContainer config={config} className={CHART_BODY_CLASS}>
         <AreaChart accessibilityLayer data={series} margin={{ top: 5, right: 12, left: 5, bottom: 5 }}>
           <CartesianGrid vertical={false} />
           <XAxis

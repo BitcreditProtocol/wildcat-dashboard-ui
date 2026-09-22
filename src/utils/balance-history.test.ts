@@ -6,8 +6,10 @@ import {
   clipMaturityBuckets,
   ebillCollateralByMaturity,
   keysetBalanceSeries,
+  keysetBalancesForToken,
   onChainBalanceSeries,
   signedOnChainAmount,
+  withTodayMarker,
 } from "./balance-history";
 
 function operation(opType: OnChainOperationType, amount: number, timestamp: number): OnChainOperation {
@@ -220,6 +222,42 @@ describe("clipMaturityBuckets", () => {
 
   it("drops a bucket whose date cannot be placed on the axis", () => {
     expect(clipMaturityBuckets([{ maturityDate: "not a date", paid: 0, outstanding: 1 }], { from: 0, to: 1e12 })).toEqual([]);
+  });
+});
+
+describe("withTodayMarker", () => {
+  const bucket = { maturityDate: "2026-03-01", paid: 0, outstanding: 40 };
+
+  it("gives the chart a category for today to draw its line on", () => {
+    expect(withTodayMarker([bucket], "2026-02-01")).toEqual([{ maturityDate: "2026-02-01", paid: 0, outstanding: 0 }, bucket]);
+  });
+
+  it("keeps the marker in date order among the maturities", () => {
+    const buckets = withTodayMarker([{ ...bucket, maturityDate: "2026-01-01" }, bucket], "2026-02-01");
+
+    expect(buckets.map((entry) => entry.maturityDate)).toEqual(["2026-01-01", "2026-02-01", "2026-03-01"]);
+  });
+
+  it("leaves a day that matures bills of its own alone", () => {
+    expect(withTodayMarker([bucket], "2026-03-01")).toEqual([bucket]);
+  });
+});
+
+describe("keysetBalancesForToken", () => {
+  const now = 1_700_000_000;
+  const expired = { keysetId: "00aa", expiry: now - 86_400, balance: 5 };
+  const running = { keysetId: "00bb", expiry: now + 86_400, balance: 7 };
+
+  it("gives each token the side of now its keysets sit on", () => {
+    expect(keysetBalancesForToken([expired, running], "debit", now)).toEqual([expired]);
+    expect(keysetBalancesForToken([expired, running], "credit", now)).toEqual([running]);
+  });
+
+  it("leaves neither token holding every balance", () => {
+    const debit = keysetBalancesForToken([expired, running], "debit", now);
+    const credit = keysetBalancesForToken([expired, running], "credit", now);
+
+    expect(debit.length + credit.length).toBe(2);
   });
 });
 

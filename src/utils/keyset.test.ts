@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { canQuoteHaveKeyset, doesQuoteBelongToKeyset, getQuoteKeysetId, serializeKeysetId } from "./keyset";
+import { canQuoteHaveKeyset, doesQuoteBelongToKeyset, getQuoteKeysetId, keysetTokenKind, serializeKeysetId } from "./keyset";
 
 const keysetIdObject = { version: "Version00", id: { V1: [0xaa, 0xbb] } };
 
@@ -10,6 +10,22 @@ describe("canQuoteHaveKeyset", () => {
 
   it("rejects statuses reached before or without an offer", () => {
     expect(["Pending", "Canceled", "OfferExpired", "Denied", "Rejected"].some((s) => canQuoteHaveKeyset(s as never))).toBe(false);
+  });
+});
+
+describe("keysetTokenKind", () => {
+  const now = 1_700_000_000;
+
+  it("reads an expired keyset as debit eCash", () => {
+    expect(keysetTokenKind(now - 1, now)).toBe("debit");
+  });
+
+  it("reads a keyset still running as credit eCash", () => {
+    expect(keysetTokenKind(now + 1, now)).toBe("credit");
+  });
+
+  it("counts a keyset expiring exactly now as expired", () => {
+    expect(keysetTokenKind(now, now)).toBe("debit");
   });
 });
 

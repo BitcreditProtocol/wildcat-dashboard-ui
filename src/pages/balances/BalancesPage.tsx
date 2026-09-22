@@ -1,7 +1,7 @@
-import { PropsWithChildren, Suspense } from "react";
+import { PropsWithChildren, type ReactNode, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton } from "@bitcredit/ui-library";
+import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton, cn } from "@bitcredit/ui-library";
 import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage } from "react-intl";
@@ -9,6 +9,7 @@ import { Currency } from "@/components/Currency";
 import { isSourceCurrencyCode } from "@/lib/currency";
 import { CollectFeesCard } from "./CollectFeesCard";
 import { AddReserveCard } from "./AddReserveCard";
+import { BalanceChartDrawer } from "./BalanceChartDrawer";
 import { OnChainBalanceChart } from "./OnChainBalanceChart";
 import { EbillCollateralChart } from "./EbillCollateralChart";
 import { KeysetBalanceChart } from "./KeysetBalanceChart";
@@ -16,7 +17,8 @@ import { KeysetBalanceChart } from "./KeysetBalanceChart";
 function Loader() {
   return (
     <div className="flex flex-col gap-4 my-2">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        <Skeleton className="h-32 rounded-lg" />
         <Skeleton className="h-32 rounded-lg" />
         <Skeleton className="h-32 rounded-lg" />
         <Skeleton className="h-32 rounded-lg" />
@@ -26,11 +28,6 @@ function Loader() {
         <Skeleton className="h-96 rounded-lg" />
         <Skeleton className="h-96 rounded-lg" />
       </div>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Skeleton className="h-80 rounded-lg" />
-        <Skeleton className="h-80 rounded-lg" />
-      </div>
-      <Skeleton className="h-80 rounded-lg" />
     </div>
   );
 }
@@ -46,6 +43,42 @@ function formatAmountValue(amount?: Amount | number | null) {
   }
 
   return amount ? String(amount.value) : "0";
+}
+
+interface BalanceCardProps extends BalanceDisplay {
+  title: ReactNode;
+  className: string;
+  chart?: ReactNode;
+}
+
+function BalanceCard({ title, className, amount, unit, chart }: BalanceCardProps) {
+  const card = (
+    <Card className={cn(className, "h-full text-left text-text-on-tint", chart && "cursor-pointer transition-opacity hover:opacity-90")}>
+      <CardHeader>
+        <CardTitle className="text-text-on-tint">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <BalanceText amount={amount} unit={unit} />
+      </CardContent>
+    </Card>
+  );
+
+  if (chart === undefined) {
+    return card;
+  }
+
+  return (
+    <BalanceChartDrawer
+      title={title}
+      trigger={
+        <button type="button" className="w-full rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-brand-200">
+          {card}
+        </button>
+      }
+    >
+      {chart}
+    </BalanceChartDrawer>
+  );
 }
 
 export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
@@ -131,68 +164,46 @@ function PageBodyWithDevSection() {
     <>
       <div className="flex flex-col gap-4 my-2">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-          <Card className="bg-indigo-100 text-text-on-tint">
-            <CardHeader>
-              <CardTitle className="text-text-on-tint">
-                <FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BalanceText amount={balances.bitcoin.amount} unit={balances.bitcoin.unit} />
-            </CardContent>
-          </Card>
-          <Card className="bg-teal-200 text-text-on-tint">
-            <CardHeader>
-              <CardTitle className="text-text-on-tint">
-                <FormattedMessage id="balances.ebillCollateral" defaultMessage="eBill collateral balance" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BalanceText amount={balances.ebillCollateral.amount} unit={balances.ebillCollateral.unit} />
-            </CardContent>
-          </Card>
-          <Card className="bg-orange-100 text-text-on-tint">
-            <CardHeader>
-              <CardTitle className="text-text-on-tint">
-                <FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BalanceText amount={balances.eiou.amount} unit={balances.eiou.unit} />
-            </CardContent>
-          </Card>
-          <Card className="bg-purple-200 text-text-on-tint">
-            <CardHeader>
-              <CardTitle className="text-text-on-tint">
-                <FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BalanceText amount={balances.credit.amount} unit={balances.credit.unit} />
-            </CardContent>
-          </Card>
-          <Card className="bg-purple-400 text-text-on-tint">
-            <CardHeader>
-              <CardTitle className="text-text-on-tint">
-                <FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BalanceText amount={balances.debit.amount} unit={balances.debit.unit} />
-            </CardContent>
-          </Card>
+          <BalanceCard
+            title={<FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />}
+            className="bg-indigo-100"
+            amount={balances.bitcoin.amount}
+            unit={balances.bitcoin.unit}
+            chart={<OnChainBalanceChart />}
+          />
+          <BalanceCard
+            title={<FormattedMessage id="balances.ebillCollateral" defaultMessage="eBill collateral balance" />}
+            className="bg-teal-200"
+            amount={balances.ebillCollateral.amount}
+            unit={balances.ebillCollateral.unit}
+            chart={<EbillCollateralChart />}
+          />
+          <BalanceCard
+            title={<FormattedMessage id="balances.eiou" defaultMessage="e-IOU balance" />}
+            className="bg-orange-100"
+            amount={balances.eiou.amount}
+            unit={balances.eiou.unit}
+          />
+          <BalanceCard
+            title={<FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />}
+            className="bg-purple-200"
+            amount={balances.credit.amount}
+            unit={balances.credit.unit}
+            chart={<KeysetBalanceChart token="credit" />}
+          />
+          <BalanceCard
+            title={<FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />}
+            className="bg-purple-400"
+            amount={balances.debit.amount}
+            unit={balances.debit.unit}
+            chart={<KeysetBalanceChart token="debit" />}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CollectFeesCard />
           <AddReserveCard />
         </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <OnChainBalanceChart />
-          <EbillCollateralChart />
-        </div>
-        <KeysetBalanceChart />
       </div>
     </>
   );

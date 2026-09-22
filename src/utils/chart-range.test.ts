@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { customBounds, isWithinBounds, rangeBounds } from "./chart-range";
+import { RANGES_BY_DIRECTION, customBounds, isWithinBounds, rangeBounds } from "./chart-range";
 
 const NOW = new Date("2026-09-18T12:00:00.000Z");
 const NOW_SECONDS = Math.floor(NOW.getTime() / 1000);
@@ -7,29 +7,42 @@ const DAY = 24 * 60 * 60;
 
 describe("rangeBounds", () => {
   it("clips nothing for the whole history", () => {
-    expect(rangeBounds("all", "past", NOW)).toBeNull();
-    expect(rangeBounds("all", "future", NOW)).toBeNull();
+    expect(rangeBounds("all", NOW)).toBeNull();
   });
 
   it("runs a past window backwards from today", () => {
-    expect(rangeBounds("30d", "past", NOW)).toEqual({ from: NOW_SECONDS - 30 * DAY, to: NOW_SECONDS });
+    expect(rangeBounds("past30d", NOW)).toEqual({ from: NOW_SECONDS - 30 * DAY, to: NOW_SECONDS });
   });
 
   it("runs a future window forwards from today", () => {
-    expect(rangeBounds("30d", "future", NOW)).toEqual({ from: NOW_SECONDS, to: NOW_SECONDS + 30 * DAY });
+    expect(rangeBounds("next30d", NOW)).toEqual({ from: NOW_SECONDS, to: NOW_SECONDS + 30 * DAY });
   });
 
   it("widens with the preset", () => {
-    const thirty = rangeBounds("30d", "past", NOW);
-    const ninety = rangeBounds("90d", "past", NOW);
+    const thirty = rangeBounds("past30d", NOW);
+    const ninety = rangeBounds("past90d", NOW);
 
     expect(NOW_SECONDS - thirty!.from).toBe(30 * DAY);
     expect(NOW_SECONDS - ninety!.from).toBe(90 * DAY);
   });
 
+  it("meets today from both sides, so the two windows share an edge", () => {
+    expect(rangeBounds("past90d", NOW)?.to).toBe(rangeBounds("next90d", NOW)?.from);
+  });
+
   it("derives no bounds for a custom range, which carries its own", () => {
-    expect(rangeBounds("custom", "past", NOW)).toBeNull();
-    expect(rangeBounds("custom", "future", NOW)).toBeNull();
+    expect(rangeBounds("custom", NOW)).toBeNull();
+  });
+});
+
+describe("RANGES_BY_DIRECTION", () => {
+  it("offers a chart only the side of today it plots", () => {
+    expect(RANGES_BY_DIRECTION.past).toEqual(["all", "past30d", "past90d"]);
+    expect(RANGES_BY_DIRECTION.future).toEqual(["all", "next30d", "next90d"]);
+  });
+
+  it("offers both sides to a ladder that straddles today", () => {
+    expect(RANGES_BY_DIRECTION.both).toEqual(["all", "past30d", "past90d", "next30d", "next90d"]);
   });
 });
 

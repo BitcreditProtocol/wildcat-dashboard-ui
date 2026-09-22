@@ -2,7 +2,7 @@ import type { BillBalanceEntry, KeysetBalance, OnChainOperation, OnChainOperatio
 import { createLogger } from "@/lib/logger";
 import { type RangeBounds, isWithinBounds } from "@/utils/chart-range";
 import { getUtcStartOfDate } from "@/utils/dates";
-import { serializeKeysetId } from "@/utils/keyset";
+import { type TokenKind, keysetTokenKind, serializeKeysetId } from "@/utils/keyset";
 
 const logger = createLogger("balance-history");
 
@@ -117,6 +117,19 @@ export function ebillCollateralByMaturity(bills: BillBalanceEntry[]): EbillMatur
 }
 
 /**
+ * The maturity buckets with an empty bucket for today, so the chart has a category for its
+ * "today" line to sit on: the axis is categorical, and a line can only be drawn on a date the
+ * ladder already carries. A day that matures bills of its own keeps them.
+ */
+export function withTodayMarker(buckets: EbillMaturityBucket[], todayKey: string): EbillMaturityBucket[] {
+  if (buckets.some((bucket) => bucket.maturityDate === todayKey)) {
+    return buckets;
+  }
+
+  return [...buckets, { maturityDate: todayKey, paid: 0, outstanding: 0 }].sort((a, b) => a.maturityDate.localeCompare(b.maturityDate));
+}
+
+/**
  * Maturity buckets inside a window. Each bucket is an independent sum rather than a running
  * total, so unlike the on-chain series it can simply be filtered. A bucket whose date does not
  * parse is dropped, because a bill that cannot be placed on the axis cannot be windowed either.
@@ -141,9 +154,8 @@ export interface KeysetBalancePoint {
 
 /**
  * Outstanding eCash per keyset, ordered by the expiry it runs to. The endpoint reports
- * `Amount.unit` as the unit type `null`, so it carries no unit of its own; these are credit
- * keysets, so the value is read as crsat, matching `credit_circulating_supply` on the
- * coverage endpoint.
+ * `Amount.unit` as the unit type `null`, so a balance carries no unit of its own and says
+ * nothing about which token it belongs to; `keysetBalancesForToken` splits them by expiry.
  */
 export function keysetBalanceSeries(balances: KeysetBalance[]): KeysetBalancePoint[] {
   return balances
@@ -153,6 +165,16 @@ export function keysetBalanceSeries(balances: KeysetBalance[]): KeysetBalancePoi
       balance: entry.balance.value,
     }))
     .sort((a, b) => a.expiry - b.expiry || a.keysetId.localeCompare(b.keysetId));
+}
+
+/**
+ * The keyset balances issuing one token. The endpoint reports no unit, so the split is the
+ * keyset's own expiry: everything already expired is debit eCash, everything still running is
+ * credit. Each chart therefore covers one side of now, which is also why their range toggles
+ * offer opposite windows.
+ */
+export function keysetBalancesForToken(points: KeysetBalancePoint[], token: TokenKind, nowSeconds: number): KeysetBalancePoint[] {
+  return points.filter((point) => keysetTokenKind(point.expiry, nowSeconds) === token);
 }
 
 /** Keysets whose expiry falls inside a window. Like maturity buckets, these are independent sums. */
