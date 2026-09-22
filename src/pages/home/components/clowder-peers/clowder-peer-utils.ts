@@ -53,7 +53,13 @@ export const statusMessages = defineMessages({
   unknown: { id: "home.clowderPeers.status.unknown", defaultMessage: "Unknown" },
 });
 
-export const substituteMessages = defineMessages({
+export const substituteMessages = defineMessages<{
+  label: { mint: string };
+  loading: Record<string, never>;
+  noSubstitute: Record<string, never>;
+  unknownNode: Record<string, never>;
+  unavailable: Record<string, never>;
+}>({
   label: { id: "home.clowderPeers.substitute.label", defaultMessage: "Substitute: {mint}" },
   loading: { id: "home.clowderPeers.substitute.loading", defaultMessage: "Loading substitute..." },
   noSubstitute: { id: "home.clowderPeers.substitute.noSubstitute", defaultMessage: "No substitute elected" },

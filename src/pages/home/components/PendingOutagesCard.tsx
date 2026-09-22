@@ -8,7 +8,15 @@ import { getClowderBetasOptions, getClowderMystatusOptions } from "@/generated/c
 import { outageKey, sortPendingOutages, totalPendingOutages } from "@/utils/pending-outages";
 import { mintLabel, substituteMessages } from "./clowder-peers/clowder-peer-utils";
 
-const outageMessages = defineMessages({
+const outageMessages = defineMessages<{
+  substitute: Record<string, never>;
+  pendingSwaps: Record<string, never>;
+  pendingAmount: Record<string, never>;
+  betasWaiting: Record<string, never>;
+  betasWaitingOfTotal: { waiting: number; total: number };
+  totalPendingSwaps: Record<string, never>;
+  totalPendingAmount: Record<string, never>;
+}>({
   substitute: { id: "home.pendingOutages.substitute", defaultMessage: "Substitute" },
   pendingSwaps: { id: "home.pendingOutages.pendingSwaps", defaultMessage: "Pending swaps" },
   pendingAmount: { id: "home.pendingOutages.pendingAmount", defaultMessage: "Pending amount" },
