@@ -29,8 +29,28 @@ interface MockFeesToken {
   refetch: ReturnType<typeof vi.fn>;
 }
 
+interface MockHistory {
+  data?: unknown;
+  isPending: boolean;
+  error: unknown;
+}
+
 const mockUseCoverageQuery = vi.fn<() => MockCoverage>();
 const mockUseCollectFeesQuery = vi.fn<() => MockFeesToken>();
+const mockUseHistoryQuery = vi.fn<(queryId: string) => MockHistory>();
+
+const HISTORY_QUERY_IDS = new Set(["onchainHistory", "billsBalanceHistory", "keysetsBalance"]);
+
+const SECONDS_PER_DAY = 24 * 60 * 60;
+
+/** A keyset balance as the aggregator reports it: a byte-array id and no unit of its own. */
+function keysetBalance(hexId: string, expiry: number, value: number) {
+  return {
+    keyset_id: { version: "Version00", id: { V1: hexId.match(/../g)?.map((pair) => Number.parseInt(pair, 16)) ?? [] } },
+    expiry,
+    balance: { value, unit: null },
+  };
+}
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -48,6 +68,9 @@ vi.mock("@tanstack/react-query", async () => {
       }
       if (queryId === "addReserveStatus") {
         return { data: undefined, error: null, isError: false, refetch: vi.fn() };
+      }
+      if (typeof queryId === "string" && HISTORY_QUERY_IDS.has(queryId)) {
+        return mockUseHistoryQuery(queryId);
       }
       return mockUseCoverageQuery();
     },
@@ -67,6 +90,15 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getAddReserveStatusOptions: () => ({
     queryKey: [{ _id: "addReserveStatus" }],
   }),
+  getOnchainHistoryOptions: () => ({
+    queryKey: [{ _id: "onchainHistory" }],
+  }),
+  getBillsBalanceHistoryOptions: () => ({
+    queryKey: [{ _id: "billsBalanceHistory" }],
+  }),
+  getKeysetsBalanceOptions: () => ({
+    queryKey: [{ _id: "keysetsBalance" }],
+  }),
 }));
 
 vi.mock("@/components/Breadcrumbs", () => ({
@@ -81,12 +113,17 @@ vi.mock("@/components/ui/chart", () => ({
   ChartContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   ChartLegend: () => null,
   ChartLegendContent: () => null,
+  ChartTooltip: () => null,
+  ChartTooltipContent: () => null,
 }));
 
 vi.mock("recharts", () => ({
+  Area: () => null,
+  AreaChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Bar: () => null,
   BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CartesianGrid: () => null,
+  ReferenceLine: () => null,
   XAxis: () => null,
   YAxis: () => null,
 }));
@@ -117,6 +154,59 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
       </MemoryRouter>
     </QueryClientProvider>
   );
+}
+
+/** What each history endpoint returns when the mint has nothing to plot yet. */
+function emptyHistory(queryId: string) {
+  switch (queryId) {
+    case "onchainHistory":
+      return { operations: [] };
+    case "billsBalanceHistory":
+      return { bills: [] };
+    default:
+      return { balances: [] };
+  }
+}
+
+function zeroCoverage(): MockCoverage {
+  return {
+    data: {
+      onchain_collateral: 0,
+      ebill_collateral: 0,
+      eiou_collateral: 0,
+      credit_circulating_supply: 0,
+      debit_circulating_supply: 0,
+    },
+    isError: false,
+    refetch: vi.fn(),
+  };
+}
+
+/** Clicks the balance card carrying `title`, which opens the drawer holding its chart. */
+async function openBalanceCard(title: string) {
+  const trigger = [...document.querySelectorAll("button")].find((button) => button.textContent?.includes(title));
+
+  if (!trigger) {
+    throw new Error(`No balance card opens a chart for "${title}"`);
+  }
+
+  act(() => {
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  });
+  await flush();
+}
+
+async function closeDrawer() {
+  const close = document.querySelector<HTMLButtonElement>('[role="dialog"] button[aria-label]');
+
+  if (!close) {
+    throw new Error("The open drawer has no close button");
+  }
+
+  act(() => {
+    close.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  });
+  await flush();
 }
 
 async function flush() {
@@ -153,6 +243,7 @@ beforeEach(() => {
     isFetching: false,
     refetch: vi.fn(),
   });
+  mockUseHistoryQuery.mockImplementation((queryId) => ({ data: emptyHistory(queryId), isPending: false, error: null }));
   storageData = {};
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
@@ -243,5 +334,88 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("sat");
     expect(page.textContent).not.toContain("$");
     expect(page.textContent).not.toContain("usd");
+  });
+
+  it("keeps every chart shut until its balance card is clicked", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.textContent).not.toContain("No on-chain operations have settled yet.");
+
+    await openBalanceCard("Bitcoin balance");
+
+    expect(document.body.textContent).toContain("No on-chain operations have settled yet.");
+    // The card the drawer belongs to is the only history it shows.
+    expect(document.body.textContent).not.toContain("The mint holds no e-bills yet.");
+  });
+
+  it("gives each balance card the chart that belongs to it", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("eBill collateral balance");
+    expect(document.body.textContent).toContain("The mint holds no e-bills yet.");
+    // The maturity ladder straddles today, so it narrows to either side of it.
+    expect(document.body.textContent).toContain("Last 30d");
+    expect(document.body.textContent).toContain("Next 30d");
+    await closeDrawer();
+
+    await openBalanceCard("Credit token balance");
+    expect(document.body.textContent).toContain("No keyset carries an outstanding balance.");
+    // Credit looks ahead of today, so its range toggle offers future windows.
+    expect(document.body.textContent).toContain("Next 30d");
+    await closeDrawer();
+
+    await openBalanceCard("Debit token balance");
+    // Debit looks back from today, so the same chart offers past windows instead.
+    expect(document.body.textContent).toContain("Last 30d");
+    expect(document.body.textContent).not.toContain("Next 30d");
+  });
+
+  it("splits the keyset balances between the credit and the debit chart by expiry", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    // Only a keyset still running carries a balance, so credit has one to plot and debit does not.
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    mockUseHistoryQuery.mockImplementation((queryId) => ({
+      data: queryId === "keysetsBalance" ? { balances: [keysetBalance("aa", nowSeconds + SECONDS_PER_DAY, 5)] } : emptyHistory(queryId),
+      isPending: false,
+      error: null,
+    }));
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("Credit token balance");
+    expect(document.body.textContent).not.toContain("No keyset carries an outstanding balance.");
+    await closeDrawer();
+
+    // The expired side is empty rather than borrowing the running keyset from credit.
+    await openBalanceCard("Debit token balance");
+    expect(document.body.textContent).toContain("No keyset carries an outstanding balance.");
+  });
+
+  it("keeps a failing history endpoint inside its own chart", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseHistoryQuery.mockImplementation((queryId) =>
+      queryId === "onchainHistory"
+        ? { data: undefined, isPending: false, error: new Error("aggregator unreachable") }
+        : { data: emptyHistory(queryId), isPending: false, error: null }
+    );
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("Bitcoin balance");
+    expect(document.body.textContent).toContain("Failed to load history: aggregator unreachable");
+    await closeDrawer();
+
+    // The neighbouring chart is unaffected by that failure.
+    await openBalanceCard("eBill collateral balance");
+    expect(document.body.textContent).toContain("The mint holds no e-bills yet.");
+    expect(document.body.textContent).not.toContain("Failed to load history");
   });
 });

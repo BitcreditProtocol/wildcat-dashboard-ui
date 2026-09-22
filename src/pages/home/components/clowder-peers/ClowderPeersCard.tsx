@@ -9,7 +9,7 @@ import {
   getClowderForeignSubstituteQueryOptions,
 } from "@/lib/clowder-foreign-status";
 import { env } from "@/lib/env";
-import { sortByMintLabel } from "./clowder-peer-utils";
+import { hasSubstituteRole, sortByMintLabel, statusKind } from "./clowder-peer-utils";
 import { PeerStatusSection } from "./PeerStatusSection";
 
 export function ClowderPeersCard() {
@@ -66,8 +66,9 @@ export function ClowderPeersCard() {
   });
 
   const alphaSubstituteQueries = useQueries({
-    queries: alphas.map((alpha) => ({
+    queries: alphas.map((alpha, index) => ({
       ...getClowderForeignSubstituteQueryOptions({ mintBaseUrl: ownMintBaseUrl, pk: alpha.node_id }),
+      enabled: hasSubstituteRole(statusKind(myOpinionOfAlphasQueries[index]?.data)),
       staleTime: 30_000,
       refetchInterval: 30_000,
       retry: 1,

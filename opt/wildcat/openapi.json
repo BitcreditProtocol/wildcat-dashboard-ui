@@ -1108,6 +1108,46 @@
         }
       }
     },
+    "/v1/admin/clowder/history/onchain": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_onchain_history",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnchainOperationsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/history/keysets": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_keysets_balance",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeysetsBalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/treasury/ebill/reqtopay": {
       "post": {
         "tags": [
@@ -3065,6 +3105,42 @@
           "Version01"
         ]
       },
+      "KeysetBalance": {
+        "type": "object",
+        "description": "--------------------------- per-keyset outstanding eCash balance",
+        "required": [
+          "keyset_id",
+          "expiry",
+          "balance"
+        ],
+        "properties": {
+          "keyset_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "expiry": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "balance": {
+            "$ref": "#/components/schemas/Amount"
+          }
+        }
+      },
+      "KeysetsBalanceResponse": {
+        "type": "object",
+        "required": [
+          "balances"
+        ],
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeysetBalance"
+            }
+          }
+        }
+      },
       "LightBillAnonParticipant": {
         "type": "object",
         "required": [
@@ -3281,6 +3357,129 @@
           "Bill",
           "Contact"
         ]
+      },
+      "OnChainOperation": {
+        "type": "object",
+        "required": [
+          "op_type",
+          "txids",
+          "amount",
+          "timestamp"
+        ],
+        "properties": {
+          "op_type": {
+            "$ref": "#/components/schemas/OnChainOperationType"
+          },
+          "txids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The txids of the onchain transactions that are part of this operation. For example, a mint operation may have multiple txids if the mint was funded by multiple transactions."
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The amount of the operation in satoshis. For example, for a mint operation, this would be the amount of satoshis that were minted."
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The timestamp of the operation in Unix seconds. This is the time when the operation was completed onchain.",
+            "minimum": 0
+          }
+        }
+      },
+      "OnChainOperationType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "quote_id",
+              "type"
+            ],
+            "properties": {
+              "quote_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Mint"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "quote_id",
+              "type"
+            ],
+            "properties": {
+              "quote_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Melt"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "bill_id",
+              "type"
+            ],
+            "properties": {
+              "bill_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "EbillPayment"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "reserve_id",
+              "type"
+            ],
+            "properties": {
+              "reserve_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AddReserve"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "--------------------------- Onchain transaction history"
+      },
+      "OnchainOperationsResponse": {
+        "type": "object",
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnChainOperation"
+            }
+          }
+        }
       },
       "OptionalPostalAddress": {
         "type": "object",

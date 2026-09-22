@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { checkBillPayment, collectFeesToken, deleteDeniedMeltop, getAddReserveStatus, getBillsBalanceHistory, getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillHistory, getEbillPaymentactions, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getMintInfo, getMintopStatus, getQuote, getSharedEbillHistory, listDeniedMeltops, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, patchEnableQuoteMinting, postAddReserve, postEbillReqtopay, syncEbillChain, updateQuote } from '../sdk.gen';
-import type { CheckBillPaymentData, CollectFeesTokenData, CollectFeesTokenResponse, DeleteDeniedMeltopData, GetAddReserveStatusData, GetAddReserveStatusResponse, GetBillsBalanceHistoryData, GetBillsBalanceHistoryResponse, GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillHistoryData, GetEbillHistoryResponse, GetEbillPaymentactionsData, GetEbillPaymentactionsResponse, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetQuoteData, GetQuoteResponse, GetSharedEbillHistoryData, GetSharedEbillHistoryResponse, ListDeniedMeltopsData, ListDeniedMeltopsResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PatchEnableQuoteMintingData, PatchEnableQuoteMintingResponse, PostAddReserveData, PostAddReserveResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, SyncEbillChainData, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
+import { checkBillPayment, collectFeesToken, deleteDeniedMeltop, getAddReserveStatus, getBillsBalanceHistory, getClowderAlphas, getClowderBetas, getClowderForeignCoverage, getClowderInfo, getClowderLocalCoverage, getClowderMystatus, getClowderStatus, getEbill, getEbillAttachment, getEbillEndorsements, getEbillFileFromRequestToMint, getEbillHistory, getEbillPaymentactions, getEbillPaymentstatus, getHealth, getIdentity, getKeysetInfo, getKeysetsBalance, getMintInfo, getMintopStatus, getOnchainHistory, getQuote, getSharedEbillHistory, listDeniedMeltops, listEbills, listKeysetInfos, listMintops, listQuotes, type Options, patchEnableQuoteMinting, postAddReserve, postEbillReqtopay, syncEbillChain, updateQuote } from '../sdk.gen';
+import type { CheckBillPaymentData, CollectFeesTokenData, CollectFeesTokenResponse, DeleteDeniedMeltopData, GetAddReserveStatusData, GetAddReserveStatusResponse, GetBillsBalanceHistoryData, GetBillsBalanceHistoryResponse, GetClowderAlphasData, GetClowderAlphasResponse, GetClowderBetasData, GetClowderBetasResponse, GetClowderForeignCoverageData, GetClowderForeignCoverageResponse, GetClowderInfoData, GetClowderInfoResponse, GetClowderLocalCoverageData, GetClowderLocalCoverageResponse, GetClowderMystatusData, GetClowderMystatusResponse, GetClowderStatusData, GetClowderStatusResponse, GetEbillAttachmentData, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsResponse, GetEbillFileFromRequestToMintData, GetEbillHistoryData, GetEbillHistoryResponse, GetEbillPaymentactionsData, GetEbillPaymentactionsResponse, GetEbillPaymentstatusData, GetEbillPaymentstatusResponse, GetEbillResponse, GetHealthData, GetIdentityData, GetIdentityResponse, GetKeysetInfoData, GetKeysetInfoResponse, GetKeysetsBalanceData, GetKeysetsBalanceResponse, GetMintInfoData, GetMintInfoResponse, GetMintopStatusData, GetMintopStatusResponse, GetOnchainHistoryData, GetOnchainHistoryResponse, GetQuoteData, GetQuoteResponse, GetSharedEbillHistoryData, GetSharedEbillHistoryResponse, ListDeniedMeltopsData, ListDeniedMeltopsResponse, ListEbillsData, ListEbillsResponse, ListKeysetInfosData, ListKeysetInfosResponse, ListMintopsData, ListMintopsResponse, ListQuotesData, ListQuotesResponse, PatchEnableQuoteMintingData, PatchEnableQuoteMintingResponse, PostAddReserveData, PostAddReserveResponse, PostEbillReqtopayData, PostEbillReqtopayResponse, SyncEbillChainData, UpdateQuoteData, UpdateQuoteResponse2 } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -602,6 +602,36 @@ export const postAddReserveMutation = (options?: Partial<Options<PostAddReserveD
     };
     return mutationOptions;
 };
+
+export const getOnchainHistoryQueryKey = (options?: Options<GetOnchainHistoryData>) => createQueryKey('getOnchainHistory', options);
+
+export const getOnchainHistoryOptions = (options?: Options<GetOnchainHistoryData>) => queryOptions<GetOnchainHistoryResponse, DefaultError, GetOnchainHistoryResponse, ReturnType<typeof getOnchainHistoryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getOnchainHistory({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getOnchainHistoryQueryKey(options)
+});
+
+export const getKeysetsBalanceQueryKey = (options?: Options<GetKeysetsBalanceData>) => createQueryKey('getKeysetsBalance', options);
+
+export const getKeysetsBalanceOptions = (options?: Options<GetKeysetsBalanceData>) => queryOptions<GetKeysetsBalanceResponse, DefaultError, GetKeysetsBalanceResponse, ReturnType<typeof getKeysetsBalanceQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getKeysetsBalance({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getKeysetsBalanceQueryKey(options)
+});
 
 export const postEbillReqtopayMutation = (options?: Partial<Options<PostEbillReqtopayData>>): UseMutationOptions<PostEbillReqtopayResponse, DefaultError, Options<PostEbillReqtopayData>> => {
     const mutationOptions: UseMutationOptions<PostEbillReqtopayResponse, DefaultError, Options<PostEbillReqtopayData>> = {

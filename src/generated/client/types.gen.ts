@@ -496,6 +496,19 @@ export type KeySetInfo = {
  */
 export type KeySetVersion = 'Version00' | 'Version01';
 
+/**
+ * --------------------------- per-keyset outstanding eCash balance
+ */
+export type KeysetBalance = {
+    keyset_id: Id;
+    expiry: number;
+    balance: Amount;
+};
+
+export type KeysetsBalanceResponse = {
+    balances: Array<KeysetBalance>;
+};
+
 export type LightBillAnonParticipant = {
     node_id: string;
 };
@@ -557,6 +570,43 @@ export type Notification = {
 };
 
 export type NotificationType = 'General' | 'Company' | 'Bill' | 'Contact';
+
+export type OnChainOperation = {
+    op_type: OnChainOperationType;
+    /**
+     * The txids of the onchain transactions that are part of this operation. For example, a mint operation may have multiple txids if the mint was funded by multiple transactions.
+     */
+    txids: Array<string>;
+    /**
+     * The amount of the operation in satoshis. For example, for a mint operation, this would be the amount of satoshis that were minted.
+     */
+    amount: number;
+    /**
+     * The timestamp of the operation in Unix seconds. This is the time when the operation was completed onchain.
+     */
+    timestamp: number;
+};
+
+/**
+ * --------------------------- Onchain transaction history
+ */
+export type OnChainOperationType = {
+    quote_id: string;
+    type: 'Mint';
+} | {
+    quote_id: string;
+    type: 'Melt';
+} | {
+    bill_id: string;
+    type: 'EbillPayment';
+} | {
+    reserve_id: string;
+    type: 'AddReserve';
+};
+
+export type OnchainOperationsResponse = {
+    operations: Array<OnChainOperation>;
+};
 
 export type OptionalPostalAddress = {
     country?: string | null;
@@ -1554,6 +1604,38 @@ export type PostAddReserveResponses = {
 };
 
 export type PostAddReserveResponse = PostAddReserveResponses[keyof PostAddReserveResponses];
+
+export type GetOnchainHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/history/onchain';
+};
+
+export type GetOnchainHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: OnchainOperationsResponse;
+};
+
+export type GetOnchainHistoryResponse = GetOnchainHistoryResponses[keyof GetOnchainHistoryResponses];
+
+export type GetKeysetsBalanceData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/history/keysets';
+};
+
+export type GetKeysetsBalanceResponses = {
+    /**
+     * Successful response
+     */
+    200: KeysetsBalanceResponse;
+};
+
+export type GetKeysetsBalanceResponse = GetKeysetsBalanceResponses[keyof GetKeysetsBalanceResponses];
 
 export type PostEbillReqtopayData = {
     body: RequestToPayFromEBillRequest;

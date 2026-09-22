@@ -49,7 +49,6 @@ const messages = defineMessages({
   payee: { id: "quotes.detail.bill.payee", defaultMessage: "Payee:" },
   endorsee: { id: "quotes.detail.bill.endorsee", defaultMessage: "Endorsee:" },
   endorsementsCount: { id: "quotes.detail.bill.endorsementsCount", defaultMessage: "Endorsements:" },
-  endorsementIndex: { id: "quotes.detail.bill.endorsementIndex", defaultMessage: "Endorsement {index}" },
   endorsedTo: { id: "quotes.detail.bill.endorsedTo", defaultMessage: "Endorsee:" },
   signedBy: { id: "quotes.detail.bill.signedByLabel", defaultMessage: "Signed by:" },
   signedAt: { id: "quotes.detail.bill.signedAt", defaultMessage: "Signed at:" },
@@ -70,7 +69,6 @@ const messages = defineMessages({
   acceptanceRequested: { id: "quotes.detail.bill.acceptance.requested", defaultMessage: "Requested" },
   acceptanceNotRequested: { id: "quotes.detail.bill.acceptance.notRequested", defaultMessage: "Not requested" },
 
-  blockIndex: { id: "quotes.detail.bill.blockIndex", defaultMessage: "Block {index}" },
   blockDeadline: { id: "quotes.detail.bill.blockDeadline", defaultMessage: "Request deadline:" },
   paymentAddress: { id: "quotes.detail.bill.paymentAddress", defaultMessage: "Payment address:" },
   historyEmpty: { id: "quotes.detail.bill.historyEmpty", defaultMessage: "No blocks on the bill chain yet." },
@@ -82,6 +80,14 @@ const messages = defineMessages({
   confirmations: { id: "quotes.detail.bill.confirmations", defaultMessage: "Confirmations:" },
 
   noFiles: { id: "quotes.detail.bill.noFiles", defaultMessage: "No files on the bill." },
+});
+
+const indexedMessages = defineMessages<{
+  endorsementIndex: { index: number };
+  blockIndex: { index: number };
+}>({
+  endorsementIndex: { id: "quotes.detail.bill.endorsementIndex", defaultMessage: "Endorsement {index}" },
+  blockIndex: { id: "quotes.detail.bill.blockIndex", defaultMessage: "Block {index}" },
 });
 
 interface BillDetailCardProps {
@@ -184,7 +190,7 @@ function EndorsementRow({ endorsement, index }: { endorsement: Endorsement; inde
 
   return (
     <div className="flex flex-col gap-1 rounded-lg border border-divider-50 p-2">
-      <Text variant="label">{intl.formatMessage(messages.endorsementIndex, { index: index + 1 })}</Text>
+      <Text variant="label">{intl.formatMessage(indexedMessages.endorsementIndex, { index: index + 1 })}</Text>
       <Field label={intl.formatMessage(messages.endorsedTo)}>
         {participantLabel(unwrapParticipant(endorsement.pay_to_the_order_of), fallback)}
       </Field>
@@ -209,7 +215,7 @@ function HistoryBlockRow({ block }: { block: BillHistoryBlock }) {
   return (
     <div className="flex flex-col gap-1 rounded-lg border border-divider-50 p-2">
       <div className="flex items-center gap-2">
-        <Text variant="label">{intl.formatMessage(messages.blockIndex, { index: block.block_id })}</Text>
+        <Text variant="label">{intl.formatMessage(indexedMessages.blockIndex, { index: block.block_id })}</Text>
         <Badge variant="outline">{block.block_type}</Badge>
       </div>
       <Field label={intl.formatMessage(messages.signedBy)}>{participantLabel(unwrapParticipant(block.signed.data), fallback)}</Field>

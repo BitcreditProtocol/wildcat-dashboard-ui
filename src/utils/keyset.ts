@@ -1,4 +1,4 @@
-import type { Id, IdBytes, InfoReply, InfoReplyDiscriminants, KeySetVersion } from "@/generated/client/types.gen";
+import type { Id, InfoReply, InfoReplyDiscriminants } from "@/generated/client/types.gen";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("keyset");
@@ -12,6 +12,19 @@ const KEYSET_BEARING_QUOTE_STATUSES = new Set<InfoReplyDiscriminants>(["Offered"
 
 export function canQuoteHaveKeyset(status: InfoReplyDiscriminants): boolean {
   return KEYSET_BEARING_QUOTE_STATUSES.has(status);
+}
+
+/** The two kinds of eCash the mint issues: credit against e-bills, debit against its own reserves. */
+export type TokenKind = "credit" | "debit";
+
+/**
+ * Which token a keyset issues, read from the expiry it runs to — the balance endpoint reports no
+ * unit, and the expiry separates the two on its own: credit eCash runs against an e-bill that has
+ * not matured yet, so its keyset expires ahead of now, while a keyset whose expiry has passed is
+ * debit eCash.
+ */
+export function keysetTokenKind(expiry: number, nowSeconds: number): TokenKind {
+  return expiry <= nowSeconds ? "debit" : "credit";
 }
 
 /**
@@ -73,39 +86,4 @@ export function serializeKeysetId(id: Id | string): string {
   const versionPrefix = id.version === "Version00" ? "00" : "01";
 
   return `${versionPrefix}${hexString}`;
-}
-
-export function deserializeKeysetId(serializedId: string): Id | null {
-  if (serializedId.length < 4 || serializedId.length % 2 !== 0) {
-    return null;
-  }
-
-  const versionByPrefix: Record<string, KeySetVersion> = {
-    "00": "Version00",
-    "01": "Version01",
-  };
-  const version = versionByPrefix[serializedId.slice(0, 2)];
-
-  if (!version) {
-    return null;
-  }
-
-  const hexBytes = serializedId.slice(2);
-  const bytes: number[] = [];
-
-  const validHexByte = /^[0-9a-fA-F]{2}$/;
-
-  for (let index = 0; index < hexBytes.length; index += 2) {
-    const chunk = hexBytes.slice(index, index + 2);
-
-    if (!validHexByte.test(chunk)) {
-      return null;
-    }
-
-    bytes.push(Number.parseInt(chunk, 16));
-  }
-
-  const id: IdBytes = version === "Version00" ? { V1: bytes } : { V2: bytes };
-
-  return { version, id };
 }
