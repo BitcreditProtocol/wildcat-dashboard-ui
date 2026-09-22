@@ -3717,8 +3717,7 @@
             "type": [
               "string",
               "null"
-            ],
-            "description": "Mirrors the substitute of the most widely held pending outage; `null` once the Alpha is online again."
+            ]
           },
           "pending_outages": {
             "type": "array",

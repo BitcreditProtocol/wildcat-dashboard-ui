@@ -102,6 +102,10 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
     queryKey: [{ _id: "getEbill", path }],
   }),
   syncEbillChainMutation: () => ({ mutationKey: [{ _id: "syncEbillChain" }] }),
+  checkBillPaymentMutation: () => ({ mutationKey: [{ _id: "checkBillPayment" }] }),
+  getEbillPaymentstatusOptions: ({ path }: { path: { bid: string } }) => ({
+    queryKey: [{ _id: "getEbillPaymentstatus", path }],
+  }),
 }));
 
 let root: Root | null = null;
@@ -338,6 +342,14 @@ describe("QuotePage", () => {
     const page = renderPage(`/quotes/${secondQuoteId}`);
     const keysetLink = page.querySelector('a[href^="/keysets/"]');
     expect(keysetLink).toBeNull();
+  });
+
+  // The payment check moved into the payment request box, which QuoteActions owns; it is
+  // covered by QuoteActions.test.tsx, and this page mocks QuoteActions away.
+  it("keeps the payment check out of the page's action row", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    expect(Array.from(page.querySelectorAll("button")).some((button) => button.textContent?.includes("Check payment"))).toBe(false);
   });
 
   it("links the bill id to the bill's own page", () => {

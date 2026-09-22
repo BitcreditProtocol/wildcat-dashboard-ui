@@ -691,9 +691,6 @@ export type PendingOutage = {
  * Reflects what the majority of Beta mints think about the current Alpha mint
  */
 export type PerceivedState = {
-    /**
-     * Mirrors the substitute of the most widely held pending outage; `null` once the Alpha is online again.
-     */
     substitute_beta?: string | null;
     /**
      * One entry per outage the Betas still hold against this Alpha; empty once the Alpha is online again.

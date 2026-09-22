@@ -157,6 +157,23 @@ describe("keysetBalanceSeries", () => {
 
     expect(series.map((point) => point.keysetId)).toEqual(["00aa", "00bb", "00ff"]);
   });
+
+  // What the aggregator actually sends: a hex keyset id and the balance as a bare integer,
+  // where the spec promises an `Id` object and an `Amount`.
+  it("reads the balance the aggregator sends, not only the Amount the spec promises", () => {
+    const wireEntry = { keyset_id: "01539548", expiry: 1_789_776_000, balance: 19_512 } as unknown as KeysetBalance;
+
+    expect(keysetBalanceSeries([wireEntry])).toEqual([{ keysetId: "01539548", expiry: 1_789_776_000, balance: 19_512 }]);
+  });
+
+  it("drops a balance it cannot read rather than plotting a bar of no height", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const unreadable = { keyset_id: "01539548", expiry: 10, balance: { unit: null } } as unknown as KeysetBalance;
+
+    expect(keysetBalanceSeries([unreadable, keysetBalance("aa", 20, 3)])).toEqual([{ keysetId: "00aa", expiry: 20, balance: 3 }]);
+    expect(error).toHaveBeenCalled();
+    error.mockRestore();
+  });
 });
 
 describe("clipBalanceSeries", () => {

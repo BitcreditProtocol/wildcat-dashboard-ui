@@ -153,18 +153,37 @@ export interface KeysetBalancePoint {
 }
 
 /**
- * Outstanding eCash per keyset, ordered by the expiry it runs to. The endpoint reports
- * `Amount.unit` as the unit type `null`, so a balance carries no unit of its own and says
- * nothing about which token it belongs to; `keysetBalancesForToken` splits them by expiry.
+ * The satoshis on one keyset entry. The spec types `balance` as an `Amount`, but the aggregator
+ * sends a bare integer; read either, the way the coverage card already reads its own amounts.
+ * Anything else is reported and dropped rather than charted as a bar of undefined height, which
+ * draws nothing while leaving the chart looking merely empty.
+ */
+function keysetBalanceValue(balance: KeysetBalance["balance"]): number | null {
+  const value: unknown = typeof balance === "object" && balance !== null ? balance.value : balance;
+
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Outstanding eCash per keyset, ordered by the expiry it runs to. A balance carries no unit of
+ * its own and so says nothing about which token it belongs to; `keysetBalancesForToken` splits
+ * them by expiry.
  */
 export function keysetBalanceSeries(balances: KeysetBalance[]): KeysetBalancePoint[] {
-  return balances
-    .map((entry) => ({
-      keysetId: serializeKeysetId(entry.keyset_id),
-      expiry: entry.expiry,
-      balance: entry.balance.value,
-    }))
-    .sort((a, b) => a.expiry - b.expiry || a.keysetId.localeCompare(b.keysetId));
+  const points: KeysetBalancePoint[] = [];
+
+  for (const entry of balances) {
+    const balance = keysetBalanceValue(entry.balance);
+
+    if (balance === null) {
+      logger.error("Unreadable keyset balance", entry.keyset_id, entry.balance);
+      continue;
+    }
+
+    points.push({ keysetId: serializeKeysetId(entry.keyset_id), expiry: entry.expiry, balance });
+  }
+
+  return points.sort((a, b) => a.expiry - b.expiry || a.keysetId.localeCompare(b.keysetId));
 }
 
 /**
