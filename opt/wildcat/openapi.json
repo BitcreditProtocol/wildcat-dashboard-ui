@@ -3660,52 +3660,6 @@
           }
         ]
       },
-      "PendingOutage": {
-        "type": "object",
-        "description": "An outage the Beta mints still hold against this Alpha mint, with the swaps it owes once it recovers",
-        "required": [
-          "evidence_digest",
-          "betas_holding",
-          "pending_exchanges",
-          "pending_amount"
-        ],
-        "properties": {
-          "evidence_digest": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
-            },
-            "description": "Digest of the outage evidence the Betas hold"
-          },
-          "substitute": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The elected substitute Beta, hex-encoded public key; `null` while no substitute is elected."
-          },
-          "betas_holding": {
-            "type": "integer",
-            "format": "int64",
-            "description": "How many Betas still hold this outage.",
-            "minimum": 0
-          },
-          "pending_exchanges": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Number of swaps the Alpha still has to make, each counted once.",
-            "minimum": 0
-          },
-          "pending_amount": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Total of the pending swaps, in satoshis.",
-            "minimum": 0
-          }
-        }
-      },
       "PerceivedState": {
         "type": "object",
         "description": "Reflects what the majority of Beta mints think about the current Alpha mint",
@@ -3717,15 +3671,7 @@
             "type": [
               "string",
               "null"
-            ],
-            "description": "Mirrors the substitute of the most widely held pending outage; `null` once the Alpha is online again."
-          },
-          "pending_outages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PendingOutage"
-            },
-            "description": "One entry per outage the Betas still hold against this Alpha; empty once the Alpha is online again."
+            ]
           },
           "alpha_state": {
             "$ref": "#/components/schemas/MintState"

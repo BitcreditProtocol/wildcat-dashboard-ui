@@ -344,24 +344,12 @@ describe("QuotePage", () => {
     expect(keysetLink).toBeNull();
   });
 
-  it("offers a payment check on the quote once payment has been requested", () => {
+  // The payment check moved into the payment request box, which QuoteActions owns; it is
+  // covered by QuoteActions.test.tsx, and this page mocks QuoteActions away.
+  it("keeps the payment check out of the page's action row", () => {
     const page = renderPage(`/quotes/${quoteId}`);
+
     expect(Array.from(page.querySelectorAll("button")).some((button) => button.textContent?.includes("Check payment"))).toBe(false);
-
-    const previous = mockUseQuery.getMockImplementation();
-    mockUseQuery.mockImplementation((opts: QueryOptions) => {
-      if (opts.queryKey[0]._id === "getEbill") {
-        return {
-          data: { id: "bill-1", status: { payment: { requested_to_pay: true, paid: false } } },
-          isLoading: false,
-          error: null,
-        };
-      }
-      return previous?.(opts) ?? { data: undefined, isLoading: false, error: null };
-    });
-
-    const requestedPage = renderPage(`/quotes/${quoteId}`);
-    expect(Array.from(requestedPage.querySelectorAll("button")).some((button) => button.textContent?.includes("Check payment"))).toBe(true);
   });
 
   it("links the bill id to the bill's own page", () => {

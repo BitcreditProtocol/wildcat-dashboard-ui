@@ -1,11 +1,10 @@
 import { toast, Heading, AppIcon, cn } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { CheckBillPaymentButton } from "@/components/CheckBillPaymentButton";
 import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { RefreshCwIcon } from "lucide-react";
-import { getEbillOptions, getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { getEbillAttachment, getEbillFileFromRequestToMint } from "@/generated/client/sdk.gen";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
@@ -298,13 +297,6 @@ export default function QuotePage() {
     quoteId,
     billId: quoteData?.bill?.id,
   });
-  const { data: quoteEbill } = useQuery({
-    ...getEbillOptions({ path: { bid: quoteData?.bill?.id ?? "" } }),
-    retry: 1,
-    enabled: Boolean(quoteData?.bill?.id),
-  });
-  const billPayment = quoteEbill?.status?.payment;
-
   if (!validQuoteId) {
     return <NotFoundPage path={`/quotes/${quoteId}`} />;
   }
@@ -342,13 +334,6 @@ export default function QuotePage() {
           </span>
         </Heading>
         <div className="flex items-center gap-2">
-          <CheckBillPaymentButton
-            billId={quoteData?.bill?.id}
-            quoteId={quoteId}
-            requestedToPay={billPayment?.requested_to_pay === true}
-            paid={billPayment?.paid === true}
-          />
-
           {hasSyncableBill && (
             <Button
               variant="outline"

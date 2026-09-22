@@ -25,6 +25,8 @@ vi.mock("@tanstack/react-query", async () => {
       seenQueryOptions.push(options);
       return mockUseQuery(options);
     },
+    useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+    useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   };
 });
 
@@ -35,6 +37,12 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getMintInfoOptions: () => ({
     queryKey: [{ _id: "getMintInfo" }],
   }),
+  // The payment check the request box carries; its mutation only needs to exist to render.
+  checkBillPaymentMutation: () => ({ mutationFn: vi.fn() }),
+  getEbillHistoryOptions: ({ path }: { path: { bid: string } }) => ({ queryKey: [{ _id: "getEbillHistory", path }] }),
+  getEbillPaymentstatusOptions: ({ path }: { path: { bid: string } }) => ({ queryKey: [{ _id: "getEbillPaymentstatus", path }] }),
+  getQuoteOptions: ({ path }: { path: { qid: string } }) => ({ queryKey: [{ _id: "getQuote", path }] }),
+  listEbillsOptions: () => ({ queryKey: [{ _id: "listEbills" }] }),
 }));
 
 vi.mock("./components/OfferFormDrawer", () => ({
@@ -170,5 +178,47 @@ describe("QuoteActions", () => {
 
     expect(link).not.toBeNull();
     expect(seenQueryOptions[1]?.enabled).toBe(true);
+  });
+
+  it("carries the payment check in the payment request box", () => {
+    mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) =>
+      options.queryKey[0]._id === "getEbill"
+        ? { data: { status: { payment: { requested_to_pay: true, paid: false } } }, error: null }
+        : { data: undefined, error: null }
+    );
+
+    const page = renderComponent();
+    const heading = Array.from(page.querySelectorAll("h2")).find((entry) => entry.textContent?.includes("Payment request"));
+
+    expect(heading).toBeDefined();
+    // Beside the box's own title, rather than up in the page's action row.
+    expect(heading?.parentElement?.querySelector("button")?.textContent).toContain("Check payment");
+  });
+
+  it("offers no payment check before the mint has asked for payment", () => {
+    mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) =>
+      options.queryKey[0]._id === "getEbill"
+        ? { data: { status: { payment: { requested_to_pay: false, paid: false } } }, error: null }
+        : { data: undefined, error: null }
+    );
+
+    const page = renderComponent();
+
+    expect(page.textContent).not.toContain("Payment request");
+    expect(page.textContent).not.toContain("Check payment");
+  });
+
+  it("drops the payment check once the bill is paid", () => {
+    mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) =>
+      options.queryKey[0]._id === "getEbill"
+        ? { data: { status: { payment: { requested_to_pay: true, paid: true } } }, error: null }
+        : { data: undefined, error: null }
+    );
+
+    const page = renderComponent();
+
+    // The box stays — it is the record of the request — but there is nothing left to check.
+    expect(page.textContent).toContain("Payment request");
+    expect(page.textContent).not.toContain("Check payment");
   });
 });
