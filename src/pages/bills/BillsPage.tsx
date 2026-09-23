@@ -8,7 +8,14 @@ import { type BillFilter, useBillList } from "@/hooks/use-bill-list";
 import { filterGroupMessages } from "@/i18n/descriptors";
 import { BillItemCard } from "./components/BillItemCard";
 
-const messages = defineMessages({
+const messages = defineMessages<{
+  title: Record<string, never>;
+  searchPlaceholder: Record<string, never>;
+  count: { shown: number; total: number };
+  empty: Record<string, never>;
+  noMatch: Record<string, never>;
+  error: Record<string, never>;
+}>({
   title: { id: "bills.page.title", defaultMessage: "Bills" },
   searchPlaceholder: {
     id: "bills.search.placeholder",

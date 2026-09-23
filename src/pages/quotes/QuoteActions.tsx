@@ -184,8 +184,12 @@ export function QuoteActions({
         </div>
       ) : null}
 
-      {requestedToPayEff && (addressToPay ?? linkToPay) && (
+      {requestedToPayEff && (
         <PaymentRequestCard
+          billId={billId}
+          quoteId={value.id}
+          requestedToPay={requestedToPayEff}
+          paid={Boolean(paymentStatus?.paid)}
           addressToPay={addressToPay}
           linkToPay={linkToPay}
           effectiveRequestTime={effectiveRequestTime}

@@ -6,7 +6,15 @@ import { defineMessages, useIntl } from "react-intl";
 import type { BitcreditBill } from "@/generated/client/types.gen";
 import { type AnyParticipant, isIdentified, unwrapParticipant } from "@/utils/bill-participants";
 
-const messages = defineMessages({
+const messages = defineMessages<{
+  maturity: { date: string };
+  drawee: { name: string };
+  payee: { name: string };
+  accepted: Record<string, never>;
+  paid: Record<string, never>;
+  requestedToPay: Record<string, never>;
+  anonymous: Record<string, never>;
+}>({
   maturity: { id: "bills.item.maturity", defaultMessage: "Maturity: {date}" },
   drawee: { id: "bills.item.drawee", defaultMessage: "Drawee: {name}" },
   payee: { id: "bills.item.payee", defaultMessage: "Payee: {name}" },

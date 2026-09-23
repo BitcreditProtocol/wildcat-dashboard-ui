@@ -65,15 +65,6 @@ export const formatDate = (locale: string, date: Date): string => {
   return `${day}-${month}-${year}`;
 };
 
-export const formatDateLong = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-};
-
 export const formatDateShort = (date: Date, locale: string): string => {
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
@@ -83,26 +74,16 @@ export const formatDateShort = (date: Date, locale: string): string => {
   }).format(date);
 };
 
-export const formatMonthLong = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, {
-    month: "long",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-};
-
-export const formatMonthYear = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "long",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-};
-
 export const formatYearNumeric = (date: Date, locale: string): string => {
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     timeZone: UTC_TIME_ZONE,
   }).format(date);
+};
+
+/** The `YYYY-MM-DD` key a date falls under in UTC, the form maturity dates arrive in. */
+export const toUtcDateKey = (date: Date): string => {
+  return date.toISOString().slice(0, 10);
 };
 
 export const toUtcEndOfDay = (date: Date): Date => {

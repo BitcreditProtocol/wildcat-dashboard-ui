@@ -297,7 +297,6 @@ export default function QuotePage() {
     quoteId,
     billId: quoteData?.bill?.id,
   });
-
   if (!validQuoteId) {
     return <NotFoundPage path={`/quotes/${quoteId}`} />;
   }

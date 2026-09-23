@@ -1,23 +1,40 @@
 import { Heading, Text, TruncatedLinkPopover, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
+import { CheckBillPaymentButton } from "@/components/CheckBillPaymentButton";
 
 interface PaymentRequestCardProps {
+  billId?: string;
+  quoteId: string;
+  requestedToPay: boolean;
+  paid: boolean;
   addressToPay?: string;
   linkToPay?: string;
   effectiveRequestTime: number | null;
   effectiveDeadlineTs: number | null;
 }
 
-export function PaymentRequestCard({ addressToPay, linkToPay, effectiveRequestTime, effectiveDeadlineTs }: PaymentRequestCardProps) {
+export function PaymentRequestCard({
+  billId,
+  quoteId,
+  requestedToPay,
+  paid,
+  addressToPay,
+  linkToPay,
+  effectiveRequestTime,
+  effectiveDeadlineTs,
+}: PaymentRequestCardProps) {
   const intl = useIntl();
   return (
     <div className="p-4 dark:bg-elevation-200 bg-white rounded border">
-      <Heading as="h2" variant="page" className="mb-3">
-        {intl.formatMessage({
-          id: "quotes.paymentRequest.title",
-          defaultMessage: "Payment request",
-        })}
-      </Heading>
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <Heading as="h2" variant="page">
+          {intl.formatMessage({
+            id: "quotes.paymentRequest.title",
+            defaultMessage: "Payment request",
+          })}
+        </Heading>
+        <CheckBillPaymentButton billId={billId} quoteId={quoteId} requestedToPay={requestedToPay} paid={paid} />
+      </div>
       <div className="space-y-1">
         {addressToPay && (
           <div className="flex items-center gap-2">

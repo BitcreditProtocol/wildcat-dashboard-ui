@@ -5,7 +5,8 @@ import { RefreshCwIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { defineMessages, useIntl } from "react-intl";
 import { Link, useParams } from "react-router";
-import { getEbillHistoryOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { CheckBillPaymentButton } from "@/components/CheckBillPaymentButton";
+import { getEbillHistoryOptions, getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuoteIdByBill } from "@/hooks/use-quote-id-by-bill";
 import { BillDetailCard } from "@/pages/quotes/components/BillDetailCard";
 import { useSyncBillChain } from "@/pages/quotes/components/useSyncBillChain";
@@ -26,6 +27,14 @@ export default function BillDetailPage() {
   const billId = typeof params.billId === "string" ? params.billId : "";
   const { quoteId } = useQuoteIdByBill(billId);
   const { syncBillChain, isSyncing, canSync, hasSyncableBill } = useSyncBillChain({ quoteId, billId });
+
+  // Shares its cache entry with the query the bill card runs.
+  const { data: bill } = useQuery({
+    ...getEbillOptions({ path: { bid: billId } }),
+    retry: 1,
+    enabled: billId.length > 0,
+  });
+  const billPayment = bill?.status?.payment;
 
   const { data: historyBlocks, isLoading: isHistoryLoading } = useQuery({
     ...getEbillHistoryOptions({ path: { bid: billId } }),
@@ -52,18 +61,27 @@ export default function BillDetailPage() {
             <TruncatedTextPopover text={billId} maxLength={16} className="inline font-mono" as="span" />
           </span>
         </Heading>
-        {hasSyncableBill && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={syncBillChain}
-            disabled={!canSync}
-            className="inline-flex items-center gap-1 leading-none"
-          >
-            <AppIcon icon={RefreshCwIcon} weight="thin" className={cn("h-4 w-4", { "animate-spin": isSyncing })} />
-            <span className="relative top-px leading-none">{intl.formatMessage(messages.refresh)}</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <CheckBillPaymentButton
+            billId={billId}
+            quoteId={quoteId}
+            requestedToPay={billPayment?.requested_to_pay === true}
+            paid={billPayment?.paid === true}
+          />
+
+          {hasSyncableBill && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={syncBillChain}
+              disabled={!canSync}
+              className="inline-flex items-center gap-1 leading-none"
+            >
+              <AppIcon icon={RefreshCwIcon} weight="thin" className={cn("h-4 w-4", { "animate-spin": isSyncing })} />
+              <span className="relative top-px leading-none">{intl.formatMessage(messages.refresh)}</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       <BillDetailCard billId={billId} quoteId={quoteId} historyBlocks={historyBlocks} isHistoryLoading={isHistoryLoading} />

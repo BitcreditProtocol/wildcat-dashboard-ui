@@ -1,4 +1,5 @@
 name: build and push nightly image
+run-name: "Nightly images | candidate ${{ inputs.candidate_run_id || 'push' }} | ${{ inputs.expected_sha || github.sha }}"
 
 permissions:
   contents: read
@@ -7,14 +8,46 @@ permissions:
 on:
   push:
     branches:
-      - dev
+      - master
+
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact master SHA captured by the candidate
+        type: string
+        required: true
+      candidate_run_id:
+        description: Original central candidate run ID
+        type: string
+        required: true
+  pull_request:
+    paths:
+      - '.github/workflows/nightly.yml'
+      - '.github/workflows/build-image.yml'
+      - '.github/scripts/test_nightly.py'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ inputs.candidate_run_id || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python3 .github/scripts/test_nightly.py
+
   nightly:
+    if: github.event_name != 'pull_request'
+    needs: test
     uses: ./.github/workflows/build-image.yml
     with:
-      tags: type=raw,value=nightly
+      tags: |
+        type=raw,value=nightly
+        type=raw,value=source-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      expected_sha: ${{ inputs.expected_sha }}
+      candidate_run_id: ${{ inputs.candidate_run_id }}
+      record_nightly: true
