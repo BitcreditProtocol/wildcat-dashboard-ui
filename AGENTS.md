@@ -19,9 +19,9 @@ from `@bitcredit/ui-library` first, then `src/components/`.
 
 ## Getting Started
 
-README has the commands. Agent delta: use `npm ci`, not `npm install`, because
-`package.json` declares the supported Node/npm versions, `.nvmrc` selects Node 26,
-and `npm ci` installs exactly what `package-lock.json` says, as CI does.
+README has the commands. Use Node 24 LTS from `.nvmrc` and npm from
+`package.json`. Use `npm ci`, not `npm install`, to install exactly what
+`package-lock.json` says, as CI does.
 `npm run dev` loads the committed `.env.development`; `src/lib/env.ts` throws at
 startup when `VITE_API_BASE_URL` or the three `VITE_KEYCLOAK_*` keys are unset.
 
