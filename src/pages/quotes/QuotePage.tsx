@@ -9,8 +9,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "react-router";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { QuoteActions } from "./QuoteActions";
-import { pendingCaseInvestigation, pendingEvidenceQuestionCount } from "@/pages/credit/evidence-review-readiness";
-import { CaseInvestigationPanel } from "@/pages/credit/CaseInvestigationPanel";
+import { pendingEvidenceQuestionCount } from "@/pages/credit/evidence-review-readiness";
+import { buildCaseBrief } from "@/pages/credit/case-brief";
 import { truncateString } from "@/utils/strings";
 import { EndorsementChain } from "@/components/EndorsementChain";
 import { serializeKeysetId } from "@/utils/keyset";
@@ -22,7 +22,7 @@ import { authenticatedFetch } from "@/lib/api-client";
 import { type CreditEvidenceState, QuoteDocuments } from "./QuoteDocuments";
 import { type QuoteDocumentPreview, QuoteDocumentViewer } from "./QuoteDocumentViewer";
 import { resolveDocumentMimeType } from "@/utils/document-preview";
-import { countAnswerReviewFollowUps, isEvidenceInsufficientClosure, type SubmittedEvidence, words } from "@/pages/credit/decision-types";
+import { countAnswerReviewFollowUps, type SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { EndorseeList } from "./components/EndorseeList";
@@ -41,9 +41,8 @@ import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
 import { isQuotePollingCompleteStatus } from "@/utils/quote-status";
 import { CaseWorkspace } from "./components/CaseWorkspace";
 import { InformationNeedsPanel } from "@/pages/credit/InformationNeedsPanel";
-import { CaseReviewTrail } from "@/pages/credit/CaseReviewTrail";
-import type { InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
-import { currentUnadmittedInvestigationProposals } from "@/pages/credit/investigation-proposals";
+import { CaseHistory } from "@/pages/credit/CaseHistory";
+import { CasePreparationPanel } from "@/pages/credit/CasePreparationPanel";
 
 interface LocationState {
   from?: string;
@@ -76,7 +75,6 @@ function PageBody({ id }: { id: string }) {
   const [openingEvidenceReference, setOpeningEvidenceReference] = useState<string | null>(null);
   const [reviewingEvidenceReference, setReviewingEvidenceReference] = useState<string | null>(null);
   const [signedAuthorizationReceipt, setSignedAuthorizationReceipt] = useState<VerifiedAuthorizationReceipt | null>(null);
-  const [selectedInvestigationNeeds, setSelectedInvestigationNeeds] = useState<InvestigationNeedSelection[]>([]);
 
   const previewUrlRef = useRef<string | null>(null);
   const blobUrlTimerRef = useRef<number | null>(null);
@@ -121,9 +119,6 @@ function PageBody({ id }: { id: string }) {
   } = useQuoteDetail(id);
   const creditAssessment = useCreditAssessmentForBill(billId, id);
   const operatorCapability = useOperatorCapability();
-  useEffect(() => {
-    setSelectedInvestigationNeeds([]);
-  }, [creditAssessment.decisionCase?.resultDigest, creditAssessment.decisionCase?.submissionDigest]);
   const creditEvidence: CreditEvidenceState = creditAssessment.isLoading
     ? { status: "loading" }
     : creditAssessment.error !== null
@@ -376,38 +371,14 @@ function PageBody({ id }: { id: string }) {
 
   const durableAuthorizationReceipt = durableAuthorizationReceiptFromQuote(quote, quote.id, bill.id);
   const decisionCase = creditAssessment.decisionCase;
-  const unadmittedInvestigationProposals = decisionCase === undefined ? [] : currentUnadmittedInvestigationProposals(decisionCase);
-  const firstOpenRequest = decisionCase?.result.verificationRequests[0];
-  const decisionBasis =
-    decisionCase === undefined
-      ? undefined
-      : {
-          counterargument:
-            firstOpenRequest !== undefined
-              ? firstOpenRequest.requiredItem
-              : decisionCase.snapshot.contradictions[0] !== undefined
-                ? words(decisionCase.snapshot.contradictions[0].code)
-                : decisionCase.snapshot.confirmedClaims.evidenceState === "applicant_confirmed"
-                  ? intl.formatMessage({
-                      id: "quotes.summary.repaymentNotIndependent",
-                      defaultMessage: "Repayment source not independently confirmed",
-                      description: "Residual uncertainty when repayment remains an applicant-confirmed claim",
-                    })
-                  : intl.formatMessage({
-                      id: "quotes.summary.noMaterialCounterpoint",
-                      defaultMessage: "No material counterpoint recorded",
-                      description: "Empty strongest-counterpoint state",
-                    }),
-          counterargumentOpen:
-            firstOpenRequest !== undefined ||
-            decisionCase.snapshot.contradictions.length > 0 ||
-            decisionCase.snapshot.confirmedClaims.evidenceState === "applicant_confirmed",
-          answerReviewFollowUpCount: countAnswerReviewFollowUps(
-            decisionCase.interviewTranscript,
-            decisionCase.liveInterview,
-            ...(decisionCase.interviewHistory ?? [])
-          ),
-        };
+  // Agent-prepared cases do not turn every applicant reply into a task for the operator.
+  const reviewCount =
+    effectiveQuoteStatus !== "Pending"
+      ? 0
+      : decisionCase?.casePreparation !== undefined
+        ? Number(decisionCase.casePreparation.status === "attention")
+        : pendingEvidenceQuestionCount(decisionCase);
+  const caseBrief = decisionCase === undefined ? undefined : buildCaseBrief(decisionCase, { quoteId: quote.id, now: Date.now() });
 
   return (
     <div className="mt-4 flex flex-col gap-4">
@@ -430,12 +401,11 @@ function PageBody({ id }: { id: string }) {
                 paymentDeadlineTs={paymentDeadlineTs}
                 timeOfRequestToPay={timeOfRequestToPay}
                 onAuthorizationVerified={setSignedAuthorizationReceipt}
-                selectedInvestigationNeeds={selectedInvestigationNeeds}
-                onInvestigationNeedsSubmitted={() => setSelectedInvestigationNeeds([])}
               />
             </div>
           }
           assessmentUnavailable={creditAssessment.isUnavailable}
+          assessmentLoading={creditAssessment.isLoading}
           noFitExplanation={
             decisionCase?.result.recommendation === "no_current_product_fit" ? (
               <NoFitExplanation decisionCase={decisionCase} formatSat={(value) => `${intl.formatNumber(Number(value))} sat`} />
@@ -455,33 +425,12 @@ function PageBody({ id }: { id: string }) {
           mintOperationStatus={mintOperationStatus}
           isMintOperationLoading={isMintOperationLoading}
           decisionSummary={
-            decisionCase && decisionBasis
+            decisionCase && caseBrief
               ? {
+                  brief: caseBrief,
                   assessmentCurrency: decisionCase.assessmentCurrency,
                   useOfFunds: decisionCase.applicantConfirmation?.useOfFunds,
                   repaymentSource: decisionCase.applicantConfirmation?.repaymentSource,
-                  readyForDecision:
-                    decisionCase.result.assessmentStatus === "ready_for_decision" &&
-                    pendingEvidenceQuestionCount(decisionCase) === 0 &&
-                    !pendingCaseInvestigation(decisionCase),
-                  closedWithoutAssessment: isEvidenceInsufficientClosure(decisionCase),
-                  investigationPending: pendingCaseInvestigation(decisionCase),
-                  pendingEvidenceQuestions: pendingEvidenceQuestionCount(decisionCase),
-                  investigationProposals: {
-                    available: unadmittedInvestigationProposals.length,
-                    selected: selectedInvestigationNeeds.filter((selection) =>
-                      unadmittedInvestigationProposals.some(
-                        (proposal) => proposal.runId === selection.runId && proposal.needIndex === selection.needIndex
-                      )
-                    ).length,
-                  },
-                  recommendation: decisionCase.result.recommendation,
-                  decisionBasis,
-                  applicantRequests: decisionCase.result.verificationRequests.map(({ axis, requiredItem, owner }) => ({
-                    axis,
-                    requiredItem,
-                    owner: owner === undefined ? undefined : words(owner),
-                  })),
                   billAcceptanceState: decisionCase.snapshot.bill?.acceptanceState,
                   ...(decisionCase.assessmentCurrency === "current" && decisionCase.result.terms
                     ? {
@@ -501,70 +450,41 @@ function PageBody({ id }: { id: string }) {
       </section>
 
       <div className="contents print:hidden">
-        {decisionCase !== undefined && (
-          <InformationNeedsPanel
-            decisionCase={decisionCase}
-            capability={creditAssessment.isUnavailable ? undefined : operatorCapability.capability}
-          />
-        )}
         <CaseWorkspace
-          investigation={
-            <CaseInvestigationPanel
-              decisionCase={decisionCase}
-              selectedNeeds={selectedInvestigationNeeds}
-              onSelectedNeedsChange={setSelectedInvestigationNeeds}
-              selectionDisabled={
-                operatorCapability.capability?.operatorRole !== "approver" ||
-                effectiveQuoteStatus !== "Pending" ||
-                decisionCase?.assessmentCurrency !== "current" ||
-                decisionCase?.mintQuoteId !== id ||
-                decisionCase?.applicantHumanReview !== undefined
-              }
-            />
-          }
-          evidence={
-            <QuoteDocuments
-              embedded
-              showCaseRecord={false}
-              billAttachments={billAttachmentDocuments}
-              requestToMintFiles={requestToMintDocuments}
-              creditEvidence={creditEvidence}
-              openingDocumentHash={openingDocumentHash}
-              openingEvidenceReference={openingEvidenceReference}
-              reviewingEvidenceReference={reviewingEvidenceReference}
-              onOpenDocument={handleOpenDocument}
-              onOpenEvidence={handleOpenEvidence}
-              onReviewInvoiceEvidence={operatorCapability.capability === undefined ? undefined : handleReviewInvoiceEvidence}
-            />
-          }
-          conversation={
-            creditAssessment.recordedDecisionCase !== undefined ? (
-              <CaseReviewTrail
-                standalone
+          reviewCount={reviewCount}
+          review={
+            <div className="space-y-6">
+              {decisionCase?.casePreparation !== undefined && <CasePreparationPanel decisionCase={decisionCase} />}
+              {decisionCase !== undefined && decisionCase.casePreparation === undefined && (
+                <InformationNeedsPanel
+                  decisionCase={decisionCase}
+                  capability={creditAssessment.isUnavailable ? undefined : operatorCapability.capability}
+                />
+              )}
+              <QuoteDocuments
                 embedded
-                decisionCase={creditAssessment.recordedDecisionCase}
-                capability={operatorCapability.capability}
-                transcript={creditAssessment.recordedDecisionCase.interviewTranscript}
-                interviewHistory={creditAssessment.recordedDecisionCase.interviewHistory}
-                liveInterview={creditAssessment.recordedDecisionCase.liveInterview}
-                updatesUnavailable={creditAssessment.isUnavailable}
-                applicantConfirmation={creditAssessment.recordedDecisionCase.applicantConfirmation}
-                applicantHumanReview={creditAssessment.recordedDecisionCase.applicantHumanReview}
-                axes={creditAssessment.recordedDecisionCase.result.axes}
-                submittedEvidence={creditAssessment.recordedDecisionCase.submittedEvidence ?? []}
-                evidencePackets={creditAssessment.recordedDecisionCase.evidencePackets ?? []}
-                claimInvestigation={creditAssessment.recordedDecisionCase.claimInvestigation}
-                verificationRequests={creditAssessment.recordedDecisionCase.result.verificationRequests}
+                showCaseRecord={false}
+                showPublicResearch={false}
+                billAttachments={billAttachmentDocuments}
+                requestToMintFiles={requestToMintDocuments}
+                creditEvidence={creditEvidence}
+                openingDocumentHash={openingDocumentHash}
+                openingEvidenceReference={openingEvidenceReference}
+                reviewingEvidenceReference={reviewingEvidenceReference}
+                onOpenDocument={handleOpenDocument}
+                onOpenEvidence={handleOpenEvidence}
+                onReviewInvoiceEvidence={operatorCapability.capability === undefined ? undefined : handleReviewInvoiceEvidence}
               />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {intl.formatMessage({
-                  id: "quotes.workspace.noConversation",
-                  defaultMessage: "No conversation recorded for this case.",
-                  description: "No fabricated transcript when the case has no conversation",
-                })}
-              </p>
-            )
+            </div>
+          }
+          history={
+            // Read-only record grouped by submission; every control stays in the Review tab.
+            <CaseHistory
+              decisionCase={creditAssessment.recordedDecisionCase}
+              initialApplication={creditAssessment.recordedInitialApplication}
+              updatesStatus={creditAssessment.updatesStatus}
+              updatesUnavailable={creditAssessment.isUnavailable}
+            />
           }
           calculation={
             <QuoteCreditAssessment embedded consolidatedRequirements={decisionCase !== undefined} billId={bill.id} mintQuoteId={quote.id} />

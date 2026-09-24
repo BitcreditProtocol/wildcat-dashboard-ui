@@ -284,6 +284,36 @@ function completedMintDenial() {
 }
 
 describe("parseDecisionCasesResponse", () => {
+  it("retains initial server interviews without promoting them to assessed cases", () => {
+    const application = {
+      source: "server_interview",
+      billId: "bill-pending",
+      caseId: "37d5fdd6-5cf1-4d74-bf46-ecb48ac4a9e8",
+      mintQuoteId: "895f0772-a99a-4db0-9e90-0218901ea3fc",
+      dialogueId: "e6d160d1-785a-4a9b-8685-e929181e6861",
+      revision: 1,
+      updatedAt: "2026-09-22T10:00:00.000Z",
+      language: "en",
+      modelId: "live-interviewer",
+      promptVersion: "initial-v1",
+      questionGraphVersion: "initial-v1",
+      status: "interviewing",
+      messages: [
+        { messageId: "question-1", role: "assistant", templateId: "aiCredit.interview.welcome", text: "What do you need the money for?" },
+      ],
+    };
+    expect(parseDecisionCasesResponse({ cases: [], applications: [application] })).toEqual({
+      cases: [],
+      issues: [],
+      applications: [application],
+    });
+    expect(() =>
+      parseDecisionCasesResponse({
+        cases: [],
+        applications: [{ ...application, messages: [{ ...application.messages[0], text: undefined }] }],
+      })
+    ).toThrow("invalid governed decision response");
+  });
   it("accepts an empty response and a fully bound governed offer", () => {
     expect(parseDecisionCasesResponse({ schemaVersion: "ai-credit-workbench-decisions-v1", cases: [] })).toEqual({ cases: [], issues: [] });
     const decisionCase = validCase();

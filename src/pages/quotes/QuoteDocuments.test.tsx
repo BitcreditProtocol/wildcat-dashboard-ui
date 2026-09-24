@@ -79,6 +79,35 @@ const evidenceCaseSummary = {
 } satisfies EvidenceCaseSummary;
 
 describe("QuoteDocuments", () => {
+  it("does not repeat public research when the quote workspace hosts it under Investigation", () => {
+    const page = renderWithIntl(
+      <QuoteDocuments
+        embedded
+        showCaseRecord={false}
+        showPublicResearch={false}
+        billAttachments={[]}
+        requestToMintFiles={[]}
+        creditEvidence={{
+          status: "available",
+          caseId: "case-1",
+          resultDigest: "sha256:result",
+          assessmentCurrency: "current",
+          submittedEvidence: [],
+          evidencePackets: [],
+          invoiceAssessment: null,
+          verificationRequests: [],
+          caseSummary: evidenceCaseSummary,
+          claimInvestigation: { status: "running", inputDigest: `sha256:${"a".repeat(64)}`, modelId: "synthetic-reviewer" },
+        }}
+        openingDocumentHash={null}
+        openingEvidenceReference={null}
+        onOpenDocument={() => undefined}
+        onOpenEvidence={() => undefined}
+      />
+    );
+    expect(page.textContent).not.toContain("Public-source research");
+    expect(page.textContent).toContain("No submitted credit evidence is recorded");
+  });
   it("keeps answer-review concerns separate from deterministic checks with no recorded conflict", () => {
     const page = renderWithIntl(
       <EvidenceCaseBrief

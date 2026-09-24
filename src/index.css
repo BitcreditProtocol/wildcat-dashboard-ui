@@ -163,12 +163,7 @@
     font-size: 10pt;
   }
 
-  #minting-summary [data-statement-preview] {
-    display: block !important;
-    -webkit-line-clamp: unset;
-  }
-
-  #minting-summary details:not([data-print-statement]),
+  #minting-summary details,
   #minting-summary [data-print-detail] {
     display: none !important;
   }

@@ -8,12 +8,16 @@ import type { AdminInfoReply, MintOperationStatus } from "@/generated/client/typ
 import type { DurableAuthorizationReceipt, VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
 import { ChevronDown, CircleAlert, CircleCheck, Clock3, Printer } from "lucide-react";
 import type { ReactNode } from "react";
-import { useIntl } from "react-intl";
+import { defineMessages, useIntl } from "react-intl";
+import type { CaseBrief } from "@/pages/credit/case-brief";
+import { caseHeadline, caseReason } from "@/pages/credit/case-brief-copy";
+import { CaseFacts, CaseNextStepPanel, CaseProgress } from "@/pages/credit/CaseBrief";
 import { Link } from "react-router";
 
 interface QuoteDetailCardProps {
   actions?: ReactNode;
   assessmentUnavailable?: boolean;
+  assessmentLoading?: boolean;
   noFitExplanation?: ReactNode;
   quote: AdminInfoReply;
   effectiveQuoteStatus: string;
@@ -29,24 +33,10 @@ interface QuoteDetailCardProps {
   mintOperationStatus?: MintOperationStatus;
   isMintOperationLoading?: boolean;
   decisionSummary?: {
+    brief: CaseBrief;
     assessmentCurrency: "current" | "historical";
     useOfFunds?: string;
     repaymentSource?: string;
-    readyForDecision: boolean;
-    closedWithoutAssessment?: boolean;
-    investigationPending?: boolean;
-    pendingEvidenceQuestions?: number;
-    investigationProposals?: {
-      available: number;
-      selected: number;
-    };
-    recommendation: "offer_available" | "no_current_product_fit" | null;
-    decisionBasis?: {
-      counterargument: string;
-      counterargumentOpen: boolean;
-      answerReviewFollowUpCount?: number;
-    };
-    applicantRequests?: { axis: string; requiredItem: string; owner?: string }[];
     billAcceptanceState?: string;
     recommendedTerms?: {
       mintingFee: number;
@@ -58,58 +48,40 @@ interface QuoteDetailCardProps {
   };
 }
 
+/** After the Mint decides, the quote status leads; these lines keep offer, minting and payment apart. */
+const statusReasonMessages = defineMessages({
+  Offered: {
+    id: "quotes.status.reason.offered",
+    defaultMessage: "Offer sent · waiting for the holder to accept or reject it.",
+    description: "An offer is not acceptance, minting or payment",
+  },
+  Accepted: {
+    id: "quotes.status.reason.accepted",
+    defaultMessage: "The holder accepted the offer. This is not minting, issued value or eBill payment.",
+    description: "Accepted quote status does not establish issued value or payment",
+  },
+  MintingEnabled: {
+    id: "quotes.status.reason.mintingEnabled",
+    defaultMessage: "Minting is permitted. Issued value and eBill payment are tracked separately.",
+    description: "Minting enabled does not establish issued value or payment",
+  },
+  OfferExpired: {
+    id: "quotes.status.reason.offerExpired",
+    defaultMessage: "The offer expired without being accepted.",
+    description: "Expired Mint offer",
+  },
+  Rejected: {
+    id: "quotes.status.reason.rejected",
+    defaultMessage: "The holder rejected the offer.",
+    description: "Holder rejected the Mint offer",
+  },
+});
+
 const formatLocalDateTime = (date: Date): string => {
   const pad = (value: number) => value.toString().padStart(2, "0");
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
-
-function ApplicantStatement({ label, value }: { label: string; value: string | undefined }) {
-  const intl = useIntl();
-  if (value === undefined || value.trim() === "")
-    return (
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-2 text-sm">
-          {intl.formatMessage({
-            id: "quotes.summary.answerMissing",
-            defaultMessage: "No answer recorded",
-            description: "Missing applicant answer is not fabricated",
-          })}
-        </p>
-      </div>
-    );
-  return (
-    <details data-print-statement className="group/statement min-w-0">
-      <summary className="cursor-pointer list-none marker:hidden">
-        <span className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          {label}
-          <span className="flex shrink-0 items-center gap-1 print:hidden">
-            <span className="group-open/statement:hidden">
-              {intl.formatMessage({
-                id: "quotes.summary.expandStatement",
-                defaultMessage: "Full answer",
-                description: "Expand the exact applicant answer",
-              })}
-            </span>
-            <span className="hidden group-open/statement:inline">
-              {intl.formatMessage({
-                id: "quotes.summary.collapseStatement",
-                defaultMessage: "Less",
-                description: "Collapse the applicant answer",
-              })}
-            </span>
-            <ChevronDown className="size-3 group-open/statement:rotate-180" aria-hidden="true" />
-          </span>
-        </span>
-        <span data-statement-preview className="mt-2 line-clamp-2 break-words text-sm leading-6 group-open/statement:hidden">
-          {value}
-        </span>
-      </summary>
-      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 print:hidden">{value}</p>
-    </details>
-  );
-}
 
 function LifecycleStage({
   label,
@@ -146,6 +118,7 @@ function LifecycleStage({
 export function QuoteDetailCard({
   actions,
   assessmentUnavailable = false,
+  assessmentLoading = false,
   noFitExplanation,
   quote,
   effectiveQuoteStatus,
@@ -167,8 +140,7 @@ export function QuoteDetailCard({
   const isHistoricalAssessment = decisionSummary?.assessmentCurrency !== undefined && decisionSummary.assessmentCurrency !== "current";
   const offerExpired =
     effectiveQuoteStatus === "Pending" &&
-    decisionSummary?.recommendation === "offer_available" &&
-    decisionSummary.recommendedTerms !== undefined &&
+    decisionSummary?.recommendedTerms !== undefined &&
     Date.parse(`${decisionSummary.recommendedTerms.offerExpiresOn}T23:59:59.999Z`) <= Date.now();
   const netProceeds = "discounted" in quote ? quote.discounted : null;
   const recommendedTerms = isHistoricalAssessment || offerExpired ? undefined : decisionSummary?.recommendedTerms;
@@ -286,116 +258,14 @@ export function QuoteDetailCard({
   const hasDurableReceipt = durableAuthorizationReceipt !== null && durableAuthorizationReceipt !== undefined;
   const hasSignedVerification = signedAuthorizationReceipt !== null && signedAuthorizationReceipt !== undefined;
   const durableExecutionCompleted = durableAuthorizationReceipt?.status === "completed";
-  const showDecisionStatus =
-    decisionSummary !== undefined && (effectiveQuoteStatus === "Pending" || decisionSummary.closedWithoutAssessment === true);
-  const pendingEvidenceQuestions = decisionSummary?.pendingEvidenceQuestions ?? 0;
-  const decisionHeadline = decisionSummary?.closedWithoutAssessment
-    ? intl.formatMessage({
-        id: "quotes.summary.unableToAssess",
-        defaultMessage: "Unable to assess",
-        description: "Primary operator status when unresolved evidence prevents a credit assessment without an adverse inference",
-      })
-    : decisionSummary?.investigationPending && !isHistoricalAssessment && !offerExpired
-      ? intl.formatMessage({
-          id: "quotes.summary.investigationPending",
-          defaultMessage: "Investigation incomplete",
-          description: "Answer investigation has not completed successfully",
-        })
-      : pendingEvidenceQuestions > 0 && !isHistoricalAssessment && !offerExpired
-        ? intl.formatMessage({
-            id: "quotes.summary.reviewEvidenceQuestions",
-            defaultMessage: "Review evidence",
-            description: "Evidence work needs review even though the pricing calculation may be complete",
-          })
-        : isHistoricalAssessment
-          ? intl.formatMessage({
-              id: "quotes.summary.evidenceRequired",
-              defaultMessage: "Evidence required",
-              description: "Primary operator status while current evidence work remains open",
-            })
-          : offerExpired
-            ? intl.formatMessage({
-                id: "quotes.summary.termsExpired",
-                defaultMessage: "Terms expired",
-                description: "Primary operator status when the prepared terms are no longer actionable",
-              })
-            : decisionSummary?.readyForDecision
-              ? intl.formatMessage({
-                  id: "quotes.summary.readyForOperatorDecision",
-                  defaultMessage: "Ready for operator decision",
-                  description: "Primary operator status when the current assessment can be acted on",
-                })
-              : intl.formatMessage({
-                  id: "quotes.summary.evidenceRequired",
-                  defaultMessage: "Evidence required",
-                  description: "Primary operator status while current evidence work remains open",
-                });
-  const decisionStatusLine = decisionSummary?.closedWithoutAssessment
-    ? intl.formatMessage({
-        id: "quotes.summary.unableToAssessCompact",
-        defaultMessage: "Material evidence unavailable · no adverse finding",
-        description: "Closed evidence-insufficient case distinguished from an adverse credit denial",
-      })
-    : decisionSummary?.investigationPending && !isHistoricalAssessment && !offerExpired
-      ? intl.formatMessage({
-          id: "quotes.summary.investigationOfferBlocked",
-          defaultMessage: "Check Investigation · offer blocked",
-          description: "An unfinished investigation cannot authorize an offer",
-        })
-      : pendingEvidenceQuestions > 0 && !isHistoricalAssessment && !offerExpired
-        ? intl.formatMessage(
-            {
-              id: "quotes.summary.unresolvedEvidenceQuestions",
-              defaultMessage:
-                "{count, plural, one {# evidence question unresolved} other {# evidence questions unresolved}} · offer blocked",
-              description: "Unresolved evidence is a preparation hold, not a credit denial",
-            },
-            { count: pendingEvidenceQuestions }
-          )
-        : isHistoricalAssessment
-          ? intl.formatMessage({
-              id: "quotes.summary.historicalAssessment",
-              defaultMessage: "Historical assessment · read-only",
-              description: "Retained assessment is read-only; no reason for its historical status is inferred",
-            })
-          : offerExpired && decisionSummary?.recommendedTerms
-            ? intl.formatMessage(
-                {
-                  id: "quotes.summary.expiredTermsCompact",
-                  defaultMessage: "Expired {date} · awaiting applicant request",
-                  description: "Expired terms require an applicant-initiated request",
-                },
-                { date: decisionSummary.recommendedTerms.offerExpiresOn }
-              )
-            : decisionSummary?.recommendation === "offer_available" && decisionSummary.readyForDecision && decisionSummary.recommendedTerms
-              ? intl.formatMessage(
-                  {
-                    id: "quotes.summary.currentTermsCompact",
-                    defaultMessage: "Terms valid through {date}",
-                    description: "Expiry of currently actionable proposed terms",
-                  },
-                  { date: decisionSummary.recommendedTerms.offerExpiresOn }
-                )
-              : decisionSummary?.recommendation === "no_current_product_fit"
-                ? intl.formatMessage({
-                    id: "quotes.summary.noFitCompact",
-                    defaultMessage: "No offer recommended",
-                    description: "Non-binding no-fit recommendation for the operator",
-                  })
-                : decisionSummary?.readyForDecision
-                  ? intl.formatMessage({
-                      id: "quotes.summary.manualReviewCompact",
-                      defaultMessage: "Manual review required",
-                      description: "Current assessment needs an operator review",
-                    })
-                  : intl.formatMessage({
-                      id: "quotes.summary.verificationCompact",
-                      defaultMessage: "Verification required",
-                      description: "Evidence preparation is incomplete",
-                    });
-  const applicantRequests = decisionSummary?.applicantRequests ?? [];
-  const decisionBasis = decisionSummary?.decisionBasis;
-  const investigationProposals = decisionSummary?.investigationProposals;
+  const brief = decisionSummary?.brief;
+  // The case brief speaks for a pending quote, and for a quote closed because evidence was unavailable.
+  const showBrief = brief !== undefined && (effectiveQuoteStatus === "Pending" || brief.next.kind === "closed");
+  const statusReason = statusReasonMessages[effectiveQuoteStatus as keyof typeof statusReasonMessages];
+  // The mint-complete query currently reads the eBill payment endpoint. It can confirm payment,
+  // but cannot establish redemption or issued/spendable value.
+  const paymentConfirmed = ebillPaid || (!isMintCompleteLoading && isMintComplete);
+  const showPaymentFacts = paymentConfirmed || (showPayment && (rejectedToPay || isInMempool === true || requestedToPay));
 
   return (
     <Card className="overflow-hidden">
@@ -410,16 +280,47 @@ export function QuoteDetailCard({
                       defaultMessage: "Assessment unavailable",
                       description: "Financial assessment failed to load, not a missing application",
                     })
-                  : showDecisionStatus
-                    ? decisionHeadline
-                    : effectiveQuoteStatus}
+                  : showBrief
+                    ? caseHeadline(intl, brief)
+                    : intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
               </h1>
-              {showDecisionStatus && <p className="mt-1 text-sm text-muted-foreground">{decisionStatusLine}</p>}
-              <Link to={`/bills/${quote.bill.id}`} className="mt-2 block min-w-0">
-                <Text variant="mono" monoSize="sm" className="break-all underline underline-offset-4">
-                  {quote.bill.id}
-                </Text>
+              {showBrief ? (
+                <div className="mt-1 max-w-3xl text-sm text-muted-foreground">
+                  {noFitExplanation && (brief.next.kind === "confirm_no_fit" || (brief.next.kind === "not_actionable" && brief.next.noFit))
+                    ? noFitExplanation
+                    : caseReason(intl, brief, bill.drawee.name)}
+                </div>
+              ) : (
+                statusReason !== undefined && (
+                  <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{intl.formatMessage(statusReason)}</p>
+                )
+              )}
+              {showPaymentFacts ? (
+                // Payment is separate from the quote status; this signal says nothing about redemption.
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge variant={paymentConfirmed ? "success" : rejectedToPay ? "destructive" : isInMempool ? "processing" : "info"}>
+                    {paymentConfirmed
+                      ? intl.formatMessage({ id: "quotes.payment.paid", defaultMessage: "Paid" })
+                      : rejectedToPay
+                        ? intl.formatMessage({ id: "quotes.summary.paymentRejected", defaultMessage: "Payment rejected" })
+                        : isInMempool
+                          ? intl.formatMessage({ id: "quotes.summary.paymentInMempool", defaultMessage: "Payment in mempool" })
+                          : intl.formatMessage({ id: "quotes.summary.paymentRequested", defaultMessage: "Payment requested" })}
+                  </Badge>
+                </div>
+              ) : null}
+              <Link
+                to={`/bills/${quote.bill.id}`}
+                title={quote.bill.id}
+                className="mt-2 inline-block text-xs text-muted-foreground underline underline-offset-4"
+              >
+                {intl.formatMessage({
+                  id: "quotes.summary.viewBill",
+                  defaultMessage: "View eBill",
+                  description: "Open the linked eBill record",
+                })}
               </Link>
+              <span className="hidden font-mono text-xs break-all print:block">{quote.bill.id}</span>
             </div>
             <Button
               type="button"
@@ -433,52 +334,11 @@ export function QuoteDetailCard({
               <Printer className="size-4" aria-hidden="true" />
             </Button>
           </div>
-          {showDecisionStatus &&
-            effectiveQuoteStatus !== "Denied" &&
-            investigationProposals !== undefined &&
-            investigationProposals.available > 0 && (
-              <section className="mt-4 rounded-lg border border-border bg-background/60 p-3 text-sm print:hidden">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium">
-                      {intl.formatMessage(
-                        {
-                          id: "quotes.summary.investigationProposals",
-                          defaultMessage:
-                            "{count, plural, one {# investigator follow-up} other {# investigator follow-ups}} ready for review",
-                          description: "Count of current completed investigator proposals not yet admitted into the applicant request",
-                        },
-                        { count: investigationProposals.available }
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {investigationProposals.selected > 0
-                        ? intl.formatMessage(
-                            {
-                              id: "quotes.summary.investigationSelected",
-                              defaultMessage: "{count} selected for the applicant request",
-                              description: "Count of investigator proposals selected but not yet admitted",
-                            },
-                            { count: investigationProposals.selected }
-                          )
-                        : intl.formatMessage({
-                            id: "quotes.summary.investigationNotSent",
-                            defaultMessage: "Not sent to the applicant",
-                            description: "Investigator proposals require explicit approver admission",
-                          })}
-                    </p>
-                  </div>
-                  <a className="shrink-0 font-medium text-primary hover:underline" href="#case-investigation">
-                    {intl.formatMessage({
-                      id: "quotes.summary.reviewInvestigationProposals",
-                      defaultMessage: "Review follow-ups",
-                      description: "Open the investigation panel before deciding whether to offer",
-                    })}
-                  </a>
-                </div>
-              </section>
-            )}
-          {actions && <div className="mt-4 print:hidden">{actions}</div>}
+          {showBrief ? (
+            <CaseNextStepPanel next={brief.next} actions={actions} />
+          ) : (
+            actions && <div className="mt-4 print:hidden">{actions}</div>
+          )}
         </header>
 
         <section className="grid grid-cols-2 border-t border-border bg-elevation-100 md:grid-cols-4">
@@ -549,91 +409,21 @@ export function QuoteDetailCard({
           </div>
         </section>
 
-        {decisionSummary ? (
-          <div>
-            <section className="border-b border-border px-6 py-5">
-              <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-sm font-semibold">
-                  {intl.formatMessage({ id: "quotes.summary.statedByApplicant", defaultMessage: "Business case" })}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {intl.formatMessage({
-                    id: "quotes.summary.applicantTier",
-                    defaultMessage: "Applicant answers · not independently confirmed",
-                    description: "Provenance of the stated purpose and repayment source, not verified facts",
-                  })}
-                </p>
-              </div>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <ApplicantStatement
-                  label={intl.formatMessage({ id: "quotes.summary.purpose", defaultMessage: "Use of proceeds" })}
-                  value={decisionSummary.useOfFunds}
-                />
-                <ApplicantStatement
-                  label={intl.formatMessage({ id: "quotes.summary.repayment", defaultMessage: "Repayment source" })}
-                  value={decisionSummary.repaymentSource}
-                />
-              </div>
-              <p className="mt-4 text-xs text-muted-foreground">
-                {intl.formatMessage(
-                  {
-                    id: "quotes.summary.protocolPayer",
-                    defaultMessage: "Payer at maturity (eBill): {name}",
-                    description: "Drawee named in the protocol record, not inferred applicant identity",
-                  },
-                  { name: bill.drawee.name }
-                )}
-              </p>
-            </section>
-            <section className="border-b border-border px-6 py-4">
-              {noFitExplanation && <div className="text-sm">{noFitExplanation}</div>}
-              {decisionBasis && applicantRequests.length === 0 && !noFitExplanation && (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    {intl.formatMessage({ id: "quotes.summary.counterargument", defaultMessage: "Residual uncertainty" })}
-                  </p>
-                  <p className={`mt-1 text-sm font-medium ${decisionBasis.counterargumentOpen ? "text-signal-alert" : ""}`}>
-                    {decisionBasis.counterargument}
-                  </p>
-                  {(decisionBasis.answerReviewFollowUpCount ?? 0) > 0 && (
-                    <p className="mt-3 text-sm text-signal-alert">
-                      {intl.formatMessage(
-                        {
-                          id: "quotes.summary.answerReviewUnverified",
-                          defaultMessage: "Answer-review follow-ups · resolution not independently checked",
-                          description: "Targeted interview questions remain unverified even when the applicant answered them",
-                        },
-                        { count: decisionBasis.answerReviewFollowUpCount }
-                      )}
-                    </p>
-                  )}
-                </>
-              )}
-
-              {applicantRequests.length > 0 && (
-                <section className="mt-3 border-l-2 border-signal-alert pl-3">
-                  <h4 className="text-xs font-semibold text-signal-alert">
-                    {intl.formatMessage({
-                      id: "quotes.summary.beforeDecision",
-                      defaultMessage: "Before a decision",
-                      description: "Open applicant, Mint and system requirements",
-                    })}
-                  </h4>
-                  <ul className="mt-2 space-y-2">
-                    {applicantRequests.map((request) => (
-                      <li key={`${request.axis}:${request.requiredItem}`} className="text-sm font-medium">
-                        {request.requiredItem}
-                        {request.owner && <span className="ml-2 text-xs font-normal text-muted-foreground">{request.owner}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-            </section>
-          </div>
+        {decisionSummary && brief ? (
+          <>
+            <CaseFacts
+              brief={brief}
+              billAcceptanceState={decisionSummary.billAcceptanceState}
+              payerName={bill.drawee.name}
+              drawerName={bill.drawer.name}
+              useOfFunds={decisionSummary.useOfFunds}
+              repaymentSource={decisionSummary.repaymentSource}
+            />
+            {showBrief && brief.next.kind !== "closed" && <CaseProgress work={brief.work} />}
+          </>
         ) : (
           <p
-            role={assessmentUnavailable ? "alert" : undefined}
+            role={assessmentUnavailable ? "alert" : assessmentLoading ? "status" : undefined}
             className={`px-6 py-5 text-sm ${assessmentUnavailable ? "text-signal-alert" : "text-muted-foreground"}`}
           >
             {assessmentUnavailable
@@ -642,10 +432,16 @@ export function QuoteDetailCard({
                   defaultMessage: "Assessment unavailable. Do not offer until it can be loaded.",
                   description: "Fail-closed error when the deterministic assessment cannot be loaded",
                 })
-              : intl.formatMessage({
-                  id: "quotes.summary.unavailable",
-                  defaultMessage: "No business assessment is available for this quote.",
-                })}
+              : assessmentLoading
+                ? intl.formatMessage({
+                    id: "quotes.summary.loadingAssessment",
+                    defaultMessage: "Loading the case assessment…",
+                    description: "The governed assessment is still loading; its absence is not yet known",
+                  })
+                : intl.formatMessage({
+                    id: "quotes.summary.unavailable",
+                    defaultMessage: "No business assessment is available for this quote.",
+                  })}
           </p>
         )}
 
@@ -801,55 +597,33 @@ export function QuoteDetailCard({
           </div>
 
           <footer className="flex flex-col gap-4 border-t border-border px-6 py-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2">
-                  <Text variant="label" className="w-32">
-                    {intl.formatMessage({ id: "participants.role.drawee", defaultMessage: "Drawee" })}:
-                  </Text>
-                  <ParticipantDetail participant={bill.drawee} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Text variant="label" className="w-32">
-                    {intl.formatMessage({ id: "participants.role.drawer", defaultMessage: "Drawer" })}:
-                  </Text>
-                  <ParticipantDetail participant={bill.drawer} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Text variant="label" className="w-32">
-                    {intl.formatMessage({ id: "participants.role.payee", defaultMessage: "Payee" })}:
-                  </Text>
-                  <ParticipantDetail participant={bill.payee} />
-                </div>
-                {bill.endorsees && bill.endorsees.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Text variant="label" className="w-32">
-                      {intl.formatMessage({ id: "participants.role.holder", defaultMessage: "Holder" })}:
-                    </Text>
-                    <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
-                  </div>
-                )}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Text variant="label" className="w-32">
+                  {intl.formatMessage({ id: "participants.role.drawee", defaultMessage: "Drawee" })}:
+                </Text>
+                <ParticipantDetail participant={bill.drawee} />
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {showPayment && (ebillPaid || rejectedToPay || isInMempool === true || requestedToPay) && (
-                  <Badge variant={ebillPaid ? "success" : rejectedToPay ? "destructive" : isInMempool ? "processing" : "info"}>
-                    {ebillPaid
-                      ? intl.formatMessage({ id: "quotes.payment.paid", defaultMessage: "Paid" })
-                      : rejectedToPay
-                        ? intl.formatMessage({ id: "quotes.payment.rejected", defaultMessage: "Payment rejected" })
-                        : isInMempool
-                          ? intl.formatMessage({ id: "quotes.payment.inMempool", defaultMessage: "Payment in mempool" })
-                          : intl.formatMessage({ id: "quotes.payment.requested", defaultMessage: "Payment requested" })}
-                  </Badge>
-                )}
-                {ebillPaid && (
-                  <Badge variant={!isMintCompleteLoading && isMintComplete ? "success" : "pending"}>
-                    {!isMintCompleteLoading && isMintComplete
-                      ? intl.formatMessage({ id: "quotes.redemption.complete", defaultMessage: "Redemption complete" })
-                      : intl.formatMessage({ id: "quotes.redemption.pending", defaultMessage: "Redemption pending" })}
-                  </Badge>
-                )}
+              <div className="flex items-center gap-2">
+                <Text variant="label" className="w-32">
+                  {intl.formatMessage({ id: "participants.role.drawer", defaultMessage: "Drawer" })}:
+                </Text>
+                <ParticipantDetail participant={bill.drawer} />
               </div>
+              <div className="flex items-center gap-2">
+                <Text variant="label" className="w-32">
+                  {intl.formatMessage({ id: "participants.role.payee", defaultMessage: "Payee" })}:
+                </Text>
+                <ParticipantDetail participant={bill.payee} />
+              </div>
+              {bill.endorsees && bill.endorsees.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Text variant="label" className="w-32">
+                    {intl.formatMessage({ id: "participants.role.holder", defaultMessage: "Holder" })}:
+                  </Text>
+                  <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
+                </div>
+              )}
             </div>
           </footer>
         </details>

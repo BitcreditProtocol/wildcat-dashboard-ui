@@ -85,6 +85,7 @@ export type DecisionTerms = SharedDecisionTerms;
 export type SubmittedEvidence = EvidenceReference;
 export type InterviewTranscript = SharedInterviewTranscript;
 export type LiveInterviewProgress = NonNullable<OperatorWorkbenchDecisionCase["liveInterview"]>;
+export type ServerClarificationObservation = NonNullable<OperatorWorkbenchDecisionCase["serverClarificationDialogues"]>[number];
 
 /** Questions are recorded observations, never evidence that the concern was resolved. */
 export function countAnswerReviewFollowUps(...transcripts: readonly (Pick<InterviewTranscript, "messages"> | undefined)[]): number {
@@ -206,8 +207,13 @@ export interface DecisionCase {
   interviewTranscript?: InterviewTranscript;
   interviewHistory?: InterviewTranscript[];
   liveInterview?: LiveInterviewProgress;
+  serverClarificationDialogues?: OperatorWorkbenchDecisionCase["serverClarificationDialogues"];
   informationNeeds?: OperatorWorkbenchDecisionCase["informationNeeds"];
+  historicalInformationNeeds?: OperatorWorkbenchDecisionCase["historicalInformationNeeds"];
   caseInvestigation?: OperatorWorkbenchDecisionCase["caseInvestigation"];
+  automaticInformationRequest?: OperatorWorkbenchDecisionCase["automaticInformationRequest"];
+  informationRequests?: OperatorWorkbenchDecisionCase["informationRequests"];
+  casePreparation?: OperatorWorkbenchDecisionCase["casePreparation"];
   availableMaterialEvidence?: ApplicantMaterialEvidence[];
   applicantHumanReview?: ApplicantHumanReviewRecord;
   mintDenial?: MintQuoteDenialStatus;

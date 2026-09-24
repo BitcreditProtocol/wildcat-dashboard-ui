@@ -1,3 +1,4 @@
+import { firstRun } from "@/pages/credit/case-history.test-fixtures";
 import { act, type ReactElement } from "react";
 import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
@@ -380,7 +381,8 @@ describe("QuotePage", () => {
     quoteStatus = "Pending";
     const page = renderPage(`/quotes/${quoteId}`);
     const summary = page.querySelector("#minting-summary");
-    expect(summary?.textContent).toContain("Before a decision");
+    expect(summary?.querySelector("header h1")?.textContent).toBe("Applicant information needed");
+    expect(summary?.textContent).toContain("Next step · You");
     expect(summary?.textContent).toContain("Refresh acceptor evidence");
     expect(summary?.textContent).toContain("Confirm recourse");
     expect(summary?.textContent).toContain("No answer recorded");
@@ -410,7 +412,37 @@ describe("QuotePage", () => {
     const summary = page.querySelector("#minting-summary");
     expect(summary?.textContent).toContain("No offer recommended");
     expect(summary?.textContent).toContain("Product unavailable");
-    expect(summary?.textContent).not.toContain("Repayment source not independently confirmed");
+    expect(summary?.textContent).not.toContain("not independently confirmed");
+  });
+
+  it.each(["Pending", "MintingEnabled"] as const)("does not make the operator dispatch agent proposals (%s)", (status) => {
+    const fixture = caseWithoutConfirmation();
+    const submissionDigest = `sha256:${"d".repeat(64)}`;
+    const withProposal: DecisionCase = {
+      ...fixture,
+      submissionDigest,
+      caseInvestigation: {
+        status: "completed",
+        runs: [
+          {
+            ...firstRun,
+            caseId: fixture.snapshot.caseId,
+            submissionDigest,
+            resultDigest: fixture.resultDigest,
+          },
+        ],
+      },
+    };
+    const original = mockUseQuery.getMockImplementation();
+    mockUseQuery.mockImplementation((options) =>
+      options.queryKey[0]._id === undefined
+        ? { data: { issues: [], cases: [withProposal] }, isLoading: false, error: null }
+        : (original?.(options) ?? { data: undefined, isLoading: false, error: null })
+    );
+    quoteStatus = status;
+    const page = renderPage(`/quotes/${quoteId}`);
+    expect(page.textContent).not.toContain("Include in applicant request");
+    expect(page.textContent).toContain("Case history");
   });
 
   it("prints assessment failure as unavailable, not an absent case", () => {
@@ -550,12 +582,17 @@ describe("QuotePage", () => {
 
   it("puts one action surface before the open evidence workspace", () => {
     const page = renderPage(`/quotes/${quoteId}`);
-    expect(page.textContent).toContain("Evidence");
-    expect(page.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Evidence");
-    expect(page.querySelectorAll('[role="tab"]')).toHaveLength(5);
+    // Tab labels without the Review tab's optional outstanding-work count.
+    const tabs = Array.from(page.querySelectorAll('[role="tab"]')).map((tab) => tab.textContent?.replace(/\d+$/u, ""));
+    expect(tabs).toEqual(["Review", "Case history", "Calculation", "Bill record"]);
+    expect(page.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toMatch(/^Review\d*$/u);
     expect(page.textContent?.match(/QuoteActionsMock/g)).toHaveLength(1);
     const content = page.textContent ?? "";
-    expect(content.indexOf("QuoteActionsMock")).toBeLessThan(content.indexOf("Evidence"));
+    expect(content.indexOf("QuoteActionsMock")).toBeLessThan(content.indexOf("Case history"));
+    // Case history is a record; review forms and proposal selection live only in the Review tab.
+    const history = page.querySelector("#case-history");
+    expect(history).not.toBeNull();
+    expect(history?.querySelectorAll("input, select, textarea")).toHaveLength(0);
   });
 
   it("opens minted bill documents with the attachment endpoint", async () => {

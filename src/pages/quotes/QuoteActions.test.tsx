@@ -7,6 +7,7 @@ import type { OfferFormResult } from "./components/OfferFormDrawer";
 import type { ApplicantHumanReviewRecord, DecisionCase, OperatorMaterialEvidenceSelection } from "@/pages/credit/decision-types";
 import type {
   MintRiskAssessmentInput,
+  ApplicantQuestionInput,
   OperatorCapability,
   OperatorDecisionInput,
   OperatorDecisionSuccess,
@@ -16,13 +17,7 @@ import type {
 import type { InfoReply } from "@/generated/client/types.gen";
 import { ApiError } from "@/lib/api-error";
 import Big from "big.js";
-import {
-  caseInvestigationRunSchema,
-  informationNeedRequestItem,
-  informationNeedRequiredItems,
-  type InformationNeed,
-  type InvestigationNeedSelection,
-} from "@bitcredit/ai-credit-shared";
+import { caseInvestigationRunSchema, type InformationNeed, type InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
 
 const { mockToast } = vi.hoisted(() => ({ mockToast: vi.fn<(input: { title: string; variant: string }) => void>() }));
 vi.mock("@bitcredit/ui-library", async (importOriginal) => ({
@@ -46,6 +41,10 @@ const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
 const mockInvalidateQueries = vi.fn();
 const mockRecordOperatorDecision =
   vi.fn<(input: OperatorDecisionInput) => Promise<OperatorDecisionSuccess | { ok: false; error: string }>>();
+const mockAskApplicant =
+  vi.fn<
+    (input: ApplicantQuestionInput, capability: OperatorCapability | undefined) => Promise<{ ok: true } | { ok: false; error: string }>
+  >();
 const mockRecordMintRiskAssessment =
   vi.fn<
     (input: MintRiskAssessmentInput, capability: OperatorCapability | undefined) => Promise<{ ok: true } | { ok: false; error: string }>
@@ -134,6 +133,25 @@ vi.mock("./components/DenyConfirmDrawer", () => ({
   },
 }));
 
+vi.mock("./components/RequestInformationDrawer", () => ({
+  RequestInformationDrawer: ({
+    children,
+    onSubmit,
+    onOpenChange,
+    open,
+  }: {
+    children: ReactNode;
+    onSubmit: (question: string) => void;
+    onOpenChange: (open: boolean) => void;
+    open: boolean;
+  }) => {
+    returnInfoSubmit = onSubmit;
+    returnInfoOpenChange = onOpenChange;
+    returnInfoOpen = open;
+    return children;
+  },
+}));
+
 vi.mock("./components/MintRiskAssessmentDrawer", () => ({
   MintRiskAssessmentDrawer: ({ children }: { children: ReactNode }) => children,
 }));
@@ -190,6 +208,7 @@ vi.mock("@/pages/credit/record-operator-decision", async (importOriginal) => ({
   operatorMayRecordDecision: (capability: OperatorCapability | undefined, action: string) =>
     capability?.operatorRole === "approver" || (capability?.operatorRole === "reviewer" && action === "return_for_information"),
   recordOperatorDecision: (input: OperatorDecisionInput) => mockRecordOperatorDecision(input),
+  askApplicant: (input: ApplicantQuestionInput, capability: OperatorCapability | undefined) => mockAskApplicant(input, capability),
   recordMintRiskAssessment: (input: MintRiskAssessmentInput, capability: OperatorCapability | undefined) =>
     mockRecordMintRiskAssessment(input, capability),
   retryOperatorVerificationSources: (
@@ -230,6 +249,7 @@ const pendingQuote = { ...acceptedQuote, status: "Pending" } as InfoReply;
 
 const governedOffer = {
   assessmentCurrency: "current",
+  submissionDigest: `sha256:${"e".repeat(64)}`,
   mintQuoteId: "quote-1",
   snapshot: { caseId: "case-offer", bill: { billId: "bill-1" } },
   creditProgram: {
@@ -333,6 +353,7 @@ function humanReview(
 
 const offerData = {
   governance: {
+    submissionDigest: governedOffer.submissionDigest,
     billId: "bill-1",
     caseId: "case-offer",
     decisionResultDigest: `sha256:${"a".repeat(64)}`,
@@ -429,6 +450,15 @@ afterEach(() => {
     container = null;
   }
 });
+function cleanupRender() {
+  act(() => {
+    root?.unmount();
+  });
+  container?.remove();
+  root = null;
+  container = null;
+}
+
 function rerenderComponent(value = acceptedQuote) {
   if (root === null) throw new Error("Quote actions are not mounted");
   act(() => {
@@ -468,6 +498,7 @@ beforeEach(() => {
     )
   );
   mockHandleDenyQuote.mockResolvedValue(true);
+  mockAskApplicant.mockResolvedValue({ ok: true });
   mockHandleOfferQuote.mockResolvedValue(true);
   mockRecordMintRiskAssessment.mockResolvedValue({ ok: true });
   mockRetryOperatorVerificationSources.mockResolvedValue({ ok: true });
@@ -484,6 +515,12 @@ beforeEach(() => {
 });
 
 describe("QuoteActions", () => {
+  it("does not offer an applicant question without the submission binding", () => {
+    decisionCase = { ...governedOffer, submissionDigest: undefined };
+    const page = renderComponent(pendingQuote);
+    expect(page.textContent).not.toContain("Ask an additional question");
+  });
+
   it.each(["open", "exhausted"] as const)("routes %s evidence to non-adverse actions instead of Offer", async (status) => {
     const need: InformationNeed = {
       schemaVersion: "information-need-v1",
@@ -500,20 +537,89 @@ describe("QuoteActions", () => {
     const buttons = Array.from(page.querySelectorAll("button")).map((button) => button.textContent);
     expect(buttons).not.toContain("Offer");
     expect(buttons).not.toContain("Deny");
-    expect(buttons).toContain("Request information from applicant");
+    expect(buttons).toContain("Ask an additional question");
     expect(buttons).toContain("Close — unable to assess");
-    expect(page.querySelector('a[href="#evidence-questions"]')).not.toBeNull();
+    // The decision card's "Before a decision" list owns the single link to the questions.
+    expect(page.querySelector('a[href="#evidence-questions"]')).toBeNull();
     await act(async () => {
       returnInfoSubmit?.("Please provide the supporting sales records or explain their absence.");
       await Promise.resolve();
     });
-    expect(mockRecordOperatorDecision).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "return_for_information",
-        requiredItems: informationNeedRequiredItems([need], { caseId: need.caseId, resultDigest: governedOffer.resultDigest }),
-      })
+    expect(mockAskApplicant).toHaveBeenCalledWith(
+      expect.objectContaining({ question: "Please provide the supporting sales records or explain their absence." }),
+      operatorCapability
     );
+    expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+  });
+
+  it("keeps manual exceptions collapsed unless they are the case's next step", () => {
+    const need: InformationNeed = {
+      schemaVersion: "information-need-v1",
+      caseId: governedOffer.snapshot.caseId,
+      preparedInputId: "11111111-1111-4111-8111-111111111111",
+      needId: `sha256:${"f".repeat(64)}`,
+      question: "What supports the sales?",
+      objective: { kind: "sales_evidence", sources: [{ answerIndex: 0, quote: "Coffee sales" }] },
+      response: "The invoice is the only record.",
+      status: "open",
+      reviewIsStale: false,
+    };
+    const placement = (label: string) => {
+      const button = Array.from(document.querySelectorAll("button")).find((candidate) => candidate.textContent?.startsWith(label));
+      if (button === undefined) return "absent";
+      const details = button.closest("details");
+      return details === null ? "primary" : details.open ? "open exception" : "collapsed exception";
+    };
+
+    // Applicant replies await a reviewer: asking again or closing are exceptions.
+    decisionCase = { ...governedOffer, informationNeeds: [need] };
+    renderComponent(pendingQuote);
+    expect(placement("Ask an additional question")).toBe("collapsed exception");
+    expect(placement("Close — unable to assess")).toBe("collapsed exception");
+    expect(document.querySelector("details summary")?.textContent).toBe("More actions");
+    cleanupRender();
+
+    // Applicant-owned checks: sending the request is the next step; closing stays an exception.
+    decisionCase = governedVerification;
+    renderComponent(pendingQuote);
+    expect(placement("Ask an additional question")).toBe("collapsed exception");
+    expect(placement("Close — unable to assess")).toBe("collapsed exception");
+    cleanupRender();
+
+    // Mint risk owns the blocker: nothing to do here except the collapsed closure.
+    decisionCase = governedMintRiskVerification;
+    renderComponent(pendingQuote);
+    expect(placement("Close — unable to assess")).toBe("collapsed exception");
+    cleanupRender();
+
+    // Evidence ended unavailable: asking again or closing is the operator's actual choice.
+    decisionCase = {
+      ...governedOffer,
+      informationNeeds: [
+        {
+          ...need,
+          status: "exhausted",
+          review: {
+            schemaVersion: "information-need-review-v2",
+            needId: need.needId,
+            caseId: need.caseId,
+            resultDigest: governedOffer.resultDigest,
+            submissionDigest: `sha256:${"e".repeat(64)}`,
+            outcome: "exhausted",
+            basis: "The applicant has no sales records beyond the invoice.",
+            evidenceDigests: [],
+            reviewedBy: "reviewer-1",
+            reviewerRole: "reviewer",
+            reviewedAt: "2026-09-22T10:00:00.000Z",
+          },
+        },
+      ],
+    };
+    renderComponent(pendingQuote);
+    expect(placement("Ask an additional question")).toBe("collapsed exception");
+    expect(placement("Close — unable to assess")).toBe("primary");
+    expect(document.querySelector("details")).not.toBeNull();
   });
 
   it.each([governedOffer, governedVerification])(
@@ -540,7 +646,7 @@ describe("QuoteActions", () => {
     }
   );
 
-  it("admits an exact current investigator proposal through the governed information return", async () => {
+  it("sends the operator's actual question without turning selected agent proposals into a financial decision", async () => {
     const submissionDigest = `sha256:${"9".repeat(64)}`;
     const run = caseInvestigationRunSchema.parse({
       schemaVersion: "case-investigation-run-v1",
@@ -561,23 +667,24 @@ describe("QuoteActions", () => {
     const submitted = vi.fn();
     const selection = [{ runId: run.runId, needIndex: 0 }];
     const page = renderComponent(pendingQuote, undefined, selection, submitted);
-    expect(page.textContent).toContain("Request information from applicant");
+    // The selected proposal is counted because it is one of the items sent below.
+    expect(Array.from(page.querySelectorAll("button")).map((button) => button.textContent)).toContain("Ask an additional question");
 
     await act(async () => {
       returnInfoSubmit?.("Confirm the sales relied on by the repayment story through the applicant evidence channel.");
       await Promise.resolve();
     });
-    expect(mockRecordOperatorDecision).toHaveBeenCalledWith({
-      billId: "bill-1",
-      caseId: "case-offer",
-      decisionResultDigest: governedOffer.resultDigest,
-      action: "return_for_information",
-      reasonCode: "operator_returned_for_information",
-      writtenBasis: "Confirm the sales relied on by the repayment story through the applicant evidence channel.",
-      requiredItems: [informationNeedRequestItem("sales_evidence")],
-      investigationNeeds: selection,
-      submissionDigest,
-    });
+    expect(mockAskApplicant).toHaveBeenCalledWith(
+      {
+        billId: "bill-1",
+        caseId: "case-offer",
+        decisionResultDigest: governedOffer.resultDigest,
+        question: "Confirm the sales relied on by the repayment story through the applicant evidence channel.",
+        submissionDigest,
+      },
+      operatorCapability
+    );
+    expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
     expect(submitted).toHaveBeenCalledTimes(1);
   });
 
@@ -719,13 +826,13 @@ describe("QuoteActions", () => {
     expect(denyButton?.title).toContain("no current evidence");
   });
 
-  it("allows a reviewer to return verification work but not decide the quote", () => {
+  it("allows a reviewer to ask an additional question but not decide the quote", () => {
     decisionCase = governedVerification;
     operatorCapability = { ready: true, operatorId: "reviewer-123", operatorRole: "reviewer" };
     const page = renderComponent(pendingQuote);
     const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
     const returnButton = Array.from(page.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Request information from applicant")
+      button.textContent?.includes("Ask an additional question")
     );
 
     expect(denyButton).toBeUndefined();
@@ -1081,6 +1188,7 @@ describe("QuoteActions", () => {
     expect(mockRecordOperatorDecision).toHaveBeenLastCalledWith({
       billId: "bill-1",
       caseId: "case-no-fit",
+      submissionDigest: governedNoFit.submissionDigest,
       decisionResultDigest: `sha256:${"b".repeat(64)}`,
       action: "confirm_no_current_product_fit",
       reasonCode: "operator_confirmed_no_current_product_fit",
@@ -1124,6 +1232,7 @@ describe("QuoteActions", () => {
       caseId: "case-offer",
       decisionResultDigest: `sha256:${"a".repeat(64)}`,
       action: "decline_application",
+      submissionDigest: governedOffer.submissionDigest,
       reasonCode: "operator_declined_governed_offer",
       writtenBasis: "Reviewed the governed offer and declined this application.",
       materialEvidence: [{ kind: "submitted_document", reference: "invoice-a" }],
@@ -1166,15 +1275,15 @@ describe("QuoteActions", () => {
     expect(closeUnableSubmit).toBeUndefined();
   });
 
-  it("shows fail-closed Deny and governs Return for information with the named verification items", async () => {
+  it("keeps the financial decision blocked but allows a manual question without a decision basis", async () => {
     decisionCase = governedVerification;
-    mockRecordOperatorDecision.mockResolvedValueOnce({ ok: false, error: "adapter unavailable" }).mockResolvedValueOnce({ ok: true });
+    mockAskApplicant.mockResolvedValueOnce({ ok: false, error: "adapter unavailable" }).mockResolvedValueOnce({ ok: true });
     const page = renderComponent(pendingQuote);
     const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
 
     expect(denyButton).toBeUndefined();
     expect(page.textContent).not.toContain("Offer");
-    expect(page.textContent).toContain("Request information from applicant");
+    expect(page.textContent).toContain("Ask an additional question");
 
     act(() => {
       returnInfoOpenChange?.(true);
@@ -1189,16 +1298,17 @@ describe("QuoteActions", () => {
       returnInfoSubmit?.("The named verification items must be supplied before a decision.");
       await Promise.resolve();
     });
-    expect(mockRecordOperatorDecision).toHaveBeenLastCalledWith({
-      billId: "bill-1",
-      caseId: "case-offer",
-      decisionResultDigest: `sha256:${"a".repeat(64)}`,
-      action: "return_for_information",
-      reasonCode: "operator_returned_for_information",
-      writtenBasis: "The named verification items must be supplied before a decision.",
-      requiredItems: ["Signed delivery receipt", "Current acceptor financials"],
-      investigationNeeds: [],
-    });
+    expect(mockAskApplicant).toHaveBeenLastCalledWith(
+      {
+        billId: "bill-1",
+        caseId: "case-offer",
+        decisionResultDigest: `sha256:${"a".repeat(64)}`,
+        submissionDigest: governedVerification.submissionDigest,
+        question: "The named verification items must be supplied before a decision.",
+      },
+      operatorCapability
+    );
+    expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
     expect(mockHandleDenyQuote).not.toHaveBeenCalled();
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();
     expect(returnInfoOpen).toBe(false);

@@ -2,16 +2,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bitcredit/ui-library"
 import { useEffect, useState, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 
-const panels = ["evidence", "conversation", "investigation", "calculation", "record"] as const;
+const panels = ["review", "history", "calculation", "record"] as const;
 type Panel = (typeof panels)[number];
 const messages = defineMessages({
   workspace: { id: "quotes.workspace.label", defaultMessage: "Case details", description: "Accessible label for the case workspace tabs" },
-  evidence: { id: "quotes.workspace.evidence", defaultMessage: "Evidence", description: "Case evidence tab" },
-  investigation: { id: "quotes.workspace.investigation", defaultMessage: "Investigation", description: "Read-only investigation work tab" },
-  conversation: {
-    id: "quotes.workspace.conversation",
-    defaultMessage: "Conversation",
-    description: "Read-only applicant conversation tab",
+  review: {
+    id: "quotes.workspace.review",
+    defaultMessage: "Review",
+    description: "Tab holding evidence-review forms, proposed follow-up selection and submitted evidence",
+  },
+  reviewCount: {
+    id: "quotes.workspace.reviewCount",
+    defaultMessage: "{count, plural, one {# item to review} other {# items to review}}",
+    description: "Accessible count of unresolved evidence questions and unsent proposed follow-ups on the Review tab",
+  },
+  history: {
+    id: "quotes.workspace.history",
+    defaultMessage: "Case history",
+    description: "Read-only tab with recorded applicant conversations, answer reviews and public research",
   },
   calculation: {
     id: "quotes.workspace.calculation",
@@ -22,18 +30,24 @@ const messages = defineMessages({
 });
 
 function panelForHash(hash: string): Panel | undefined {
-  if (hash === "#documents-and-evidence" || hash === "#evidence-questions") return "evidence";
-  if (hash === "#case-conversation") return "conversation";
-  if (hash === "#case-investigation") return "investigation";
+  if (
+    hash === "#documents-and-evidence" ||
+    hash === "#evidence-questions" ||
+    hash === "#proposed-follow-ups" ||
+    hash === "#case-preparation"
+  )
+    return "review";
+  if (hash === "#case-conversation" || hash === "#case-investigation" || hash === "#case-history" || hash === "#public-research")
+    return "history";
   if (hash === "#full-governed-assessment") return "calculation";
   if (hash === "#bill-record") return "record";
   return undefined;
 }
 
 /** One workspace; inactive panels stay mounted so review drafts survive navigation. */
-export function CaseWorkspace(props: Record<Exclude<Panel, "investigation">, ReactNode> & { investigation?: ReactNode }) {
+export function CaseWorkspace(props: Record<Panel, ReactNode> & { reviewCount?: number }) {
   const intl = useIntl();
-  const [active, setActive] = useState<Panel>(() => panelForHash(window.location.hash) ?? "evidence");
+  const [active, setActive] = useState<Panel>(() => panelForHash(window.location.hash) ?? "review");
   const [pendingAnchor, setPendingAnchor] = useState<string>();
   useEffect(() => {
     const revealHash = (hash: string) => {
@@ -70,6 +84,7 @@ export function CaseWorkspace(props: Record<Exclude<Panel, "investigation">, Rea
     });
     return () => cancelAnimationFrame(frame);
   }, [pendingAnchor, props]);
+  const reviewCount = props.reviewCount ?? 0;
 
   return (
     <Tabs
@@ -85,11 +100,19 @@ export function CaseWorkspace(props: Record<Exclude<Panel, "investigation">, Rea
     >
       <TabsList
         aria-label={intl.formatMessage(messages.workspace)}
-        className="grid h-auto w-full grid-cols-2 gap-1 rounded-none border-b border-border bg-transparent p-2 sm:grid-cols-5"
+        className="grid h-auto w-full grid-cols-2 gap-1 rounded-none border-b border-border bg-transparent p-2 sm:grid-cols-4"
       >
         {panels.map((panel) => (
-          <TabsTrigger key={panel} value={panel} className="min-w-0 px-2 py-2 text-sm">
+          <TabsTrigger key={panel} value={panel} className="min-w-0 gap-2 px-2 py-2 text-sm">
             {intl.formatMessage(messages[panel])}
+            {panel === "review" && reviewCount > 0 && (
+              <span
+                className="rounded-full bg-signal-alert/15 px-1.5 text-xs font-medium tabular-nums text-signal-alert"
+                aria-label={intl.formatMessage(messages.reviewCount, { count: reviewCount })}
+              >
+                {intl.formatNumber(reviewCount)}
+              </span>
+            )}
           </TabsTrigger>
         ))}
       </TabsList>

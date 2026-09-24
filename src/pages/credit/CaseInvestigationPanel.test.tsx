@@ -31,12 +31,7 @@ function render(
   act(() => {
     root?.render(
       <IntlProvider locale="en">
-        <CaseInvestigationPanel
-          decisionCase={decisionCase}
-          selectedNeeds={options.selectedNeeds ?? []}
-          onSelectedNeedsChange={options.onSelectedNeedsChange ?? (() => undefined)}
-          selectionDisabled={options.selectionDisabled ?? false}
-        />
+        <CaseInvestigationPanel decisionCase={decisionCase} updatesStatus={options.updatesStatus} />
       </IntlProvider>
     );
   });
@@ -51,6 +46,19 @@ it("does not manufacture agent work for cases without receipts", () => {
   expect(page.textContent).toContain("No optional answer review");
   expect(page.querySelectorAll("article")).toHaveLength(0);
 });
+it("hosts public research alongside answer review and preserves unavailable update status", () => {
+  const page = render(
+    {
+      resultDigest: run.resultDigest,
+      claimInvestigation: { status: "running", inputDigest: run.submissionDigest, modelId: "test-reviewer" },
+    },
+    { updatesStatus: "unavailable" }
+  );
+  expect(page.textContent).toContain("Public-source research");
+  expect(page.textContent).toContain("Updates unavailable · showing saved activity");
+  expect(page.textContent).toContain("Last recorded: Checking public context");
+  expect(page.textContent).not.toContain("Live updates");
+});
 it("shows actual source-bound proposals, escapes source content and links to the real conversation", () => {
   const page = render({
     resultDigest: run.resultDigest,
@@ -64,40 +72,17 @@ it("shows actual source-bound proposals, escapes source content and links to the
   expect(page.querySelector("blockquote")?.textContent).toContain("<img");
   expect(page.querySelector('a[href="#case-conversation"]')).not.toBeNull();
 });
-it("lets an authorized host select a current proposal without turning model prose into a request", () => {
-  let selected: Parameters<typeof CaseInvestigationPanel>[0]["selectedNeeds"] = [];
-  const page = render(
-    {
-      resultDigest: run.resultDigest,
-      submissionDigest: run.submissionDigest,
-      caseInvestigation: { status: "completed", runs: [run] },
-    },
-    { onSelectedNeedsChange: (value) => (selected = value) }
-  );
-  const checkbox = page.querySelector<HTMLInputElement>('input[type="checkbox"]');
-  expect(checkbox).not.toBeNull();
-  act(() => checkbox?.click());
-  expect(selected).toEqual([{ runId: run.runId, needIndex: 0 }]);
-  expect(page.querySelector("img")).toBeNull();
-});
-it("previews governed admission guidance with human-readable response paths", () => {
-  const page = render(
-    {
-      resultDigest: run.resultDigest,
-      submissionDigest: run.submissionDigest,
-      caseInvestigation: { status: "completed", runs: [run] },
-    },
-    { selectedNeeds: [{ runId: run.runId, needIndex: 0 }] }
-  );
-  expect(page.textContent).toContain("Applicant request preview");
-  expect(page.textContent).toContain("Establish the composition of the applicant's stated costs.");
-  expect(page.textContent).toContain("Correct the answer");
-  expect(page.textContent).toContain("Upload supporting evidence");
-  expect(page.textContent).toContain("Explain why evidence is unavailable");
-  expect(page.textContent).toContain("A reviewer reconciles the cost breakdown to cited evidence");
-  expect(page.textContent).not.toContain("correct_answer");
-  expect(page.textContent).not.toContain("upload_supporting_document");
-  expect(page.textContent).not.toContain("explain_evidence_unavailable");
+it("is a read-only record: a current proposal renders without any selection control", () => {
+  const page = render({
+    resultDigest: run.resultDigest,
+    submissionDigest: run.submissionDigest,
+    caseInvestigation: { status: "completed", runs: [run] },
+  });
+  expect(page.textContent).toContain("Proposed follow-up");
+  expect(page.textContent).toContain("test-reviewer · case-answer-review-v1");
+  expect(page.querySelectorAll("input, select, textarea, button")).toHaveLength(0);
+  expect(page.textContent).not.toContain("Include in applicant request");
+  expect(page.textContent).not.toContain("Applicant request preview");
 });
 it("marks old findings as previous input and does not imply an interrupted run succeeded", () => {
   const stopped = { ...run, status: "interrupted" as const, needs: [], stoppingReason: "interrupted" as const };

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchOperatorCapability,
+  askApplicant,
   durableAuthorizationReceiptFromQuote,
   operatorMayRecordDecision,
   recordMintRiskAssessment,
@@ -18,6 +19,45 @@ vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: R
 
 const approver = { ready: true, operatorId: "operator-123", operatorRole: "approver" } satisfies OperatorCapability;
 const reviewer = { ready: true, operatorId: "reviewer-123", operatorRole: "reviewer" } satisfies OperatorCapability;
+
+describe("optional applicant question", () => {
+  const input = {
+    billId: "bill-a",
+    caseId: "case-a",
+    submissionDigest: `sha256:${"a".repeat(64)}`,
+    decisionResultDigest: `sha256:${"b".repeat(64)}`,
+    question: "  When will the buyer pay?  ",
+  };
+  it.each([reviewer, approver])("sends a bound preparation question without a financial basis for $operatorRole", async (capability) => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetch);
+    await expect(askApplicant(input, capability)).resolves.toEqual({ ok: true });
+    const call = fetch.mock.calls[0] as [string, RequestInit];
+    expect(call[0]).toBe("/api/ai-credit/operator-verifications");
+    expect(JSON.parse(call[1].body as string)).toEqual({ ...input, question: input.question.trim(), action: "ask_applicant" });
+    expect(call[1].body).not.toContain("writtenBasis");
+  });
+  it("does not send without an authenticated operator or an actual question", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    expect((await askApplicant(input, undefined)).ok).toBe(false);
+    expect((await askApplicant({ ...input, question: " " }, reviewer)).ok).toBe(false);
+    expect((await askApplicant({ ...input, question: "x".repeat(501) }, reviewer)).ok).toBe(false);
+    expect((await askApplicant({ ...input, question: "First line\nSecond line" }, reviewer)).ok).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("accepts a concise question without a decision-basis length requirement", async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetch);
+    await expect(askApplicant({ ...input, question: "When?" }, reviewer)).resolves.toEqual({ ok: true });
+  });
+  it("does not treat an ambiguous network result as confirmed delivery", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")));
+    const result = await askApplicant(input, approver);
+    expect(result.ok).toBe(false);
+    expect(result).toHaveProperty("error", expect.stringContaining("Refresh the case before retrying"));
+  });
+});
 
 describe("information review safe failure codes", () => {
   const input = {

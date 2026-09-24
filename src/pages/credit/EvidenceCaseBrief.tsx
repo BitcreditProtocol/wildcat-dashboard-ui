@@ -1,13 +1,7 @@
 import { ChevronRight, CircleAlert, CircleCheck, CircleHelp } from "lucide-react";
 import { defineMessages, type IntlShape, useIntl } from "react-intl";
-import {
-  axisLabels,
-  displayEvidenceLabel,
-  words,
-  type DecisionCase,
-  type SubmittedEvidence,
-  type VerificationRequest,
-} from "./decision-types";
+import { displayEvidenceLabel, words, type DecisionCase, type SubmittedEvidence, type VerificationRequest } from "./decision-types";
+import { reasonMessages, requestReason } from "./verification-reasons";
 
 export interface EvidenceCaseSummary {
   answerReviewFollowUpCount?: number;
@@ -230,46 +224,6 @@ const messages = defineMessages({
     defaultMessage: "+{count} more",
     description: "Count of additional evidence requests after the next request",
   },
-  reasonBillMissing: {
-    id: "credit.evidenceBrief.reason.billMissing",
-    defaultMessage: "Accepted eBill missing",
-    description: "Governed reason for requesting an accepted eBill",
-  },
-  reasonInvoiceMissing: {
-    id: "credit.evidenceBrief.reason.invoiceMissing",
-    defaultMessage: "Trade invoice missing",
-    description: "Governed reason for requesting an underlying-goods invoice",
-  },
-  reasonDuplicateCheck: {
-    id: "credit.evidenceBrief.reason.duplicateCheck",
-    defaultMessage: "Duplicate-financing check incomplete",
-    description: "Governed reason for an incomplete duplicate-financing check",
-  },
-  reasonContradiction: {
-    id: "credit.evidenceBrief.reason.contradiction",
-    defaultMessage: "Confirmed facts conflict",
-    description: "Governed reason for requesting resolution of contradictory case facts",
-  },
-  reasonAcceptorRisk: {
-    id: "credit.evidenceBrief.reason.acceptorRisk",
-    defaultMessage: "Acceptor risk evidence missing",
-    description: "Governed reason for requesting a current acceptor risk record",
-  },
-  reasonInvoiceEvidence: {
-    id: "credit.evidenceBrief.reason.invoiceEvidence",
-    defaultMessage: "Invoice evidence not admissible",
-    description: "Governed reason for requesting admissible invoice evidence",
-  },
-  reasonInvoiceConsistency: {
-    id: "credit.evidenceBrief.reason.invoiceConsistency",
-    defaultMessage: "Invoice and eBill do not align",
-    description: "Governed reason for requesting clarification of invoice and eBill consistency",
-  },
-  reasonRecourse: {
-    id: "credit.evidenceBrief.reason.recourse",
-    defaultMessage: "Recourse acknowledgement missing",
-    description: "Governed reason for requesting the applicant's whole-face recourse acknowledgement",
-  },
 });
 
 type FindingTone = "success" | "alert" | "neutral";
@@ -289,21 +243,6 @@ function statusIcon(tone: FindingTone) {
   return <Icon className={`size-4 shrink-0 ${className}`} aria-hidden="true" />;
 }
 
-function requestReason(request: VerificationRequest, intl: IntlShape): string {
-  const reasonMessages: Record<string, (typeof messages)[keyof typeof messages]> = {
-    verification_bill_required: messages.reasonBillMissing,
-    verification_invoice_required: messages.reasonInvoiceMissing,
-    verification_duplicate_check_required: messages.reasonDuplicateCheck,
-    verification_contradiction_required: messages.reasonContradiction,
-    verification_acceptor_loss_parameters_required: messages.reasonAcceptorRisk,
-    verification_invoice_evidence_required: messages.reasonInvoiceEvidence,
-    verification_invoice_consistency_required: messages.reasonInvoiceConsistency,
-    verification_recourse_acknowledgment_required: messages.reasonRecourse,
-  };
-  const reason = reasonMessages[request.reasonCode];
-  return reason === undefined ? (axisLabels[request.axis] ?? words(request.axis)) : intl.formatMessage(reason);
-}
-
 const isApplicantOwnedRequest = (request: VerificationRequest): boolean =>
   request.owner === "applicant" || request.resolutionAction === "request_applicant_information";
 
@@ -321,7 +260,7 @@ function claimRows(summary: EvidenceCaseSummary, submittedEvidence: readonly Sub
   // Unknown consistency and model-directed questions do not establish a conflict.
   const deterministicConflicts = [
     ...snapshot.contradictions.map(({ code }) => words(code)),
-    ...(invoice?.billAndClaimsConsistency === "mismatch" ? [intl.formatMessage(messages.reasonInvoiceConsistency)] : []),
+    ...(invoice?.billAndClaimsConsistency === "mismatch" ? [intl.formatMessage(reasonMessages.reasonInvoiceConsistency)] : []),
   ];
   const contradictionValue =
     deterministicConflicts.length === 0 ? intl.formatMessage(messages.noContradictions) : deterministicConflicts.join(" · ");

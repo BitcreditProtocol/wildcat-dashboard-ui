@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, type QueryObserverOptions } from "@tanstack/react-query";
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,6 +9,7 @@ vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: R
 type CreditAssessmentState = ReturnType<typeof useCreditAssessmentForBill>;
 
 let root: Root | null = null;
+let queryClient: QueryClient | undefined;
 
 function Harness({
   billId,
@@ -29,7 +30,7 @@ function Harness({
 async function renderHook(
   billId = "bill-a",
   mintQuoteId = "quote-a",
-  cached?: { cases: unknown[]; issues: unknown[] }
+  cached?: { cases: unknown[]; issues: unknown[]; applications?: unknown[] }
 ): Promise<() => CreditAssessmentState | undefined> {
   const states: CreditAssessmentState[] = [];
   const onChange = (state: CreditAssessmentState) => states.push(state);
@@ -37,6 +38,7 @@ async function renderHook(
   document.body.appendChild(container);
   root = createRoot(container);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  queryClient = client;
   if (cached !== undefined) client.setQueryData(["ai-credit", "decisions"], cached, { updatedAt: 1 });
   act(() => {
     root?.render(
@@ -55,6 +57,71 @@ async function renderHook(
 }
 
 describe("useCreditAssessmentForBill", () => {
+  it.each(["interviewing", "processing", "submitted"])(
+    "shows %s initial applications by exact quote without granting assessment authority",
+    async (status) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => new Promise<Response>(() => undefined))
+      );
+      const application = { billId: "bill-a", caseId: "case-a", mintQuoteId: "quote-a", status };
+      const latest = await renderHook("bill-a", "quote-a", { cases: [], issues: [], applications: [application] });
+      expect(latest()?.recordedInitialApplication).toEqual(application);
+      expect(latest()?.decisionCase).toBeUndefined();
+      expect(latest()?.status).toBe("absent");
+      expect(latest()?.updatesStatus).toBeUndefined();
+      const query = queryClient?.getQueryCache().getAll()[0];
+      if (query === undefined) throw new Error("Expected configured query");
+      const options: QueryObserverOptions = { ...query.options, queryKey: query.queryKey };
+      if (typeof options.refetchInterval !== "function") throw new Error("Expected configured polling");
+      expect(options.refetchInterval(query)).toBe(status === "submitted" ? 10_000 : 3_000);
+    }
+  );
+  it("retains the original initial conversation for an assessed reissued quote only by exact case and bill", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => undefined))
+    );
+    const application = { billId: "bill-a", caseId: "case-a", mintQuoteId: "original-quote", status: "submitted" };
+    const latest = await renderHook("bill-a", "quote-a", {
+      cases: [{ mintQuoteId: "quote-a", snapshot: { caseId: "case-a", bill: { billId: "bill-a" } } }],
+      issues: [],
+      applications: [application],
+    });
+    expect(latest()?.recordedInitialApplication).toEqual(application);
+  });
+  it("does not attach an unrelated pending quote's initial interview to this bill view", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => undefined))
+    );
+    const latest = await renderHook("bill-a", "quote-a", {
+      cases: [],
+      issues: [],
+      applications: [{ billId: "bill-a", caseId: "case-a", mintQuoteId: "other-quote", status: "interviewing" }],
+    });
+    expect(latest()?.recordedInitialApplication).toBeUndefined();
+  });
+  it.each([
+    ["interviewing", 3_000],
+    ["processing", 3_000],
+    ["review", 10_000],
+    ["submitted", 10_000],
+  ])("uses existing polling for server dialogue status %s", async (status, interval) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => undefined))
+    );
+    await renderHook("bill-a", "quote-a", {
+      cases: [{ mintQuoteId: "quote-a", snapshot: { bill: { billId: "bill-a" } }, serverClarificationDialogues: [{ status }] }],
+      issues: [],
+    });
+    const query = queryClient?.getQueryCache().getAll()[0];
+    if (query === undefined) throw new Error("Expected configured query");
+    const options: QueryObserverOptions = { ...query.options, queryKey: query.queryKey };
+    if (typeof options.refetchInterval !== "function") throw new Error("Expected configured polling");
+    expect(options.refetchInterval(query)).toBe(interval);
+  });
   it.each(["quote-a", "other-quote"])("scopes a stale view-only conversation to the exact quote (%s)", async (cachedQuote) => {
     vi.stubGlobal(
       "fetch",
@@ -67,6 +134,7 @@ describe("useCreditAssessmentForBill", () => {
       await new Promise((resolve) => setTimeout(resolve, 1100));
     });
     expect(latest()?.status).toBe("unavailable");
+    expect(latest()?.updatesStatus).toBe("unavailable");
     expect(latest()?.decisionCase).toBeUndefined();
     expect(latest()?.recordedDecisionCase).toEqual(cachedQuote === "quote-a" ? record : undefined);
   });
@@ -82,9 +150,23 @@ describe("useCreditAssessmentForBill", () => {
     expect(latest()?.decisionCase).toBeUndefined();
     expect(latest()?.recordedDecisionCase).toBeUndefined();
   });
+  it("does not call cached data live before this view receives a successful response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => undefined))
+    );
+    const latest = await renderHook("bill-a", "quote-a", {
+      cases: [{ mintQuoteId: "quote-a", snapshot: { bill: { billId: "bill-a" } } }],
+      issues: [],
+    });
+    expect(latest()?.recordedDecisionCase).toBeDefined();
+    expect(latest()?.updatesStatus).toBeUndefined();
+  });
   afterEach(() => {
     act(() => root?.unmount());
     root = null;
+    queryClient?.clear();
+    queryClient = undefined;
     document.body.replaceChildren();
     vi.unstubAllGlobals();
   });
@@ -149,6 +231,7 @@ describe("useCreditAssessmentForBill", () => {
     const latest = await renderHook("bill-a", mintQuoteId);
 
     expect(latest()).toMatchObject({ status: "isolated", issue: { reasonCode: "bill_state_mismatch" } });
+    expect(latest()?.updatesStatus).toBe("live");
   });
 
   it("uses the narrow quote-less fallback only for missing legacy applicant authority", async () => {
