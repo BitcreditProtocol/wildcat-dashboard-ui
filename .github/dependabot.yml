@@ -42,6 +42,10 @@ updates:
       #npm-major:
       #  update-types:
       #    - "major"
+    ignore:
+      # Keep Node types aligned with the runtime in .nvmrc.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     cooldown:
       semver-major-days: 30
       semver-minor-days: 7

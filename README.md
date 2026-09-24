@@ -2,12 +2,14 @@
 
 ## Development
 
-Prerequisite: Node.js 26.x (see `.nvmrc`).
+Prerequisite: Node.js 24 LTS (see `.nvmrc`) and npm 11.
+Keep `.nvmrc`, `.node-version` and the Docker builder version in sync.
+GitHub Actions read `.nvmrc`; CI checks that the two version files agree.
 
 ### Install
 
 ```
-npm install
+npm ci
 ```
 
 ### Run Development

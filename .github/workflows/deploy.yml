@@ -42,7 +42,6 @@ jobs:
     # keep section similar, dev has different validation step
     env:
       CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
-      NODE_VERSION: ${{ vars.NODE_VERSION }}
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
       VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL  }}
       VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM  }}
@@ -70,7 +69,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: "npm"
 
       - name: Install dependencies
@@ -116,7 +115,6 @@ jobs:
     # keep section similar
     env:
       CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
-      NODE_VERSION: ${{ vars.NODE_VERSION }}
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
       VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL  }}
       VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM  }}
@@ -143,7 +141,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: "npm"
 
       - name: Install dependencies
@@ -210,7 +208,6 @@ jobs:
     # keep section similar
     env:
       CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
-      NODE_VERSION: ${{ vars.NODE_VERSION }}
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
       VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL  }}
       VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM  }}
@@ -237,7 +234,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: "npm"
 
       - name: Install dependencies

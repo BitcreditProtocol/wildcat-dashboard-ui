@@ -1,7 +1,7 @@
 ARG NODE_ENV
 ARG VITE_MODE
 
-FROM node:26-slim AS builder
+FROM node:24.21.0-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6 AS builder
 ARG NODE_ENV
 ARG VITE_MODE
 ENV NODE_ENV=${NODE_ENV:-production}
