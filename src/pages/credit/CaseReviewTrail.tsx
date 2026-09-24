@@ -9,14 +9,17 @@ import type {
   SubmittedEvidence,
   VerificationRequest,
   LiveInterviewProgress,
+  ServerClarificationObservation,
 } from "./decision-types";
 import { ChevronDown } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { InformationNeedsPanel } from "./InformationNeedsPanel";
+import { currentServerMessages, interviewMessageKey } from "./case-rounds";
 import type { OperatorCapability } from "./record-operator-decision";
-import type { InterviewAssistantTemplate } from "@bitcredit/ai-credit-shared";
-import { mergeInterviewMessages, creditClarificationRequiredItemText } from "@bitcredit/ai-credit-shared";
+import type { InterviewAssistantTemplate, ServerInitialObservation } from "@bitcredit/ai-credit-shared";
+import { mergeInterviewMessages } from "@bitcredit/ai-credit-shared";
+import { clarificationItemText } from "./clarification-item-text";
 
 // Reviewed objective labels, never reconstructed question wording.
 const promptObjectives = defineMessages({
@@ -83,6 +86,16 @@ const promptObjectives = defineMessages({
 } satisfies Record<InterviewAssistantTemplate, { id: string; defaultMessage: string; description: string }>);
 
 const messages = defineMessages({
+  earlierMessages: {
+    id: "credit.caseRecord.earlierMessages",
+    defaultMessage: "Show {count} earlier messages",
+    description: "Reveal exact older messages in the continuous conversation, without hiding audit records",
+  },
+  latestMessages: {
+    id: "credit.caseRecord.latestMessages",
+    defaultMessage: "Latest messages",
+    description: "Return to the recent part of the applicant conversation",
+  },
   title: { id: "credit.caseRecord.title", defaultMessage: "Case record", description: "Operator case audit disclosure" },
   conversationTitle: {
     id: "credit.caseRecord.conversationTitle",
@@ -125,6 +138,91 @@ const messages = defineMessages({
     id: "credit.caseRecord.activeSession",
     defaultMessage: "Unconfirmed clarification receipt",
     description: "Unsubmitted conversation reported by the applicant session",
+  },
+  serverDialogue: {
+    id: "credit.caseRecord.serverDialogue",
+    defaultMessage: "Clarification conversation",
+    description: "Server-owned clarification dialogue bound to an admitted Mint request",
+  },
+  initialDialogue: {
+    id: "credit.caseRecord.initialDialogue",
+    defaultMessage: "Application conversation",
+    description: "Server-owned initial interview before or after its application is submitted",
+  },
+  initialNotSubmitted: {
+    id: "credit.caseRecord.initialNotSubmitted",
+    defaultMessage: "Not submitted · no credit decision",
+    description: "Initial interview does not grant credit or minting authority",
+  },
+  serverRecorded: {
+    id: "credit.caseRecord.serverRecorded",
+    defaultMessage: "Server-recorded messages · claims unverified",
+    description: "Exact wording recorded by the interview service is not independent evidence verification",
+  },
+  serverInterviewer: {
+    id: "credit.caseRecord.serverInterviewer",
+    defaultMessage: "Interviewer · server-recorded",
+    description: "Authorship of exact interviewer wording from the server-owned dialogue",
+  },
+  serverInterviewing: {
+    id: "credit.caseRecord.serverInterviewing",
+    defaultMessage: "Awaiting applicant answer",
+    description: "Server-owned dialogue is waiting for an applicant turn",
+  },
+  serverProcessing: {
+    id: "credit.caseRecord.serverProcessing",
+    defaultMessage: "Interviewer responding",
+    description: "Server has reserved and is processing the next dialogue turn",
+  },
+  serverInterrupted: {
+    id: "credit.caseRecord.serverInterrupted",
+    defaultMessage: "Interview interrupted",
+    description: "Server dialogue stopped; no result is inferred",
+  },
+  serverReview: {
+    id: "credit.caseRecord.serverReview",
+    defaultMessage: "Awaiting answer confirmation",
+    description: "Applicant must review answers before confirming the server dialogue",
+  },
+  serverConfirmed: {
+    id: "credit.caseRecord.serverConfirmed",
+    defaultMessage: "Answers confirmed",
+    description: "Dialogue answers confirmed but the application has not yet been submitted",
+  },
+  serverSubmitted: {
+    id: "credit.caseRecord.serverSubmitted",
+    defaultMessage: "Submitted",
+    description: "Recorded clarification was submitted, not a resolved investigation or approval",
+  },
+  serverSuperseded: {
+    id: "credit.caseRecord.serverSuperseded",
+    defaultMessage: "Superseded",
+    description: "The request is no longer active and this clarification dialogue was not submitted",
+  },
+  savedAt: {
+    id: "credit.caseRecord.savedAt",
+    defaultMessage: "Saved {time}",
+    description: "Server update timestamp for the dialogue, not a timestamp for every message",
+  },
+  requestReference: {
+    id: "credit.caseRecord.requestReference",
+    defaultMessage: "Mint request",
+    description: "Exact admitted clarification request identity for this conversation",
+  },
+  reconnecting: {
+    id: "credit.caseRecord.reconnecting",
+    defaultMessage: "Reconnecting · showing last received record",
+    description: "Transport is reconnecting; retained conversation is not evidence of current processing",
+  },
+  liveUpdates: {
+    id: "credit.caseRecord.liveUpdates",
+    defaultMessage: "Live updates",
+    description: "The existing authenticated polling is receiving updates, not token streaming",
+  },
+  lastRecorded: {
+    id: "credit.caseRecord.lastRecorded",
+    defaultMessage: "Last recorded: {status}",
+    description: "Saved dialogue status when this view has no confirmed live transport",
   },
   waitingReview: {
     id: "credit.caseRecord.waitingReview",
@@ -264,20 +362,40 @@ interface CaseReviewTrailProps {
   claimInvestigation?: ClaimInvestigationState;
   verificationRequests?: readonly VerificationRequest[];
   liveInterview?: LiveInterviewProgress;
+  serverClarificationDialogues?: readonly ServerClarificationObservation[];
+  serverInitialApplication?: ServerInitialObservation;
   interviewHistory?: readonly InterviewTranscript[];
   updatesUnavailable?: boolean;
+  updatesStatus?: "live" | "reconnecting" | "unavailable";
 }
 
-function TranscriptMessages({
+export function TranscriptMessages({
   transcript,
   followLatest = false,
   live = false,
+  serverRecorded = false,
+  serverRecordedKeys,
+  capToRecent = false,
 }: {
   transcript: Pick<InterviewTranscript, "messages">;
   followLatest?: boolean;
   live?: boolean;
+  serverRecorded?: boolean;
+  /** Exact messages that also have a server-recorded copy; only those gain server authorship. */
+  serverRecordedKeys?: ReadonlySet<string>;
+  capToRecent?: boolean;
 }) {
   const intl = useIntl();
+  const [showEarlier, setShowEarlier] = useState(false);
+  const listId = useId();
+  const lastRequestIndex = transcript.messages.reduce(
+    (latest, message, index) => (message.role === "assistant" && message.governedClarification !== undefined ? index : latest),
+    -1
+  );
+  const recentStart = Math.max(0, transcript.messages.length - 10);
+  // Keep the request that gives the current replies their context, even beyond ten messages.
+  const earlierCount = capToRecent ? (lastRequestIndex < 0 ? recentStart : Math.min(recentStart, lastRequestIndex)) : 0;
+  const visibleMessages = showEarlier || earlierCount === 0 ? transcript.messages : transcript.messages.slice(earlierCount);
   const scrollRef = useRef<HTMLOListElement>(null);
   const followLatestRef = useRef(followLatest);
   useEffect(() => {
@@ -285,69 +403,92 @@ function TranscriptMessages({
     if (list !== null && followLatest && followLatestRef.current) list.scrollTop = list.scrollHeight;
   }, [followLatest, transcript.messages]);
   return (
-    <ol
-      ref={scrollRef}
-      className="mt-3 max-h-[32rem] space-y-3 overflow-y-auto pr-1"
-      aria-label={intl.formatMessage(messages.interview)}
-      onScroll={(event) => {
-        const list = event.currentTarget;
-        followLatestRef.current = list.scrollHeight - list.scrollTop - list.clientHeight < 48;
-      }}
-    >
-      {transcript.messages.map((message) =>
-        message.role === "applicant_documents" ? (
-          <li
-            key={message.messageId}
-            className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground break-words"
-          >
-            {intl.formatMessage(messages.documents, { labels: message.labels.join(", ") })}
-          </li>
-        ) : (
-          <li key={message.messageId} className={message.role === "applicant" ? "ml-6" : "mr-6"}>
-            <div className="mb-1 text-[11px] font-medium text-muted-foreground">
-              {intl.formatMessage(message.role === "applicant" ? messages.applicant : messages.interviewer)}
-            </div>
-            <p
-              className={`whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm leading-5 ${message.role === "applicant" ? "border border-border bg-background" : "bg-muted/50"}`}
-            >
-              {message.role === "applicant"
-                ? message.text
-                : live
-                  ? intl.formatMessage(
-                      {
-                        id: "credit.livePrompt.objective",
-                        defaultMessage: "Recorded prompt objective: {objective}",
-                        description: "Reviewed objective of an applicant-reported prompt, not a reconstructed transcript",
-                      },
-                      { objective: intl.formatMessage(promptObjectives[message.templateId]) }
-                    )
-                  : (message.text ?? intl.formatMessage(messages.questionUnavailable))}
-            </p>
-            {message.role === "assistant" && message.followUp !== undefined && (
-              <details className="mt-1 px-3 text-xs text-muted-foreground">
-                <summary className="cursor-pointer">{intl.formatMessage(messages.claimReview)}</summary>
-                {message.followUp.sources.map((source) => (
-                  <blockquote
-                    key={`${source.answerIndex}:${source.quote}`}
-                    className="mt-2 border-l-2 border-border pl-2 whitespace-pre-wrap break-words"
-                  >
-                    {source.quote}
-                  </blockquote>
-                ))}
-                <p className="mt-2">{intl.formatMessage(messages.questionUnverified)}</p>
-              </details>
-            )}
-            {message.role === "assistant" && message.governedClarification !== undefined && (
-              <ul className="mt-2 border-l-2 border-border pl-3 text-sm text-muted-foreground">
-                {message.governedClarification.requiredItems.map((item, index) => (
-                  <li key={index}>{typeof item === "string" ? item : creditClarificationRequiredItemText(item.requestCode)}</li>
-                ))}
-              </ul>
-            )}
-          </li>
-        )
+    <>
+      {earlierCount > 0 && (
+        <button
+          type="button"
+          className="mt-3 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          aria-expanded={showEarlier}
+          aria-controls={listId}
+          onClick={() => setShowEarlier((value) => !value)}
+        >
+          {intl.formatMessage(showEarlier ? messages.latestMessages : messages.earlierMessages, { count: earlierCount })}
+        </button>
       )}
-    </ol>
+      <ol
+        id={listId}
+        ref={scrollRef}
+        className="mt-3 max-h-[32rem] space-y-3 overflow-y-auto pr-1"
+        aria-label={intl.formatMessage(messages.interview)}
+        onScroll={(event) => {
+          const list = event.currentTarget;
+          followLatestRef.current = list.scrollHeight - list.scrollTop - list.clientHeight < 48;
+        }}
+      >
+        {visibleMessages.map((message) => {
+          const isServerRecorded = serverRecorded || serverRecordedKeys?.has(interviewMessageKey(message)) === true;
+          const remainingRequirements =
+            message.role === "assistant"
+              ? (message.governedClarification?.requiredItems ?? [])
+                  .map(clarificationItemText)
+                  .filter((item) => !isServerRecorded || !message.text?.includes(item))
+              : [];
+          return message.role === "applicant_documents" ? (
+            <li
+              key={message.messageId}
+              className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground break-words"
+            >
+              {intl.formatMessage(messages.documents, { labels: message.labels.join(", ") })}
+            </li>
+          ) : (
+            <li key={message.messageId} className={message.role === "applicant" ? "ml-6" : "mr-6"}>
+              <div className="mb-1 text-[11px] font-medium text-muted-foreground">
+                {intl.formatMessage(
+                  message.role === "applicant" ? messages.applicant : isServerRecorded ? messages.serverInterviewer : messages.interviewer
+                )}
+              </div>
+              <p
+                className={`whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm leading-5 ${message.role === "applicant" ? "border border-border bg-background" : "bg-muted/50"}`}
+              >
+                {message.role === "applicant"
+                  ? message.text
+                  : live
+                    ? intl.formatMessage(
+                        {
+                          id: "credit.livePrompt.objective",
+                          defaultMessage: "Recorded prompt objective: {objective}",
+                          description: "Reviewed objective of an applicant-reported prompt, not a reconstructed transcript",
+                        },
+                        { objective: intl.formatMessage(promptObjectives[message.templateId]) }
+                      )
+                    : (message.text ?? intl.formatMessage(messages.questionUnavailable))}
+              </p>
+              {message.role === "assistant" && message.followUp !== undefined && (
+                <details className="mt-1 px-3 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">{intl.formatMessage(messages.claimReview)}</summary>
+                  {message.followUp.sources.map((source) => (
+                    <blockquote
+                      key={`${source.answerIndex}:${source.quote}`}
+                      className="mt-2 border-l-2 border-border pl-2 whitespace-pre-wrap break-words"
+                    >
+                      {source.quote}
+                    </blockquote>
+                  ))}
+                  <p className="mt-2">{intl.formatMessage(messages.questionUnverified)}</p>
+                </details>
+              )}
+              {remainingRequirements.length > 0 && (
+                <ul className="mt-2 border-l-2 border-border pl-3 text-sm text-muted-foreground">
+                  {remainingRequirements.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }
 
@@ -366,6 +507,82 @@ function ReviewRow({ label, result, authority }: { label: string; result: string
   );
 }
 
+export function ServerDialogueRecord({
+  dialogue,
+  liveUpdates,
+}: {
+  dialogue: ServerClarificationObservation | ServerInitialObservation;
+  liveUpdates: boolean;
+}) {
+  const intl = useIntl();
+  const statusLabels = {
+    interviewing: messages.serverInterviewing,
+    processing: messages.serverProcessing,
+    interrupted: messages.serverInterrupted,
+    review: messages.serverReview,
+    confirmed: messages.serverConfirmed,
+    submitted: messages.serverSubmitted,
+    superseded: messages.serverSuperseded,
+  } satisfies Record<ServerClarificationObservation["status"], (typeof messages)[keyof typeof messages]>;
+  const submitted = dialogue.status === "submitted";
+  const isClarification = "requestId" in dialogue;
+  const inactive = submitted || dialogue.status === "superseded";
+  const status = intl.formatMessage(statusLabels[dialogue.status]);
+  return (
+    <details className="mt-4 border-t border-border pt-3" open={!inactive}>
+      <summary className="cursor-pointer text-sm font-medium">
+        {intl.formatMessage(isClarification ? messages.serverDialogue : messages.initialDialogue)} ·{" "}
+        {liveUpdates || inactive ? status : intl.formatMessage(messages.lastRecorded, { status })}
+      </summary>
+      <p className="mt-2 text-xs text-muted-foreground">{intl.formatMessage(messages.serverRecorded)}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        <time dateTime={dialogue.updatedAt}>
+          {intl.formatMessage(messages.savedAt, {
+            time: intl.formatDate(dialogue.updatedAt, { dateStyle: "medium", timeStyle: "short" }),
+          })}
+        </time>
+        {!submitted && <> · {intl.formatMessage(isClarification ? messages.notSubmitted : messages.initialNotSubmitted)}</>}
+      </p>
+      {isClarification && (
+        <details className="mt-2 text-xs text-muted-foreground">
+          <summary className="cursor-pointer">{intl.formatMessage(messages.requestReference)}</summary>
+          <p className="mt-1 break-all font-mono">{dialogue.requestId}</p>
+        </details>
+      )}
+      <TranscriptMessages
+        transcript={{ messages: isClarification ? currentServerMessages(dialogue) : dialogue.messages }}
+        followLatest={!inactive}
+        serverRecorded
+        capToRecent
+      />
+    </details>
+  );
+}
+
+/** Applicant-session progress: prompt objectives only, never reconstructed interviewer wording. */
+export function LiveSessionRecord({ liveInterview }: { liveInterview: LiveInterviewProgress }) {
+  const intl = useIntl();
+  return (
+    <div className="mt-3">
+      {liveInterview.attempt > 1 && <p className="mb-1 text-xs text-muted-foreground">{intl.formatMessage(messages.sessionRestarted)}</p>}
+      <p role="status" className="text-sm font-medium">
+        {intl.formatMessage(liveInterview.status === "review" ? messages.waitingReview : messages.interviewing)}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {intl.formatMessage(messages.receivedAt, {
+          time: intl.formatTime(liveInterview.updatedAt, { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        })}{" "}
+        · {intl.formatMessage(messages.notSubmitted)}
+      </p>
+      {liveInterview.messages.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">{intl.formatMessage(messages.emptySession)}</p>
+      ) : (
+        <TranscriptMessages transcript={liveInterview} followLatest live />
+      )}
+    </div>
+  );
+}
+
 export function CaseReviewTrail({
   embedded = false,
   decisionCase,
@@ -379,11 +596,24 @@ export function CaseReviewTrail({
   evidencePackets,
   claimInvestigation,
   verificationRequests = [],
-  liveInterview,
+  liveInterview: legacyLiveInterview,
+  serverClarificationDialogues = [],
+  serverInitialApplication,
   interviewHistory = [],
   updatesUnavailable = false,
+  updatesStatus,
 }: CaseReviewTrailProps) {
   const intl = useIntl();
+  const reconnecting = updatesStatus === "reconnecting";
+  const disconnected = updatesUnavailable || reconnecting || updatesStatus === "unavailable";
+  const liveInterview =
+    legacyLiveInterview !== undefined &&
+    serverClarificationDialogues.some(
+      (dialogue) =>
+        dialogue.requestId === legacyLiveInterview.requestId && dialogue.status !== "submitted" && dialogue.status !== "superseded"
+    )
+      ? undefined
+      : legacyLiveInterview;
   const disclosure = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const revealEvidenceQuestions = () => {
@@ -414,21 +644,35 @@ export function CaseReviewTrail({
     return intl.formatMessage(messages.unavailable);
   })();
   const submittedConversations = [...interviewHistory, ...(transcript === undefined ? [] : [transcript])];
+  // Only exact current-request turns can be represented by their server-authored copy.
+  // Carried context stays beside its original questions; different legacy wording never gains server authorship.
+  const serverMessageKeys = new Set(
+    [...(serverInitialApplication?.messages ?? []), ...serverClarificationDialogues.flatMap(currentServerMessages)].map((message) =>
+      JSON.stringify(message)
+    )
+  );
+  const submittedMessages = mergeInterviewMessages(submittedConversations.map((submitted) => submitted.messages));
+  const legacyMessages = submittedMessages.filter((message) => !serverMessageKeys.has(JSON.stringify(message)));
+  const hasServerCopies = legacyMessages.length !== submittedMessages.length;
 
   const submittedConversationRecord =
     submittedConversations.length === 0 ? null : (
       <div className="mt-3">
-        {submittedConversations.length === 1 && liveInterview === undefined && (
+        {submittedConversations.length === 1 && liveInterview === undefined && legacyMessages.length > 0 && (
           <p className="text-xs text-muted-foreground">
             {submittedConversations.length === 1
               ? intl.formatMessage(submittedConversations[0]?.modelId.startsWith("scripted") ? messages.scripted : messages.recorded)
               : intl.formatMessage(messages.priorConversations, { count: submittedConversations.length })}
           </p>
         )}
-        <TranscriptMessages
-          transcript={{ messages: mergeInterviewMessages(submittedConversations.map((submitted) => submitted.messages)) }}
-        />
-        {submittedConversations.length > 1 && (
+        {legacyMessages.length > 0 && (
+          <TranscriptMessages
+            key={transcript?.caseId ?? submittedConversations[0]?.caseId}
+            capToRecent
+            transcript={{ messages: legacyMessages }}
+          />
+        )}
+        {(submittedConversations.length > 1 || hasServerCopies) && (
           <details className="mt-4 border-t border-border pt-3">
             <summary className="cursor-pointer text-xs text-muted-foreground">
               {intl.formatMessage(messages.priorConversations, { count: submittedConversations.length })}
@@ -466,14 +710,14 @@ export function CaseReviewTrail({
           {intl.formatMessage(standalone ? messages.conversationTitle : messages.title)}
         </span>
         <span className="flex items-center gap-2 text-xs text-muted-foreground">
-          {standalone && liveInterview === undefined && !updatesUnavailable ? (
+          {standalone && liveInterview === undefined && !disconnected ? (
             <>
               <span className="group-open/case:hidden">{intl.formatMessage(messages.show)}</span>
               <span className="hidden group-open/case:inline">{intl.formatMessage(messages.hide)}</span>
             </>
           ) : standalone ? (
             intl.formatMessage(
-              updatesUnavailable
+              disconnected
                 ? messages.disconnected
                 : liveInterview === undefined
                   ? messages.show
@@ -491,9 +735,9 @@ export function CaseReviewTrail({
         </span>
       </summary>
 
-      {updatesUnavailable && (
+      {disconnected && (
         <p role="status" className="border-t border-border px-4 py-3 text-sm text-signal-alert">
-          {intl.formatMessage(messages.updatesUnavailable)}
+          {intl.formatMessage(reconnecting ? messages.reconnecting : messages.updatesUnavailable)}
         </p>
       )}
 
@@ -503,29 +747,28 @@ export function CaseReviewTrail({
             {intl.formatMessage(liveInterview === undefined ? messages.interview : messages.activeSession)}
           </h4>
           <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.viewOnly)}</p>
+          {updatesStatus === "live" &&
+            !disconnected &&
+            (serverClarificationDialogues.some((dialogue) => dialogue.status !== "submitted" && dialogue.status !== "superseded") ||
+              (serverInitialApplication !== undefined &&
+                serverInitialApplication.status !== "submitted" &&
+                serverInitialApplication.status !== "superseded")) && (
+              <p role="status" className="mt-1 text-xs text-muted-foreground">
+                {intl.formatMessage(messages.liveUpdates)}
+              </p>
+            )}
           {submittedConversationRecord}
-          {liveInterview !== undefined && (
-            <div className="mt-3">
-              {liveInterview.attempt > 1 && (
-                <p className="mb-1 text-xs text-muted-foreground">{intl.formatMessage(messages.sessionRestarted)}</p>
-              )}
-              <p role="status" className="text-sm font-medium">
-                {intl.formatMessage(liveInterview.status === "review" ? messages.waitingReview : messages.interviewing)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {intl.formatMessage(messages.receivedAt, {
-                  time: intl.formatTime(liveInterview.updatedAt, { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-                })}{" "}
-                · {intl.formatMessage(messages.notSubmitted)}
-              </p>
-              {liveInterview.messages.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">{intl.formatMessage(messages.emptySession)}</p>
-              ) : (
-                <TranscriptMessages transcript={liveInterview} followLatest live />
-              )}
-            </div>
+          {serverInitialApplication !== undefined && (
+            <ServerDialogueRecord dialogue={serverInitialApplication} liveUpdates={updatesStatus === "live" && !disconnected} />
           )}
-          {submittedConversations.length === 0 && liveInterview === undefined ? (
+          {serverClarificationDialogues.map((dialogue) => (
+            <ServerDialogueRecord key={dialogue.dialogueId} dialogue={dialogue} liveUpdates={updatesStatus === "live" && !disconnected} />
+          ))}
+          {liveInterview !== undefined && <LiveSessionRecord liveInterview={liveInterview} />}
+          {submittedConversations.length === 0 &&
+          liveInterview === undefined &&
+          serverClarificationDialogues.length === 0 &&
+          serverInitialApplication === undefined ? (
             <div className="mt-3">
               <p className="text-xs font-medium text-signal-alert">{intl.formatMessage(messages.transcriptUnavailable)}</p>
               {applicantConfirmation !== undefined && (

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { OperatorSubmittedCaseIssue } from "@bitcredit/ai-credit-shared";
+import type { OperatorSubmittedCaseIssue, ServerInitialObservation } from "@bitcredit/ai-credit-shared";
 import { authenticatedFetch } from "@/lib/api-client";
 import type { DecisionCase } from "./decision-types";
 import { parseDecisionCasesResponse, type DecisionCasesResponse } from "./parse-decision-cases";
@@ -23,8 +23,13 @@ export function useCreditAssessments() {
     refetchInterval: (query) =>
       query.state.data?.cases.some(
         (one) =>
-          one.liveInterview !== undefined || one.caseInvestigation?.status === "running" || one.caseInvestigation?.status === "queued"
-      )
+          one.liveInterview !== undefined ||
+          one.serverClarificationDialogues?.some((dialogue) => dialogue.status === "interviewing" || dialogue.status === "processing") ===
+            true ||
+          one.caseInvestigation?.status === "running" ||
+          one.caseInvestigation?.status === "queued" ||
+          one.claimInvestigation?.status === "running"
+      ) || query.state.data?.applications?.some((one) => one.status === "interviewing" || one.status === "processing")
         ? 3_000
         : 10_000,
     retry: 1,
@@ -44,12 +49,15 @@ export function useCreditAssessmentForBill(
 ): CreditAssessmentForBillState & {
   decisionCase?: DecisionCase;
   recordedDecisionCase?: DecisionCase;
+  /** Display-only authenticated conversation; never substitutes for a credit assessment. */
+  recordedInitialApplication?: ServerInitialObservation;
   isLoading: boolean;
   isAbsent: boolean;
   isUnavailable: boolean;
   error: Error | null;
+  updatesStatus: "live" | "reconnecting" | "unavailable" | undefined;
 } {
-  const { data, isLoading, error } = useCreditAssessments();
+  const { data, isLoading, error, fetchStatus, failureCount, isFetchedAfterMount } = useCreditAssessments();
   const scopedIssue = data?.issues.find(
     (one) =>
       one.billId === billId &&
@@ -70,13 +78,30 @@ export function useCreditAssessmentForBill(
     return recordedDecisionCase === undefined ? { status: "absent" } : { status: "assessed", decisionCase: recordedDecisionCase };
   };
   const assessment = state();
+  const recordedInitialApplication =
+    billId === undefined || mintQuoteId === undefined || scopedIssue !== undefined
+      ? undefined
+      : data?.applications?.find(
+          (one) =>
+            one.billId === billId &&
+            (recordedDecisionCase === undefined ? one.mintQuoteId === mintQuoteId : one.caseId === recordedDecisionCase.snapshot.caseId)
+        );
   return {
     decisionCase: undefined,
     recordedDecisionCase: assessment.status === "assessed" || assessment.status === "unavailable" ? recordedDecisionCase : undefined,
+    recordedInitialApplication,
     isLoading: assessment.status === "loading",
     isAbsent: assessment.status === "absent",
     isUnavailable: assessment.status === "unavailable",
     error: null,
+    updatesStatus:
+      fetchStatus === "paused" || (fetchStatus === "fetching" && failureCount > 0)
+        ? "reconnecting"
+        : error !== null
+          ? "unavailable"
+          : data !== undefined && isFetchedAfterMount
+            ? "live"
+            : undefined,
     ...assessment,
   };
 }

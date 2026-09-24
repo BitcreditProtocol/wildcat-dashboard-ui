@@ -13,7 +13,7 @@ function Draft() {
     </button>
   );
 }
-function render() {
+function render(reviewCount?: number) {
   const page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -21,13 +21,18 @@ function render() {
     root?.render(
       <IntlProvider locale="en">
         <CaseWorkspace
-          evidence={
+          reviewCount={reviewCount}
+          review={
             <section id="documents-and-evidence">
               <Draft />
             </section>
           }
-          conversation={<section id="case-conversation">Recorded messages</section>}
-          investigation={<section id="case-investigation">Actual investigator results</section>}
+          history={
+            <>
+              <section id="case-conversation">Recorded messages</section>
+              <section id="case-investigation">Actual investigator results</section>
+            </>
+          }
           calculation={<section id="full-governed-assessment">Policy checks</section>}
           record={<section id="bill-record">Bill history</section>}
         />
@@ -53,10 +58,28 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe("case workspace", () => {
+  it("offers exactly the review, history, calculation and bill-record tabs", () => {
+    const page = render();
+    expect(Array.from(page.querySelectorAll('[role="tab"]')).map((item) => item.textContent)).toEqual([
+      "Review",
+      "Case history",
+      "Calculation",
+      "Bill record",
+    ]);
+  });
+  it("counts outstanding review work on the Review tab only when there is any", () => {
+    const page = render(3);
+    const review = Array.from(page.querySelectorAll('[role="tab"]'))[0];
+    expect(review?.textContent).toBe("Review3");
+    expect(review?.querySelector('[aria-label="3 items to review"]')).not.toBeNull();
+    act(() => root?.unmount());
+    document.body.replaceChildren();
+    expect(render(0).querySelector('[role="tab"]')?.textContent).toBe("Review");
+  });
   it("reopens an already-current fragment after the operator changed tabs", () => {
     window.history.replaceState(null, "", "#documents-and-evidence");
     const page = render();
-    select(tab(page, "Conversation"));
+    select(tab(page, "Case history"));
     const link = document.createElement("a");
     link.href = "#documents-and-evidence";
     document.body.append(link);
@@ -64,24 +87,38 @@ describe("case workspace", () => {
     act(() => {
       link.click();
     });
-    expect(tab(page, "Evidence").getAttribute("aria-selected")).toBe("true");
+    expect(tab(page, "Review").getAttribute("aria-selected")).toBe("true");
   });
-  it("starts on evidence, hides inactive panels and keeps drafts mounted", () => {
+  it("starts on review, hides inactive panels and keeps drafts mounted", () => {
     const page = render();
-    expect(tab(page, "Evidence").getAttribute("aria-selected")).toBe("true");
-    expect(page.querySelectorAll('[role="tabpanel"][hidden]')).toHaveLength(4);
+    expect(tab(page, "Review").getAttribute("aria-selected")).toBe("true");
+    expect(page.querySelectorAll('[role="tabpanel"][hidden]')).toHaveLength(3);
     const draft = page.querySelector<HTMLButtonElement>("#documents-and-evidence button");
     act(() => draft?.click());
-    select(tab(page, "Conversation"));
+    select(tab(page, "Case history"));
     expect(page.querySelector("#documents-and-evidence")?.closest('[role="tabpanel"]')?.hasAttribute("hidden")).toBe(true);
-    select(tab(page, "Evidence"));
+    select(tab(page, "Review"));
     expect(page.querySelector("#documents-and-evidence button")).toBe(draft);
     expect(draft?.textContent).toBe("Draft 1");
+  });
+  it.each([
+    ["#documents-and-evidence", "Review"],
+    ["#evidence-questions", "Review"],
+    ["#proposed-follow-ups", "Review"],
+    ["#case-conversation", "Case history"],
+    ["#case-investigation", "Case history"],
+    ["#case-history", "Case history"],
+    ["#full-governed-assessment", "Calculation"],
+    ["#bill-record", "Bill record"],
+  ])("opens %s in the %s tab", (hash, label) => {
+    window.history.replaceState(null, "", hash);
+    const page = render();
+    expect(tab(page, label).getAttribute("aria-selected")).toBe("true");
   });
   it("opens the tab requested by a direct link and follows later hash navigation", async () => {
     window.history.replaceState(null, "", "#case-conversation");
     const page = render();
-    expect(tab(page, "Conversation").getAttribute("aria-selected")).toBe("true");
+    expect(tab(page, "Case history").getAttribute("aria-selected")).toBe("true");
     act(() => {
       window.history.replaceState(null, "", "#full-governed-assessment");
       window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -100,17 +137,17 @@ describe("case workspace", () => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
     });
     expect(scroll).toHaveBeenCalled();
-    expect(tab(page, "Evidence").getAttribute("aria-selected")).toBe("true");
+    expect(tab(page, "Review").getAttribute("aria-selected")).toBe("true");
     expect(question.closest('[role="tabpanel"]')?.hasAttribute("hidden")).toBe(false);
   });
   it("supports keyboard selection through the shared accessible tab primitive", async () => {
     const page = render();
     await act(async () => {
-      tab(page, "Evidence").focus();
-      tab(page, "Evidence").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+      tab(page, "Review").focus();
+      tab(page, "Review").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    expect(document.activeElement).toBe(tab(page, "Conversation"));
-    expect(tab(page, "Conversation").getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tab(page, "Case history"));
+    expect(tab(page, "Case history").getAttribute("aria-selected")).toBe("true");
   });
 });

@@ -1,10 +1,11 @@
 import { mintQuoteDenialStatusSchema, operatorWorkbenchDecisionsResponseSchema } from "@bitcredit/ai-credit-shared";
-import type { OperatorSubmittedCaseIssue } from "@bitcredit/ai-credit-shared";
+import type { OperatorSubmittedCaseIssue, ServerInitialObservation } from "@bitcredit/ai-credit-shared";
 import type { DecisionCase, MintQuoteDenialStatus } from "./decision-types";
 
 export interface DecisionCasesResponse {
   cases: DecisionCase[];
   issues: OperatorSubmittedCaseIssue[];
+  applications?: ServerInitialObservation[];
 }
 
 export function parseMintDenialStatus(
@@ -40,5 +41,6 @@ export function parseDecisionCasesResponse(value: unknown): DecisionCasesRespons
       assessmentCurrency: oneCase.assessmentCurrency === "current" ? "current" : "historical",
     })),
     issues: parsed.data.issues,
+    ...(parsed.data.applications.length === 0 ? {} : { applications: parsed.data.applications }),
   };
 }

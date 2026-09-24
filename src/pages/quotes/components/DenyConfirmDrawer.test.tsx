@@ -34,7 +34,7 @@ vi.mock("@/components/Drawers", () => ({
 }));
 
 describe("DenyConfirmDrawer", () => {
-  it("shows the exact verification items that will be returned", () => {
+  it("shows the exact missing evidence behind an unable-to-assess closure", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -42,21 +42,22 @@ describe("DenyConfirmDrawer", () => {
       root.render(
         <IntlProvider locale="en">
           <DenyConfirmDrawer
-            title="Return for information"
-            mode="return_for_information"
+            title="Close unable to assess"
+            mode="close_unable_to_assess"
             requiredItems={["Signed delivery receipt", "Current acceptor financials"]}
             open
             onOpenChange={vi.fn()}
             onSubmit={vi.fn()}
           >
-            <button type="button">Return</button>
+            <button type="button">Close case</button>
           </DenyConfirmDrawer>
         </IntlProvider>
       );
     });
 
     expect(container.textContent).toContain("Required information");
-    expect(confirmDrawerProps.current?.description).toContain("through the eBill application flow");
+    expect(confirmDrawerProps.current?.description).toContain("cannot obtain the evidence");
+    expect(container.textContent).toContain("Decision basis");
     expect(container.textContent).toContain("Signed delivery receipt");
     expect(container.textContent).toContain("Current acceptor financials");
     act(() => root.unmount());

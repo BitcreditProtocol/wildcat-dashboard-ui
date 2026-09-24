@@ -44,6 +44,7 @@ export type CreditEvidenceState =
 interface QuoteDocumentsProps {
   embedded?: boolean;
   showCaseRecord?: boolean;
+  showPublicResearch?: boolean;
   billAttachments: QuoteDocument[];
   requestToMintFiles: QuoteDocument[];
   creditEvidence: CreditEvidenceState;
@@ -229,6 +230,7 @@ function DocumentGroup({
 
 function CreditEvidence({
   showCaseRecord = true,
+  showPublicResearch = true,
   state,
   openingEvidenceReference,
   onOpenEvidence,
@@ -236,7 +238,12 @@ function CreditEvidence({
   onReviewInvoiceEvidence,
 }: Pick<
   QuoteDocumentsProps,
-  "showCaseRecord" | "openingEvidenceReference" | "onOpenEvidence" | "reviewingEvidenceReference" | "onReviewInvoiceEvidence"
+  | "showCaseRecord"
+  | "showPublicResearch"
+  | "openingEvidenceReference"
+  | "onOpenEvidence"
+  | "reviewingEvidenceReference"
+  | "onReviewInvoiceEvidence"
 > & {
   state: CreditEvidenceState;
 }) {
@@ -297,7 +304,7 @@ function CreditEvidence({
           </h3>
           <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.emptyEvidence)}</p>
         </section>
-        {state.claimInvestigation !== undefined && <ClaimInvestigationPanel state={state.claimInvestigation} />}
+        {showPublicResearch && state.claimInvestigation !== undefined && <ClaimInvestigationPanel state={state.claimInvestigation} />}
       </div>
     );
   }
@@ -331,7 +338,7 @@ function CreditEvidence({
         reviewingEvidenceReference={reviewingEvidenceReference}
         onReviewInvoiceEvidence={onReviewInvoiceEvidence}
       />
-      {state.claimInvestigation !== undefined && <ClaimInvestigationPanel state={state.claimInvestigation} />}
+      {showPublicResearch && state.claimInvestigation !== undefined && <ClaimInvestigationPanel state={state.claimInvestigation} />}
     </div>
   );
 }
@@ -339,6 +346,7 @@ function CreditEvidence({
 export function QuoteDocuments({
   embedded = false,
   showCaseRecord = true,
+  showPublicResearch = true,
   billAttachments,
   requestToMintFiles,
   creditEvidence,
@@ -401,6 +409,7 @@ export function QuoteDocuments({
         <CardContent className={embedded ? "space-y-5 p-0" : "space-y-4 border-t border-border pt-5"}>
           <CreditEvidence
             showCaseRecord={showCaseRecord}
+            showPublicResearch={showPublicResearch}
             state={creditEvidence}
             openingEvidenceReference={openingEvidenceReference}
             onOpenEvidence={onOpenEvidence}

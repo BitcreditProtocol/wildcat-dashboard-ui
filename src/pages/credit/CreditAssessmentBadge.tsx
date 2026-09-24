@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { defineMessages, useIntl } from "react-intl";
 import { useCreditAssessmentForBill } from "./use-credit-assessment";
-import { pendingCaseInvestigation, pendingEvidenceQuestionCount } from "./evidence-review-readiness";
+import { casePreparationBlocksDecision } from "./evidence-review-readiness";
 import { isEvidenceInsufficientClosure } from "./decision-types";
 
 /**
@@ -74,11 +74,15 @@ export function CreditAssessmentBadge({
     );
 
   const { result } = decisionCase;
-  if (
-    result.assessmentStatus === "blocked_pending_verification" ||
-    pendingEvidenceQuestionCount(decisionCase) > 0 ||
-    pendingCaseInvestigation(decisionCase)
-  ) {
+  if (decisionCase.casePreparation?.status === "preparing")
+    return <Badge variant="pending">{intl.formatMessage({ id: "credit.badge.preparing", defaultMessage: "Agents preparing case" })}</Badge>;
+  if (decisionCase.casePreparation?.status === "awaiting_applicant")
+    return (
+      <Badge variant="pending">
+        {intl.formatMessage({ id: "credit.badge.awaitingApplicant", defaultMessage: "Waiting for applicant" })}
+      </Badge>
+    );
+  if (result.assessmentStatus === "blocked_pending_verification" || casePreparationBlocksDecision(decisionCase)) {
     return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
   }
   if (result.recommendation === "offer_available") {

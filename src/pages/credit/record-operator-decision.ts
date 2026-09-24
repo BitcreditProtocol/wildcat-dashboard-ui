@@ -1,5 +1,5 @@
 import { authenticatedFetch } from "@/lib/api-client";
-import type { InformationNeedReview, InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
+import { operatorQuestionTextSchema, type InformationNeedReview, type InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
 import type { MintQuoteDenialStatus, OperatorMaterialEvidenceSelection, SubmittedEvidence } from "./decision-types";
 import { parseMintDenialStatus } from "./parse-decision-cases";
 
@@ -31,6 +31,35 @@ export interface OperatorCapability {
   ready: true;
   operatorId: string;
   operatorRole: "reviewer" | "approver";
+}
+
+export interface ApplicantQuestionInput {
+  billId: string;
+  caseId: string;
+  decisionResultDigest: string;
+  submissionDigest: string;
+  question: string;
+}
+
+/** Information gathering does not record a financial decision or require its written basis. */
+export async function askApplicant(
+  input: ApplicantQuestionInput,
+  capability: OperatorCapability | undefined
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (capability === undefined) return { ok: false, error: "A ready AI Credit operator capability is required for this action" };
+  const question = operatorQuestionTextSchema.safeParse(input.question);
+  if (!question.success) return { ok: false, error: "Enter a question as one line of plain text, up to 500 characters" };
+  try {
+    const response = await authenticatedFetch("/api/ai-credit/operator-verifications", {
+      body: JSON.stringify({ ...input, question: question.data, action: "ask_applicant" }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+      signal: AbortSignal.timeout(15_000),
+    });
+    return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
+  } catch {
+    return { ok: false, error: "The information request could not be confirmed. Refresh the case before retrying." };
+  }
 }
 
 export interface ApplicantHumanReviewUpdateInput {

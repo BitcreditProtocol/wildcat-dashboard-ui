@@ -40,6 +40,7 @@ function render(
           <InformationNeedsPanel
             decisionCase={{
               snapshot: {
+                caseId: "case-1",
                 bill: {
                   billId: "bill-1",
                   billStateDigest: `sha256:${"7".repeat(64)}`,
@@ -204,7 +205,7 @@ it("discards a review draft when another reviewer replaces the prior review", ()
 });
 it("shows answered questions as unverified and is read-only without a capability", () => {
   const page = render();
-  expect(page.textContent).toContain("Answered · unverified");
+  expect(page.textContent).toContain("Evidence review pending");
   expect(page.textContent).toContain("No buyer proof available");
   expect(page.querySelector("form")).toBeNull();
 });
@@ -243,9 +244,18 @@ it("labels retained unresolved concerns without collapsing current, answered, op
     reviewed(6, "resolved"),
   ];
   const page = render(needs, true, undefined, undefined, {}, need.preparedInputId);
-  const rows = [...page.querySelectorAll("details")];
+  const rows = [...page.querySelectorAll("details")].filter((row) =>
+    row.querySelector(":scope > summary")?.textContent?.startsWith(need.question)
+  );
   expect(rows).toHaveLength(6);
-  expect(rows.map((row) => row.querySelector("summary")?.textContent?.includes("Earlier submission · unresolved"))).toEqual([
+  const reviewedGroup = [...page.querySelectorAll("details")].find(
+    (row) => row.querySelector(":scope > summary")?.textContent === "Reviewed support (1)"
+  );
+  expect(reviewedGroup?.open).toBe(false);
+  expect(reviewedGroup?.contains(rows[5] ?? null)).toBe(true);
+  expect(reviewedGroup?.contains(rows[4] ?? null)).toBe(false); // Exhausted is still unresolved.
+  expect(page.textContent).toContain("5 unresolved");
+  expect(rows.map((row) => row.querySelector("summary")?.textContent?.includes("Earlier · unresolved"))).toEqual([
     false,
     false,
     true,
@@ -254,12 +264,18 @@ it("labels retained unresolved concerns without collapsing current, answered, op
     false,
   ]);
   expect(rows.map((row) => row.querySelector("summary")?.textContent)).toEqual([
-    `${need.question}Answered · unverified`,
-    `${need.question}Open`,
-    `${need.question}Earlier submission · unresolvedAnswered · unverified`,
-    `${need.question}Earlier submission · unresolvedOpen`,
-    `${need.question}Earlier submission · unresolvedUnresolved · evidence unavailable`,
-    `${need.question}Support reviewed`,
+    `${need.question}Evidence review pending`,
+    `${need.question}Response not recorded`,
+    `${need.question}Earlier · unresolvedEvidence review pending`,
+    `${need.question}Earlier · unresolvedResponse not recorded`,
+    `${need.question}Earlier · unresolvedUnresolved`,
+    `${need.question}Evidence reviewed`,
+  ]);
+  // Review outcomes keep their reviewer-facing wording, separate from the status vocabulary.
+  expect([...(rows[0]?.querySelectorAll("option") ?? [])].map((option) => option.textContent)).toEqual([
+    "Select outcome",
+    "Support reviewed",
+    "Unresolved · evidence unavailable",
   ]);
   expect(rows.map((row) => row.querySelector("blockquote")?.textContent)).toEqual(needs.map(() => "Coffee sales"));
   expect(rows.map((row) => row.querySelector("form") !== null)).toEqual([true, true, true, true, true, false]);
@@ -279,8 +295,8 @@ it("labels retained unresolved concerns without collapsing current, answered, op
 
 it("does not infer an earlier submission without the current prepared-input binding", () => {
   const page = render({ ...need, preparedInputId: "22222222-2222-4222-8222-222222222222" });
-  expect(page.textContent).not.toContain("Earlier submission");
-  expect(page.textContent).toContain("Answered · unverified");
+  expect(page.textContent).not.toContain("Earlier ·");
+  expect(page.textContent).toContain("Evidence review pending");
 });
 
 it("localizes the retained-question label through the host catalog", () => {
@@ -289,7 +305,7 @@ it("localizes the retained-question label through the host catalog", () => {
     false,
     undefined,
     undefined,
-    { "credit.needs.earlierSubmission": "Frühere Einreichung · ungeklärt" },
+    { "credit.needs.status.earlierUnresolved": "Frühere Einreichung · ungeklärt" },
     "22222222-2222-4222-8222-222222222222"
   );
   expect(page.querySelector("summary")?.textContent).toContain("Frühere Einreichung · ungeklärt");
@@ -334,6 +350,8 @@ it("makes stale reviews visibly open rather than carrying a green result forward
       reviewerRole: "reviewer",
     },
   });
-  expect(page.textContent).toContain("Reopened · assessment changed");
-  expect(page.textContent).not.toContain("Support reviewed");
+  expect(page.textContent).toContain("Recheck required");
+  expect(page.textContent).not.toContain("Evidence reviewed");
+  expect(page.textContent).not.toContain("Reviewed support (");
+  expect(page.textContent).toContain("1 unresolved");
 });

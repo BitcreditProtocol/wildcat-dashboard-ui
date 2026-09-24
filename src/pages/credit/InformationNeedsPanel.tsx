@@ -3,8 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import type { InformationNeed } from "@bitcredit/ai-credit-shared";
+import { unresolvedInformationNeeds } from "@bitcredit/ai-credit-shared";
 import type { DecisionCase } from "./decision-types";
 import { informationNeedResponseLabel } from "./information-need-response-labels";
+import { informationNeedStatusMessage, informationNeedStatusMessages } from "./information-need-status";
 import { reviewInformationNeed, type InformationNeedReviewFailure, type OperatorCapability } from "./record-operator-decision";
 
 const failureMessages = defineMessages({
@@ -27,31 +29,27 @@ const failureMessages = defineMessages({
 
 const messages = defineMessages({
   title: { id: "credit.needs.title", defaultMessage: "Evidence questions", description: "Persistent evidence questions from interviews" },
-  open: { id: "credit.needs.open", defaultMessage: "Open", description: "No current evidence review" },
-  answered: {
-    id: "credit.needs.answered",
-    defaultMessage: "Answered · unverified",
-    description: "Applicant reply does not prove the claim",
+  pendingCount: {
+    id: "credit.needs.pendingCount",
+    defaultMessage: "{count} unresolved",
+    description: "Questions still requiring review, including older or exhausted questions",
   },
-  earlierSubmission: {
-    id: "credit.needs.earlierSubmission",
-    defaultMessage: "Earlier submission · unresolved",
-    description: "An unresolved evidence concern retained from an earlier applicant submission",
+  reviewed: {
+    id: "credit.needs.reviewed",
+    defaultMessage: "Reviewed support ({count})",
+    description: "Current evidence reviews kept available without repeating completed work",
   },
-  resolved: {
+  // Status wording lives in ./information-need-status so the Case history record uses the same words.
+  // Review outcome options keep their original ids and wording.
+  outcomeResolved: {
     id: "credit.needs.resolved",
     defaultMessage: "Support reviewed",
     description: "Human-reviewed support, not independent truth",
   },
-  exhausted: {
+  outcomeExhausted: {
     id: "credit.needs.exhausted",
     defaultMessage: "Unresolved · evidence unavailable",
     description: "Review ended without resolving the evidence gap",
-  },
-  stale: {
-    id: "credit.needs.stale",
-    defaultMessage: "Reopened · assessment changed",
-    description: "Previous evidence review is no longer current",
   },
   response: { id: "credit.needs.response", defaultMessage: "Applicant answer", description: "Untrusted reply to this question" },
   purpose: { id: "credit.needs.purpose", defaultMessage: "Why this is needed", description: "Governed purpose of an evidence question" },
@@ -88,7 +86,7 @@ type NeedCase = Pick<
   DecisionCase,
   "resultDigest" | "submissionDigest" | "assessmentCurrency" | "submittedEvidence" | "informationNeeds" | "applicantConfirmation"
 > & {
-  snapshot: Pick<DecisionCase["snapshot"], "bill">;
+  snapshot: Pick<DecisionCase["snapshot"], "bill" | "caseId">;
 };
 
 function NeedRow({
@@ -112,15 +110,7 @@ function NeedRow({
   const [error, setError] = useState<InformationNeedReviewFailure | null>(null);
   const isEarlierSubmission =
     decisionCase.applicantConfirmation !== undefined && need.preparedInputId !== decisionCase.applicantConfirmation.preparedInputId;
-  const status = need.reviewIsStale
-    ? messages.stale
-    : need.status === "resolved"
-      ? messages.resolved
-      : need.status === "exhausted"
-        ? messages.exhausted
-        : need.response === undefined
-          ? messages.open
-          : messages.answered;
+  const status = informationNeedStatusMessage(need);
   const save = async () => {
     const billId = decisionCase.snapshot.bill?.billId;
     if (
@@ -170,7 +160,7 @@ function NeedRow({
         <span className="min-w-0 flex-1 break-words">{need.question}</span>
         <span className="text-xs text-muted-foreground">
           {isEarlierSubmission && need.status !== "resolved" && (
-            <span className="block">{intl.formatMessage(messages.earlierSubmission)}</span>
+            <span className="block">{intl.formatMessage(informationNeedStatusMessages.earlierSubmission)}</span>
           )}
           <span className="block">{intl.formatMessage(status)}</span>
         </span>
@@ -246,8 +236,8 @@ function NeedRow({
                   }}
                 >
                   <option value="">{intl.formatMessage(messages.choose)}</option>
-                  <option value="resolved">{intl.formatMessage(messages.resolved)}</option>
-                  <option value="exhausted">{intl.formatMessage(messages.exhausted)}</option>
+                  <option value="resolved">{intl.formatMessage(messages.outcomeResolved)}</option>
+                  <option value="exhausted">{intl.formatMessage(messages.outcomeExhausted)}</option>
                 </select>
               </div>
               <fieldset disabled={pending}>
@@ -315,17 +305,35 @@ export function InformationNeedsPanel({
   const intl = useIntl();
   const needs = decisionCase.informationNeeds ?? [];
   if (needs.length === 0) return null;
+  const unresolved = unresolvedInformationNeeds(needs, {
+    caseId: decisionCase.snapshot.caseId,
+    resultDigest: decisionCase.resultDigest,
+    submissionDigest: decisionCase.submissionDigest,
+  });
+  const reviewed = needs.filter((need) => !unresolved.includes(need));
+  const renderNeed = (need: InformationNeed) => (
+    <NeedRow
+      key={`${need.needId}:${decisionCase.resultDigest}:${decisionCase.submissionDigest ?? "legacy"}:${JSON.stringify(need.review)}`}
+      need={need}
+      decisionCase={decisionCase}
+      capability={capability}
+    />
+  );
   return (
-    <section id="evidence-questions" className="mt-4 scroll-mt-4 border-t border-border pt-4">
-      <h5 className="mb-3 text-sm font-semibold">{intl.formatMessage(messages.title)}</h5>
-      {needs.map((need) => (
-        <NeedRow
-          key={`${need.needId}:${decisionCase.resultDigest}:${decisionCase.submissionDigest ?? "legacy"}:${JSON.stringify(need.review)}`}
-          need={need}
-          decisionCase={decisionCase}
-          capability={capability}
-        />
-      ))}
+    <section id="evidence-questions" className="scroll-mt-4">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold">{intl.formatMessage(messages.title)}</h3>
+        <span className="text-xs text-muted-foreground">{intl.formatMessage(messages.pendingCount, { count: unresolved.length })}</span>
+      </div>
+      {unresolved.map(renderNeed)}
+      {reviewed.length > 0 && (
+        <details className="border-t border-border pt-3">
+          <summary className="cursor-pointer text-xs text-muted-foreground">
+            {intl.formatMessage(messages.reviewed, { count: reviewed.length })}
+          </summary>
+          <div className="mt-3">{reviewed.map(renderNeed)}</div>
+        </details>
+      )}
     </section>
   );
 }
