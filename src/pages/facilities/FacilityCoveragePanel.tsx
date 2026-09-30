@@ -41,6 +41,12 @@ const reasons = defineMessages({
     id: "facilities.coverage.conflict",
     defaultMessage: "An earlier reservation conflicts with this case. Operator: reconcile the existing quote before another offer.",
   },
+  identity_unverified: {
+    id: "facilities.coverage.identity",
+    defaultMessage:
+      "No offer until the applicant proves control of the current eBill identity to the Mint. Applicant: confirm the application with that identity. This proves identity control only, not KYC or the truth of any statement.",
+    description: "Legacy facility without an eBill identity-control proof; authenticity only, not KYC or verification",
+  },
 });
 
 export function FacilityCoveragePanel({ coverage, quoteId }: { coverage: FacilityCoverage; quoteId?: string }) {

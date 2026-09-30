@@ -214,6 +214,47 @@ describe("facility queue and case", () => {
       "/facilities?application=11111111-1111-4111-8111-111111111111"
     );
   });
+  it("blocks an unproven eBill identity with an applicant step that is not KYC or verification", async () => {
+    const page = await render(
+      <FacilityCoveragePanel
+        coverage={{
+          binding: {
+            schemaVersion: "facility-bill-binding-v1",
+            facilityId: "11111111-1111-4111-8111-111111111111",
+            applicantRef: "farmer",
+            mintNodeId: "mint",
+            agreementVersion: 1,
+            agreementDigest: facilityDigest,
+            submissionDigest: facilityDigest,
+          },
+          status: "blocked",
+          blockers: ["identity_unverified", "agreement_inactive"],
+          allowance: {
+            exposureBasis: "whole_bill_face_value",
+            limitSat: "6000000",
+            reservedSat: "0",
+            availableSat: "6000000",
+            entries: [],
+            syntheticNonBinding: true,
+          },
+          billFaceValueSat: "2000000",
+          remainingAfterOfferSat: "4000000",
+          eligibleScope: "Existing milk sales only",
+          expiresAt: "2026-10-29T23:59:59.000Z",
+          digest: facilityDigest,
+          syntheticNonBinding: true,
+        }}
+      />
+    );
+    const items = [...page.querySelectorAll("li")].map((item) => item.textContent);
+    expect(items).toHaveLength(2);
+    expect(items[0]).toContain("No offer until the applicant proves control of the current eBill identity to the Mint.");
+    expect(items[0]).toContain("Applicant: confirm the application with that identity.");
+    expect(items[0]).toContain("not KYC or the truth of any statement");
+    expect(items[0]).not.toMatch(/\bverified\b/i);
+    // A blocked agreement shows no hypothetical remaining allowance.
+    expect(page.textContent).not.toContain("4,000,000 sat");
+  });
   it("identifies applications by purpose, name, date and status with stable exact links", async () => {
     const first = facilityFixture();
     const second = facilityFixture({ id: "22222222-2222-4222-8222-222222222222", applicantName: "Second Farm" });
