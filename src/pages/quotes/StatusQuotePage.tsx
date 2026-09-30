@@ -4,7 +4,7 @@ import { Skeleton } from "@bitcredit/ui-library";
 import { LoaderIcon } from "lucide-react";
 import { Link } from "react-router";
 import { cn } from "@bitcredit/ui-library";
-import { useIntl } from "react-intl";
+import { defineMessages, useIntl } from "react-intl";
 import { BreadcrumbLink } from "@/components/ui/breadcrumb";
 import { FilterChipRow } from "@/components/FilterChipRow";
 import { ListFilters, type FilterGroup } from "@/components/ListFilters";
@@ -19,6 +19,19 @@ import { QuoteStatusChips } from "./components/QuoteStatusChips";
 interface StatusQuotePageProps {
   status?: QuoteStatus;
 }
+
+const countMessages = defineMessages({
+  matches: {
+    id: "quotes.search.matchCount",
+    defaultMessage: "{matches, plural, one {# match} other {# matches}} among {searched} quotes",
+    description: "Search or filter result count after every quote was loaded and checked",
+  },
+  matchesSoFar: {
+    id: "quotes.search.matchCountSoFar",
+    defaultMessage: "{matches, plural, one {# match} other {# matches}} among {searched} of {total} quotes loaded so far",
+    description: "Search or filter result count while some quotes are not loaded yet, so they were not checked",
+  },
+});
 
 function Loader() {
   return (
@@ -94,6 +107,17 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
   } = useQuoteList(status);
 
   const errorMessage = error ? ((error as { message?: string }).message ?? String(error)) : undefined;
+  // A search or filter counts matches among loaded quotes only; unloaded pages are never implied to be searched.
+  const matchMessage = !hasNextPage && quotes.length >= totalQuotes ? countMessages.matches : countMessages.matchesSoFar;
+  const countLabel = hasActiveFilters
+    ? intl.formatMessage(matchMessage, { matches: sortedQuotes.length, searched: quotes.length, total: totalQuotes })
+    : intl.formatMessage(
+        {
+          id: "quotes.pagination.count",
+          defaultMessage: "Showing {loaded} of {total} quotes",
+        },
+        { loaded: sortedQuotes.length, total: totalQuotes }
+      );
 
   const filterGroups: FilterGroup[] = [
     {
@@ -158,17 +182,7 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             className="lg:hidden"
           />
         </div>
-        {totalQuotes > 0 && (
-          <div className="text-sm text-muted-foreground">
-            {intl.formatMessage(
-              {
-                id: "quotes.pagination.count",
-                defaultMessage: "Showing {loaded} of {total} quotes",
-              },
-              { loaded: quotes.length, total: totalQuotes }
-            )}
-          </div>
-        )}
+        {totalQuotes > 0 && <div className="text-sm text-muted-foreground">{countLabel}</div>}
       </div>
 
       <div className="my-4 flex flex-col gap-2">

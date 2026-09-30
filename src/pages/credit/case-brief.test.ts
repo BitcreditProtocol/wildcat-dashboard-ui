@@ -67,10 +67,36 @@ const openNeed = (overrides: Partial<InformationNeed>): InformationNeed => ({
 });
 
 describe("buildCaseBrief", () => {
+  it("requires facility review when a bound case has no current coverage, even if ordinary bill checks pass", () => {
+    const base = readyCase();
+    const result = brief({
+      ...base,
+      snapshot: {
+        ...base.snapshot,
+        facility: {
+          schemaVersion: "facility-bill-binding-v1",
+          facilityId: "11111111-1111-4111-8111-111111111111",
+          applicantRef: "applicant",
+          mintNodeId: "mint",
+          agreementVersion: 1,
+          agreementDigest: resultDigest,
+          submissionDigest,
+        },
+      },
+    });
+    expect(result.next.kind).toBe("facility_review");
+    expect(operatorOwnsNextStep(result.next)).toBe(true);
+  });
   it("keeps a processing dialogue with the agent rather than the applicant in legacy projections", () => {
     const result = brief(readyCase({ serverClarificationDialogues: [{ ...activeDialogue, status: "processing" }] }));
     expect(result.next.kind).toBe("wait_agent");
     expect(result.work.some((work) => work.kind === "applicant" && work.state === "answering")).toBe(false);
+  });
+
+  it("does not present historical evidence questions as current blockers", () => {
+    const result = brief(readyCase({ assessmentCurrency: "historical", informationNeeds: [openNeed({})] }));
+    expect(result.next.kind).toBe("wait_reassessment");
+    expect(result.outstanding).toEqual([]);
   });
 
   const prepared: NonNullable<DecisionCase["casePreparation"]> = {
@@ -161,10 +187,20 @@ describe("buildCaseBrief", () => {
     expect(noFit.repaymentUnverified).toBe(false);
   });
 
+  it("hands expired prepared terms to the applicant, even when agent preparation finished", () => {
+    const withExpiry = (offerExpiresOn: string) => ({ ...readyCase().result, terms: { offerExpiresOn } }) as DecisionCase["result"];
+    const expired = brief(readyCase({ casePreparation: prepared, result: withExpiry("2026-09-22") }));
+    expect(expired.next).toEqual({ kind: "terms_expired", offerExpiresOn: "2026-09-22" });
+    expect(operatorOwnsNextStep(expired.next)).toBe(false);
+    // Terms stand through the end of their UTC expiry day.
+    expect(brief(readyCase({ result: withExpiry("2026-09-23") })).next.kind).toBe("decide_offer");
+  });
+
   it("asks a human reviewer to check applicant replies instead of treating them as resolved", () => {
     const result = brief(readyCase({ informationNeeds: [openNeed({})] }));
     expect(result.next).toEqual({ kind: "review_evidence", count: 1 });
     expect(result.work).toContainEqual({ kind: "evidence_review", toReview: 1, noReply: 0, unavailable: 0, reviewed: 0 });
+    expect(result.outstanding).toEqual([{ item: salesQuestion.question, action: "review_reply" }]);
   });
 
   it("counts a review bound to an older assessment as needing review again", () => {
@@ -180,15 +216,42 @@ describe("buildCaseBrief", () => {
   });
 
   it("waits for the applicant while they are answering, even when older replies await review", () => {
-    const result = brief(readyCase({ informationNeeds: [openNeed({})], serverClarificationDialogues: [activeDialogue] }));
+    const result = brief(
+      readyCase({ ...blocked({ owner: "applicant" }), informationNeeds: [openNeed({})], serverClarificationDialogues: [activeDialogue] })
+    );
     expect(result.next).toEqual({ kind: "wait_applicant", since: activeDialogue.updatedAt });
     expect(operatorOwnsNextStep(result.next)).toBe(false);
+    expect(result.outstanding).toEqual([]);
     expect(result.work).toContainEqual({ kind: "applicant", state: "answering", at: activeDialogue.updatedAt, submissions: 0 });
+  });
+
+  it("lists an automatic request's items as owed only while that request still awaits a reply", () => {
+    const answered = {
+      request: { requestedAt: "2026-09-20T10:00:00.000Z", requiredItems: ["Show the buyer's purchase order."] },
+      response: { respondedAt: "2026-09-21T10:00:00.000Z" },
+    } as unknown as DecisionCase["automaticInformationRequest"];
+    // A new live dialogue makes the applicant the next actor; the earlier, answered request is not owed again.
+    const live = brief(readyCase({ automaticInformationRequest: answered, serverClarificationDialogues: [activeDialogue] }));
+    expect(live.next).toEqual({ kind: "wait_applicant", since: activeDialogue.updatedAt });
+    expect(live.outstanding).toEqual([]);
+
+    const awaiting = brief(
+      readyCase({
+        automaticInformationRequest: { ...answered, response: null } as unknown as DecisionCase["automaticInformationRequest"],
+        casePreparation: { ...prepared, status: "awaiting_applicant", approvable: false, reasons: ["awaiting_applicant_reply"] },
+      })
+    );
+    expect(awaiting.next.kind).toBe("wait_applicant");
+    expect(awaiting.outstanding).toEqual([{ item: "Show the buyer's purchase order.", action: "reply" }]);
   });
 
   it("waits for a reply to a question already sent, and asks the operator to send one that was not", () => {
     const asked = openNeed({ response: undefined, origin: { runId: firstRun.runId, needIndex: 0, requestId: "request-1" } });
     expect(brief(readyCase({ informationNeeds: [asked] })).next.kind).toBe("wait_applicant");
+    expect(brief(readyCase({ informationNeeds: [asked] })).outstanding).toEqual([{ item: asked.question, action: "reply" }]);
+    expect(brief(readyCase({ informationNeeds: [openNeed({ response: undefined })] })).outstanding).toEqual([
+      { item: salesQuestion.question, action: "send_request" },
+    ]);
     expect(brief(readyCase({ informationNeeds: [openNeed({ response: undefined })] })).next).toEqual({
       kind: "send_applicant_request",
       count: 1,
@@ -202,13 +265,25 @@ describe("buildCaseBrief", () => {
     });
     const result = brief(readyCase({ informationNeeds: [exhausted] }));
     expect(result.next).toEqual({ kind: "decide_unresolved", count: 1 });
+    expect(result.outstanding).toEqual([{ item: exhausted.question, action: "resolve_evidence" }]);
   });
 
   it("lets running agent work finish before asking anyone to act", () => {
     const result = brief(readyCase({ caseInvestigation: { status: "running", runs: [] }, informationNeeds: [openNeed({})] }));
     expect(result.next).toEqual({ kind: "wait_agent" });
+    expect(result.outstanding).toEqual([]);
     expect(result.work[0]).toEqual({ kind: "answer_review", state: "running", proposed: 0 });
   });
+
+  it.each(["applicant", "system", "mint_risk", "mint_operations"] as const)(
+    "does not dispatch %s verification work while answer review is running",
+    (owner) => {
+      const result = brief(readyCase({ ...blocked({ owner }), caseInvestigation: { status: "running", runs: [] } }));
+      expect(result.next.kind).toBe("wait_agent");
+      expect(result.outstanding).toEqual([]);
+      expect(result.work.some((item) => item.kind === "verification")).toBe(true);
+    }
+  );
 
   it("tells a failed answer review apart from one that never ran for the latest submission", () => {
     const failed = { ...firstRun, submissionDigest, resultDigest, status: "failed" as const, needs: [] };
@@ -233,9 +308,31 @@ describe("buildCaseBrief", () => {
     const withApplicant = brief(readyCase(blocked({ owner: "mint_risk" }, { owner: "applicant" })));
     expect(withApplicant.next).toEqual({ kind: "send_applicant_request", count: 1 });
     expect(withApplicant.work.filter((item) => item.kind === "verification")).toHaveLength(2);
+    expect(withApplicant.outstanding).toEqual([
+      { item: "Required item", action: "provide_risk" },
+      { item: "Required item", action: "send_request" },
+    ]);
 
     expect(brief(readyCase(blocked({ owner: "system" }))).next).toEqual({ kind: "retry_sources" });
     expect(brief(readyCase(blocked({ owner: "mint_operations", axis: "mint_exposure_capacity" }))).next).toEqual({ kind: "manual_review" });
+  });
+
+  it("never tells the operator to send an applicant request on an agent-prepared case", () => {
+    const attention = {
+      ...prepared,
+      status: "attention" as const,
+      approvable: false,
+      reasons: ["mint_verification_required" as const, "applicant_verification_unresolved" as const],
+    };
+    const result = brief(readyCase({ ...blocked({ owner: "mint_risk" }, { owner: "applicant" }), casePreparation: attention }));
+    expect(result.next).toEqual({ kind: "wait_mint_risk" });
+    expect(operatorOwnsNextStep(result.next)).toBe(false);
+    // Both needs stay listed with their actual owners; the applicant item is not an operator dispatch task.
+    expect(result.outstanding).toEqual([
+      { item: "Required item", action: "provide_risk" },
+      { item: "Required item", action: "applicant_evidence" },
+    ]);
+    expect(result.work.flatMap((item) => (item.kind === "verification" ? [item.owner] : []))).toEqual(["mint_risk", "applicant"]);
   });
 
   it("puts closure, applicant review and retained assessments ahead of every other step", () => {

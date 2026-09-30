@@ -29,7 +29,8 @@ export function RequestInformationDrawer({ open, onOpenChange, isPending = false
       })}
       description={intl.formatMessage({
         id: "quotes.askApplicant.description",
-        defaultMessage: "The applicant will receive this question in eBill.",
+        defaultMessage:
+          "Sent to the applicant in eBill, not to an agent. This pauses the offer until they reply and the case is reassessed.",
         description: "Delivery destination for an optional operator question",
       })}
       open={open}

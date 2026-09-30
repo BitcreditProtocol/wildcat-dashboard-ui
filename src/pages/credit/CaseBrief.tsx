@@ -1,3 +1,4 @@
+import { caseNextStepOwner, type CaseNextOwner } from "@bitcredit/ai-credit-shared";
 import { CircleAlert, CircleCheck, CircleDashed, Clock3 } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl, type IntlShape } from "react-intl";
@@ -6,7 +7,103 @@ import { words } from "./decision-types";
 import { requestReason } from "./verification-reasons";
 
 const messages = defineMessages({
+  facilityReview: {
+    id: "quotes.brief.step.facility",
+    defaultMessage: "Review the agreement coverage and resolve its blockers. No offer can be authorized while they remain.",
+    description: "Operator-owned agreement review",
+  },
   nextStep: { id: "quotes.brief.nextStep", defaultMessage: "Next step", description: "Heading for the single next step on a case" },
+  ready: {
+    id: "quotes.brief.offerReady",
+    defaultMessage: "Approval available · offer not sent",
+    description: "Valid proposed terms still require a human decision",
+  },
+  notReady: {
+    id: "quotes.brief.offerNotReady",
+    defaultMessage: "Approval unavailable",
+    description: "This case cannot currently be approved",
+  },
+  noFit: {
+    id: "quotes.brief.noFit",
+    defaultMessage: "No compliant offer · not a denial",
+    description: "No-fit recommendation is not an operator denial",
+  },
+  blockers: {
+    id: "quotes.brief.blockers",
+    defaultMessage: "What is holding this up",
+    description: "Exact recorded items preventing completion",
+  },
+  applicantAction: {
+    id: "quotes.brief.blocker.applicant",
+    defaultMessage: "Applicant · reply in eBill; then reassessment",
+    description: "Owner and next step of a required applicant item",
+  },
+  riskAction: {
+    id: "quotes.brief.blocker.risk",
+    defaultMessage: "Mint risk · provide the signed risk record",
+    description: "Owner and next step of a required risk record",
+  },
+  sourceAction: {
+    id: "quotes.brief.blocker.source",
+    defaultMessage: "Mint operations · restore the source, then retry checks",
+    description: "Owner and next step for a failed required source",
+  },
+  requestAction: {
+    id: "quotes.brief.blocker.request",
+    defaultMessage: "You · send the request to the applicant",
+    description: "Information has not yet been requested from the applicant",
+  },
+  applicantEvidenceAction: {
+    id: "quotes.brief.blocker.applicantEvidence",
+    defaultMessage: "Applicant · not yet provided",
+    description: "Required applicant item on an agent-prepared case; agents request it, the operator is not asked to send it",
+  },
+  reviewAction: {
+    id: "quotes.brief.blocker.review",
+    defaultMessage: "You · check the reply against the documents",
+    description: "The applicant has replied; the reviewer must check support",
+  },
+  resolveAction: {
+    id: "quotes.brief.blocker.resolve",
+    defaultMessage: "You · request more evidence or close as unable to assess",
+    description: "Operator choice when supporting evidence remains unavailable",
+  },
+  capacityAction: {
+    id: "quotes.brief.blocker.capacity",
+    defaultMessage: "Mint operations · review exposure capacity",
+    description: "Mint capacity is not an applicant information request or a retryable source check",
+  },
+  missingNotDenial: {
+    id: "quotes.brief.missingNotDenial",
+    defaultMessage: "Missing information is not grounds for denial.",
+    description: "Evidence gaps do not establish adverse risk",
+  },
+  residual: {
+    id: "quotes.brief.residual",
+    defaultMessage: "Uncertainty you would accept",
+    description: "Material limitation visible before sign-off",
+  },
+  residualRepayment: {
+    id: "quotes.brief.residualRepayment",
+    defaultMessage:
+      "Repayment timing and source are the applicant’s statements, not independently confirmed. The current assessment permits an offer with this limitation.",
+    description: "Residual uncertainty only when governed terms are currently actionable",
+  },
+  recordLimit: {
+    id: "quotes.brief.recordLimit",
+    defaultMessage: "Records acceptance and terms, not ability to pay.",
+    description: "Protocol authenticity is not solvency",
+  },
+  documentLimit: {
+    id: "quotes.brief.documentLimit",
+    defaultMessage: "Consistency with an applicant-supplied document, not independent confirmation of the trade.",
+    description: "Applicant document provenance limitation",
+  },
+  mintLimit: {
+    id: "quotes.brief.mintLimit",
+    defaultMessage: "Mint records only; not a guarantee of repayment or a check at other Mints.",
+    description: "Scope of Mint-owned checks",
+  },
   ownerYou: { id: "quotes.brief.owner.you", defaultMessage: "You", description: "The signed-in Mint operator owns the next step" },
   ownerAgent: {
     id: "quotes.brief.owner.agent",
@@ -77,7 +174,7 @@ const messages = defineMessages({
   },
   waitAgent: {
     id: "quotes.brief.step.agentPreparation",
-    defaultMessage: "Agents assess the case and request missing information automatically. You decide on the prepared terms.",
+    defaultMessage: "Agents are assessing the case. You decide once current terms are ready.",
     description: "Agent-led preparation followed by the human financial decision",
   },
   waitApplicant: {
@@ -134,7 +231,7 @@ const messages = defineMessages({
   },
   factsIndependent: {
     id: "quotes.brief.facts.independent",
-    defaultMessage: "Independent of the applicant",
+    defaultMessage: "Mint-owned checks",
     description: "Records the Mint holds itself, not supplied by the applicant",
   },
   acceptance: {
@@ -193,7 +290,7 @@ const messages = defineMessages({
   },
   repaymentUnresolved: {
     id: "quotes.brief.claims.repaymentUnresolved",
-    defaultMessage: "Unresolved · not independently confirmed",
+    defaultMessage: "Applicant statement only",
     description: "The repayment claim rests only on the applicant's statement",
   },
   progress: {
@@ -322,15 +419,21 @@ function ToneIcon({ tone }: { tone: Tone }) {
   return <Icon className={`mt-0.5 size-4 shrink-0 ${color}`} aria-hidden="true" />;
 }
 
+const ownerMessages = {
+  operator: messages.ownerYou,
+  agent: messages.ownerAgent,
+  mint_risk: messages.ownerMintRisk,
+  applicant: messages.ownerApplicant,
+  mint: messages.ownerMint,
+} satisfies Record<CaseNextOwner, (typeof messages)[keyof typeof messages]>;
+
+/** The same owner the operator assistant is given for this step. */
 function ownerLabel(intl: IntlShape, next: CaseNextStep): string {
-  if (operatorOwnsNextStep(next)) return intl.formatMessage(messages.ownerYou);
-  if (next.kind === "wait_agent") return intl.formatMessage(messages.ownerAgent);
-  if (next.kind === "wait_mint_risk") return intl.formatMessage(messages.ownerMintRisk);
-  if (next.kind === "wait_applicant" || next.kind === "terms_expired") return intl.formatMessage(messages.ownerApplicant);
-  return intl.formatMessage(messages.ownerMint);
+  return intl.formatMessage(ownerMessages[caseNextStepOwner(next)]);
 }
 
 const stepCopy = {
+  facility_review: messages.facilityReview,
   decide_offer: messages.decideOffer,
   confirm_no_fit: messages.confirmNoFit,
   manual_review: messages.manualReview,
@@ -349,6 +452,7 @@ const stepCopy = {
 } satisfies Record<Exclude<CaseNextStep["kind"], "closed">, (typeof messages)[keyof typeof messages]>;
 
 const stepLink: Partial<Record<CaseNextStep["kind"], { href: string; label: (typeof messages)[keyof typeof messages] }>> = {
+  facility_review: { href: "#facility-coverage", label: messages.details },
   review_evidence: { href: "#evidence-questions", label: messages.openEvidenceReview },
   decide_unresolved: { href: "#evidence-questions", label: messages.openEvidenceReview },
   manual_review: { href: "#full-governed-assessment", label: messages.openCalculation },
@@ -357,17 +461,43 @@ const stepLink: Partial<Record<CaseNextStep["kind"], { href: string; label: (typ
   wait_applicant: { href: "#case-conversation", label: messages.openConversation },
 };
 
+const blockerAction = {
+  reply: messages.applicantAction,
+  send_request: messages.requestAction,
+  applicant_evidence: messages.applicantEvidenceAction,
+  review_reply: messages.reviewAction,
+  resolve_evidence: messages.resolveAction,
+  provide_risk: messages.riskAction,
+  restore_source: messages.sourceAction,
+  review_capacity: messages.capacityAction,
+} satisfies Record<NonNullable<CaseBrief["outstanding"]>[number]["action"], (typeof messages)[keyof typeof messages]>;
+
 /** Who acts next and whether the operator must intervene; governed controls follow as `actions`. */
-export function CaseNextStepPanel({ next, actions }: { next: CaseNextStep; actions?: ReactNode }) {
+export function CaseNextStepPanel({ next, brief, actions }: { next: CaseNextStep; brief?: CaseBrief; actions?: ReactNode }) {
   const intl = useIntl();
   if (next.kind === "closed") return actions ? <div className="mt-4 print:hidden">{actions}</div> : null;
   const operator = operatorOwnsNextStep(next);
   const link = stepLink[next.kind];
   return (
-    <section
-      aria-labelledby="case-next-step"
-      className={`mt-5 rounded-lg border px-4 py-3 ${operator ? "border-signal-alert/50" : "border-border"}`}
-    >
+    <section aria-labelledby="case-next-step" className="mt-5 border-t border-border pt-4">
+      <p className={`mb-3 text-sm font-semibold ${next.kind === "decide_offer" ? "text-signal-success" : "text-foreground"}`}>
+        {intl.formatMessage(
+          next.kind === "decide_offer" ? messages.ready : next.kind === "confirm_no_fit" ? messages.noFit : messages.notReady
+        )}
+      </p>
+      {(brief?.outstanding?.length ?? 0) > 0 && (
+        <div className="mb-4">
+          <h3 className="text-xs text-muted-foreground">{intl.formatMessage(messages.blockers)}</h3>
+          <ul className="mt-2 space-y-2">
+            {brief?.outstanding?.map(({ item, action }) => (
+              <li key={`${action}:${item}`} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-sm">
+                <span className="min-w-0 flex-1 break-words">{item}</span>
+                <span className="text-xs text-muted-foreground">{intl.formatMessage(blockerAction[action])}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <h2 id="case-next-step" className="flex flex-wrap items-baseline gap-x-2 text-sm">
         <span className="font-semibold">
           {intl.formatMessage(messages.nextStep)} · {ownerLabel(intl, next)}
@@ -382,6 +512,15 @@ export function CaseNextStepPanel({ next, actions }: { next: CaseNextStep; actio
           </a>
         )}
       </p>
+      {next.kind === "decide_offer" && brief?.repaymentUnverified && (
+        <div className="mt-4 border-l-2 border-signal-alert pl-3 text-sm">
+          <h3 className="font-medium">{intl.formatMessage(messages.residual)}</h3>
+          <p className="mt-1 text-muted-foreground">{intl.formatMessage(messages.residualRepayment)}</p>
+        </div>
+      )}
+      {(next.kind === "decide_unresolved" || next.kind === "review_evidence" || next.kind === "preparation_attention") && (
+        <p className="mt-2 text-xs text-muted-foreground">{intl.formatMessage(messages.missingNotDenial)}</p>
+      )}
       {actions && <div className="mt-3 print:hidden">{actions}</div>}
     </section>
   );
@@ -460,6 +599,7 @@ export function CaseFacts({
         </p>
         <Fact label={intl.formatMessage(messages.payer)} value={payerName} />
         <Fact label={intl.formatMessage(messages.drawer)} value={drawerName} />
+        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.recordLimit)}</p>
       </FactGroup>
       <FactGroup title={intl.formatMessage(messages.factsClaims)}>
         <Fact label={intl.formatMessage(messages.useOfFunds)} value={answer(useOfFunds)} />
@@ -473,6 +613,10 @@ export function CaseFacts({
         <ul className="space-y-2">
           <Finding tone={invoice.tone}>{intl.formatMessage(invoice.message)}</Finding>
         </ul>
+        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.documentLimit)}</p>
+        <a href="#documents-and-evidence" className="inline-block text-xs text-primary hover:underline">
+          {intl.formatMessage(messages.details)}
+        </a>
       </FactGroup>
       <FactGroup title={intl.formatMessage(messages.factsIndependent)}>
         <ul className="space-y-2">
@@ -480,6 +624,10 @@ export function CaseFacts({
           {support.duplicateCheckClear && <Finding tone="done">{intl.formatMessage(messages.duplicateClear)}</Finding>}
           {!hasIndependent && <Finding tone="idle">{intl.formatMessage(messages.independentNone)}</Finding>}
         </ul>
+        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.mintLimit)}</p>
+        <a href="#full-governed-assessment" className="inline-block text-xs text-primary hover:underline">
+          {intl.formatMessage(messages.details)}
+        </a>
       </FactGroup>
     </div>
   );
@@ -578,11 +726,11 @@ export function CaseProgress({ work }: { work: readonly CaseWorkItem[] }) {
   const intl = useIntl();
   if (work.length === 0) return null;
   return (
-    <section aria-labelledby="case-progress" className="border-b border-border px-6 py-4 print:hidden">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="case-progress" className="text-xs font-semibold text-muted-foreground">
-          {intl.formatMessage(messages.progress)}
-        </h2>
+    <details aria-labelledby="case-progress" className="border-b border-border px-6 py-4 print:hidden">
+      <summary id="case-progress" className="cursor-pointer text-sm font-medium">
+        {intl.formatMessage(messages.progress)}
+      </summary>
+      <div className="mt-3 flex justify-end">
         <a className="text-xs font-medium text-primary hover:underline" href="#case-history">
           {intl.formatMessage(messages.fullHistory)}
         </a>
@@ -609,6 +757,6 @@ export function CaseProgress({ work }: { work: readonly CaseWorkItem[] }) {
           );
         })}
       </ul>
-    </section>
+    </details>
   );
 }

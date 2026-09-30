@@ -124,7 +124,7 @@ function caseBrief(next: CaseBrief["next"], work: CaseBrief["work"] = [], extra:
 type CardProps = Parameters<typeof QuoteDetailCard>[0];
 
 /** Text of each provenance column, in order; the columns are the sections whose headings are h2 beside the terms strip. */
-const FACT_HEADINGS = ["Signed eBill record", "Applicant's claims", "Checked against applicant documents", "Independent of the applicant"];
+const FACT_HEADINGS = ["Signed eBill record", "Applicant's claims", "Checked against applicant documents", "Mint-owned checks"];
 function factColumns(page: HTMLElement): (string | null | undefined)[] {
   return [...page.querySelectorAll("section")]
     .filter((section) => FACT_HEADINGS.includes(section.querySelector(":scope > h2")?.textContent ?? ""))
@@ -190,7 +190,7 @@ describe("QuoteDetailCard", () => {
       },
     });
     const header = page.querySelector("header");
-    expect(header?.querySelector("h1")?.textContent).toBe("Evidence review needed");
+    expect(header?.querySelector("h1")?.textContent).toBe("Needs your attention");
     expect(header?.textContent).toContain(
       "3 applicant replies have not been checked against the documents. Terms stay paused until each one is reviewed."
     );
@@ -203,7 +203,7 @@ describe("QuoteDetailCard", () => {
     expect(header?.querySelector('[aria-labelledby="case-next-step"]')?.textContent).toContain("Close — unable to assess");
     expect(page.textContent).not.toContain("What needs to happen next");
     expect(page.textContent).not.toContain("Residual uncertainty");
-    expect(page.querySelector('header a[href="/bills/bill-1"]')?.textContent).toBe("View eBill");
+    expect(page.querySelector('header a[href="#bill-record"]')?.textContent).toBe("View eBill");
     const printReference = [...page.querySelectorAll("header span")].find((element) => element.classList.contains("print:block"));
     expect(printReference?.textContent).toBe("bill-1");
   });
@@ -224,7 +224,7 @@ describe("QuoteDetailCard", () => {
       },
     });
     const header = page.querySelector("header");
-    expect(header?.querySelector("h1")?.textContent).toBe("Mint risk record missing");
+    expect(header?.querySelector("h1")?.textContent).toBe("Mint evidence missing");
     expect(header?.textContent).toContain("no current default and loss estimate for the payer, ACME Corp");
     expect(header?.textContent).toContain("Next step · Mint risk");
     expect(header?.textContent).toContain("No action needed from you");
@@ -367,10 +367,61 @@ describe("QuoteDetailCard", () => {
       },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("Assessment not current");
+    expect(page.querySelector("h1")?.textContent).toBe("Preparing the case");
     expect(page.textContent).toContain("Historical assessment · read-only");
     expect(page.textContent).toContain("Decisions stay disabled until a current assessment is available.");
     expect(page.textContent).not.toContain("7,734,000");
+  });
+
+  it.each(["assessmentUnavailable", "assessmentLoading"] as const)("fails closed with cached terms when %s", (flag) => {
+    const page = renderCard({
+      [flag]: true,
+      decisionSummary: {
+        assessmentCurrency: "current",
+        useOfFunds: "Fertilizer",
+        repaymentSource: "Coffee sales",
+        brief: caseBrief({ kind: "decide_offer", offerExpiresOn: "2099-08-23" }),
+        recommendedTerms: {
+          mintingFee: 266_000,
+          amountAvailableForMinting: 7_734_000,
+          feeRatioBps: 333,
+          tenorDays: 180,
+          offerExpiresOn: "2099-08-23",
+        },
+      },
+    });
+    expect(page.textContent).not.toContain("7,734,000");
+    expect(page.textContent).not.toContain("Approval available");
+  });
+
+  it("puts exact blockers, owners and next steps before the source detail", () => {
+    const page = renderCard({
+      decisionSummary: {
+        assessmentCurrency: "current",
+        useOfFunds: "Fertilizer",
+        repaymentSource: "Coffee sales",
+        brief: caseBrief({ kind: "wait_applicant" }, [], { outstanding: [{ item: "When will the buyer pay?", action: "reply" }] }),
+      },
+    });
+    const header = page.querySelector("header")?.textContent;
+    expect(header).toContain("Approval unavailable");
+    expect(header).toContain("When will the buyer pay?");
+    expect(header).toContain("Applicant · reply in eBill; then reassessment");
+    expect(header).not.toContain("confidence");
+  });
+
+  it("separates permitted residual uncertainty from blockers before sign-off", () => {
+    const page = renderCard({
+      decisionSummary: {
+        assessmentCurrency: "current",
+        useOfFunds: "Fertilizer",
+        repaymentSource: "Coffee sales",
+        brief: caseBrief({ kind: "decide_offer", offerExpiresOn: "2099-08-23" }, [], { repaymentUnverified: true }),
+      },
+    });
+    expect(page.querySelector("header")?.textContent).toContain("Approval available · offer not sent");
+    expect(page.querySelector("header")?.textContent).toContain("Uncertainty you would accept");
+    expect(page.querySelector("header")?.textContent).not.toContain("What is holding this up");
   });
 
   it("keeps eBill facts, claims, applicant-document checks and independent records apart, without implying payment", () => {
@@ -399,14 +450,14 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("Available to mint80,000,000sat");
     expect(page.textContent).toContain("Fee20,000,000sat");
     expect(factColumns(page)).toEqual([
-      "Signed eBill recordAccepted by the payerPayer at maturityACME CorpDrawerACME Corp",
-      "Applicant's claimsUse of proceedsFertilizer and seasonal workersRepayment sourceCoffee harvest salesUnresolved · not independently confirmed",
-      "Checked against applicant documentsInvoice fields match the eBill",
-      "Independent of the applicantMint-signed risk record for the payerNo other financing of this bill in Mint records",
+      "Signed eBill recordAccepted by the payerPayer at maturityACME CorpDrawerACME CorpRecords acceptance and terms, not ability to pay.",
+      "Applicant's claimsUse of proceedsFertilizer and seasonal workersRepayment sourceCoffee harvest salesApplicant statement only",
+      "Checked against applicant documentsInvoice fields match the eBillConsistency with an applicant-supplied document, not independent confirmation of the trade.Details",
+      "Mint-owned checksMint-signed risk record for the payerNo other financing of this bill in Mint recordsMint records only; not a guarantee of repayment or a check at other Mints.Details",
     ]);
     expect(page.textContent).not.toContain("Independently supported");
     expect(page.textContent).not.toContain("independently verified");
-    expect(page.textContent?.match(/not independently confirmed/g)).toHaveLength(1);
+    expect(page.textContent?.match(/Applicant statement only/g)).toHaveLength(1);
     expect(page.textContent?.match(/Coffee harvest sales/g)).toHaveLength(1);
     expect(page.textContent).not.toContain("Full answer");
     expect(page.textContent).not.toContain("Residual uncertainty");
@@ -436,11 +487,13 @@ describe("QuoteDetailCard", () => {
     });
 
     const [, claims, documents, independent] = factColumns(page);
-    expect(claims).toBe(
-      "Applicant's claimsUse of proceedsFertilizerRepayment sourceNo answer recordedUnresolved · not independently confirmed"
+    expect(claims).toBe("Applicant's claimsUse of proceedsFertilizerRepayment sourceNo answer recordedApplicant statement only");
+    expect(documents).toBe(
+      "Checked against applicant documentsInvoice does not match the eBillConsistency with an applicant-supplied document, not independent confirmation of the trade.Details"
     );
-    expect(documents).toBe("Checked against applicant documentsInvoice does not match the eBill");
-    expect(independent).toBe("Independent of the applicantNone recorded");
+    expect(independent).toBe(
+      "Mint-owned checksNone recordedMint records only; not a guarantee of repayment or a check at other Mints.Details"
+    );
   });
 
   it("presents current governed terms as ready for the operator's decision", () => {
@@ -461,10 +514,12 @@ describe("QuoteDetailCard", () => {
       },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("Ready for your decision");
-    expect(page.textContent).toContain("All required checks passed. Terms valid through 2099-08-24.");
+    expect(page.querySelector("h1")?.textContent).toBe("Offer ready for approval");
+    expect(page.textContent).toContain(
+      "The current assessment permits these terms. Review the evidence and any agreement conditions before approval. Terms valid through 2099-08-24."
+    );
     expect(page.textContent).toContain("Next step · YouOffer the proposed terms or decline.Offer");
-    expect(page.textContent).toContain("Fee272,000sat");
+    expect(page.textContent).toContain("Proposed minting fee272,000sat");
     expect(page.textContent).toContain("3.32% of bill over 180 days");
     expect(page.textContent).toContain("Available to mint7,928,000sat");
     // Optional proposals stay visible in progress without displacing the decision.
@@ -507,26 +562,49 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("Confirm the no-fit result with Deny");
   });
 
-  it("names outstanding applicant checks in plain words and keeps the exact request once", () => {
+  it.each([
+    ["review_evidence", "review_reply", "You · check the reply against the documents"],
+    ["send_applicant_request", "send_request", "You · send the request to the applicant"],
+    ["decide_unresolved", "resolve_evidence", "You · request more evidence or close as unable to assess"],
+  ] as const)("shows the operator action for %s rather than asking the applicant to reply again", (kind, action, label) => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
-        brief: caseBrief({ kind: "send_applicant_request", count: 1 }, [
-          {
-            kind: "verification",
-            owner: "applicant",
-            reasonCode: "verification_recourse_acknowledgment_required",
-            requiredItem: "Acknowledge whole-face recourse",
-            axis: "applicant_recourse_risk",
-          },
-        ]),
+        brief: caseBrief({ kind, count: 1 }, [], { outstanding: [{ item: "What supports the expected sales?", action }] }),
+      },
+    });
+    const header = page.querySelector("header")?.textContent;
+    expect(header).toContain(label);
+    expect(header).toContain("Next step · You");
+    expect(header).not.toContain("Applicant · reply in eBill");
+  });
+
+  it("names outstanding applicant checks once in the header, with detail retained in progress", () => {
+    const page = renderCard({
+      decisionSummary: {
+        assessmentCurrency: "current",
+        brief: caseBrief(
+          { kind: "send_applicant_request", count: 1 },
+          [
+            {
+              kind: "verification",
+              owner: "applicant",
+              reasonCode: "verification_recourse_acknowledgment_required",
+              requiredItem: "Acknowledge whole-face recourse",
+              axis: "applicant_recourse_risk",
+            },
+          ],
+          { outstanding: [{ item: "Acknowledge whole-face recourse", action: "send_request" }] }
+        ),
       },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("Applicant information needed");
-    expect(page.textContent).toContain("Outstanding: Recourse acknowledgement missing.");
+    expect(page.querySelector("h1")?.textContent).toBe("Needs your attention");
+    expect(page.querySelector("header")?.textContent).toContain("More information is needed before terms can be offered.");
+    expect(page.querySelector("header")?.textContent).not.toContain("Outstanding:");
+    expect(page.querySelector("header")?.textContent?.match(/Acknowledge whole-face recourse/g)).toHaveLength(1);
+    expect(page.querySelector('details[aria-labelledby="case-progress"]')?.textContent).toContain("Acknowledge whole-face recourse");
     expect(page.textContent).toContain("Requests after submission are not sent automatically.");
-    expect(page.textContent?.match(/Acknowledge whole-face recourse/g)).toHaveLength(1);
     expect(page.textContent).not.toContain("Previous assessment");
   });
 

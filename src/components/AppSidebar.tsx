@@ -27,6 +27,7 @@ const navMessages = defineMessages({
   balances: { id: "nav.balances", defaultMessage: "Balances" },
   deniedMeltRequests: { id: "nav.deniedMeltRequests", defaultMessage: "Melt requests" },
   quotes: { id: "nav.quotes", defaultMessage: "Quotes" },
+  facilities: { id: "nav.facilities", defaultMessage: "Facilities", description: "Pre-bill facility applications" },
   bills: { id: "nav.bills", defaultMessage: "Bills" },
   keysets: { id: "nav.keysets", defaultMessage: "Keysets" },
 });
@@ -61,6 +62,7 @@ const data = {
       url: "/quotes",
       icon: Inbox,
     },
+    { title: navMessages.facilities, url: "/facilities", icon: ReceiptText },
     {
       title: navMessages.bills,
       url: "/bills",

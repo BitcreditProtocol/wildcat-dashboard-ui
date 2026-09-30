@@ -1,3 +1,4 @@
+import type { CaseNextStep } from "@bitcredit/ai-credit-shared";
 import { defineMessages, type IntlShape } from "react-intl";
 import type { DecisionCase } from "./decision-types";
 
@@ -49,6 +50,29 @@ const reasons = defineMessages({
   },
 } satisfies Record<Preparation["reasons"][number], { id: string; defaultMessage: string }>);
 
-export function preparationReason(intl: IntlShape, reason: Preparation["reasons"][number]): string {
+const finished = defineMessages({
+  termsExpired: {
+    id: "credit.preparation.preparedTermsExpired",
+    defaultMessage:
+      "Agent preparation is complete, but the proposed terms expired on {date}. New terms need a new request from the applicant.",
+    description: "Preparation finished; the terms it prepared lapsed and cannot be approved",
+  },
+  notDecidable: {
+    id: "credit.preparation.preparedNotDecidable",
+    defaultMessage: "Agent preparation is complete. Approval is not available; see the next step for what remains.",
+    description: "Preparation finished, but the case's current next step is not an offer decision",
+  },
+});
+
+/**
+ * With `next`, finished preparation invites a review of terms only when they can be decided now.
+ * Without it (the brief's own reasons), the reason copy is unchanged.
+ */
+export function preparationReason(intl: IntlShape, reason: Preparation["reasons"][number], next?: CaseNextStep): string {
+  if (reason === "no_further_eligible_work" && next !== undefined && next.kind !== "decide_offer") {
+    return next.kind === "terms_expired"
+      ? intl.formatMessage(finished.termsExpired, { date: next.offerExpiresOn })
+      : intl.formatMessage(finished.notDecidable);
+  }
   return intl.formatMessage(reasons[reason]);
 }
