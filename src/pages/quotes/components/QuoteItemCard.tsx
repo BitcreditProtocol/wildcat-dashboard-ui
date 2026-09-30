@@ -77,28 +77,12 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 px-4 pt-4">
         <div className="flex min-w-0 flex-col gap-1">
           <CardTitle className="text-xl min-w-0">
-            <div className="items-center flex gap-1">
-              <span className="font-mono pt-2 break-all">
-                <Link to={`/quotes/${quote.id}`} onClick={handleQuoteClick}>
-                  <HighlightText text={quote.id} highlight={searchQuery} />
-                </Link>
-              </span>
-              <span></span>
-            </div>
+            <Link className="break-words" to={`/quotes/${quote.id}`} onClick={handleQuoteClick}>
+              <HighlightText text={bill?.drawee.name ?? quote.id} highlight={searchQuery} />
+            </Link>
           </CardTitle>
           {bill && (
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-              <span className="flex min-w-0 gap-1">
-                <span className="shrink-0">
-                  {intl.formatMessage({
-                    id: "quotes.card.billId",
-                    defaultMessage: "Bill ID:",
-                  })}
-                </span>
-                <span className="font-mono break-all">
-                  <HighlightText text={bill.id} highlight={searchQuery} />
-                </span>
-              </span>
               <span className="flex min-w-0 gap-1">
                 <span className="shrink-0">
                   {intl.formatMessage({
@@ -181,6 +165,29 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
           </div>
         )}
       </div>
+      <details className="px-4 pb-3 text-xs text-muted-foreground">
+        <summary className="cursor-pointer w-fit">
+          {intl.formatMessage({
+            id: "quotes.card.references",
+            defaultMessage: "Technical references",
+            description: "Disclosure of exact bill and quote identifiers, secondary to payer and amount",
+          })}
+        </summary>
+        <dl className="mt-2 grid gap-1 break-all font-mono">
+          <dt>{intl.formatMessage({ id: "quotes.card.quoteId", defaultMessage: "Quote ID:", description: "Exact quote identifier" })}</dt>
+          <dd>
+            <HighlightText text={quote.id} highlight={searchQuery} />
+          </dd>
+          {bill && (
+            <>
+              <dt>{intl.formatMessage({ id: "quotes.card.billId", defaultMessage: "Bill ID:" })}</dt>
+              <dd>
+                <HighlightText text={bill.id} highlight={searchQuery} />
+              </dd>
+            </>
+          )}
+        </dl>
+      </details>
     </Card>
   );
 }

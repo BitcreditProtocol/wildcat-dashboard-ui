@@ -1,30 +1,19 @@
-import { unresolvedInformationNeeds } from "@bitcredit/ai-credit-shared";
-import { isEvidenceInsufficientClosure, type DecisionCase, type VerificationRequest } from "./decision-types";
-import { pendingCaseInvestigation } from "./evidence-review-readiness";
+import {
+  applicantActivity,
+  caseNextStep,
+  caseNextStepOwner,
+  partitionInformationNeeds,
+  type CaseNextStep,
+} from "@bitcredit/ai-credit-shared";
+import type { DecisionCase, VerificationRequest } from "./decision-types";
 import { selectableInvestigationProposals } from "./investigation-proposals";
+import { clarificationItemText } from "./clarification-item-text";
 
 /**
- * The single next step for a pending quote. Each kind names one owner: the operator for the
- * `decide_*`, `review_evidence`, `send_applicant_request`, `retry_sources` and
- * `respond_applicant_review` kinds; an agent, the applicant or Mint risk for the `wait_*` kinds.
+ * The single next step for a pending quote. The rule is shared with the operator assistant in
+ * `@bitcredit/ai-credit-shared`, so the list, the brief and the agent never disagree on it.
  */
-export type CaseNextStep =
-  | { kind: "decide_offer"; offerExpiresOn: string }
-  | { kind: "confirm_no_fit" }
-  | { kind: "manual_review" }
-  | { kind: "preparation_attention"; reasons: NonNullable<DecisionCase["casePreparation"]>["reasons"] }
-  | { kind: "review_evidence"; count: number }
-  | { kind: "decide_unresolved"; count: number }
-  | { kind: "send_applicant_request"; count: number }
-  | { kind: "retry_sources" }
-  | { kind: "respond_applicant_review" }
-  | { kind: "wait_agent" }
-  | { kind: "wait_applicant"; since?: string }
-  | { kind: "wait_mint_risk" }
-  | { kind: "wait_reassessment" }
-  | { kind: "not_actionable"; noFit: boolean }
-  | { kind: "terms_expired"; offerExpiresOn: string }
-  | { kind: "closed" };
+export type { CaseNextStep };
 
 export type CaseWorkItem =
   | { kind: "answer_review"; state: "queued" | "running" | "completed" | "failed" | "not_run"; proposed: number }
@@ -46,8 +35,23 @@ export type CaseWorkItem =
       axis: string;
     };
 
+interface CaseBlocker {
+  item: string;
+  action:
+    | "reply"
+    | "review_reply"
+    | "send_request"
+    | "applicant_evidence"
+    | "resolve_evidence"
+    | "provide_risk"
+    | "restore_source"
+    | "review_capacity";
+}
+
 export interface CaseBrief {
   next: CaseNextStep;
+  /** Exact recorded outstanding items. Display only; never used to grant approval. */
+  outstanding?: CaseBlocker[];
   /** Ordered: agent work, applicant exchange, evidence review, outstanding checks. */
   work: CaseWorkItem[];
   support: {
@@ -63,44 +67,18 @@ export interface CaseBrief {
   preparation?: DecisionCase["casePreparation"];
 }
 
-const OPERATOR_STEPS = new Set<CaseNextStep["kind"]>([
-  "decide_offer",
-  "confirm_no_fit",
-  "manual_review",
-  "preparation_attention",
-  "review_evidence",
-  "decide_unresolved",
-  "send_applicant_request",
-  "retry_sources",
-  "respond_applicant_review",
-]);
-
 /** True when the next step belongs to the Mint operator rather than an agent, the applicant or Mint risk. */
-export const operatorOwnsNextStep = (next: CaseNextStep): boolean => OPERATOR_STEPS.has(next.kind);
-
-const isActiveDialogue = (status: string) => status !== "submitted" && status !== "superseded";
+export const operatorOwnsNextStep = (next: CaseNextStep): boolean => caseNextStepOwner(next) === "operator";
 
 function applicantWork(decisionCase: DecisionCase): Extract<CaseWorkItem, { kind: "applicant" }> | undefined {
+  const activity = applicantActivity(decisionCase);
+  if (activity === undefined) return undefined;
   const submissions = new Set(
     [...(decisionCase.interviewHistory ?? []), ...(decisionCase.interviewTranscript ? [decisionCase.interviewTranscript] : [])].map(
       (transcript) => transcript.preparedInputId
     )
   ).size;
-  const dialogues = decisionCase.serverClarificationDialogues ?? [];
-  const active = dialogues.find((dialogue) => isActiveDialogue(dialogue.status));
-  if (active?.status === "processing") return undefined;
-  if (active !== undefined) return { kind: "applicant", state: "answering", at: active.updatedAt, submissions };
-  if (decisionCase.liveInterview !== undefined) return { kind: "applicant", state: "answering", submissions };
-  const automatic = decisionCase.automaticInformationRequest;
-  if (automatic?.response === null) {
-    return { kind: "applicant", state: "awaiting_reply", at: automatic.request.requestedAt, submissions };
-  }
-  const submitted = dialogues
-    .filter((dialogue) => dialogue.status === "submitted")
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
-  if (submitted !== undefined) return { kind: "applicant", state: "replied", at: submitted.updatedAt, submissions };
-  if (automatic?.response?.respondedAt) return { kind: "applicant", state: "replied", at: automatic.response.respondedAt, submissions };
-  return undefined;
+  return { kind: "applicant", ...activity, submissions };
 }
 
 function answerReviewWork(decisionCase: DecisionCase): Extract<CaseWorkItem, { kind: "answer_review" }> | undefined {
@@ -141,18 +119,9 @@ function researchWork(decisionCase: DecisionCase): Extract<CaseWorkItem, { kind:
  * re-derives no credit rule and never treats an applicant reply as resolved evidence.
  */
 export function buildCaseBrief(decisionCase: DecisionCase, options: { quoteId: string; now: number }): CaseBrief {
-  const binding = {
-    caseId: decisionCase.snapshot.caseId,
-    resultDigest: decisionCase.resultDigest,
-    submissionDigest: decisionCase.submissionDigest,
-  };
   const needs = decisionCase.informationNeeds ?? [];
   const preparation = decisionCase.casePreparation;
-  const unresolved = unresolvedInformationNeeds(needs, binding);
-  const noReply = unresolved.filter((need) => !need.reviewIsStale && need.status === "open" && need.response === undefined);
-  const unavailable = unresolved.filter((need) => !need.reviewIsStale && need.status === "exhausted");
-  // Replies awaiting review, stale reviews and reviews bound to an older assessment all need a reviewer.
-  const toReview = unresolved.filter((need) => !noReply.includes(need) && !unavailable.includes(need));
+  const { unresolved, noReply, unavailable, toReview } = partitionInformationNeeds(decisionCase);
   const isCurrent = decisionCase.assessmentCurrency === "current";
   const proposals = isCurrent ? selectableInvestigationProposals(decisionCase).length : 0;
   // Tolerate the partial projections older callers and fixtures already pass to QuoteActions.
@@ -186,51 +155,11 @@ export function buildCaseBrief(decisionCase: DecisionCase, options: { quoteId: s
     });
   }
 
-  const terms = decisionCase.result.terms ?? null;
-  const offerExpired =
-    terms !== null &&
-    !(Date.parse(`${terms.offerExpiresOn}T23:59:59.999Z`) > options.now) &&
-    decisionCase.result.recommendation === "offer_available";
-  const quoteBound =
-    decisionCase.mintQuoteId === options.quoteId &&
-    decisionCase.creditProgram !== undefined &&
-    decisionCase.creditProgramAssignment !== undefined;
   const hasOwner = (...owners: VerificationRequest["owner"][]) => requests.some((request) => owners.includes(request.owner ?? "system"));
-  const applicantAsked = noReply.filter((need) => need.origin?.requestId !== undefined).length;
-
-  const next = ((): CaseNextStep => {
-    if (isEvidenceInsufficientClosure(decisionCase)) return { kind: "closed" };
-    if (decisionCase.applicantHumanReview !== undefined) return { kind: "respond_applicant_review" };
-    // A dispatched question deliberately makes the prior assessment historical.
-    // Explain the recorded next actor without making those prior terms actionable.
-    if (preparation?.status === "awaiting_applicant") return { kind: "wait_applicant", since: applicant?.at };
-    if (!isCurrent) return { kind: "wait_reassessment" };
-    if (preparation?.status === "preparing") return { kind: "wait_agent" };
-    if (preparation === undefined && decisionCase.serverClarificationDialogues?.some((dialogue) => dialogue.status === "processing"))
-      return { kind: "wait_agent" };
-    if (preparation === undefined && pendingCaseInvestigation(decisionCase)) return { kind: "wait_agent" };
-    if (applicant?.state === "answering") return { kind: "wait_applicant", since: applicant.at };
-    // Same retry scope as QuoteActions: capacity is not an operator-facing case check.
-    if (
-      requests.some(
-        (request) => request.owner === "system" || (request.owner === "mint_operations" && request.axis !== "mint_exposure_capacity")
-      )
-    )
-      return { kind: "retry_sources" };
-    if (preparation === undefined && toReview.length > 0) return { kind: "review_evidence", count: toReview.length };
-    const applicantRequests = requests.filter((request) => request.owner === "applicant").length + noReply.length - applicantAsked;
-    if (preparation === undefined && applicantRequests > 0) return { kind: "send_applicant_request", count: applicantRequests };
-    if (preparation === undefined && applicantAsked > 0) return { kind: "wait_applicant", since: applicant?.at };
-    if (hasOwner("mint_risk")) return { kind: "wait_mint_risk" };
-    if (preparation !== undefined && !preparation.approvable) return { kind: "preparation_attention", reasons: preparation.reasons };
-    if (preparation === undefined && unavailable.length > 0) return { kind: "decide_unresolved", count: unavailable.length };
-    if (decisionCase.result.assessmentStatus !== "ready_for_decision") return { kind: "manual_review" };
-    if (decisionCase.result.recommendation === "no_current_product_fit")
-      return quoteBound ? { kind: "confirm_no_fit" } : { kind: "not_actionable", noFit: true };
-    if (decisionCase.result.recommendation !== "offer_available" || terms === null) return { kind: "manual_review" };
-    if (offerExpired) return { kind: "terms_expired", offerExpiresOn: terms.offerExpiresOn };
-    return quoteBound ? { kind: "decide_offer", offerExpiresOn: terms.offerExpiresOn } : { kind: "not_actionable", noFit: false };
-  })();
+  // The shared rule is time-aware: expired terms are never an offer decision.
+  const next = caseNextStep(decisionCase, options);
+  // Agents own applicant requests on a prepared case, so the operator is never told to send one there.
+  const applicantAction = preparation === undefined ? "send_request" : "applicant_evidence";
 
   const acceptor = decisionCase.snapshot.acceptor as DecisionCase["snapshot"]["acceptor"] | undefined;
   const duplicateCheck = decisionCase.snapshot.duplicateCheck as DecisionCase["snapshot"]["duplicateCheck"] | undefined;
@@ -240,6 +169,44 @@ export function buildCaseBrief(decisionCase: DecisionCase, options: { quoteId: s
   // independent of the applicant.
   return {
     next,
+    outstanding: [
+      ...(isCurrent && next.kind !== "wait_agent" && next.kind !== "wait_applicant" ? requests : []).map(
+        (request): CaseBlocker => ({
+          item: request.requiredItem,
+          action:
+            request.owner === "applicant"
+              ? applicantAction
+              : request.owner === "mint_risk"
+                ? "provide_risk"
+                : request.axis === "mint_exposure_capacity"
+                  ? "review_capacity"
+                  : "restore_source",
+        })
+      ),
+      // Only a request still awaiting its reply is owed; an answered one never becomes a new blocker.
+      ...(next.kind === "wait_applicant" && decisionCase.automaticInformationRequest?.response === null
+        ? decisionCase.automaticInformationRequest.request.requiredItems.map((item) => ({
+            item: clarificationItemText(item),
+            action: "reply" as const,
+          }))
+        : []),
+      ...(isCurrent && preparation === undefined && next.kind !== "decide_offer" && next.kind !== "wait_agent"
+        ? unresolved
+            .filter((need) => next.kind !== "wait_applicant" || (noReply.includes(need) && need.origin?.requestId !== undefined))
+            .map(
+              (need): CaseBlocker => ({
+                item: need.question,
+                action: toReview.includes(need)
+                  ? "review_reply"
+                  : unavailable.includes(need)
+                    ? "resolve_evidence"
+                    : need.origin?.requestId !== undefined
+                      ? "reply"
+                      : "send_request",
+              })
+            )
+        : []),
+    ].filter((item, index, all) => all.findIndex((other) => other.item === item.item && other.action === item.action) === index),
     work,
     preparation,
     support: {

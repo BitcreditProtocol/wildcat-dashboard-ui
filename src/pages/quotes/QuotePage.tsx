@@ -25,6 +25,7 @@ import { resolveDocumentMimeType } from "@/utils/document-preview";
 import { countAnswerReviewFollowUps, type SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
+import { FacilityCoveragePanel, FacilityCoverageUnavailable } from "../facilities/FacilityCoveragePanel";
 import { EndorseeList } from "./components/EndorseeList";
 import { useSyncBillChain } from "./components/useSyncBillChain";
 import type { InfoReply } from "@/generated/client/types.gen";
@@ -40,6 +41,7 @@ import {
 import { useOperatorCapability } from "@/pages/credit/use-operator-capability";
 import { isQuotePollingCompleteStatus } from "@/utils/quote-status";
 import { CaseWorkspace } from "./components/CaseWorkspace";
+import { CaseAgentDiscussion } from "@/pages/credit/CaseAgentDiscussion";
 import { InformationNeedsPanel } from "@/pages/credit/InformationNeedsPanel";
 import { CaseHistory } from "@/pages/credit/CaseHistory";
 import { CasePreparationPanel } from "@/pages/credit/CasePreparationPanel";
@@ -379,6 +381,8 @@ function PageBody({ id }: { id: string }) {
         ? Number(decisionCase.casePreparation.status === "attention")
         : pendingEvidenceQuestionCount(decisionCase);
   const caseBrief = decisionCase === undefined ? undefined : buildCaseBrief(decisionCase, { quoteId: quote.id, now: Date.now() });
+  // The brief links a facility review here; a bound bill without a coverage result still gets an honest target.
+  const facilityUnderReview = caseBrief?.next.kind === "facility_review" ? decisionCase?.snapshot.facility : undefined;
 
   return (
     <div className="mt-4 flex flex-col gap-4">
@@ -391,7 +395,7 @@ function PageBody({ id }: { id: string }) {
         </div>
         <QuoteDetailCard
           actions={
-            <div className="print:hidden">
+            <div className="flex flex-wrap items-start gap-3 print:hidden">
               <QuoteActions
                 value={quote}
                 isFetching={isFetching}
@@ -402,6 +406,9 @@ function PageBody({ id }: { id: string }) {
                 timeOfRequestToPay={timeOfRequestToPay}
                 onAuthorizationVerified={setSignedAuthorizationReceipt}
               />
+              {decisionCase?.snapshot.bill && !creditAssessment.isUnavailable && operatorCapability.capability && (
+                <CaseAgentDiscussion key={decisionCase.snapshot.caseId} decisionCase={decisionCase} />
+              )}
             </div>
           }
           assessmentUnavailable={creditAssessment.isUnavailable}
@@ -450,11 +457,13 @@ function PageBody({ id }: { id: string }) {
       </section>
 
       <div className="contents print:hidden">
+        {decisionCase?.facilityCoverage && <FacilityCoveragePanel coverage={decisionCase.facilityCoverage} quoteId={quote.id} />}
+        {!decisionCase?.facilityCoverage && facilityUnderReview && <FacilityCoverageUnavailable binding={facilityUnderReview} />}
         <CaseWorkspace
           reviewCount={reviewCount}
           review={
             <div className="space-y-6">
-              {decisionCase?.casePreparation !== undefined && <CasePreparationPanel decisionCase={decisionCase} />}
+              {decisionCase?.casePreparation !== undefined && <CasePreparationPanel decisionCase={decisionCase} next={caseBrief?.next} />}
               {decisionCase !== undefined && decisionCase.casePreparation === undefined && (
                 <InformationNeedsPanel
                   decisionCase={decisionCase}

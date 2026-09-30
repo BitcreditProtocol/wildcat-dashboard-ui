@@ -24,6 +24,7 @@ import MeltRequestsPage from "@/pages/melts/MeltRequestsPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
 import { PreferencesProvider, Toaster } from "@bitcredit/ui-library";
 import NotFoundPage from "@/pages/NotFoundPage";
+import FacilitiesPage from "@/pages/facilities/FacilitiesPage";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ function App() {
             <Route path="earnings/cashflow" element={<CashFlowPage />} />
             <Route path="melt-requests" element={<MeltRequestsPage />} />
             <Route path="quotes" element={<StatusQuotePage />} />
+            <Route path="facilities" element={<FacilitiesPage />} />
             {QUOTE_STATUS_ROUTES.map((route) => (
               <Route key={route.status} path={route.path} element={<StatusQuotePage status={route.status} />} />
             ))}

@@ -4,9 +4,14 @@ import { requestReason } from "./verification-reasons";
 import { preparationReason } from "./case-preparation-copy";
 
 const headlines = defineMessages({
+  facility_review: {
+    id: "quotes.brief.headline.facility",
+    defaultMessage: "Agreement review needed",
+    description: "Facility limits or validity block an offer",
+  },
   decide_offer: {
     id: "quotes.brief.headline.decideOffer",
-    defaultMessage: "Ready for your decision",
+    defaultMessage: "Offer ready for approval",
     description: "Pending quote whose required checks passed and whose governed terms are current",
   },
   confirm_no_fit: {
@@ -16,62 +21,62 @@ const headlines = defineMessages({
   },
   manual_review: {
     id: "quotes.summary.manualReviewCompact",
-    defaultMessage: "Manual review required",
+    defaultMessage: "Needs your attention",
     description: "Current assessment needs an operator review",
   },
   preparation_attention: {
     id: "quotes.brief.headline.preparationAttention",
-    defaultMessage: "Preparation needs attention",
+    defaultMessage: "Needs your attention",
     description: "Preparation has stopped or cannot complete; not a financial denial",
   },
   review_evidence: {
     id: "quotes.summary.reviewEvidenceQuestions",
-    defaultMessage: "Evidence review needed",
+    defaultMessage: "Needs your attention",
     description: "Evidence work needs a reviewer before an offer can be sent",
   },
   decide_unresolved: {
     id: "quotes.brief.headline.evidenceUnavailable",
-    defaultMessage: "Evidence unavailable",
+    defaultMessage: "Needs your attention",
     description: "Reviewed evidence questions ended without support; a preparation stop, not an adverse finding",
   },
   send_applicant_request: {
     id: "quotes.brief.headline.applicantInformation",
-    defaultMessage: "Applicant information needed",
+    defaultMessage: "Needs your attention",
     description: "The case needs information that only the applicant can supply",
   },
   retry_sources: {
     id: "quotes.brief.headline.sourceCheck",
-    defaultMessage: "Mint source check failed",
+    defaultMessage: "Needs your attention",
     description: "A Mint-owned or system source could not be read for this assessment",
   },
   respond_applicant_review: {
     id: "quotes.brief.headline.humanReview",
-    defaultMessage: "Human review requested",
+    defaultMessage: "Needs your attention",
     description: "The applicant asked for a person to review the case",
   },
   wait_agent: {
     id: "quotes.brief.headline.answerReview",
-    defaultMessage: "Answer review in progress",
+    defaultMessage: "Preparing the case",
     description: "An agent is reviewing applicant answers; not a credit decision",
   },
   wait_applicant: {
     id: "quotes.brief.headline.waitingApplicant",
-    defaultMessage: "Waiting for the applicant",
+    defaultMessage: "Preparing the case",
     description: "The applicant owns the next step",
   },
   wait_mint_risk: {
     id: "quotes.brief.headline.mintRisk",
-    defaultMessage: "Mint risk record missing",
+    defaultMessage: "Mint evidence missing",
     description: "The Mint has no current signed acceptor risk record for this payer",
   },
   wait_reassessment: {
     id: "quotes.brief.headline.historical",
-    defaultMessage: "Assessment not current",
+    defaultMessage: "Preparing the case",
     description: "Only a retained assessment is available; decisions stay disabled",
   },
   not_actionable: {
     id: "quotes.brief.headline.programRequired",
-    defaultMessage: "Credit program required",
+    defaultMessage: "Needs your attention",
     description: "The assessment lacks the Mint-owned quote-to-program binding",
   },
   terms_expired: {
@@ -89,7 +94,8 @@ const headlines = defineMessages({
 const reasons = defineMessages({
   checksPassed: {
     id: "quotes.brief.reason.checksPassed",
-    defaultMessage: "All required checks passed. Terms valid through {date}.",
+    defaultMessage:
+      "The current assessment permits these terms. Review the evidence and any agreement conditions before approval. Terms valid through {date}.",
     description: "Why a pending quote is ready; the material uncertainty is shown with the case facts",
   },
   manualReview: {
@@ -118,6 +124,16 @@ const reasons = defineMessages({
     id: "quotes.brief.reason.outstanding",
     defaultMessage: "Outstanding: {items}.",
     description: "Governed checks or questions that block terms, listed in plain words",
+  },
+  applicantInformation: {
+    id: "quotes.brief.reason.applicantInformation",
+    defaultMessage: "More information is needed before terms can be offered.",
+    description: "Short summary; the required items and actions are listed below",
+  },
+  sourceChecks: {
+    id: "quotes.brief.reason.sourceChecks",
+    defaultMessage: "Required Mint source checks have not completed. Terms stay paused.",
+    description: "Short source failure summary; exact blockers are listed below",
   },
   unansweredQuestions: {
     id: "quotes.brief.reason.unansweredQuestions",
@@ -189,6 +205,12 @@ export function caseReason(intl: IntlShape, brief: CaseBrief, payerName: string)
     return intl.formatMessage(reasons.outstanding, { items: intl.formatList([...new Set(items)], { type: "conjunction" }) });
   };
   switch (next.kind) {
+    case "facility_review":
+      return intl.formatMessage({
+        id: "quotes.brief.reason.facility",
+        defaultMessage:
+          "The bill cannot yet use its Facility Agreement. Review the specific coverage blockers below before making an offer.",
+      });
     case "decide_offer":
       return [
         ...(brief.preparation?.status === "attention" ? brief.preparation.reasons.map((reason) => preparationReason(intl, reason)) : []),
@@ -205,10 +227,11 @@ export function caseReason(intl: IntlShape, brief: CaseBrief, payerName: string)
     case "decide_unresolved":
       return intl.formatMessage(reasons.evidenceUnavailable, { count: next.count });
     case "send_applicant_request":
+      return brief.outstanding?.length ? intl.formatMessage(reasons.applicantInformation) : outstanding();
     case "retry_sources":
-      return outstanding();
+      return brief.outstanding?.length ? intl.formatMessage(reasons.sourceChecks) : outstanding();
     case "wait_mint_risk":
-      return work.some((item) => item.kind === "verification" && item.owner !== "mint_risk")
+      return !brief.outstanding?.length && work.some((item) => item.kind === "verification" && item.owner !== "mint_risk")
         ? outstanding()
         : intl.formatMessage(reasons.mintRisk, { name: payerName });
     case "respond_applicant_review":

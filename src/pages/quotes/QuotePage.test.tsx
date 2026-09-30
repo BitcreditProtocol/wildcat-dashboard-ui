@@ -82,7 +82,10 @@ vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
-    useQuery: (options: QueryOptions) => mockUseQuery(options),
+    useQuery: (options: QueryOptions) => {
+      const key: unknown = options.queryKey[0];
+      return key === "operator-discussion" ? { data: [], isLoading: false, isError: false } : mockUseQuery(options);
+    },
     useMutation: () => mockUseMutation(),
     useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   };
@@ -381,12 +384,68 @@ describe("QuotePage", () => {
     quoteStatus = "Pending";
     const page = renderPage(`/quotes/${quoteId}`);
     const summary = page.querySelector("#minting-summary");
-    expect(summary?.querySelector("header h1")?.textContent).toBe("Applicant information needed");
+    expect(summary?.querySelector("header h1")?.textContent).toBe("Needs your attention");
     expect(summary?.textContent).toContain("Next step · You");
     expect(summary?.textContent).toContain("Refresh acceptor evidence");
     expect(summary?.textContent).toContain("Confirm recourse");
     expect(summary?.textContent).toContain("No answer recorded");
-    expect(summary?.textContent?.match(/Refresh acceptor evidence/g)).toHaveLength(1);
+    expect(summary?.querySelector("header")?.textContent?.match(/Refresh acceptor evidence/g)).toHaveLength(1);
+    expect(summary?.querySelector<HTMLDetailsElement>('details[aria-labelledby="case-progress"]')?.open).toBe(false);
+  });
+
+  it("gives a facility review without coverage an honest target instead of a dangling link or invented coverage", () => {
+    const fixture = caseWithoutConfirmation();
+    const facilityId = "11111111-1111-4111-8111-111111111111";
+    const bound: DecisionCase = {
+      ...fixture,
+      snapshot: {
+        ...fixture.snapshot,
+        facility: {
+          schemaVersion: "facility-bill-binding-v1",
+          facilityId,
+          applicantRef: "test-applicant",
+          mintNodeId: "test-mint",
+          agreementVersion: 2,
+          agreementDigest: `sha256:${"e".repeat(64)}`,
+          submissionDigest: `sha256:${"f".repeat(64)}`,
+        },
+      },
+      result: {
+        ...fixture.result,
+        assessmentStatus: "ready_for_decision",
+        recommendation: "offer_available",
+        verificationRequests: [],
+        terms: {
+          billSumSat: "100",
+          discountedSat: "95",
+          appliedDiscountSat: "4",
+          operatingCostSat: "1",
+          effectiveFeeSat: "5",
+          endorsementExposureSat: "100",
+          maturityDate: "2099-06-01",
+          offerExpiresOn: "2099-01-01",
+          tenorDays: 180,
+          annualDiscountBps: 500,
+          effectiveAnnualBps: 600,
+          feeRatioBps: 500,
+        },
+      },
+    };
+    const original = mockUseQuery.getMockImplementation();
+    mockUseQuery.mockImplementation((options) =>
+      options.queryKey[0]._id === undefined
+        ? { data: { issues: [], cases: [bound] }, isLoading: false, error: null }
+        : (original?.(options) ?? { data: undefined, isLoading: false, error: null })
+    );
+    quoteStatus = "Pending";
+    const page = renderPage(`/quotes/${quoteId}`);
+    expect(page.querySelector("#minting-summary")?.textContent).toContain("Approval unavailable");
+    expect(page.querySelector('a[href="#facility-coverage"]')).not.toBeNull();
+    const coverage = page.querySelector("#facility-coverage");
+    expect(coverage?.textContent).toContain("Coverage for this bill is unavailable, so no offer can be approved.");
+    expect(coverage?.textContent).toContain("Next step · You: open the bound agreement and check its current status.");
+    expect(coverage?.querySelector(`a[href="/facilities?application=${facilityId}"]`)?.textContent).toBe("Agreement · version 2");
+    expect(coverage?.textContent).not.toMatch(/Agreement limit|Remaining|sat/u);
   });
 
   it("shows a non-ceiling no-fit reason in the executive summary", () => {
@@ -575,9 +634,9 @@ describe("QuotePage", () => {
     expect(keysetLink).toBeNull();
   });
 
-  it("links the bill id to the bill's own page", () => {
+  it("links to the quote's shared bill record, including bills not in Mint inventory", () => {
     const page = renderPage(`/quotes/${quoteId}`);
-    expect(page.querySelector('a[href="/bills/bill-1"]')).not.toBeNull();
+    expect(page.querySelector('a[href="#bill-record"]')).not.toBeNull();
   });
 
   it("puts one action surface before the open evidence workspace", () => {

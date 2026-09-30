@@ -1,6 +1,7 @@
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { IntlProvider } from "react-intl";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DecisionCase } from "./decision-types";
 
@@ -543,6 +544,22 @@ describe("QuoteCreditAssessment", () => {
 });
 
 describe("CreditAssessmentBadge", () => {
+  it("explains facility ambiguity with an operator-owned next step and a working facility link", () => {
+    mockUseQuery.mockReturnValue({
+      data: { cases: [], issues: [{ ...isolatedIssue, reasonCode: "facility_binding_ambiguous" }] },
+      isLoading: false,
+      error: null,
+    });
+    render(
+      <MemoryRouter>
+        <QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId={isolatedIssue.mintQuoteId} />
+      </MemoryRouter>
+    );
+    expect(container.textContent).toContain("Multiple Facility Agreements apply");
+    expect(container.textContent).toContain("Operator: resolve the overlapping accepted Facility Agreements");
+    expect(container.textContent).toContain("No standalone offer is permitted");
+    expect(container.querySelector("a")?.getAttribute("href")).toBe("/facilities");
+  });
   it("shows an isolated case as a concise operator action instead of an absent assessment", () => {
     mockUseQuery.mockReturnValue({
       data: { cases: [{ ...offerCase, mintQuoteId: isolatedIssue.mintQuoteId }], issues: [isolatedIssue] },
@@ -572,11 +589,51 @@ describe("CreditAssessmentBadge", () => {
     mockUseQuery.mockReset();
   });
 
-  it("marks a quote list row with the outcome", () => {
-    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
+  /** The same row with a quote-bound program and terms that end on `offerExpiresOn`. */
+  const boundOffer = (offerExpiresOn: string): DecisionCase => ({
+    ...offerCase,
+    creditProgram: {} as DecisionCase["creditProgram"],
+    creditProgramAssignment: {} as DecisionCase["creditProgramAssignment"],
+    result: { ...offerCase.result, terms: offerCase.result.terms === null ? null : { ...offerCase.result.terms, offerExpiresOn } },
+  });
+
+  it("marks a quote list row ready only when its bound terms are still current", () => {
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [boundOffer("2099-08-12")] }, isLoading: false, error: null });
     render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
 
     expect(container.textContent).toBe("Ready for decision");
+  });
+
+  it("never marks expired terms ready for decision", () => {
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [boundOffer("2026-08-12")] }, isLoading: false, error: null });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
+
+    expect(container.textContent).toBe("Terms expired");
+  });
+
+  it("shows current unbound terms as approval unavailable, not as an operator task", () => {
+    mockUseQuery.mockReturnValue({
+      data: { issues: [], cases: [{ ...boundOffer("2099-08-12"), creditProgramAssignment: undefined }] },
+      isLoading: false,
+      error: null,
+    });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
+
+    // The Mint must assign a credit program; the operator has no action to take.
+    expect(container.textContent).toBe("Approval unavailable");
+  });
+
+  it("asks for attention only when the operator owns the blocking step", () => {
+    const bound = boundOffer("2099-08-12");
+    const facilityBlocked: DecisionCase = {
+      ...bound,
+      snapshot: { ...bound.snapshot, facility: {} as NonNullable<DecisionCase["snapshot"]["facility"]> },
+    };
+    mockUseQuery.mockReturnValue({ data: { issues: [], cases: [facilityBlocked] }, isLoading: false, error: null });
+    render(<CreditAssessmentBadge billId="synthetic-bill-a" mintQuoteId="quote-1" />);
+
+    // No current Facility Agreement coverage: the operator reviews it before any offer.
+    expect(container.textContent).toBe("Needs your attention");
   });
 
   it("shows verification rather than an outcome while blocked", () => {

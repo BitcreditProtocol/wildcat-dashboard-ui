@@ -1,10 +1,20 @@
 import { useIntl } from "react-intl";
+import type { CaseNextStep } from "./case-brief";
 import { clarificationItemText } from "./clarification-item-text";
 import type { DecisionCase } from "./decision-types";
 import { preparationReason } from "./case-preparation-copy";
 
-/** Read-only workflow status. Agent requests are not a checklist for the operator. */
-export function CasePreparationPanel({ decisionCase }: { decisionCase: Pick<DecisionCase, "casePreparation" | "informationRequests"> }) {
+/**
+ * Read-only workflow status. Agent requests are not a checklist for the operator. `next` is the
+ * brief's time-aware step: finished preparation only invites a review of terms that can be decided.
+ */
+export function CasePreparationPanel({
+  decisionCase,
+  next,
+}: {
+  decisionCase: Pick<DecisionCase, "casePreparation" | "informationRequests">;
+  next?: CaseNextStep;
+}) {
   const intl = useIntl();
   const preparation = decisionCase.casePreparation;
   if (preparation === undefined) return null;
@@ -28,7 +38,7 @@ export function CasePreparationPanel({ decisionCase }: { decisionCase: Pick<Deci
       </div>
       <div className="space-y-1 text-sm">
         {preparation.reasons.map((reason) => (
-          <p key={reason}>{preparationReason(intl, reason)}</p>
+          <p key={reason}>{preparationReason(intl, reason, next)}</p>
         ))}
       </div>
       {preparation.rounds.length > 0 && (

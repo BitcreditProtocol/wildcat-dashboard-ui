@@ -2,6 +2,7 @@ import { AppIcon, Card, CardContent, CardHeader, CardTitle, Skeleton } from "@bi
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
+import { Link } from "react-router";
 import type { OperatorSubmittedCaseIssue } from "@bitcredit/ai-credit-shared";
 import { CreditAssessmentCard } from "./CreditAssessmentCard";
 import { operatorVisibleAxes } from "./decision-types";
@@ -104,6 +105,22 @@ const messages = defineMessages({
     defaultMessage: "Evidence unavailable",
     description: "Reason label when submitted evidence cannot be loaded safely",
   },
+  issueFacilityAmbiguous: {
+    id: "credit.quoteCard.issue.facilityAmbiguous",
+    defaultMessage: "Multiple Facility Agreements apply",
+    description: "More than one accepted agreement matches this applicant and Mint",
+  },
+  actionResolveFacility: {
+    id: "credit.quoteCard.issue.action.resolveFacility",
+    defaultMessage:
+      "Operator: resolve the overlapping accepted Facility Agreements before preparing this quote. No standalone offer is permitted while the agreement binding is unclear.",
+    description: "Concrete owner and next step for ambiguous facility selection",
+  },
+  openFacilities: {
+    id: "credit.quoteCard.issue.openFacilities",
+    defaultMessage: "Open Facility Agreements",
+    description: "Navigate to the operator facility queue to reconcile overlapping agreements",
+  },
   actionQuote: {
     id: "credit.quoteCard.issue.action.changedQuote",
     defaultMessage: "Ask the applicant to request current terms and resubmit.",
@@ -162,6 +179,7 @@ const issuePresentation: Record<OperatorSubmittedCaseIssue["reasonCode"], { labe
     holder_identity_unavailable: { label: "issueHolderUnavailable", action: "actionHolder" },
     legacy_authority_missing: { label: "issueLegacyAuthority", action: "actionApplicant" },
     submitted_evidence_unavailable: { label: "issueEvidenceUnavailable", action: "actionEvidence" },
+    facility_binding_ambiguous: { label: "issueFacilityAmbiguous", action: "actionResolveFacility" },
   };
 
 export function QuoteCreditAssessment({
@@ -198,7 +216,14 @@ export function QuoteCreditAssessment({
             </p>
             <p className="mt-1 font-medium">{intl.formatMessage(messages[presentation.label])}</p>
           </div>
-          <p className="text-sm text-muted-foreground sm:self-center">{intl.formatMessage(messages[presentation.action])}</p>
+          <div className="text-sm text-muted-foreground sm:self-center">
+            <p>{intl.formatMessage(messages[presentation.action])}</p>
+            {assessment.issue.reasonCode === "facility_binding_ambiguous" && (
+              <Link className="mt-2 inline-block underline underline-offset-4" to="/facilities">
+                {intl.formatMessage(messages.openFacilities)}
+              </Link>
+            )}
+          </div>
         </CardContent>
       </Card>
     );

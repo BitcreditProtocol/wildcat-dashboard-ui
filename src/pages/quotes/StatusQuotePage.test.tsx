@@ -864,6 +864,44 @@ describe("StatusQuotePage", () => {
     expect(page.textContent).not.toContain("Searching all quotes...");
   });
 
+  it("counts search matches separately from the quotes that were searched", () => {
+    const page = renderPage();
+    expect(page.textContent).toContain("Showing 2 of 2 quotes");
+
+    changeSearchValue(page, "quote-accepted");
+
+    expect(orderedQuoteIds(page)).toEqual(["quote-accepted"]);
+    expect(page.textContent).toContain("1 match among 2 quotes");
+    expect(page.textContent).not.toContain("Showing");
+  });
+
+  it("does not claim unloaded quotes were searched while pages are still loading", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            data: [
+              { id: "quote-accepted", status: "Accepted", sum: 300 },
+              { id: "quote-pending", status: "Pending", sum: 100 },
+            ],
+            total: 3,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: true,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+
+    const page = renderPage();
+    changeSearchValue(page, "quote-accepted");
+
+    expect(page.textContent).toContain("1 match among 2 of 3 quotes loaded so far");
+  });
+
   it("searches by participant name", () => {
     const page = renderPage();
     changeSearchValue(page, "Charlie");

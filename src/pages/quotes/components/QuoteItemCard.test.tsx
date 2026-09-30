@@ -14,7 +14,7 @@ interface MockQuoteQuery {
         bill: {
           id?: string;
           maturity_date?: string;
-          drawee: object;
+          drawee: { name?: string };
           drawer: object;
           payee: object;
           endorsees: never[];
@@ -208,7 +208,7 @@ describe("QuoteItemCard", () => {
     expect(page.textContent).not.toContain("usd");
   });
 
-  it("renders bill id and maturity date when bill details are available", async () => {
+  it("leads with the payer and keeps exact identifiers in a collapsed disclosure", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 400, statusText: "Bad Request", text: () => Promise.resolve("") })
@@ -218,7 +218,7 @@ describe("QuoteItemCard", () => {
         bill: {
           id: "bill-abc-123",
           maturity_date: "2099-01-31",
-          drawee: {},
+          drawee: { name: "Cooperativa Compradora Guatemala" },
           drawer: {},
           payee: {},
           endorsees: [],
@@ -242,5 +242,9 @@ describe("QuoteItemCard", () => {
     expect(page.textContent).toContain("bill-abc-123");
     expect(page.textContent).toContain("Maturity:");
     expect(page.textContent).toContain("2099-01-31");
+    expect(page.querySelector('a[href="/quotes/quote-1"]')?.textContent).toBe("Cooperativa Compradora Guatemala");
+    expect(page.querySelector("details")?.open).toBe(false);
+    expect(page.querySelector("details")?.textContent).toContain("quote-1");
+    expect(page.querySelector("details")?.textContent).toContain("bill-abc-123");
   });
 });

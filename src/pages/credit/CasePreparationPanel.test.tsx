@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { afterEach, describe, expect, it } from "vitest";
 import { CasePreparationPanel } from "./CasePreparationPanel";
+import type { CaseNextStep } from "./case-brief";
 import type { DecisionCase } from "./decision-types";
 
 let root: Root | undefined;
@@ -10,13 +11,13 @@ afterEach(() => {
   act(() => root?.unmount());
   root = undefined;
 });
-function render(preparation: DecisionCase["casePreparation"]) {
+function render(preparation: DecisionCase["casePreparation"], next?: CaseNextStep) {
   const container = document.createElement("div");
   root = createRoot(container);
   act(() =>
     root?.render(
       <IntlProvider locale="en">
-        <CasePreparationPanel decisionCase={{ casePreparation: preparation }} />
+        <CasePreparationPanel decisionCase={{ casePreparation: preparation }} next={next} />
       </IntlProvider>
     )
   );
@@ -69,6 +70,18 @@ describe("CasePreparationPanel", () => {
   });
   it("leaves legacy cases to their existing presentation", () => {
     expect(render(undefined).textContent).toBe("");
+  });
+  it("does not invite a review of terms that expired after preparation finished", () => {
+    const prepared = { ...preparation, status: "prepared" as const, approvable: true, reasons: ["no_further_eligible_work" as const] };
+    expect(render(prepared, { kind: "decide_offer", offerExpiresOn: "2099-09-30" }).textContent).toContain(
+      "Agent preparation is complete. Review the case and proposed terms."
+    );
+    act(() => root?.unmount());
+    const expired = render(prepared, { kind: "terms_expired", offerExpiresOn: "2026-09-24" }).textContent;
+    expect(expired).toContain("the proposed terms expired on 2026-09-24. New terms need a new request from the applicant.");
+    expect(expired).not.toContain("Review the case and proposed terms");
+    act(() => root?.unmount());
+    expect(render(prepared, { kind: "wait_reassessment" }).textContent).not.toContain("Review the case and proposed terms");
   });
   it("does not imply that legacy consent permits three automatic rounds", () => {
     const page = render({

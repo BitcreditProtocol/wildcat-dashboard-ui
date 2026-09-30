@@ -7,6 +7,7 @@ import { getNextQuotePageOffset, getPageQuotes, isPaginatedPage } from "@/utils/
 import * as React from "react";
 import { useState } from "react";
 import { useIntl } from "react-intl";
+import { matchesQuoteAmount } from "@/utils/quote-amount-search";
 
 export type QuoteStatus = InfoReplyDiscriminants;
 
@@ -303,7 +304,7 @@ export function useQuoteList(status?: QuoteStatus) {
       .join(" ")
       .toLowerCase();
 
-    return searchableContent.includes(normalizedSearchQuery);
+    return matchesQuoteAmount(quote.sum, normalizedSearchQuery) || searchableContent.includes(normalizedSearchQuery);
   });
 
   const sortsLocally = apiSort === undefined || sortBy.startsWith("priority-");

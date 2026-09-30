@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { caseNextStep, caseNextStepOwner } from "@bitcredit/ai-credit-shared";
 import { defineMessages, useIntl } from "react-intl";
 import { useCreditAssessmentForBill } from "./use-credit-assessment";
 import { casePreparationBlocksDecision } from "./evidence-review-readiness";
@@ -21,6 +22,21 @@ const messages = defineMessages({
     defaultMessage: "Ready for decision",
     description: "List-row badge when governed code can offer",
   },
+  termsExpired: {
+    id: "credit.badge.termsExpired",
+    defaultMessage: "Terms expired",
+    description: "List-row badge when the prepared terms lapsed; not approvable and not a denial",
+  },
+  attention: {
+    id: "credit.badge.attention",
+    defaultMessage: "Needs your attention",
+    description: "List-row badge when terms exist but the operator must act before the case can be approved",
+  },
+  approvalUnavailable: {
+    id: "credit.badge.approvalUnavailable",
+    defaultMessage: "Approval unavailable",
+    description: "Neutral list-row badge when terms exist but approval is unavailable and no operator action is required",
+  },
   noFit: {
     id: "credit.badge.noFit",
     defaultMessage: "No product fit",
@@ -37,6 +53,8 @@ const messages = defineMessages({
     description: "List-row badge when the payload does not match this build",
   },
   pending: { id: "quote.status.Pending", defaultMessage: "Pending" },
+  preparing: { id: "credit.badge.preparing", defaultMessage: "Agents preparing case" },
+  awaitingApplicant: { id: "credit.badge.awaitingApplicant", defaultMessage: "Waiting for applicant" },
 });
 
 export function CreditAssessmentBadge({
@@ -74,19 +92,28 @@ export function CreditAssessmentBadge({
     );
 
   const { result } = decisionCase;
-  if (decisionCase.casePreparation?.status === "preparing")
-    return <Badge variant="pending">{intl.formatMessage({ id: "credit.badge.preparing", defaultMessage: "Agents preparing case" })}</Badge>;
-  if (decisionCase.casePreparation?.status === "awaiting_applicant")
-    return (
-      <Badge variant="pending">
-        {intl.formatMessage({ id: "credit.badge.awaitingApplicant", defaultMessage: "Waiting for applicant" })}
-      </Badge>
-    );
+  const preparing = <Badge variant="pending">{intl.formatMessage(messages.preparing)}</Badge>;
+  const awaitingApplicant = <Badge variant="pending">{intl.formatMessage(messages.awaitingApplicant)}</Badge>;
+  if (decisionCase.casePreparation?.status === "preparing") return preparing;
+  if (decisionCase.casePreparation?.status === "awaiting_applicant") return awaitingApplicant;
   if (result.assessmentStatus === "blocked_pending_verification" || casePreparationBlocksDecision(decisionCase)) {
     return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
   }
   if (result.recommendation === "offer_available") {
-    return <Badge variant="success">{intl.formatMessage(messages.offer)}</Badge>;
+    // The detail page's time-aware next step decides; prepared terms alone are not readiness.
+    const next = caseNextStep(decisionCase, { quoteId: mintQuoteId ?? null, now: Date.now() });
+    if (next.kind === "decide_offer") return <Badge variant="success">{intl.formatMessage(messages.offer)}</Badge>;
+    if (next.kind === "terms_expired") return <Badge variant="secondary">{intl.formatMessage(messages.termsExpired)}</Badge>;
+    if (next.kind === "wait_agent") return preparing;
+    if (next.kind === "wait_applicant") return awaitingApplicant;
+    if (next.kind === "retry_sources" || next.kind === "wait_mint_risk")
+      return <Badge variant="pending">{intl.formatMessage(messages.verification)}</Badge>;
+    // Ask for attention only when the operator owns the step; otherwise approval is simply unavailable.
+    return caseNextStepOwner(next) === "operator" ? (
+      <Badge variant="pending">{intl.formatMessage(messages.attention)}</Badge>
+    ) : (
+      <Badge variant="secondary">{intl.formatMessage(messages.approvalUnavailable)}</Badge>
+    );
   }
   // An outcome this build cannot read must never read as a refusal.
   if (result.recommendation !== "no_current_product_fit") {

@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { governedTermsExpired } from "@bitcredit/ai-credit-shared";
 import { Button, Card, CardContent, Text } from "@bitcredit/ui-library";
 import { ParticipantDetail } from "@/components/ParticipantsOverview";
 import { Currency } from "@/components/Currency";
@@ -12,7 +13,6 @@ import { defineMessages, useIntl } from "react-intl";
 import type { CaseBrief } from "@/pages/credit/case-brief";
 import { caseHeadline, caseReason } from "@/pages/credit/case-brief-copy";
 import { CaseFacts, CaseNextStepPanel, CaseProgress } from "@/pages/credit/CaseBrief";
-import { Link } from "react-router";
 
 interface QuoteDetailCardProps {
   actions?: ReactNode;
@@ -47,6 +47,15 @@ interface QuoteDetailCardProps {
     };
   };
 }
+
+const termMessages = defineMessages({
+  proposedFee: {
+    id: "quotes.summary.proposedFee",
+    defaultMessage: "Proposed minting fee",
+    description: "Unapproved terms, not an issued offer",
+  },
+  fee: { id: "quotes.summary.fee", defaultMessage: "Fee", description: "Minting fee in the recorded offer" },
+});
 
 /** After the Mint decides, the quote status leads; these lines keep offer, minting and payment apart. */
 const statusReasonMessages = defineMessages({
@@ -141,9 +150,16 @@ export function QuoteDetailCard({
   const offerExpired =
     effectiveQuoteStatus === "Pending" &&
     decisionSummary?.recommendedTerms !== undefined &&
-    Date.parse(`${decisionSummary.recommendedTerms.offerExpiresOn}T23:59:59.999Z`) <= Date.now();
+    governedTermsExpired(decisionSummary.recommendedTerms.offerExpiresOn, Date.now());
   const netProceeds = "discounted" in quote ? quote.discounted : null;
-  const recommendedTerms = isHistoricalAssessment || offerExpired ? undefined : decisionSummary?.recommendedTerms;
+  const recommendedTerms =
+    assessmentUnavailable ||
+    assessmentLoading ||
+    isHistoricalAssessment ||
+    offerExpired ||
+    (decisionSummary?.brief && decisionSummary.brief.next.kind !== "decide_offer")
+      ? undefined
+      : decisionSummary?.recommendedTerms;
   const showingRecommendation = netProceeds === null && recommendedTerms !== undefined;
   const displayedAmountAvailableForMinting = netProceeds ?? recommendedTerms?.amountAvailableForMinting ?? null;
   const mintingFee = netProceeds === null ? (recommendedTerms?.mintingFee ?? null) : bill.sum - netProceeds;
@@ -260,7 +276,11 @@ export function QuoteDetailCard({
   const durableExecutionCompleted = durableAuthorizationReceipt?.status === "completed";
   const brief = decisionSummary?.brief;
   // The case brief speaks for a pending quote, and for a quote closed because evidence was unavailable.
-  const showBrief = brief !== undefined && (effectiveQuoteStatus === "Pending" || brief.next.kind === "closed");
+  const showBrief =
+    brief !== undefined &&
+    !assessmentUnavailable &&
+    !assessmentLoading &&
+    (effectiveQuoteStatus === "Pending" || brief.next.kind === "closed");
   const statusReason = statusReasonMessages[effectiveQuoteStatus as keyof typeof statusReasonMessages];
   // The mint-complete query currently reads the eBill payment endpoint. It can confirm payment,
   // but cannot establish redemption or issued/spendable value.
@@ -309,8 +329,8 @@ export function QuoteDetailCard({
                   </Badge>
                 </div>
               ) : null}
-              <Link
-                to={`/bills/${quote.bill.id}`}
+              <a
+                href="#bill-record"
                 title={quote.bill.id}
                 className="mt-2 inline-block text-xs text-muted-foreground underline underline-offset-4"
               >
@@ -319,7 +339,7 @@ export function QuoteDetailCard({
                   defaultMessage: "View eBill",
                   description: "Open the linked eBill record",
                 })}
-              </Link>
+              </a>
               <span className="hidden font-mono text-xs break-all print:block">{quote.bill.id}</span>
             </div>
             <Button
@@ -335,7 +355,7 @@ export function QuoteDetailCard({
             </Button>
           </div>
           {showBrief ? (
-            <CaseNextStepPanel next={brief.next} actions={actions} />
+            <CaseNextStepPanel next={brief.next} brief={brief} actions={actions} />
           ) : (
             actions && <div className="mt-4 print:hidden">{actions}</div>
           )}
@@ -355,7 +375,7 @@ export function QuoteDetailCard({
           </div>
           <div className="border-b border-border px-5 py-4 md:border-r md:border-b-0">
             <div className="truncate text-xs text-muted-foreground">
-              {intl.formatMessage({ id: "quotes.summary.fee", defaultMessage: "Fee" })}
+              {intl.formatMessage(showingRecommendation ? termMessages.proposedFee : termMessages.fee)}
             </div>
             {mintingFee !== null && mintingFeeRate !== null ? (
               <>

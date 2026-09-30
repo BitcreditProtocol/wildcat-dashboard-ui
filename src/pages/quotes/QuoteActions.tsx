@@ -160,7 +160,24 @@ export function QuoteActions({
   const hasApplicantHumanReview = decisionCase?.applicantHumanReview !== undefined;
   const hasCurrentAssessment = decisionCase?.assessmentCurrency === "current";
   const evidenceSubmissionDigest = decisionCase?.submissionDigest;
-  const hasIncompletePreparation = casePreparationBlocksDecision(decisionCase);
+  const facilityCoverage = decisionCase?.facilityCoverage;
+  const facilityReviewKey =
+    facilityCoverage && decisionCase
+      ? JSON.stringify([
+          value.id,
+          decisionCase.snapshot.caseId,
+          evidenceSubmissionDigest,
+          decisionCase.resultDigest,
+          facilityCoverage.digest,
+        ])
+      : null;
+  const [confirmedFacilityReview, setConfirmedFacilityReview] = useState<string | null>(null);
+  const hasFacilityBlock =
+    decisionCase && "facility" in decisionCase.snapshot && (!facilityCoverage || facilityCoverage.status === "blocked");
+  const hasIncompletePreparation =
+    casePreparationBlocksDecision(decisionCase) ||
+    !!hasFacilityBlock ||
+    (!!facilityCoverage && confirmedFacilityReview !== facilityReviewKey);
   const hasUnresolvedEvidenceQuestions = decisionCase?.casePreparation === undefined && pendingEvidenceQuestionCount(decisionCase) > 0;
   useEffect(() => {
     governanceGeneration.current += 1;
@@ -222,7 +239,8 @@ export function QuoteActions({
     !(governedOfferExpiresAt > Date.now());
   const showGovernedOffer =
     showPendingActions &&
-    !hasIncompletePreparation &&
+    !casePreparationBlocksDecision(decisionCase) &&
+    !hasFacilityBlock &&
     hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
     decisionCase?.result.assessmentStatus === "ready_for_decision" &&
@@ -380,6 +398,9 @@ export function QuoteActions({
     }
     const boundInput = {
       ...input,
+      ...(facilityCoverage && (input.action === "confirm_proposed_quote" || input.action === "propose_adjustment_and_requote")
+        ? { facilityCoverageDigest: facilityCoverage.digest, facilityConditionsConfirmed: true as const }
+        : {}),
       ...(currentDecisionCase.submissionDigest === undefined ? {} : { submissionDigest: currentDecisionCase.submissionDigest }),
     };
     const inputKey = JSON.stringify(boundInput);
@@ -619,7 +640,7 @@ export function QuoteActions({
       >
         {intl.formatMessage({
           id: "quotes.askApplicant.action",
-          defaultMessage: "Ask an additional question",
+          defaultMessage: "Ask the applicant",
           description: "Optional operator action; agents handle required information requests automatically",
         })}
       </Button>
@@ -655,6 +676,28 @@ export function QuoteActions({
 
   return (
     <>
+      {facilityCoverage &&
+        facilityCoverage.status !== "blocked" &&
+        showPendingActions &&
+        !casePreparationBlocksDecision(decisionCase) &&
+        !hasUnresolvedEvidenceQuestions &&
+        decisionCase?.result.assessmentStatus === "ready_for_decision" &&
+        decisionCase.result.recommendation === "offer_available" &&
+        !offerTermsExpired && (
+          <label className="mb-3 flex max-w-xl items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={confirmedFacilityReview === facilityReviewKey}
+              onChange={(event) => setConfirmedFacilityReview(event.target.checked ? facilityReviewKey : null)}
+            />
+            {intl.formatMessage({
+              id: "facilities.coverage.confirm",
+              defaultMessage:
+                "I checked this bill against the Facility Agreement's scope and remaining conditions. The whole bill amount will be held against its allowance.",
+            })}
+          </label>
+        )}
       {mintDenial === undefined ? null : (
         <div role="status" className="flex items-center gap-2 text-sm">
           <Badge variant={mintDenial.state === "syncing" ? "pending" : "success"}>
@@ -716,8 +759,18 @@ export function QuoteActions({
             >
               <Button
                 className="min-w-24"
-                disabled={isFetching || offerQuote.isPending || !mayOffer}
-                title={mayOffer ? undefined : roleUnavailableReason}
+                disabled={isFetching || offerQuote.isPending || !mayOffer || hasIncompletePreparation}
+                title={
+                  !mayOffer
+                    ? roleUnavailableReason
+                    : hasIncompletePreparation
+                      ? intl.formatMessage({
+                          id: "facilities.coverage.confirmBeforeOffer",
+                          defaultMessage: "Confirm the Facility Agreement checks above before continuing.",
+                          description: "Why the prepared offer button is disabled before operator facility confirmation",
+                        })
+                      : undefined
+                }
               >
                 {offerButtonLabel} {offerQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
               </Button>

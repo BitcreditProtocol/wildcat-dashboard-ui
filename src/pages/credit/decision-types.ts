@@ -3,6 +3,8 @@
  * display helpers used by the Mint dashboard; it must not reimplement the wire validator.
  */
 import type {
+  FacilityBinding,
+  FacilityCoverage,
   ApplicantConfirmationSummary,
   ApplicantHumanReviewRecord as SharedApplicantHumanReviewRecord,
   ApplicantHumanReviewResolution as SharedApplicantHumanReviewResolution,
@@ -26,6 +28,7 @@ import type {
   OperatorMaterialEvidenceSelection as SharedOperatorMaterialEvidenceSelection,
   ProposedEvidenceField as SharedProposedEvidenceField,
 } from "@bitcredit/ai-credit-shared";
+import { isEvidenceInsufficientClosure as sharedEvidenceInsufficientClosure } from "@bitcredit/ai-credit-shared";
 
 export type AxisStatus = "pass" | "caution" | "blocked" | "fail" | "not_assessed";
 export type AssessmentStatus = "ready_for_decision" | "blocked_pending_verification";
@@ -133,12 +136,14 @@ export type MintQuoteDenialReceipt = SharedMintQuoteDenialReceipt;
 export type MintQuoteDenialStatus = SharedMintQuoteDenialStatus;
 
 export interface DecisionCase {
+  facilityCoverage?: FacilityCoverage;
   submissionDigest?: string;
   assessmentCurrency: AssessmentCurrency;
   mintQuoteId: string | null;
   policyFileName: string;
   snapshot: {
-    schemaVersion: "decision-input-snapshot-v8" | "decision-input-snapshot-v9";
+    schemaVersion: "decision-input-snapshot-v8" | "decision-input-snapshot-v9" | "decision-input-snapshot-v10";
+    facility?: FacilityBinding;
     snapshotDigest: string;
     caseId: string;
     applicantRef: string;
@@ -221,11 +226,7 @@ export interface DecisionCase {
 
 /** A completed Mint denial is non-adverse when it only closes unresolved evidence work. */
 export function isEvidenceInsufficientClosure(decisionCase: DecisionCase | undefined): boolean {
-  return (
-    decisionCase?.assessmentCurrency === "current" &&
-    decisionCase.result.assessmentStatus === "blocked_pending_verification" &&
-    decisionCase.mintDenial?.state === "completed"
-  );
+  return sharedEvidenceInsufficientClosure(decisionCase);
 }
 
 export interface AssessmentRevision {

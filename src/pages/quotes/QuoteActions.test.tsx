@@ -515,10 +515,69 @@ beforeEach(() => {
 });
 
 describe("QuoteActions", () => {
+  it.each(["assessment", "submission", "quote"] as const)(
+    "requires facility reconfirmation when the %s changes even if allowance is unchanged",
+    (changed) => {
+      decisionCase = {
+        ...governedOffer,
+        facilityCoverage: { status: "within_limits", digest: `sha256:${"f".repeat(64)}` } as DecisionCase["facilityCoverage"],
+      };
+      const page = renderComponent(pendingQuote);
+      const confirmation = page.querySelector<HTMLInputElement>('input[type="checkbox"]');
+      act(() => confirmation?.click());
+      const offer = () => [...page.querySelectorAll("button")].find((button) => button.textContent?.trim() === "Offer");
+      expect(confirmation?.checked).toBe(true);
+      expect(offer()?.disabled).toBe(false);
+
+      if (changed === "assessment") decisionCase = { ...decisionCase, resultDigest: `sha256:${"7".repeat(64)}` };
+      if (changed === "submission") decisionCase = { ...decisionCase, submissionDigest: `sha256:${"b".repeat(64)}` };
+      rerenderComponent(changed === "quote" ? { ...pendingQuote, id: "different-quote" } : pendingQuote);
+
+      expect(confirmation?.checked).toBe(false);
+      if (changed === "quote") expect(offer()).toBeUndefined();
+      else expect(offer()?.disabled).toBe(true);
+    }
+  );
+  it.each([false, true])("only asks for facility signoff once preparation is complete (preparing=%s)", (preparing) => {
+    decisionCase = {
+      ...governedOffer,
+      facilityCoverage: { status: "within_limits", digest: `sha256:${"f".repeat(64)}` } as DecisionCase["facilityCoverage"],
+      ...(preparing
+        ? {
+            casePreparation: {
+              schemaVersion: "case-preparation-v1" as const,
+              status: "preparing" as const,
+              approvable: false,
+              reasons: ["agent_review_running" as const],
+              automaticRequests: {
+                policyVersion: "synthetic-agent-follow-up-v2" as const,
+                used: 0,
+                budget: 3 as const,
+                consent: "absent" as const,
+                enabled: false,
+              },
+              rounds: [],
+              openObjectives: [],
+            },
+          }
+        : {}),
+    };
+    const page = renderComponent(pendingQuote);
+    expect(page.textContent?.includes("I checked this bill against the Facility Agreement")).toBe(!preparing);
+    const offer = [...page.querySelectorAll("button")].find((button) => button.textContent?.trim() === "Offer");
+    if (preparing) expect(offer).toBeUndefined();
+    else {
+      expect(offer?.disabled).toBe(true);
+      expect(offer?.title).toBe("Confirm the Facility Agreement checks above before continuing.");
+      const confirmation = page.querySelector<HTMLInputElement>('input[type="checkbox"]');
+      act(() => confirmation?.click());
+      expect(offer?.disabled).toBe(false);
+    }
+  });
   it("does not offer an applicant question without the submission binding", () => {
     decisionCase = { ...governedOffer, submissionDigest: undefined };
     const page = renderComponent(pendingQuote);
-    expect(page.textContent).not.toContain("Ask an additional question");
+    expect(page.textContent).not.toContain("Ask the applicant");
   });
 
   it.each(["open", "exhausted"] as const)("routes %s evidence to non-adverse actions instead of Offer", async (status) => {
@@ -537,7 +596,7 @@ describe("QuoteActions", () => {
     const buttons = Array.from(page.querySelectorAll("button")).map((button) => button.textContent);
     expect(buttons).not.toContain("Offer");
     expect(buttons).not.toContain("Deny");
-    expect(buttons).toContain("Ask an additional question");
+    expect(buttons).toContain("Ask the applicant");
     expect(buttons).toContain("Close — unable to assess");
     // The decision card's "Before a decision" list owns the single link to the questions.
     expect(page.querySelector('a[href="#evidence-questions"]')).toBeNull();
@@ -575,7 +634,7 @@ describe("QuoteActions", () => {
     // Applicant replies await a reviewer: asking again or closing are exceptions.
     decisionCase = { ...governedOffer, informationNeeds: [need] };
     renderComponent(pendingQuote);
-    expect(placement("Ask an additional question")).toBe("collapsed exception");
+    expect(placement("Ask the applicant")).toBe("collapsed exception");
     expect(placement("Close — unable to assess")).toBe("collapsed exception");
     expect(document.querySelector("details summary")?.textContent).toBe("More actions");
     cleanupRender();
@@ -583,7 +642,7 @@ describe("QuoteActions", () => {
     // Applicant-owned checks: sending the request is the next step; closing stays an exception.
     decisionCase = governedVerification;
     renderComponent(pendingQuote);
-    expect(placement("Ask an additional question")).toBe("collapsed exception");
+    expect(placement("Ask the applicant")).toBe("collapsed exception");
     expect(placement("Close — unable to assess")).toBe("collapsed exception");
     cleanupRender();
 
@@ -617,7 +676,7 @@ describe("QuoteActions", () => {
       ],
     };
     renderComponent(pendingQuote);
-    expect(placement("Ask an additional question")).toBe("collapsed exception");
+    expect(placement("Ask the applicant")).toBe("collapsed exception");
     expect(placement("Close — unable to assess")).toBe("primary");
     expect(document.querySelector("details")).not.toBeNull();
   });
@@ -668,7 +727,7 @@ describe("QuoteActions", () => {
     const selection = [{ runId: run.runId, needIndex: 0 }];
     const page = renderComponent(pendingQuote, undefined, selection, submitted);
     // The selected proposal is counted because it is one of the items sent below.
-    expect(Array.from(page.querySelectorAll("button")).map((button) => button.textContent)).toContain("Ask an additional question");
+    expect(Array.from(page.querySelectorAll("button")).map((button) => button.textContent)).toContain("Ask the applicant");
 
     await act(async () => {
       returnInfoSubmit?.("Confirm the sales relied on by the repayment story through the applicant evidence channel.");
@@ -831,9 +890,7 @@ describe("QuoteActions", () => {
     operatorCapability = { ready: true, operatorId: "reviewer-123", operatorRole: "reviewer" };
     const page = renderComponent(pendingQuote);
     const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
-    const returnButton = Array.from(page.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Ask an additional question")
-    );
+    const returnButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Ask the applicant"));
 
     expect(denyButton).toBeUndefined();
     expect(returnButton?.disabled).toBe(false);
@@ -1283,7 +1340,7 @@ describe("QuoteActions", () => {
 
     expect(denyButton).toBeUndefined();
     expect(page.textContent).not.toContain("Offer");
-    expect(page.textContent).toContain("Ask an additional question");
+    expect(page.textContent).toContain("Ask the applicant");
 
     act(() => {
       returnInfoOpenChange?.(true);
