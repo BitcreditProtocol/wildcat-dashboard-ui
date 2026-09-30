@@ -116,6 +116,17 @@ const messages = defineMessages({
       "Operator: resolve the overlapping accepted Facility Agreements before preparing this quote. No standalone offer is permitted while the agreement binding is unclear.",
     description: "Concrete owner and next step for ambiguous facility selection",
   },
+  issueFacilityUnavailable: {
+    id: "credit.quoteCard.issue.facilityUnavailable",
+    defaultMessage: "Facility Agreement link unavailable",
+    description: "The applicant's facility membership storage is missing, unreadable or inconsistent",
+  },
+  actionFacilityStorage: {
+    id: "credit.quoteCard.issue.action.facilityStorage",
+    defaultMessage:
+      "Operator or administrator: check the facility storage and restore its complete authenticated backup. No offer, including a standalone offer, is permitted until the link is restored; the applicant does not need to reapply or add information.",
+    description: "Fail-closed owner and next step when an accepted facility's membership cannot be read",
+  },
   openFacilities: {
     id: "credit.quoteCard.issue.openFacilities",
     defaultMessage: "Open Facility Agreements",
@@ -180,6 +191,7 @@ const issuePresentation: Record<OperatorSubmittedCaseIssue["reasonCode"], { labe
     legacy_authority_missing: { label: "issueLegacyAuthority", action: "actionApplicant" },
     submitted_evidence_unavailable: { label: "issueEvidenceUnavailable", action: "actionEvidence" },
     facility_binding_ambiguous: { label: "issueFacilityAmbiguous", action: "actionResolveFacility" },
+    facility_binding_unavailable: { label: "issueFacilityUnavailable", action: "actionFacilityStorage" },
   };
 
 export function QuoteCreditAssessment({

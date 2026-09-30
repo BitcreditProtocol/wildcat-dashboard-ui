@@ -560,6 +560,28 @@ describe("CreditAssessmentBadge", () => {
     expect(container.textContent).toContain("No standalone offer is permitted");
     expect(container.querySelector("a")?.getAttribute("href")).toBe("/facilities");
   });
+  it("holds a case whose facility link is unavailable with a storage owner, not a standalone or applicant step", () => {
+    mockUseQuery.mockReturnValue({
+      data: { cases: [], issues: [{ ...isolatedIssue, reasonCode: "facility_binding_unavailable" }] },
+      isLoading: false,
+      error: null,
+    });
+    render(
+      <MemoryRouter>
+        <QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId={isolatedIssue.mintQuoteId} />
+      </MemoryRouter>
+    );
+    expect(container.textContent).toContain("Verification required");
+    expect(container.textContent).toContain("Facility Agreement link unavailable");
+    expect(container.textContent).toContain(
+      "Operator or administrator: check the facility storage and restore its complete authenticated backup."
+    );
+    expect(container.textContent).toContain("No offer, including a standalone offer, is permitted");
+    expect(container.textContent).toContain("the applicant does not need to reapply or add information");
+    expect(container.textContent).not.toContain("Ask the applicant");
+    expect(container.querySelector("button")).toBeNull();
+    expect(container.querySelector("a")).toBeNull();
+  });
   it("shows an isolated case as a concise operator action instead of an absent assessment", () => {
     mockUseQuery.mockReturnValue({
       data: { cases: [{ ...offerCase, mintQuoteId: isolatedIssue.mintQuoteId }], issues: [isolatedIssue] },
