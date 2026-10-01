@@ -14,7 +14,7 @@ permissions: {}
 
 jobs:
   sync:
-    uses: BitcreditProtocol/.github/.github/workflows/sync-master-to-dev.yml@9a662b22ba5744c9f69abff713ecef4e900623f1
+    uses: BitcreditProtocol/.github/.github/workflows/sync-master-to-dev.yml@238cfa466ed1ea707a75ca8cde5084990ee0fe95
     secrets:
       AUTOMATION_APP_CLIENT_ID: ${{ vars.AUTOMATION_APP_CLIENT_ID }}
       AUTOMATION_APP_PRIVATE_KEY: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
