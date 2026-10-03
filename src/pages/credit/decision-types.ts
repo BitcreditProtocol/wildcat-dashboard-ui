@@ -176,6 +176,8 @@ export interface DecisionCase {
   policyPack: {
     policyPackVersion: string;
     policyPackDigest: string;
+    /** The shared schema admits synthetic packs only; read through `usesSyntheticData`. */
+    isSynthetic?: boolean;
     calculationVersion: string;
     product: string;
     country: string;
@@ -262,6 +264,14 @@ export function countCitedEvidenceClaims(evidencePackets: readonly EvidencePacke
       proposal.lineItems.length
     );
   }, 0);
+}
+
+/**
+ * Whether the case's inputs or pricing policy are synthetic test data. Real only when the snapshot
+ * and the policy pack both say so; a missing flag never reads as real.
+ */
+export function usesSyntheticData(decisionCase: Pick<DecisionCase, "snapshot" | "policyPack">): boolean {
+  return decisionCase.snapshot.isSynthetic !== false || decisionCase.policyPack.isSynthetic !== false;
 }
 
 /** Domain codes are rendered as humanized English, matching the rest of this synthetic view. */

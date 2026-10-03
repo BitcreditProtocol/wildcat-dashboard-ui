@@ -40,7 +40,7 @@ const breakdown: FeeBreakdown = {
 };
 
 let root: Root | undefined;
-function render(withBreakdown: boolean, parts = breakdown.parts) {
+function render(withBreakdown: boolean, parts = breakdown.parts, synthetic = false) {
   act(() => root?.unmount());
   const container = document.createElement("div");
   document.body.append(container);
@@ -49,7 +49,13 @@ function render(withBreakdown: boolean, parts = breakdown.parts) {
     root?.render(
       <IntlProvider locale="en">
         <PreferencesProvider>
-          <ProposedTerms terms={terms} policy={policy} breakdown={withBreakdown ? { ...breakdown, parts } : undefined} mayAdjust={false} />
+          <ProposedTerms
+            terms={terms}
+            policy={policy}
+            breakdown={withBreakdown ? { ...breakdown, parts } : undefined}
+            synthetic={synthetic}
+            mayAdjust={false}
+          />
         </PreferencesProvider>
       </IntlProvider>
     )
@@ -96,6 +102,15 @@ describe("ProposedTerms", () => {
     expect(limits?.querySelector("summary")?.textContent).toBe("Within the Mint's fee limits");
     expect(limits?.textContent).toContain("caps a fee at 30.00% of the bill, and at 15.00% a year measured on the amount paid out");
     expect(limits?.textContent).toContain("This fee is 3.33% of the bill, or 6.88% a year on the amount paid out.");
+  });
+
+  it("says when the fee was calculated from synthetic test values, and only then", () => {
+    const notice = (page: HTMLElement) => page.querySelector("[data-synthetic-notice]")?.textContent;
+
+    expect(notice(render(true, breakdown.parts, true))).toBe(
+      "Test values: the fee policy and the payer risk are synthetic, not calibrated."
+    );
+    expect(notice(render(true))).toBeUndefined();
   });
 
   it("shows a subsidy as a signed reduction", () => {

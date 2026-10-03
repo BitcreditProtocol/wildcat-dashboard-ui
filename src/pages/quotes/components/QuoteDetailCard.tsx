@@ -7,7 +7,7 @@ import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
 import type { AdminInfoReply, MintOperationStatus } from "@/generated/client/types.gen";
 import type { DurableAuthorizationReceipt, VerifiedAuthorizationReceipt } from "@/pages/credit/record-operator-decision";
-import { ChevronDown, CircleAlert, CircleCheck, Clock3, Printer } from "lucide-react";
+import { ChevronDown, CircleAlert, CircleCheck, Clock3, FlaskConical, Printer } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import type { CaseBrief } from "@/pages/credit/case-brief";
@@ -40,6 +40,8 @@ interface QuoteDetailCardProps {
   decisionSummary?: {
     brief: CaseBrief;
     assessmentCurrency: "current" | "historical";
+    /** The case's inputs or policy are synthetic (`usesSyntheticData`). */
+    synthetic: boolean;
     useOfFunds?: string;
     repaymentSource?: string;
     billAcceptanceState?: string;
@@ -359,6 +361,19 @@ export function QuoteDetailCard({
                 >
                   {headline}
                 </span>
+                {decisionSummary?.synthetic === true && (
+                  <span
+                    data-synthetic-badge=""
+                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-signal-alert/60 px-2.5 py-0.5 font-medium text-signal-alert"
+                  >
+                    <FlaskConical className="size-3" aria-hidden="true" />
+                    {intl.formatMessage({
+                      id: "quotes.summary.synthetic",
+                      defaultMessage: "Synthetic test data",
+                      description: "The case's risk inputs or fee policy are synthetic, not real or calibrated",
+                    })}
+                  </span>
+                )}
                 {receivedAt !== undefined && (
                   <span className="text-muted-foreground">
                     {intl.formatMessage(
@@ -555,6 +570,7 @@ export function QuoteDetailCard({
               useOfFunds={decisionSummary.useOfFunds}
               repaymentSource={decisionSummary.repaymentSource}
               acceptorRisk={decisionSummary.acceptorRisk}
+              synthetic={decisionSummary.synthetic}
               openPoints={decisionSummary.openPoints ?? 0}
               duplicateCheck={decisionSummary.duplicateCheck}
               alreadyFinanced={decisionSummary.alreadyFinanced}
