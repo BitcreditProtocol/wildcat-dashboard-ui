@@ -123,12 +123,15 @@ function caseBrief(next: CaseBrief["next"], work: CaseBrief["work"] = [], extra:
 
 type CardProps = Parameters<typeof QuoteDetailCard>[0];
 
-/** Text of each provenance column, in order; the columns are the sections whose headings are h2 beside the terms strip. */
-const FACT_HEADINGS = ["Signed eBill record", "Applicant's claims", "Checked against applicant documents", "Mint-owned checks"];
-function factColumns(page: HTMLElement): (string | null | undefined)[] {
-  return [...page.querySelectorAll("section")]
-    .filter((section) => FACT_HEADINGS.includes(section.querySelector(":scope > h2")?.textContent ?? ""))
-    .map((section) => section.textContent);
+/** Each certainty column's facts, as "level: fact | source", in order: established first, then the applicant's word or open. */
+function certainty(page: HTMLElement): string[][] {
+  const section = page.querySelector('section[aria-labelledby="case-certainty-title"]');
+  return [...(section?.querySelectorAll("ul") ?? [])].map((list) =>
+    [...list.querySelectorAll("li")].map((item) => {
+      const [level, text, source] = [...item.querySelectorAll(":scope > span > span")].map((part) => part.textContent ?? "");
+      return `${level.replace(/: $/, "")}: ${text} | ${source}`;
+    })
+  );
 }
 
 function renderCard(props: Partial<CardProps>): HTMLDivElement {
@@ -190,7 +193,7 @@ describe("QuoteDetailCard", () => {
       },
     });
     const header = page.querySelector("header");
-    expect(header?.querySelector("h1")?.textContent).toBe("Needs your attention");
+    expect(header?.querySelector("[data-case-headline]")?.textContent).toBe("Needs your attention");
     expect(header?.textContent).toContain(
       "3 applicant replies have not been checked against the documents. Terms stay paused until each one is reviewed."
     );
@@ -200,7 +203,12 @@ describe("QuoteDetailCard", () => {
     expect(reviewLinks).toHaveLength(1);
     expect(reviewLinks[0]?.textContent).toBe("Open evidence review");
     // Governed controls sit in the next-step panel; QuoteActions decides which are collapsed exceptions.
-    expect(header?.querySelector('[aria-labelledby="case-next-step"]')?.textContent).toContain("Close — unable to assess");
+    const nextStep = [...(header?.querySelectorAll("section[aria-labelledby]") ?? [])].find((section) =>
+      section.querySelector("h2")?.textContent?.startsWith("Next step")
+    );
+    // The section is labelled by its own heading (a generated id, unique when the step renders twice).
+    expect(nextStep?.getAttribute("aria-labelledby")).toBe(nextStep?.querySelector("h2")?.id);
+    expect(nextStep?.textContent).toContain("Close — unable to assess");
     expect(page.textContent).not.toContain("What needs to happen next");
     expect(page.textContent).not.toContain("Residual uncertainty");
     expect(page.querySelector('header a[href="#bill-record"]')?.textContent).toBe("View eBill");
@@ -224,7 +232,7 @@ describe("QuoteDetailCard", () => {
       },
     });
     const header = page.querySelector("header");
-    expect(header?.querySelector("h1")?.textContent).toBe("Mint evidence missing");
+    expect(header?.querySelector("[data-case-headline]")?.textContent).toBe("Mint evidence missing");
     expect(header?.textContent).toContain("no current default and loss estimate for the payer, ACME Corp");
     expect(header?.textContent).toContain("Next step · Mint risk");
     expect(header?.textContent).toContain("No action needed from you");
@@ -275,7 +283,7 @@ describe("QuoteDetailCard", () => {
         brief: caseBrief({ kind: "closed" }, [{ kind: "proposals", count: 2 }]),
       },
     });
-    expect(page.querySelector("h1")?.textContent).toBe("Unable to assess");
+    expect(page.querySelector("[data-case-headline]")?.textContent).toBe("Unable to assess");
     expect(page.textContent).toContain("Material evidence unavailable · no adverse finding");
     expect(page.textContent).not.toContain("Next step");
     expect(page.textContent).not.toContain("questions not sent");
@@ -300,7 +308,7 @@ describe("QuoteDetailCard", () => {
       element.querySelector(":scope > summary")?.textContent?.includes("Processing & audit")
     );
     expect(audit?.open).toBe(false);
-    expect(paid.querySelector("h1")?.textContent).toBe("Accepted");
+    expect(paid.querySelector("[data-case-headline]")?.textContent).toBe("Accepted");
     expect(paid.querySelector("header")?.textContent).toContain("Paid");
     expect(paid.querySelector("header")?.textContent).not.toContain("Redemption");
     expect(audit?.textContent).not.toContain("Paid");
@@ -367,7 +375,7 @@ describe("QuoteDetailCard", () => {
       },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("Preparing the case");
+    expect(page.querySelector("[data-case-headline]")?.textContent).toBe("Preparing the case");
     expect(page.textContent).toContain("Historical assessment · read-only");
     expect(page.textContent).toContain("Decisions stay disabled until a current assessment is available.");
     expect(page.textContent).not.toContain("7,734,000");
@@ -440,7 +448,7 @@ describe("QuoteDetailCard", () => {
       },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("Accepted");
+    expect(page.querySelector("[data-case-headline]")?.textContent).toBe("Accepted");
     expect(page.querySelector("header")?.textContent).toContain(
       "The holder accepted the offer. This is not minting, issued value or eBill payment."
     );
@@ -449,15 +457,23 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).not.toContain("Case progress");
     expect(page.textContent).toContain("Available to mint80,000,000sat");
     expect(page.textContent).toContain("Fee20,000,000sat");
-    expect(factColumns(page)).toEqual([
-      "Signed eBill recordAccepted by the payerPayer at maturityACME CorpDrawerACME CorpRecords acceptance and terms, not ability to pay.",
-      "Applicant's claimsUse of proceedsFertilizer and seasonal workersRepayment sourceCoffee harvest salesApplicant statement only",
-      "Checked against applicant documentsInvoice fields match the eBillConsistency with an applicant-supplied document, not independent confirmation of the trade.Details",
-      "Mint-owned checksMint-signed risk record for the payerNo other financing of this bill in Mint recordsMint records only; not a guarantee of repayment or a check at other Mints.Details",
+    // Every fact names what backs it; acceptance and records never read as payment.
+    expect(certainty(page)).toEqual([
+      [
+        "Recorded independently of the applicant: ACME Corp accepted the eBill and owes it at maturity | eBill record · acceptance, not ability to pay",
+        "Recorded independently of the applicant: Payer risk recorded by the Mint | Mint-signed record, corroborated · not a guarantee of payment",
+        "Recorded independently of the applicant: No other financing of this bill found | Mint records only, not other Mints",
+        "Consistent with the applicant's documents: Invoice matches the eBill | Applicant's document, not independent confirmation",
+      ],
+      [
+        "Applicant's word: Uses the funds for: Fertilizer and seasonal workers | Applicant's interview answer",
+        "Applicant's word: How the bill gets paid: Coffee harvest sales | Applicant's interview answer",
+      ],
     ]);
     expect(page.textContent).not.toContain("Independently supported");
+    // Without the record's evidence level, nothing is claimed about it.
     expect(page.textContent).not.toContain("independently verified");
-    expect(page.textContent?.match(/Applicant statement only/g)).toHaveLength(1);
+    expect(page.textContent?.match(/Applicant's interview answer/g)).toHaveLength(2);
     expect(page.textContent?.match(/Coffee harvest sales/g)).toHaveLength(1);
     expect(page.textContent).not.toContain("Full answer");
     expect(page.textContent).not.toContain("Residual uncertainty");
@@ -486,14 +502,17 @@ describe("QuoteDetailCard", () => {
       },
     });
 
-    const [, claims, documents, independent] = factColumns(page);
-    expect(claims).toBe("Applicant's claimsUse of proceedsFertilizerRepayment sourceNo answer recordedApplicant statement only");
-    expect(documents).toBe(
-      "Checked against applicant documentsInvoice does not match the eBillConsistency with an applicant-supplied document, not independent confirmation of the trade.Details"
-    );
-    expect(independent).toBe(
-      "Mint-owned checksNone recordedMint records only; not a guarantee of repayment or a check at other Mints.Details"
-    );
+    // A missing Mint record, a failed invoice check and an unknown acceptance are open, never established.
+    expect(page.textContent).toContain("Nothing is established by a record or document yet.");
+    const [uncertain] = certainty(page);
+    // A blank answer is a gap, not a statement.
+    expect(uncertain).toEqual([
+      "Open: Payer acceptance is not in this assessment | eBill record · acceptance, not ability to pay",
+      "Open: No record of the payer's risk | Mint records only, not other Mints",
+      "Open: Invoice conflicts with the eBill | Applicant's document, not independent confirmation",
+      "Open: How the bill gets paid: no answer recorded | Applicant's interview answer",
+      "Applicant's word: Uses the funds for: Fertilizer | Applicant's interview answer",
+    ]);
   });
 
   it("presents current governed terms as ready for the operator's decision", () => {
@@ -514,7 +533,7 @@ describe("QuoteDetailCard", () => {
       },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("Offer ready for approval");
+    expect(page.querySelector("[data-case-headline]")?.textContent).toBe("Offer ready for approval");
     expect(page.textContent).toContain(
       "The current assessment permits these terms. Review the evidence and any agreement conditions before approval. Terms valid through 2099-08-24."
     );
@@ -543,7 +562,7 @@ describe("QuoteDetailCard", () => {
       },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("Terms expired");
+    expect(page.querySelector("[data-case-headline]")?.textContent).toBe("Terms expired");
     expect(page.textContent).toContain("Expired 2000-01-01 · awaiting applicant request");
     expect(page.textContent).toContain("Next step · Applicant");
     expect(page.textContent).toContain("Fee—");
@@ -557,7 +576,7 @@ describe("QuoteDetailCard", () => {
       decisionSummary: { assessmentCurrency: "current", brief: caseBrief({ kind: "confirm_no_fit" }) },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("No offer recommended");
+    expect(page.querySelector("[data-case-headline]")?.textContent).toBe("No offer recommended");
     expect(page.querySelector("header")?.textContent).toContain("Product unavailable");
     expect(page.textContent).toContain("Confirm the no-fit result with Deny");
   });
@@ -599,7 +618,7 @@ describe("QuoteDetailCard", () => {
       },
     });
 
-    expect(page.querySelector("h1")?.textContent).toBe("Needs your attention");
+    expect(page.querySelector("[data-case-headline]")?.textContent).toBe("Needs your attention");
     expect(page.querySelector("header")?.textContent).toContain("More information is needed before terms can be offered.");
     expect(page.querySelector("header")?.textContent).not.toContain("Outstanding:");
     expect(page.querySelector("header")?.textContent?.match(/Acknowledge whole-face recourse/g)).toHaveLength(1);
@@ -762,5 +781,93 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("100,000,000");
     expect(page.textContent).toContain("sat");
     expect(page.textContent).not.toContain("eur");
+  });
+
+  it("reads certainty from the records themselves: assessor records, stale records, double financing and contradictions", () => {
+    const page = renderCard({
+      decisionSummary: {
+        assessmentCurrency: "current",
+        useOfFunds: "Fertilizer",
+        repaymentSource: "The cooperative pays",
+        billAcceptanceState: "endorsed",
+        acceptorRisk: {
+          probabilityOfDefaultBps: 600,
+          lossGivenDefaultBps: 4000,
+          validThrough: "2026-11-08",
+          evidenceState: "independently_verified",
+        },
+        duplicateCheck: { result: "already_financed", evidenceState: "corroborated" },
+        alreadyFinanced: true,
+        contradictions: 2,
+        brief: caseBrief({ kind: "manual_review" }, [], {
+          // The brief's narrower flags must not hide what the records say.
+          support: { invoice: "unchecked", acceptorRiskRecord: false, duplicateCheckClear: false },
+        }),
+      },
+    });
+    const [established, uncertain] = certainty(page);
+
+    expect(established).toEqual([
+      "Recorded independently of the applicant: Payer risk recorded: 6.00% chance of non-payment, 40.00% lost if unpaid | Independent assessor, independently verified · valid through 2026-11-08 · not a guarantee of payment",
+    ]);
+    expect(uncertain).toEqual([
+      // An endorsement is not the payer's acceptance.
+      "Open: ACME Corp has not accepted the eBill | eBill record · acceptance, not ability to pay",
+      // Shown once even though both the check and the bill record say so.
+      "Open: This bill is already financed | Mint-signed record, corroborated",
+      "Open: 2 unresolved contradictions between claims and records | Deterministic case checks",
+      "Open: Invoice not checked yet | Applicant's document, not independent confirmation",
+      "Applicant's word: Uses the funds for: Fertilizer | Applicant's interview answer",
+      "Applicant's word: How the bill gets paid: The cooperative pays | Applicant's interview answer",
+    ]);
+    expect(page.textContent).toContain("1 established · 2 applicant's word · 4 open");
+  });
+
+  it("names a stale payer record as open instead of established", () => {
+    const page = renderCard({
+      decisionSummary: {
+        assessmentCurrency: "current",
+        billAcceptanceState: "accepted",
+        acceptorRisk: { probabilityOfDefaultBps: 600, lossGivenDefaultBps: 4000, validThrough: "2026-01-01", evidenceState: "stale" },
+        brief: caseBrief({ kind: "manual_review" }),
+      },
+    });
+
+    expect(certainty(page)[1]?.[0]).toBe("Open: Payer risk record is stale | Mint-signed record");
+  });
+
+  it("leads with the applicant and the bill, not the status", () => {
+    const page = renderCard({
+      quote: pendingQuote,
+      decisionSummary: {
+        assessmentCurrency: "current",
+        profile: { industry: "coffee_production", country: "GT" },
+        brief: caseBrief({ kind: "manual_review" }),
+      },
+    });
+    const header = page.querySelector("header");
+
+    expect(header?.querySelector("h1")?.textContent).toBe("ACME Corp");
+    expect(header?.textContent).toContain("Coffee production · Guatemala");
+    expect(header?.textContent).toMatch(/Asks to mint against a 100,000,000 sat eBill payable by ACME Corp on/);
+    expect(header?.textContent).toMatch(/Received .*ago|Received yesterday|Received today/);
+    // The drawer is the applicant here, so no "Drawn by" clause.
+    expect(header?.textContent).not.toContain("Drawn by");
+  });
+
+  it("does not show an anonymous holder's node id as a company name", () => {
+    const anonymous = {
+      ...pendingQuote,
+      bill: { ...pendingQuote.bill, endorsees: [{ Anon: { node_id: "bitcrt02anonymous" } }] },
+    } as InfoReply;
+    const page = renderCard({
+      quote: anonymous,
+      decisionSummary: { assessmentCurrency: "current", brief: caseBrief({ kind: "manual_review" }) },
+    });
+    const header = page.querySelector("header");
+
+    expect(header?.querySelector("h1")?.textContent).toBe("Anonymous holder");
+    expect(header?.textContent).toContain("bitcrt02anonymous");
+    expect(header?.textContent).toContain("Drawn by ACME Corp.");
   });
 });

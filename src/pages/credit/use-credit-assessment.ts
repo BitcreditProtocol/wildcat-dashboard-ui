@@ -3,6 +3,7 @@ import type { OperatorSubmittedCaseIssue, ServerInitialObservation } from "@bitc
 import { authenticatedFetch } from "@/lib/api-client";
 import type { DecisionCase } from "./decision-types";
 import { parseDecisionCasesResponse, type DecisionCasesResponse } from "./parse-decision-cases";
+import { selectQuoteCreditRecord } from "./quote-credit-record";
 
 /**
  * Stored and evaluated AI Credit decisions through the dashboard's authenticated BFF. This read
@@ -58,15 +59,7 @@ export function useCreditAssessmentForBill(
   updatesStatus: "live" | "reconnecting" | "unavailable" | undefined;
 } {
   const { data, isLoading, error, fetchStatus, failureCount, isFetchedAfterMount } = useCreditAssessments();
-  const scopedIssue = data?.issues.find(
-    (one) =>
-      one.billId === billId &&
-      (one.mintQuoteId === mintQuoteId || (one.mintQuoteId === null && one.reasonCode === "legacy_authority_missing"))
-  );
-  const recordedDecisionCase =
-    billId === undefined || mintQuoteId === undefined || scopedIssue !== undefined
-      ? undefined
-      : data?.cases.find((one) => one.snapshot.bill?.billId === billId && one.mintQuoteId === mintQuoteId);
+  const { scopedIssue, decisionCase: recordedDecisionCase } = selectQuoteCreditRecord(data, billId, mintQuoteId);
   const state = (): CreditAssessmentForBillState => {
     if (isLoading) return { status: "loading" };
     // Fail closed on the latest read even when React Query retains older data.

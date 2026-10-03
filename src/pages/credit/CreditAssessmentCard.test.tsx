@@ -344,7 +344,7 @@ describe("CreditAssessmentCard", () => {
     expect(disclosures.every((details) => !details.open)).toBe(true);
     expect(disclosures[0]?.textContent).not.toContain("Repayment & recourse");
     expect(container.textContent).toContain("Policy versionsynthetic-guatemala-coffee-v7");
-    expect(container.textContent).toContain("Credit programGt coffee accepted bill");
+    expect(container.textContent).toContain("Minting programGt coffee accepted bill");
     expect(container.textContent).toContain("Program versionsynthetic-guatemala-program-v1");
     expect(container.textContent).not.toContain("sha256:program");
     expect(container.textContent).not.toContain("sha256:assignment");
@@ -361,7 +361,7 @@ describe("CreditAssessmentCard", () => {
   it("marks quote-bound legacy assessments as read-only", () => {
     render(<CreditAssessmentCard decisionCase={{ ...offerCase, mintQuoteId: "legacy-quote" }} />);
     expect(container.textContent).toContain("Read-only legacy assessment");
-    expect(container.textContent).toContain("fresh Mint credit-program assignment");
+    expect(container.textContent).toContain("fresh Mint minting-program assignment");
   });
 
   it("keeps historical capacity compatibility out of the operator-facing case assessment", () => {
@@ -508,7 +508,7 @@ describe("QuoteCreditAssessment", () => {
     mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="bitcrt-some-real-bill" mintQuoteId="quote-1" />);
 
-    expect(container.textContent).toBe("No AI Credit assessment for this bill.");
+    expect(container.textContent).toBe("No AI assessment for this bill.");
   });
 
   it("stays out of the way when the adapter is unreachable", () => {
@@ -539,7 +539,7 @@ describe("QuoteCreditAssessment", () => {
     mockUseQuery.mockReturnValue({ data: { issues: [], cases: [offerCase] }, isLoading: false, error: null });
     render(<QuoteCreditAssessment billId="synthetic-bill-a" mintQuoteId="quote-2" />);
 
-    expect(container.textContent).toBe("No AI Credit assessment for this bill.");
+    expect(container.textContent).toBe("No AI assessment for this bill.");
   });
 });
 

@@ -170,7 +170,7 @@ describe("OfferFormDrawer", () => {
     expect(container.textContent).toContain("Minting fee 266,000 sat over 180 days");
     expect(container.textContent).toContain("6.88% annualized fee rate (ceiling 15.00%)");
     expect(container.textContent).toContain("3.33% of the bill amount (ceiling 30.00%)");
-    expect(container.textContent).toContain("Suggested: 7734000 sat · maximum: 7950000 sat · expires: 2026-08-12");
+    expect(container.textContent).toContain("Suggested: 7,734,000 sat · maximum: 7,950,000 sat · expires: 2026-08-12");
   });
 
   it("blocks the form when no assessment exists for the bill", () => {

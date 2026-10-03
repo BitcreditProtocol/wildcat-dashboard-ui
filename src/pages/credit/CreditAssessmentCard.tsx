@@ -186,7 +186,7 @@ const messages = defineMessages({
   product: { id: "credit.audit.product", defaultMessage: "Product", description: "Policy product label" },
   creditProgram: {
     id: "credit.audit.creditProgram",
-    defaultMessage: "Credit program",
+    defaultMessage: "Minting program",
     description: "Mint-owned credit program identifier used to select the governed policy",
   },
   creditProgramVersion: {
@@ -196,7 +196,7 @@ const messages = defineMessages({
   },
   legacyReadOnly: {
     id: "credit.audit.legacyReadOnly",
-    defaultMessage: "Read-only legacy assessment. A fresh Mint credit-program assignment is required before any action.",
+    defaultMessage: "Read-only legacy assessment. A fresh Mint minting-program assignment is required before any action.",
     description: "Warning shown when an older governed assessment lacks the Mint quote-to-program binding required for action",
   },
   policyFile: {
