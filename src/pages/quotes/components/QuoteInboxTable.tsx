@@ -1,6 +1,6 @@
 import { cn } from "@bitcredit/ui-library";
 import { ArrowDown, ArrowUp } from "lucide-react";
-import type { MouseEvent } from "react";
+import { useLayoutEffect, useRef, useState, type MouseEvent, type RefObject } from "react";
 import { defineMessages, FormattedDate, useIntl, type MessageDescriptor } from "react-intl";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Badge } from "@/components/ui/badge";
@@ -278,11 +278,11 @@ function InboxRow({
       </td>
       {!phone && (
         <>
-          <td className="hidden px-4 py-3 lg:table-cell">{bill ? <MaturityCell maturityDate={bill.maturity_date} /> : unknown}</td>
+          <td className="hidden px-4 py-3 @3xl:table-cell">{bill ? <MaturityCell maturityDate={bill.maturity_date} /> : unknown}</td>
           <td className="px-4 py-3">
             <StatusCell row={row} />
           </td>
-          <td className="hidden px-4 py-3 whitespace-nowrap text-muted-foreground xl:table-cell">
+          <td className="hidden px-4 py-3 whitespace-nowrap text-muted-foreground @5xl:table-cell">
             {timestamp ? (
               <time dateTime={timestamp} title={intl.formatDate(timestamp, { dateStyle: "medium", timeStyle: "short" })}>
                 {relativeTime(intl.locale, new Date(timestamp))}
@@ -326,6 +326,21 @@ function GroupHeader({ applicant, rows, colSpan }: { applicant: QuoteParty | nul
   );
 }
 
+/** An element's rendered width, or undefined where it cannot be measured (no layout, as in jsdom). */
+function useElementWidth(ref: RefObject<HTMLElement | null>): number | undefined {
+  const [width, setWidth] = useState<number>();
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const measure = (value: number) => setWidth(value > 0 ? value : undefined);
+    measure(element.getBoundingClientRect().width);
+    const observer = new ResizeObserver(([entry]) => measure(entry.contentRect.width));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
+}
+
 export function QuoteInboxTable({
   rows,
   grouped,
@@ -343,7 +358,11 @@ export function QuoteInboxTable({
   onSort: (field: SortableField) => void;
 }) {
   const intl = useIntl();
-  const phone = useIsMobile();
+  // The table's own width decides its layout: the sidebar takes a varying share of the window.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const width = useElementWidth(containerRef);
+  const narrowWindow = useIsMobile();
+  const phone = width === undefined ? narrowWindow : width < 600;
   const applicantOf = (row: QuoteInboxRow) => (row.details ? billApplicant(row.details.bill) : null);
   const groups = groupByApplicant(rows, applicantOf);
   const casesByApplicant = new Map(groups.map((group) => [group.applicant?.nodeId ?? "", group.rows.length]));
@@ -356,7 +375,7 @@ export function QuoteInboxTable({
   const colSpan = phone ? 2 : payerFirst ? 5 : 6;
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card">
+    <div ref={containerRef} className="@container overflow-x-auto rounded-lg border border-border bg-card">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">{intl.formatMessage(messages.caption)}</caption>
         <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
@@ -366,9 +385,9 @@ export function QuoteInboxTable({
             <SortHeader column="amount" sortBy={sortBy} onSort={onSort} align="right" />
             {!phone && (
               <>
-                <SortHeader column="maturity" sortBy={sortBy} onSort={onSort} className="hidden lg:table-cell" />
+                <SortHeader column="maturity" sortBy={sortBy} onSort={onSort} className="hidden @3xl:table-cell" />
                 <SortHeader column="status" sortBy={sortBy} onSort={onSort} />
-                {header(messages.lastChange, "hidden xl:table-cell")}
+                {header(messages.lastChange, "hidden @5xl:table-cell")}
               </>
             )}
           </tr>

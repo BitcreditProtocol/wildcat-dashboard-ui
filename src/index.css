@@ -168,3 +168,51 @@
     display: none !important;
   }
 }
+
+/*
+ * One look for every disclosure: no native triangle, a chevron after the label that turns when
+ * open, and a visible keyboard focus. Disclosures that draw their own chevron opt out with
+ * `list-none` (the class they already use to hide the marker).
+ */
+@layer base {
+  summary:not(.list-none) {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    list-style: none;
+    cursor: pointer;
+  }
+  summary:not(.list-none)::-webkit-details-marker {
+    display: none;
+  }
+  summary:not(.list-none)::after {
+    content: "";
+    flex: none;
+    width: 0.875rem;
+    height: 0.875rem;
+    background-color: currentColor;
+    opacity: 0.7;
+    -webkit-mask:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    mask:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    transition: transform 150ms ease;
+  }
+  details[open] > summary:not(.list-none)::after {
+    transform: rotate(180deg);
+  }
+  /* Boxed rows put the chevron at the far edge, like the hand-styled section rows. */
+  summary.disclosure-row::after {
+    margin-left: auto;
+  }
+  summary:not(.list-none):hover {
+    color: var(--color-text-300);
+  }
+  summary:focus-visible {
+    outline: 2px solid var(--color-brand-200);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+}

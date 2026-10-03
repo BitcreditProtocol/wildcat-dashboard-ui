@@ -1,6 +1,11 @@
 import { defineMessages, type IntlShape } from "react-intl";
 import type { CaseBrief, CaseNextStep } from "./case-brief";
 import { requestReason } from "./verification-reasons";
+
+/** A governed calendar day (YYYY-MM-DD), shown in the reader's format without shifting across time zones. */
+export function calendarDate(intl: IntlShape, day: string): string {
+  return intl.formatDate(`${day}T00:00:00Z`, { dateStyle: "medium", timeZone: "UTC" });
+}
 import { preparationReason } from "./case-preparation-copy";
 
 const headlines = defineMessages({
@@ -214,7 +219,7 @@ export function caseReason(intl: IntlShape, brief: CaseBrief, payerName: string)
     case "decide_offer":
       return [
         ...(brief.preparation?.status === "attention" ? brief.preparation.reasons.map((reason) => preparationReason(intl, reason)) : []),
-        intl.formatMessage(reasons.checksPassed, { date: next.offerExpiresOn }),
+        intl.formatMessage(reasons.checksPassed, { date: calendarDate(intl, next.offerExpiresOn) }),
       ].join(" ");
     case "confirm_no_fit":
       return intl.formatMessage(reasons.noFit);
@@ -247,7 +252,7 @@ export function caseReason(intl: IntlShape, brief: CaseBrief, payerName: string)
     case "not_actionable":
       return intl.formatMessage(reasons.programRequired);
     case "terms_expired":
-      return intl.formatMessage(reasons.expired, { date: next.offerExpiresOn });
+      return intl.formatMessage(reasons.expired, { date: calendarDate(intl, next.offerExpiresOn) });
     case "closed":
       return intl.formatMessage(reasons.closed);
   }

@@ -35,15 +35,16 @@ export function QuoteStatusTabs({ status, search = "" }: { status?: QuoteStatus;
     </Link>
   );
   return (
+    // Wide screens keep the closed statuses beside the tabs; narrower ones give them their own line.
     <nav
       aria-label={intl.formatMessage(messages.label)}
-      className="flex items-end gap-6 overflow-x-auto border-b border-border lg:justify-between"
+      className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between lg:gap-6 lg:border-b lg:border-border"
     >
-      <div className="flex items-end">
+      <div className="flex items-end overflow-x-auto border-b border-border lg:border-b-0">
         {tab("all", "/quotes", intl.formatMessage(messages.all), status === undefined)}
         {WORKING.map((one) => tab(one, pathOf(one), intl.formatMessage(getQuoteStatusMessage(one)), status === one, one))}
       </div>
-      <div className="flex shrink-0 items-baseline gap-2 pb-2.5 text-xs text-muted-foreground">
+      <div className="flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted-foreground lg:pb-2.5">
         <span>{intl.formatMessage(messages.closed)}</span>
         {CLOSED.map((one) => (
           <Link

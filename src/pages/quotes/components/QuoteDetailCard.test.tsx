@@ -535,11 +535,11 @@ describe("QuoteDetailCard", () => {
 
     expect(page.querySelector("[data-case-headline]")?.textContent).toBe("Offer ready for approval");
     expect(page.textContent).toContain(
-      "The current assessment permits these terms. Review the evidence and any agreement conditions before approval. Terms valid through 2099-08-24."
+      "The current assessment permits these terms. Review the evidence and any agreement conditions before approval. Terms valid through Aug 24, 2099."
     );
     expect(page.textContent).toContain("Next step · YouOffer the proposed terms or decline.Offer");
     expect(page.textContent).toContain("Proposed minting fee272,000sat");
-    expect(page.textContent).toContain("3.32% of bill over 180 days");
+    expect(page.textContent).toContain("3.32% of the bill · 180 days");
     expect(page.textContent).toContain("Available to mint7,928,000sat");
     // Optional proposals stay visible in progress without displacing the decision.
     expect(page.textContent).toContain("2 questions not sent · optional");
@@ -563,7 +563,7 @@ describe("QuoteDetailCard", () => {
     });
 
     expect(page.querySelector("[data-case-headline]")?.textContent).toBe("Terms expired");
-    expect(page.textContent).toContain("Expired 2000-01-01 · awaiting applicant request");
+    expect(page.textContent).toContain("Expired Jan 1, 2000 · awaiting applicant request");
     expect(page.textContent).toContain("Next step · Applicant");
     expect(page.textContent).toContain("Fee—");
     expect(page.textContent).toContain("Available to mint—");
@@ -808,7 +808,7 @@ describe("QuoteDetailCard", () => {
     const [established, uncertain] = certainty(page);
 
     expect(established).toEqual([
-      "Recorded independently of the applicant: Payer risk recorded: 6.00% chance of non-payment, 40.00% lost if unpaid | Independent assessor, independently verified · valid through 2026-11-08 · not a guarantee of payment",
+      "Recorded independently of the applicant: Payer risk recorded: 6.00% chance of non-payment, 40.00% lost if unpaid | Independent assessor, independently verified · valid through Nov 8, 2026 · not a guarantee of payment",
     ]);
     expect(uncertain).toEqual([
       // An endorsement is not the payer's acceptance.

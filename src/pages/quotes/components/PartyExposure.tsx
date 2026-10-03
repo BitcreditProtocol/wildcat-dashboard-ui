@@ -63,8 +63,8 @@ const messages = defineMessages({
     description: "Offered-or-accepted total including the bill on screen",
   },
   overdue: {
-    id: "quotes.party.overdue",
-    defaultMessage: "Past maturity, payment not confirmed",
+    id: "quotes.party.overdueLine",
+    defaultMessage: "{count, plural, one {# bill} other {# bills}} past maturity without a confirmed payment · {amount}",
     description: "Bills the Mint holds that matured without a confirmed payment; may lag the chain, not a default",
   },
   deniedOther: {
@@ -162,20 +162,19 @@ function PartyFigures({
             </tr>
           )}
           {row("Pending")}
-          {overdue !== undefined && overdue.count > 0 && (
-            <tr className="text-signal-alert">
-              <th scope="row" className="py-0.5 pr-2 text-left font-normal">
-                <AlertTriangle className="mr-1 inline size-3.5 align-[-2px]" aria-hidden="true" />
-                {intl.formatMessage(messages.overdue)}
-              </th>
-              <td className="py-0.5 pr-3 text-right align-top tabular-nums">{overdue.count}</td>
-              <td className="py-0.5 text-right align-top whitespace-nowrap tabular-nums">
-                <Sat value={overdue.faceValueSat} />
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
+      {overdue !== undefined && overdue.count > 0 && (
+        <p className="flex items-start gap-1.5 text-xs text-signal-alert">
+          <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            {intl.formatMessage(messages.overdue, {
+              count: overdue.count,
+              amount: <Sat key="overdue" value={overdue.faceValueSat} />,
+            })}
+          </span>
+        </p>
+      )}
       {!state.isComplete && <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.incomplete)}</p>}
     </div>
   );

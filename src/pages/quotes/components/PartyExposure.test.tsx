@@ -163,8 +163,8 @@ describe("PartyExposureCard", () => {
     ];
     const page = card();
 
-    expect(rowText(section(page, "Payer"), "Past maturity")).toBe("Past maturity, payment not confirmed1700,000sat");
-    expect(rowText(section(page, "Applicant"), "Past maturity")).toBe("Past maturity, payment not confirmed1500,000sat");
+    expect(section(page, "Payer").textContent).toContain("1 bill past maturity without a confirmed payment · 700,000sat");
+    expect(section(page, "Applicant").textContent).toContain("1 bill past maturity without a confirmed payment · 500,000sat");
   });
 
   it("omits the overdue row when nothing is past maturity", () => {

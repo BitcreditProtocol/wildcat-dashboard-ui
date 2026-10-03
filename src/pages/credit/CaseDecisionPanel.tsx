@@ -7,6 +7,7 @@ import type { CaseBrief } from "./case-brief";
 import { CaseNextStepPanel } from "./CaseBrief";
 import type { DecisionCase, DecisionTerms } from "./decision-types";
 import type { FeeBreakdown, FeePart } from "./fee-breakdown";
+import { calendarDate } from "./case-brief-copy";
 
 const messages = defineMessages({
   title: { id: "credit.decision.title", defaultMessage: "Decision", description: "Heading of the operator decision column" },
@@ -244,7 +245,9 @@ export function ProposedTerms({
         <h3 id="case-decision-terms" className="text-sm font-semibold">
           {intl.formatMessage(messages.terms)}
         </h3>
-        <span className="text-xs text-muted-foreground">{intl.formatMessage(messages.validThrough, { date: terms.offerExpiresOn })}</span>
+        <span className="text-xs text-muted-foreground">
+          {intl.formatMessage(messages.validThrough, { date: calendarDate(intl, terms.offerExpiresOn) })}
+        </span>
       </div>
       <div>
         <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.holderReceives)}</p>
@@ -254,7 +257,7 @@ export function ProposedTerms({
         <p className="text-xs text-muted-foreground tabular-nums">
           {intl.formatMessage(messages.holderReceivesContext, {
             bill: `${intl.formatNumber(Number(terms.billSumSat))} sat`,
-            date: intl.formatDate(terms.maturityDate, { dateStyle: "medium", timeZone: "UTC" }),
+            date: calendarDate(intl, terms.maturityDate),
           })}
         </p>
       </div>
@@ -301,6 +304,8 @@ interface CaseDecisionPanelProps {
   actionableTerms?: { terms: DecisionTerms; policy: DecisionCase["policyPack"]; breakdown?: FeeBreakdown; mayAdjust: boolean };
   /** The quote's own status, shown when there is no case next step to state. */
   statusLabel?: string;
+  /** One line under the status, for a quote no case step speaks for (e.g. when an offer lapses). */
+  statusDetail?: string;
   openPoints?: number;
   /** Governed controls, owned by `QuoteActions`. */
   actions?: ReactNode;
@@ -312,7 +317,15 @@ interface CaseDecisionPanelProps {
  * The operator's decision column: who acts next, the exact terms that would be offered and the
  * governed controls. It restates recorded state; every gate stays in the shared rules and actions.
  */
-export function CaseDecisionPanel({ brief, statusLabel, actionableTerms, openPoints = 0, actions, footer }: CaseDecisionPanelProps) {
+export function CaseDecisionPanel({
+  brief,
+  statusLabel,
+  statusDetail,
+  actionableTerms,
+  openPoints = 0,
+  actions,
+  footer,
+}: CaseDecisionPanelProps) {
   const intl = useIntl();
   const showNextStep = brief !== undefined && brief.next.kind !== "closed";
   return (
@@ -327,7 +340,12 @@ export function CaseDecisionPanel({ brief, statusLabel, actionableTerms, openPoi
             <CaseNextStepPanel variant="panel" next={brief.next} brief={brief} openPoints={openPoints} />
           </div>
         ) : (
-          statusLabel !== undefined && <p className="mt-3 text-sm font-semibold">{statusLabel}</p>
+          statusLabel !== undefined && (
+            <>
+              <p className="mt-3 text-sm font-semibold">{statusLabel}</p>
+              {statusDetail !== undefined && <p className="mt-1 text-sm text-muted-foreground">{statusDetail}</p>}
+            </>
+          )
         )}
       </header>
       {actionableTerms !== undefined && (

@@ -2,6 +2,7 @@ import { CircleAlert, CircleCheck, FileCheck2, MessageSquareQuote } from "lucide
 import type { ReactNode } from "react";
 import { defineMessages, useIntl, type MessageDescriptor } from "react-intl";
 import type { CaseBrief } from "./case-brief";
+import { calendarDate } from "./case-brief-copy";
 
 /**
  * How sure the Mint can be about a case, one line per fact, sorted by what backs it: records the
@@ -318,7 +319,7 @@ export function CaseCertainty({
       text: intl.formatMessage(messages.payerRisk, { pd: percent(pd), lgd: percent(lgd) }),
       source: [
         recordSource(acceptorRisk.evidenceState, messages.payerRiskSource),
-        intl.formatMessage(messages.validThrough, { date: acceptorRisk.validThrough }),
+        intl.formatMessage(messages.validThrough, { date: calendarDate(intl, acceptorRisk.validThrough) }),
         intl.formatMessage(messages.notAGuarantee),
       ].join(" · "),
       href: "#full-governed-assessment",
