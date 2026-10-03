@@ -59,39 +59,51 @@ export default function FacilitiesPage() {
     await mutation.mutateAsync(command);
   };
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      {selectedId && (
-        <Link
-          className="inline-flex text-sm text-muted-foreground underline-offset-4 hover:underline"
-          to={facilityQueueLocation(params)}
-          onClick={() => mutation.reset()}
-        >
-          <FormattedMessage
-            id="facilities.backToQueue"
-            defaultMessage="Back to applications"
-            description="Return to the facility queue with its filters and page preserved"
-          />
-        </Link>
-      )}
+    <div className="space-y-4 p-4 md:p-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            <FormattedMessage
-              id="facilities.title"
-              defaultMessage="Facility applications"
-              description="Pre-bill queue, separate from quotes"
-            />
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            <FormattedMessage
-              id="facilities.description"
-              defaultMessage="Meet applicants before their first eBill. No minting takes place here."
-              description="Facility preparation boundary"
-            />
-          </p>
-        </div>
+        {selectedId ? (
+          <div>
+            <Link
+              className="inline-flex text-sm text-muted-foreground underline-offset-4 hover:underline"
+              to={facilityQueueLocation(params)}
+              onClick={() => mutation.reset()}
+            >
+              <FormattedMessage
+                id="facilities.backToQueue"
+                defaultMessage="Back to applications"
+                description="Return to the facility queue with its filters and page preserved"
+              />
+            </Link>
+            {/* The page keeps its title for assistive technology; the applicant name heads the case. */}
+            <h1 className="sr-only">
+              <FormattedMessage
+                id="facilities.title"
+                defaultMessage="Facility applications"
+                description="Pre-bill queue, separate from quotes"
+              />
+            </h1>
+          </div>
+        ) : (
+          <div>
+            <h1 className="text-2xl font-semibold">
+              <FormattedMessage
+                id="facilities.title"
+                defaultMessage="Facility applications"
+                description="Pre-bill queue, separate from quotes"
+              />
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              <FormattedMessage
+                id="facilities.description"
+                defaultMessage="Meet applicants before their first eBill. No minting takes place here."
+                description="Facility preparation boundary"
+              />
+            </p>
+          </div>
+        )}
         <Button
           variant="outline"
+          size={selectedId ? "sm" : "md"}
           disabled={query.isFetching || mutation.isPending}
           onClick={() => {
             void query.refetch();

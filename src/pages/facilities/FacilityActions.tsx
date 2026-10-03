@@ -139,8 +139,9 @@ export function FacilityActions({ application, live, busy, onCommand }: Facility
   };
   if (!readiness.submission) return null;
   return (
-    <section className="border-t border-border p-5 md:p-6">
-      <div className="flex flex-wrap gap-3">
+    // Sized by its column: one full-width control per row in the decision panel.
+    <section className="@container px-5 py-4">
+      <div className="grid gap-2 [&>button]:w-full">
         {(readiness.canDecide || readiness.canRevise) && (
           <Button disabled={disabled} onClick={() => openAction("approve")}>
             {readiness.canRevise ? (
@@ -164,15 +165,15 @@ export function FacilityActions({ application, live, busy, onCommand }: Facility
           </Button>
         )}
         {(readiness.canReassess || readiness.canDecide) && (
-          <details className="self-center">
-            <summary className="cursor-pointer text-sm text-muted-foreground">
+          <details className="mt-1">
+            <summary className="w-fit cursor-pointer text-sm text-muted-foreground">
               <FormattedMessage
                 id="facilities.moreActions"
                 defaultMessage="Other actions"
                 description="Secondary facility operator actions"
               />
             </summary>
-            <div className="mt-3 flex flex-wrap gap-3">
+            <div className="mt-3 grid gap-2 [&>button]:w-full">
               {readiness.canReassess && (
                 <Button
                   variant="outline"
@@ -189,7 +190,12 @@ export function FacilityActions({ application, live, busy, onCommand }: Facility
                 </Button>
               )}
               {readiness.canDecide && (
-                <Button variant="outline" disabled={disabled} onClick={() => openAction("decline")}>
+                <Button
+                  variant="outline"
+                  className="border-signal-error/40 text-signal-error hover:border-signal-error"
+                  disabled={disabled}
+                  onClick={() => openAction("decline")}
+                >
                   <FormattedMessage
                     id="facilities.decline"
                     defaultMessage="Decline application"
@@ -239,7 +245,7 @@ export function FacilityActions({ application, live, busy, onCommand }: Facility
                       description="Human-owned synthetic terms with separate applicant acceptance and bill authorization"
                     />
                   </p>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 @md:grid-cols-2">
                     <label className="block text-sm">
                       <FormattedMessage
                         id="facilities.limit"
@@ -318,7 +324,7 @@ export function FacilityActions({ application, live, busy, onCommand }: Facility
                     </p>
                     {billCoverage && (
                       <>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-4 @md:grid-cols-2">
                           <label className="block text-sm">
                             <FormattedMessage id="facilities.rules.maxBill" defaultMessage="Maximum per eBill (sat)" />
                             <input

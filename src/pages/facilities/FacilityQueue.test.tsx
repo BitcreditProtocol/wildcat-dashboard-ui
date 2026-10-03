@@ -103,6 +103,71 @@ afterEach(() => {
   mount?.remove();
 });
 
+describe("facility queue agreement column", () => {
+  const digest = `sha256:${"a".repeat(64)}`;
+  const agreement = (billRules: boolean): NonNullable<FacilityApplication["currentAgreement"]> => ({
+    version: 1,
+    digest,
+    submissionVersion: 1,
+    submissionDigest: digest,
+    terms: {
+      limitSat: "6000000",
+      expiresAt: "2099-01-01T00:00:00.000Z",
+      eligibleScope: "eBills drawn on the cooperative for delivered milk.",
+      ...(billRules
+        ? {
+            billRules: {
+              version: "facility-bill-rules-v1" as const,
+              exposureBasis: "whole_bill_face_value" as const,
+              maxBillSat: "3000000",
+              maxTenorDays: 60,
+              payerScope: "any_payer_subject_to_bill_review" as const,
+              eligiblePayerRefs: [],
+            },
+          }
+        : {}),
+    },
+    basis: "Regular fortnightly cooperative payments.",
+    operatorRef: "operator",
+    offeredAt: "2026-09-20T10:00:00.000Z",
+    acceptedAt: "2026-09-21T10:00:00.000Z",
+    syntheticNonBinding: true,
+  });
+  const allowance = {
+    exposureBasis: "whole_bill_face_value" as const,
+    limitSat: "6000000",
+    reservedSat: "2100000",
+    availableSat: "3900000",
+    entries: [],
+    syntheticNonBinding: true as const,
+  };
+  const accepted = (name: string, overrides: Partial<FacilityApplication>) =>
+    facilityFixture({
+      id: `00000000-0000-4000-8000-0000000009${String(name.length).padStart(2, "0")}`,
+      applicantName: name,
+      status: "agreement_accepted",
+      agreementStatus: "accepted",
+      allowance,
+      ...overrides,
+    });
+
+  it("shows remaining allowance only where the agreement can cover a bill", async () => {
+    const { page, rerender } = await render();
+    await rerender([
+      accepted("Rules", { currentAgreement: agreement(true), identityAssurance: "ebill_identity_key_proof" }),
+      accepted("Background only", { currentAgreement: agreement(false), identityAssurance: "ebill_identity_key_proof" }),
+      accepted("Unproven identity holder", { currentAgreement: agreement(true), identityAssurance: "synthetic_unverified" }),
+    ]);
+    const row = (name: string) => getByRole(page, "link", { name }).closest("tr")?.textContent ?? "";
+    expect(row("Rules")).toContain("6,000,000 sat");
+    expect(row("Rules")).toContain("3,900,000 sat remaining");
+    expect(row("Background only")).toContain("6,000,000 sat");
+    expect(row("Background only")).not.toContain("remaining");
+    expect(row("Unproven identity holder")).not.toContain("remaining");
+    expect(row("Unproven identity holder")).toContain("Identity control not proven");
+  });
+});
+
 describe("facility queue at presentation scale", () => {
   it("renders at most 20 of 300 records and moves between bounded pages", async () => {
     const { page } = await render();

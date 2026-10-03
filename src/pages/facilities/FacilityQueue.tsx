@@ -2,7 +2,14 @@ import type { FacilityApplication } from "@bitcredit/ai-credit-shared";
 import { Button, Search, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, cn } from "@bitcredit/ui-library";
 import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
 import { Link } from "react-router";
-import { facilityActorMessages, facilityDisplayStatus, facilityStatusKey, facilityStatusMessages } from "./facility-copy";
+import { ShieldQuestion } from "lucide-react";
+import {
+  facilityActorMessages,
+  facilityDisplayStatus,
+  facilityIdentityMessages,
+  facilityStatusKey,
+  facilityStatusMessages,
+} from "./facility-copy";
 import { facilityQueueLocation, selectFacilityQueue } from "./facility-queue";
 
 interface FacilityQueueProps {
@@ -168,6 +175,13 @@ export function FacilityQueue({ applications, params, onParamsChange }: Facility
                 <th scope="col" className="px-4 py-3 font-medium">
                   <FormattedMessage id="facilities.columnStatus" defaultMessage="Status" description="Facility lifecycle status column" />
                 </th>
+                <th scope="col" className="hidden px-4 py-3 font-medium lg:table-cell">
+                  <FormattedMessage
+                    id="facilities.columnAgreement"
+                    defaultMessage="Agreement"
+                    description="Current agreement limit and remaining allowance column"
+                  />
+                </th>
                 <th scope="col" className="hidden px-4 py-3 font-medium md:table-cell">
                   <FormattedMessage
                     id="facilities.columnNext"
@@ -194,6 +208,18 @@ export function FacilityQueue({ applications, params, onParamsChange }: Facility
                     >
                       {app.applicantName}
                     </Link>
+                    {([app.profile?.country, app.profile?.industry].some(Boolean) ||
+                      app.identityAssurance !== "ebill_identity_key_proof") && (
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                        {[app.profile?.country, app.profile?.industry].filter(Boolean).join(" · ")}
+                        {app.identityAssurance !== "ebill_identity_key_proof" && (
+                          <span className="inline-flex items-center gap-1 text-signal-alert">
+                            <ShieldQuestion className="size-3.5" aria-hidden="true" />
+                            {intl.formatMessage(facilityIdentityMessages[app.identityAssurance])}
+                          </span>
+                        )}
+                      </p>
+                    )}
                     <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground">
                       {app.summary?.purpose.trim()
                         ? app.summary.purpose
@@ -213,6 +239,29 @@ export function FacilityQueue({ applications, params, onParamsChange }: Facility
                     >
                       {intl.formatMessage(facilityDisplayStatus(app))}
                     </span>
+                  </td>
+                  <td className="hidden whitespace-nowrap px-4 py-4 text-xs tabular-nums lg:table-cell">
+                    {app.currentAgreement ? (
+                      <>
+                        <span className="font-medium">{`${BigInt(app.currentAgreement.terms.limitSat).toLocaleString(intl.locale)} sat`}</span>
+                        {app.allowance &&
+                          app.agreementStatus === "accepted" &&
+                          // Only rule-bearing agreements of identity-proven applicants can cover a bill.
+                          app.currentAgreement.terms.billRules !== undefined &&
+                          app.identityAssurance === "ebill_identity_key_proof" && (
+                            <span className="block text-muted-foreground">
+                              <FormattedMessage
+                                id="facilities.queueRemaining"
+                                defaultMessage="{amount} sat remaining"
+                                description="Remaining allowance of an accepted agreement in the queue"
+                                values={{ amount: BigInt(app.allowance.availableSat).toLocaleString(intl.locale) }}
+                              />
+                            </span>
+                          )}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="hidden px-4 py-4 text-xs text-muted-foreground md:table-cell">
                     {intl.formatMessage(facilityActorMessages[app.progress.nextActor])}
