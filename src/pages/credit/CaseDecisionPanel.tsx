@@ -1,5 +1,5 @@
 import { cn } from "@bitcredit/ui-library";
-import { ChevronDown, CircleAlert, CircleCheck } from "lucide-react";
+import { ChevronDown, CircleAlert, CircleCheck, FlaskConical } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { Currency } from "@/components/Currency";
@@ -90,6 +90,11 @@ const messages = defineMessages({
     description: "Fee part for the Mint's return objective",
   },
   subsidy: { id: "credit.decision.part.subsidy", defaultMessage: "Subsidy", description: "Policy reduction of the fee" },
+  synthetic: {
+    id: "credit.decision.synthetic",
+    defaultMessage: "Test values: the fee policy and the payer risk are synthetic, not calibrated.",
+    description: "The governed fee was calculated from a synthetic policy pack and synthetic payer risk inputs",
+  },
   limitsWithin: {
     id: "credit.decision.limitsWithin",
     defaultMessage: "Within the Mint's fee limits",
@@ -213,11 +218,14 @@ export function ProposedTerms({
   terms,
   policy,
   breakdown,
+  synthetic,
   mayAdjust,
 }: {
   terms: DecisionTerms;
   policy: DecisionCase["policyPack"];
   breakdown?: FeeBreakdown;
+  /** The case's inputs or policy are synthetic (`usesSyntheticData`). */
+  synthetic: boolean;
   /** The signed-in operator may requote and the policy pack permits adjustment. */
   mayAdjust: boolean;
 }) {
@@ -249,6 +257,12 @@ export function ProposedTerms({
           {intl.formatMessage(messages.validThrough, { date: calendarDate(intl, terms.offerExpiresOn) })}
         </span>
       </div>
+      {synthetic && (
+        <p data-synthetic-notice="" className="flex items-start gap-1.5 text-xs text-signal-alert">
+          <FlaskConical className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+          <span>{intl.formatMessage(messages.synthetic)}</span>
+        </p>
+      )}
       <div>
         <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.holderReceives)}</p>
         <p className="text-2xl font-semibold tracking-tight tabular-nums">
@@ -301,7 +315,13 @@ interface CaseDecisionPanelProps {
   /** Absent for quotes without an AI Credit case; the panel then only hosts the quote actions. */
   brief?: CaseBrief;
   /** Only terms the operator can act on now; expired, historical or blocked terms are never shown here. */
-  actionableTerms?: { terms: DecisionTerms; policy: DecisionCase["policyPack"]; breakdown?: FeeBreakdown; mayAdjust: boolean };
+  actionableTerms?: {
+    terms: DecisionTerms;
+    policy: DecisionCase["policyPack"];
+    breakdown?: FeeBreakdown;
+    synthetic: boolean;
+    mayAdjust: boolean;
+  };
   /** The quote's own status, shown when there is no case next step to state. */
   statusLabel?: string;
   /** One line under the status, for a quote no case step speaks for (e.g. when an offer lapses). */
@@ -354,6 +374,7 @@ export function CaseDecisionPanel({
             terms={actionableTerms.terms}
             policy={actionableTerms.policy}
             breakdown={actionableTerms.breakdown}
+            synthetic={actionableTerms.synthetic}
             mayAdjust={actionableTerms.mayAdjust}
           />
         </div>

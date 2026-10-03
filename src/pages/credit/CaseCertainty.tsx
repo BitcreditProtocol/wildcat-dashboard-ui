@@ -76,6 +76,11 @@ const messages = defineMessages({
     defaultMessage: "Payer risk recorded by the Mint",
     description: "Verified: the Mint-signed payer risk record without its values",
   },
+  syntheticData: {
+    id: "credit.certainty.syntheticData",
+    defaultMessage: "Synthetic test data",
+    description: "Source prefix: the Mint or assessor record behind this line is synthetic test data, not a real assessment",
+  },
   payerRiskSource: {
     id: "credit.certainty.payerRiskSource",
     defaultMessage: "Mint-signed record",
@@ -263,6 +268,7 @@ export function CaseCertainty({
   useOfFunds,
   repaymentSource,
   acceptorRisk,
+  synthetic,
   duplicateCheck,
   alreadyFinanced,
   contradictions = 0,
@@ -280,6 +286,8 @@ export function CaseCertainty({
     validThrough: string;
     evidenceState?: string;
   };
+  /** The case's inputs or policy are synthetic; every Mint or assessor record then says so. */
+  synthetic: boolean;
   duplicateCheck?: { result: string; evidenceState: string };
   alreadyFinanced?: boolean | null;
   /** Unresolved contradictions in the case snapshot. */
@@ -298,6 +306,8 @@ export function CaseCertainty({
           ? messages.independentRecordSource
           : fallback
     );
+  // Mint and assessor records come from the case snapshot, so synthetic test data is named on each of them.
+  const fromRecord = (...parts: string[]) => [...(synthetic ? [intl.formatMessage(messages.syntheticData)] : []), ...parts].join(" · ");
 
   // Only acceptance counts: the policy admits accepted bills, and an endorsement says nothing about the payer.
   const accepted = billAcceptanceState === "accepted";
@@ -317,25 +327,25 @@ export function CaseCertainty({
     items.push({
       level: "verified",
       text: intl.formatMessage(messages.payerRisk, { pd: percent(pd), lgd: percent(lgd) }),
-      source: [
+      source: fromRecord(
         recordSource(acceptorRisk.evidenceState, messages.payerRiskSource),
         intl.formatMessage(messages.validThrough, { date: calendarDate(intl, acceptorRisk.validThrough) }),
-        intl.formatMessage(messages.notAGuarantee),
-      ].join(" · "),
+        intl.formatMessage(messages.notAGuarantee)
+      ),
       href: "#full-governed-assessment",
     });
   } else if (acceptorRisk?.evidenceState !== undefined && !USABLE_EVIDENCE.has(acceptorRisk.evidenceState)) {
     items.push({
       level: "open",
       text: intl.formatMessage(messages.payerRiskUnusable, { state: words(acceptorRisk.evidenceState) }),
-      source: intl.formatMessage(messages.payerRiskSource),
+      source: fromRecord(intl.formatMessage(messages.payerRiskSource)),
       href: "#full-governed-assessment",
     });
   } else if (acceptorRisk === undefined && support.acceptorRiskRecord) {
     items.push({
       level: "verified",
       text: intl.formatMessage(messages.payerRiskPlain),
-      source: [intl.formatMessage(messages.mintRecordSource), intl.formatMessage(messages.notAGuarantee)].join(" · "),
+      source: fromRecord(intl.formatMessage(messages.mintRecordSource), intl.formatMessage(messages.notAGuarantee)),
       href: "#full-governed-assessment",
     });
   } else {
@@ -353,13 +363,13 @@ export function CaseCertainty({
     items.push({
       level: clear ? "verified" : "open",
       text: intl.formatMessage(clear ? messages.duplicateClear : (duplicateMessages[duplicateCheck.result] ?? messages.duplicateUnknown)),
-      source: recordSource(duplicateCheck.evidenceState, messages.mintCheckSource),
+      source: fromRecord(recordSource(duplicateCheck.evidenceState, messages.mintCheckSource)),
     });
   } else if (support.duplicateCheckClear) {
     items.push({
       level: "verified",
       text: intl.formatMessage(messages.duplicateClear),
-      source: intl.formatMessage(messages.mintCheckSource),
+      source: fromRecord(intl.formatMessage(messages.mintCheckSource)),
     });
   }
   if (alreadyFinanced === true && duplicateCheck?.result !== "already_financed") {

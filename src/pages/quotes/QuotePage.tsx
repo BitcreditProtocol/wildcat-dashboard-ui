@@ -22,7 +22,7 @@ import { authenticatedFetch } from "@/lib/api-client";
 import { type CreditEvidenceState, QuoteDocuments } from "./QuoteDocuments";
 import { type QuoteDocumentPreview, QuoteDocumentViewer } from "./QuoteDocumentViewer";
 import { resolveDocumentMimeType } from "@/utils/document-preview";
-import { countAnswerReviewFollowUps, type SubmittedEvidence } from "@/pages/credit/decision-types";
+import { countAnswerReviewFollowUps, usesSyntheticData, type SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { FacilityCoveragePanel, FacilityCoverageUnavailable } from "../facilities/FacilityCoveragePanel";
@@ -405,6 +405,7 @@ function PageBody({ id }: { id: string }) {
           terms: decisionCase.result.terms,
           policy: decisionCase.policyPack,
           breakdown: feeBreakdown(decisionCase),
+          synthetic: usesSyntheticData(decisionCase),
           // Only an approver may requote, and only where the policy pack permits adjustment at all.
           mayAdjust:
             operatorMayRecordDecision(operatorCapability.capability, "propose_adjustment_and_requote") &&
@@ -472,6 +473,7 @@ function PageBody({ id }: { id: string }) {
                 ? {
                     brief: caseBrief,
                     assessmentCurrency: decisionCase.assessmentCurrency,
+                    synthetic: usesSyntheticData(decisionCase),
                     useOfFunds: decisionCase.applicantConfirmation?.useOfFunds,
                     repaymentSource: decisionCase.applicantConfirmation?.repaymentSource,
                     billAcceptanceState: decisionCase.snapshot.bill?.acceptanceState,

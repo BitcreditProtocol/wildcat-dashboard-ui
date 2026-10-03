@@ -187,6 +187,7 @@ describe("QuoteDetailCard", () => {
       actions: <button type="button">Close — unable to assess</button>,
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         brief: caseBrief({ kind: "review_evidence", count: 3 }, [
           { kind: "evidence_review", toReview: 3, noReply: 0, unavailable: 0, reviewed: 0 },
         ]),
@@ -220,6 +221,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         brief: caseBrief({ kind: "wait_mint_risk" }, [
           {
             kind: "verification",
@@ -246,6 +248,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         brief: caseBrief({ kind: "review_evidence", count: 3 }, [
           { kind: "answer_review", state: "not_run", proposed: 0 },
           { kind: "public_research", state: "available", findings: 4, sources: 3, searches: 4 },
@@ -280,6 +283,7 @@ describe("QuoteDetailCard", () => {
       effectiveQuoteStatus: "Denied",
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         brief: caseBrief({ kind: "closed" }, [{ kind: "proposals", count: 2 }]),
       },
     });
@@ -362,6 +366,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "historical",
+        synthetic: false,
         useOfFunds: "Fertilizer",
         repaymentSource: "Coffee sales",
         brief: caseBrief({ kind: "wait_reassessment" }),
@@ -386,6 +391,7 @@ describe("QuoteDetailCard", () => {
       [flag]: true,
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         useOfFunds: "Fertilizer",
         repaymentSource: "Coffee sales",
         brief: caseBrief({ kind: "decide_offer", offerExpiresOn: "2099-08-23" }),
@@ -406,6 +412,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         useOfFunds: "Fertilizer",
         repaymentSource: "Coffee sales",
         brief: caseBrief({ kind: "wait_applicant" }, [], { outstanding: [{ item: "When will the buyer pay?", action: "reply" }] }),
@@ -422,6 +429,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         useOfFunds: "Fertilizer",
         repaymentSource: "Coffee sales",
         brief: caseBrief({ kind: "decide_offer", offerExpiresOn: "2099-08-23" }, [], { repaymentUnverified: true }),
@@ -438,6 +446,7 @@ describe("QuoteDetailCard", () => {
       effectiveQuoteStatus: "Accepted",
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         useOfFunds: "Fertilizer and seasonal workers",
         repaymentSource: "Coffee harvest sales",
         billAcceptanceState: "accepted",
@@ -494,6 +503,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         useOfFunds: "Fertilizer",
         brief: caseBrief({ kind: "send_applicant_request", count: 1 }, [], {
           support: { invoice: "conflict", acceptorRiskRecord: false, duplicateCheckClear: false },
@@ -520,6 +530,7 @@ describe("QuoteDetailCard", () => {
       actions: <button type="button">Offer</button>,
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         useOfFunds: "Fertilizer",
         repaymentSource: "Coffee sales",
         brief: caseBrief({ kind: "decide_offer", offerExpiresOn: "2099-08-24" }, [{ kind: "proposals", count: 2 }]),
@@ -549,6 +560,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         useOfFunds: "Fertilizer",
         repaymentSource: "Coffee sales",
         brief: caseBrief({ kind: "terms_expired", offerExpiresOn: "2000-01-01" }),
@@ -573,7 +585,7 @@ describe("QuoteDetailCard", () => {
   it("explains a no-fit recommendation with the governed reason", () => {
     const page = renderCard({
       noFitExplanation: <span>Product unavailable</span>,
-      decisionSummary: { assessmentCurrency: "current", brief: caseBrief({ kind: "confirm_no_fit" }) },
+      decisionSummary: { assessmentCurrency: "current", synthetic: false, brief: caseBrief({ kind: "confirm_no_fit" }) },
     });
 
     expect(page.querySelector("[data-case-headline]")?.textContent).toBe("No offer recommended");
@@ -589,6 +601,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         brief: caseBrief({ kind, count: 1 }, [], { outstanding: [{ item: "What supports the expected sales?", action }] }),
       },
     });
@@ -602,6 +615,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         brief: caseBrief(
           { kind: "send_applicant_request", count: 1 },
           [
@@ -787,6 +801,7 @@ describe("QuoteDetailCard", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         useOfFunds: "Fertilizer",
         repaymentSource: "The cooperative pays",
         billAcceptanceState: "endorsed",
@@ -823,10 +838,38 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("1 established · 2 applicant's word · 4 open");
   });
 
+  it("marks synthetic test data on the case and on every Mint or assessor record it shows", () => {
+    const summary = {
+      assessmentCurrency: "current" as const,
+      billAcceptanceState: "accepted",
+      acceptorRisk: { probabilityOfDefaultBps: 600, lossGivenDefaultBps: 4000, validThrough: "2026-11-08", evidenceState: "corroborated" },
+      duplicateCheck: { result: "clear", evidenceState: "independently_verified" },
+      brief: caseBrief({ kind: "manual_review" }),
+    };
+    const synthetic = renderCard({ decisionSummary: { ...summary, synthetic: true } });
+
+    expect(synthetic.querySelector("header [data-synthetic-badge]")?.textContent).toBe("Synthetic test data");
+    expect(certainty(synthetic)[0]).toEqual([
+      // The eBill chain record and the applicant's documents are not Mint or assessor records.
+      "Recorded independently of the applicant: ACME Corp accepted the eBill and owes it at maturity | eBill record · acceptance, not ability to pay",
+      "Recorded independently of the applicant: Payer risk recorded: 6.00% chance of non-payment, 40.00% lost if unpaid | Synthetic test data · Mint-signed record, corroborated · valid through Nov 8, 2026 · not a guarantee of payment",
+      "Recorded independently of the applicant: No other financing of this bill found | Synthetic test data · Independent assessor, independently verified",
+      "Consistent with the applicant's documents: Invoice matches the eBill | Applicant's document, not independent confirmation",
+    ]);
+
+    act(() => root?.unmount());
+    synthetic.remove();
+    const real = renderCard({ decisionSummary: { ...summary, synthetic: false } });
+
+    expect(real.querySelector("[data-synthetic-badge]")).toBeNull();
+    expect(real.textContent).not.toContain("Synthetic");
+  });
+
   it("names a stale payer record as open instead of established", () => {
     const page = renderCard({
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         billAcceptanceState: "accepted",
         acceptorRisk: { probabilityOfDefaultBps: 600, lossGivenDefaultBps: 4000, validThrough: "2026-01-01", evidenceState: "stale" },
         brief: caseBrief({ kind: "manual_review" }),
@@ -841,6 +884,7 @@ describe("QuoteDetailCard", () => {
       quote: pendingQuote,
       decisionSummary: {
         assessmentCurrency: "current",
+        synthetic: false,
         profile: { industry: "coffee_production", country: "GT" },
         brief: caseBrief({ kind: "manual_review" }),
       },
@@ -862,7 +906,7 @@ describe("QuoteDetailCard", () => {
     } as InfoReply;
     const page = renderCard({
       quote: anonymous,
-      decisionSummary: { assessmentCurrency: "current", brief: caseBrief({ kind: "manual_review" }) },
+      decisionSummary: { assessmentCurrency: "current", synthetic: false, brief: caseBrief({ kind: "manual_review" }) },
     });
     const header = page.querySelector("header");
 
