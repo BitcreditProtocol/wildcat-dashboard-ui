@@ -420,7 +420,7 @@ export function QuoteDocuments({
             <p className="border-t border-border pt-4 text-sm text-muted-foreground">{intl.formatMessage(messages.noBillFiles)}</p>
           ) : (
             <details className="rounded-lg border border-border bg-elevation-100">
-              <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+              <summary className="disclosure-row cursor-pointer px-4 py-3 text-sm font-medium">
                 {intl.formatMessage(messages.sourceFiles, { count: billFileCount })}
               </summary>
               <div className="space-y-4 border-t border-border p-4">

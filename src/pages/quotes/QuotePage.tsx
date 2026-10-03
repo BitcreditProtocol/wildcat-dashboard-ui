@@ -505,6 +505,18 @@ function PageBody({ id }: { id: string }) {
           <CaseDecisionPanel
             brief={panelBrief}
             statusLabel={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
+            statusDetail={
+              effectiveQuoteStatus === "Offered" && "ttl" in quote && quote.ttl
+                ? intl.formatMessage(
+                    {
+                      id: "quotes.decision.offerExpires",
+                      defaultMessage: "Waiting for the holder. The offer lapses {date}.",
+                      description: "Decision column for a sent offer: who acts next and when the offer expires",
+                    },
+                    { date: intl.formatDate(quote.ttl, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) }
+                  )
+                : undefined
+            }
             actionableTerms={actionableTerms}
             openPoints={openPointCount(decisionCase)}
             actions={quoteActions}

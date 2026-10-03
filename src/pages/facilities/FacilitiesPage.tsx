@@ -60,7 +60,7 @@ export default function FacilitiesPage() {
   };
   return (
     <div className="space-y-4 p-4 md:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className={`flex flex-wrap justify-between gap-4 ${selectedId ? "items-center" : "items-start"}`}>
         {selectedId ? (
           <div>
             <Link

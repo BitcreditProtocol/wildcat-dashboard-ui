@@ -38,7 +38,7 @@ function SubmissionConversation({ application, target }: { application: Facility
             open={index === submissions.length - 1 || !!target?.startsWith(`facility-submission-${submission.version}-`)}
             className="rounded-lg border border-border"
           >
-            <summary className="cursor-pointer p-4 text-sm font-medium">
+            <summary className="disclosure-row cursor-pointer p-4 text-sm font-medium">
               <FormattedMessage
                 id="facilities.submissionVersion"
                 defaultMessage="Submission {version}"

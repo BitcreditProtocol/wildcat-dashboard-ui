@@ -240,10 +240,10 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
       <QuoteStatusTabs status={status} search={partyParams.size > 0 ? `?${partyParams}` : ""} />
 
       {/* One toolbar: find, the one queue that matters most, how to see it, and everything else behind Filters. */}
-      <div className="mt-4 mb-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 mb-3 flex flex-wrap items-center gap-2">
         <SearchComponent
           value={searchQuery}
-          className="w-full sm:w-auto sm:max-w-md sm:flex-1"
+          className="w-full xl:w-auto xl:max-w-md xl:flex-1"
           placeholder={intl.formatMessage({
             id: "quotes.search.placeholder",
             defaultMessage: "Search by quote ID, bill ID, participant, status, amount, or maturity...",
@@ -278,10 +278,10 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
               setParams(next, { replace: true });
             }}
           >
-            <ToggleGroupItem value="list" className="h-11 px-3 text-xs whitespace-nowrap">
+            <ToggleGroupItem value="list" className="h-11 flex-none px-3.5 text-xs whitespace-nowrap">
               {intl.formatMessage(viewMessages.list)}
             </ToggleGroupItem>
-            <ToggleGroupItem value="applicant" className="h-11 px-3 text-xs whitespace-nowrap">
+            <ToggleGroupItem value="applicant" className="h-11 flex-none px-3.5 text-xs whitespace-nowrap">
               {intl.formatMessage(viewMessages.applicant)}
             </ToggleGroupItem>
           </ToggleGroup>
@@ -307,7 +307,19 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
             <span className="sr-only">{intl.formatMessage(viewMessages.removeFilter)}</span>
           </Button>
         )}
-        {totalQuotes > 0 && <div className="ml-auto text-sm text-muted-foreground">{countLabel}</div>}
+        {totalQuotes > 0 && (
+          <div className="ml-auto flex items-center gap-1.5 text-sm text-muted-foreground">
+            {/* Background refreshes show here, beside the count, instead of reserving a row above the list. */}
+            <AppIcon
+              icon={LoaderIcon}
+              size="sm"
+              weight="thin"
+              aria-hidden="true"
+              className={cn({ "animate-spin": isFetching || isFetchingNextPage, invisible: !isFetching && !isFetchingNextPage })}
+            />
+            {countLabel}
+          </div>
+        )}
       </div>
 
       {partyFilter !== undefined && (
@@ -328,17 +340,6 @@ function QuoteList({ status }: { status?: QuoteStatus }) {
 
       {errorMessage === undefined && !isLoading && (
         <>
-          <div className="flex items-center justify-center">
-            <AppIcon
-              icon={LoaderIcon}
-              weight="thin"
-              className={cn({
-                "animate-spin": isFetching || isFetchingNextPage,
-                invisible: !isFetching && !isFetchingNextPage,
-              })}
-            />
-          </div>
-
           {isLoadingAllPages && (
             <div className="text-center text-sm text-muted-foreground">
               {intl.formatMessage({

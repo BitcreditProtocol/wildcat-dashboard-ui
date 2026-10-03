@@ -135,9 +135,7 @@ function LifecycleStage({
       <Icon className={`mt-0.5 size-4 shrink-0 ${color}`} aria-hidden="true" />
       <span className="min-w-0">
         <span className="block text-xs text-muted-foreground">{label}</span>
-        <span className="block truncate text-sm font-medium" title={value}>
-          {value}
-        </span>
+        <span className="block text-sm font-medium break-words">{value}</span>
       </span>
     </li>
   );
@@ -191,16 +189,23 @@ export function QuoteDetailCard({
       : showingRecommendation && recommendedTerms
         ? intl.formatMessage(
             {
-              id: "quotes.summary.recommendedFeeContext",
-              defaultMessage: "{rate}% of bill over {days} days",
-              description: "Fee ratio and tenor for the governed recommended Minting fee",
+              id: "quotes.summary.feeContext",
+              defaultMessage: "{rate} of the bill · {days, plural, one {# day} other {# days}}",
+              description: "Fee as a share of the bill and the days it covers, for the governed proposed minting fee",
             },
             {
-              rate: intl.formatNumber(recommendedTerms.feeRatioBps / 100, { maximumFractionDigits: 2 }),
+              rate: intl.formatNumber(recommendedTerms.feeRatioBps / 10_000, { style: "percent", minimumFractionDigits: 2 }),
               days: recommendedTerms.tenorDays,
             }
           )
-        : `${((mintingFee / bill.sum) * 100).toFixed(4)}%`;
+        : intl.formatMessage(
+            {
+              id: "quotes.summary.feeShare",
+              defaultMessage: "{rate} of the bill",
+              description: "Recorded minting fee as a share of the bill amount",
+            },
+            { rate: intl.formatNumber(mintingFee / bill.sum, { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+          );
   const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
   const maturityLabel = maturityDate
     ? humanReadableDurationDays(intl.locale, maturityDate)
@@ -473,7 +478,7 @@ export function QuoteDetailCard({
 
         <section className="grid grid-cols-2 border-t border-border bg-elevation-100 md:grid-cols-4">
           <div className="border-r border-b border-border px-5 py-4 md:border-b-0">
-            <div className="truncate text-xs text-muted-foreground">
+            <div className="text-xs leading-tight text-muted-foreground">
               {intl.formatMessage({ id: "quotes.detail.sum", defaultMessage: "Bill amount" })}
             </div>
             <Currency
@@ -484,7 +489,7 @@ export function QuoteDetailCard({
             />
           </div>
           <div className="border-b border-border px-5 py-4 md:border-r md:border-b-0">
-            <div className="truncate text-xs text-muted-foreground">
+            <div className="text-xs leading-tight text-muted-foreground">
               {intl.formatMessage(showingRecommendation ? termMessages.proposedFee : termMessages.fee)}
             </div>
             {mintingFee !== null && mintingFeeRate !== null ? (
@@ -502,7 +507,7 @@ export function QuoteDetailCard({
             )}
           </div>
           <div className="border-r border-border px-5 py-4">
-            <div className="truncate text-xs text-muted-foreground">
+            <div className="text-xs leading-tight text-muted-foreground">
               {intl.formatMessage({ id: "quotes.summary.availableToMint", defaultMessage: "Available to mint" })}
             </div>
             {displayedAmountAvailableForMinting !== null ? (
@@ -521,7 +526,7 @@ export function QuoteDetailCard({
                         defaultMessage: "Offer expires {date}",
                         description: "Expiry timestamp for the Mint's current offer",
                       },
-                      { date: formatLocalDateTime(new Date(quote.ttl)) }
+                      { date: intl.formatDate(quote.ttl, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) }
                     )}
                   </div>
                 )}
@@ -531,10 +536,12 @@ export function QuoteDetailCard({
             )}
           </div>
           <div className="px-5 py-4">
-            <div className="truncate text-xs text-muted-foreground">
+            <div className="text-xs leading-tight text-muted-foreground">
               {intl.formatMessage({ id: "quotes.detail.maturityDate", defaultMessage: "Maturity" })}
             </div>
-            <div className="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums">{bill.maturity_date}</div>
+            <div className="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums">
+              {intl.formatDate(bill.maturity_date, { dateStyle: "medium", timeZone: "UTC" })}
+            </div>
             <div className="mt-0.5 text-xs text-muted-foreground">{maturityLabel}</div>
           </div>
         </section>

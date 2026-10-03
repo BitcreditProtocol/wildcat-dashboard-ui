@@ -1,6 +1,6 @@
 import { cn } from "@bitcredit/ui-library";
 import { caseNextStepOwner, type CaseNextOwner } from "@bitcredit/ai-credit-shared";
-import { CircleAlert, CircleCheck, CircleDashed, Clock3 } from "lucide-react";
+import { ChevronDown, CircleAlert, CircleCheck, CircleDashed, Clock3 } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import { defineMessages, useIntl, type IntlShape } from "react-intl";
 import { operatorOwnsNextStep, type CaseBrief, type CaseNextStep, type CaseWorkItem } from "./case-brief";
@@ -560,16 +560,21 @@ export function CaseProgress({ work }: { work: readonly CaseWorkItem[] }) {
   const intl = useIntl();
   if (work.length === 0) return null;
   return (
-    <details aria-labelledby="case-progress" className="border-b border-border px-6 py-4 print:hidden">
-      <summary id="case-progress" className="cursor-pointer text-sm font-medium">
-        {intl.formatMessage(messages.progress)}
+    <details aria-labelledby="case-progress" className="group border-b border-border print:hidden">
+      {/* The same row as "Processing & audit" below it. */}
+      <summary
+        id="case-progress"
+        className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 marker:hidden [&::-webkit-details-marker]:hidden"
+      >
+        <span className="text-sm font-semibold">{intl.formatMessage(messages.progress)}</span>
+        <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
       </summary>
-      <div className="mt-3 flex justify-end">
+      <div className="flex justify-end border-t border-border px-6 pt-3">
         <a className="text-xs font-medium text-primary hover:underline" href="#case-history">
           {intl.formatMessage(messages.fullHistory)}
         </a>
       </div>
-      <ul className="mt-2 divide-y divide-border">
+      <ul className="mt-2 divide-y divide-border px-6 pb-4">
         {work.map((item, index) => {
           const row = workRow(intl, item);
           return (

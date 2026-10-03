@@ -504,7 +504,7 @@ export function SubmittedDocuments({
                         {claimGroups.map((group) =>
                           group.collapsed ? (
                             <details key={group.id} className="rounded-md border border-border">
-                              <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{group.label}</summary>
+                              <summary className="disclosure-row cursor-pointer px-3 py-2 text-xs font-medium">{group.label}</summary>
                               <div className="border-t border-border p-3">
                                 <ClaimGrid claims={group.claims} intl={intl} />
                               </div>
@@ -517,7 +517,9 @@ export function SubmittedDocuments({
                     </section>
                   ) : null}
                   <details className="rounded-md border border-border">
-                    <summary className="cursor-pointer px-3 py-2 text-xs font-medium">{intl.formatMessage(messages.technical)}</summary>
+                    <summary className="disclosure-row cursor-pointer px-3 py-2 text-xs font-medium">
+                      {intl.formatMessage(messages.technical)}
+                    </summary>
                     <dl className="grid gap-3 border-t border-border p-3 text-xs sm:grid-cols-2">
                       <div>
                         <dt className="text-muted-foreground">{intl.formatMessage(messages.origin)}</dt>
