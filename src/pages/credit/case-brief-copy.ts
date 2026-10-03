@@ -172,7 +172,7 @@ const reasons = defineMessages({
   },
   programRequired: {
     id: "quotes.actions.creditProgram.unavailable",
-    defaultMessage: "A fresh Mint credit-program assignment is required before this quote can be acted on.",
+    defaultMessage: "A fresh Mint minting-program assignment is required before this quote can be acted on.",
     description: "Explanation shown when an older assessment lacks the Mint-owned quote-to-program binding",
   },
   expired: {

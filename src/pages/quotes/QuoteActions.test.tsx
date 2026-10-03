@@ -983,7 +983,7 @@ describe("QuoteActions", () => {
 
     const denyButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.includes("Deny"));
     expect(denyButton?.disabled).toBe(true);
-    expect(denyButton?.title).toBe("A fresh Mint credit-program assignment is required before this quote can be acted on.");
+    expect(denyButton?.title).toBe("A fresh Mint minting-program assignment is required before this quote can be acted on.");
     expect(page.textContent).not.toContain("Offer quote");
     expect(mockRecordOperatorDecision).not.toHaveBeenCalled();
   });

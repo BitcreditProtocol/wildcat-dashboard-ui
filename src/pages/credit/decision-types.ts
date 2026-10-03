@@ -182,6 +182,8 @@ export interface DecisionCase {
     industry: string;
     maximumEffectiveAnnualBps: number;
     maximumFeeRatioBps: number;
+    /** Optional in older projections; absent means adjustment is not shown as available. */
+    reviewPermissions?: { adjustPriceAndRequote: boolean };
   };
   result: {
     assessmentStatus: AssessmentStatus;

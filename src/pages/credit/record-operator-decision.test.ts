@@ -414,7 +414,7 @@ describe("recordOperatorDecision", () => {
       );
       await expect(recordOperatorDecision(decline, approver, expectedMint)).resolves.toEqual({
         ok: false,
-        error: "The AI Credit operator service returned an invalid Mint denial status",
+        error: "The risk assessment service returned an invalid Mint denial status",
       });
     }
   });
@@ -424,7 +424,7 @@ describe("recordOperatorDecision", () => {
 
     await expect(recordOperatorDecision(command, approver)).resolves.toEqual({
       ok: false,
-      error: "The AI Credit operator service returned an invalid offer authorization",
+      error: "The risk assessment service returned an invalid offer authorization",
     });
   });
 
@@ -442,7 +442,7 @@ describe("recordOperatorDecision", () => {
 
     await expect(recordOperatorDecision({ ...command, action: "return_for_information" }, approver)).resolves.toEqual({
       ok: false,
-      error: "The AI Credit operator service signed a non-offer decision",
+      error: "The risk assessment service signed a non-offer decision",
     });
   });
 

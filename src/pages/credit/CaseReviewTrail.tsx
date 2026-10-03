@@ -151,7 +151,7 @@ const messages = defineMessages({
   },
   initialNotSubmitted: {
     id: "credit.caseRecord.initialNotSubmitted",
-    defaultMessage: "Not submitted · no credit decision",
+    defaultMessage: "Not submitted · no minting decision",
     description: "Initial interview does not grant credit or minting authority",
   },
   serverRecorded: {

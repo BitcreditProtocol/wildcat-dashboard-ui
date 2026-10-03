@@ -8,6 +8,8 @@ import * as React from "react";
 import { useState } from "react";
 import { useIntl } from "react-intl";
 import { matchesQuoteAmount } from "@/utils/quote-amount-search";
+import { useCreditAssessments } from "@/pages/credit/use-credit-assessment";
+import { pendingQuoteOperatorIndex } from "@/pages/credit/quote-credit-record";
 
 export type QuoteStatus = InfoReplyDiscriminants;
 
@@ -15,7 +17,14 @@ type SortField = "priority" | "status" | "sum" | "maturity" | "statusChange";
 type SortDirection = "asc" | "desc";
 export type SortBy = `${SortField}-${SortDirection}`;
 
-export type QuickFilter = "all" | "requested-to-pay" | "ready-to-request-to-pay" | "paid" | "active-fee-token" | "maturity-today";
+export type QuickFilter =
+  | "all"
+  | "needs-action"
+  | "requested-to-pay"
+  | "ready-to-request-to-pay"
+  | "paid"
+  | "active-fee-token"
+  | "maturity-today";
 
 export type ItemsPerPageValue = number | typeof ALL_PAGE_SIZE_VALUE;
 
@@ -148,7 +157,13 @@ function compareOptionalDates(left: string | undefined, right: string | undefine
   return new Date(left).getTime() - new Date(right).getTime();
 }
 
-export function useQuoteList(status?: QuoteStatus) {
+/** Server-side party filters. `payerId` is the drawee: Wildcat's own `bill_payer_id` matches the payee. */
+export interface QuotePartyFilter {
+  applicantId?: string;
+  payerId?: string;
+}
+
+export function useQuoteList(status?: QuoteStatus, party: QuotePartyFilter = {}) {
   const intl = useIntl();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>(DEFAULT_SORT_BY);
@@ -166,6 +181,8 @@ export function useQuoteList(status?: QuoteStatus) {
         limit,
         sort: apiSort,
         status,
+        bill_holder_id: party.applicantId,
+        bill_drawee_id: party.payerId,
       },
     }),
     refetchInterval: shouldPollStatusPage(status) ? QUOTE_STATUS_POLL_INTERVAL_MS : false,
@@ -229,13 +246,28 @@ export function useQuoteList(status?: QuoteStatus) {
     billIdToEbillMap.set(ebill.id, ebill);
   });
 
+  // Pending quotes whose next step is the Mint operator's, by the shared next-step rule: the same
+  // one the quote page's decision column follows. One shared, already polled assessment read.
+  const { data: creditDecisions } = useCreditAssessments();
+  const operatorActsOnPending = pendingQuoteOperatorIndex(creditDecisions, Date.now());
+
+  const quoteIndexById = new Map<string, number>();
+  const quoteDetailsById = new Map<string, InfoReply | undefined>();
+  const failedQuoteDetailIds = new Set<string>();
   const effectiveStatusByQuoteId = new Map<string, string>();
   quotes.forEach((quote, index) => {
+    quoteIndexById.set(quote.id, index);
+    quoteDetailsById.set(quote.id, quoteDetailsQueries[index]?.data);
+    if (quoteDetailsQueries[index]?.error) failedQuoteDetailIds.add(quote.id);
     const billId = quoteDetailsQueries[index]?.data?.bill?.id;
     const ebill = billId ? billIdToEbillMap.get(billId) : undefined;
     const quoteStatus = quoteDetailsQueries[index]?.data?.status ?? quote.status;
     effectiveStatusByQuoteId.set(quote.id, getEffectiveQuoteStatus(quoteStatus, ebill));
   });
+
+  const needsOperator = (quote: LightInfo) =>
+    (effectiveStatusByQuoteId.get(quote.id) ?? quote.status) === "Pending" &&
+    operatorActsOnPending(quoteDetailsById.get(quote.id)?.bill.id, quote.id);
 
   const filteredQuotes = quotes.filter((quote, index) => {
     const quoteDetails = quoteDetailsQueries[index]?.data;
@@ -256,6 +288,11 @@ export function useQuoteList(status?: QuoteStatus) {
     }
 
     switch (quickFilter) {
+      case "needs-action":
+        if (!needsOperator(quote)) {
+          return false;
+        }
+        break;
       case "requested-to-pay":
         if (!payment?.requested_to_pay) {
           return false;
@@ -311,8 +348,8 @@ export function useQuoteList(status?: QuoteStatus) {
   const preserveBackendOrder = !usesLegacyFallback && !sortsLocally;
 
   const compareQuotes = (a: LightInfo, b: LightInfo) => {
-    const aIndex = quotes.findIndex((q) => q.id === a.id);
-    const bIndex = quotes.findIndex((q) => q.id === b.id);
+    const aIndex = quoteIndexById.get(a.id) ?? -1;
+    const bIndex = quoteIndexById.get(b.id) ?? -1;
 
     const aBill = aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data?.bill : null;
     const bBill = bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data?.bill : null;
@@ -322,9 +359,11 @@ export function useQuoteList(status?: QuoteStatus) {
 
     switch (sortBy) {
       case "priority-asc": {
-        const rankDifference =
-          getQuotePriorityRank(effectiveStatusByQuoteId.get(a.id) ?? a.status) -
-          getQuotePriorityRank(effectiveStatusByQuoteId.get(b.id) ?? b.status);
+        // Within pending quotes, those waiting on the operator come before those waiting on the applicant or agents.
+        const rank = (quote: LightInfo) =>
+          getQuotePriorityRank(effectiveStatusByQuoteId.get(quote.id) ?? quote.status) +
+          ((effectiveStatusByQuoteId.get(quote.id) ?? quote.status) === "Pending" && !needsOperator(quote) ? 0.5 : 0);
+        const rankDifference = rank(a) - rank(b);
         return rankDifference !== 0 ? rankDifference : compareOptionalDates(aTimestamp, bTimestamp);
       }
       case "status-asc":
@@ -424,6 +463,14 @@ export function useQuoteList(status?: QuoteStatus) {
 
   const quickFilterOptions = [
     {
+      value: "needs-action" as const,
+      label: intl.formatMessage({
+        id: "quotes.filter.needsAction",
+        defaultMessage: "Needs your action",
+        description: "Quick filter for pending quotes whose next step is the Mint operator's, including manual decisions",
+      }),
+    },
+    {
       value: "requested-to-pay" as const,
       label: intl.formatMessage({
         id: "quotes.filter.requestedToPay",
@@ -477,6 +524,8 @@ export function useQuoteList(status?: QuoteStatus) {
     totalQuotes,
     usesLegacyFallback,
     effectiveStatusByQuoteId,
+    quoteDetailsById,
+    failedQuoteDetailIds,
     billIdToEbillMap,
     filteredQuotes,
     sortedQuotes,

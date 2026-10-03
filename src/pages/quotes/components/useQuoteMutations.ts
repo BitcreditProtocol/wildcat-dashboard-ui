@@ -1,5 +1,5 @@
 import { toast } from "@bitcredit/ui-library";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
   updateQuoteMutation,
   postEbillReqtopayMutation,
@@ -72,6 +72,16 @@ export async function reconcileCommittedQuoteUpdate(
   }
 }
 
+/** Every quote list, including the per-applicant and per-payer reads, now counts this quote in another stage. */
+function invalidateQuoteLists(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({
+    predicate: (query) => {
+      const [key] = query.queryKey as [unknown];
+      return typeof key === "object" && key !== null && "_id" in key && key._id === "listQuotes";
+    },
+  });
+}
+
 export function useQuoteMutations(quoteId: string, billId: string) {
   const intl = useIntl();
   const queryClient = useQueryClient();
@@ -99,6 +109,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       void queryClient.invalidateQueries({
         queryKey: getQuoteOptions({ path: { qid: quoteId } }).queryKey,
       });
+      invalidateQuoteLists(queryClient);
     },
   });
 
@@ -130,6 +141,7 @@ export function useQuoteMutations(quoteId: string, billId: string) {
       void queryClient.invalidateQueries({
         queryKey: getQuoteOptions({ path: { qid: quoteId } }).queryKey,
       });
+      invalidateQuoteLists(queryClient);
     },
   });
 

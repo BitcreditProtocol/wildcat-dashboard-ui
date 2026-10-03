@@ -67,13 +67,15 @@ export function FilterGroupSection({ group }: { group: FilterGroup }) {
 
 interface ListFiltersProps {
   groups: FilterGroup[];
+  /** Shown beside the icon; without it the trigger is icon-only. */
+  label?: string;
   hasActiveFilters?: boolean;
   className?: string;
   onReset?: () => void;
   canReset?: boolean;
 }
 
-export function ListFilters({ groups, hasActiveFilters = false, className, onReset, canReset = true }: ListFiltersProps) {
+export function ListFilters({ groups, label, hasActiveFilters = false, className, onReset, canReset = true }: ListFiltersProps) {
   const intl = useIntl();
   const title = intl.formatMessage({
     id: "listFilters.title",
@@ -87,11 +89,12 @@ export function ListFilters({ groups, hasActiveFilters = false, className, onRes
           type="button"
           variant="outline"
           size="sm"
-          className={cn("relative h-11 w-11 shrink-0 p-0", className)}
-          aria-label={title}
+          className={cn("relative shrink-0", label === undefined ? "h-11 w-11 p-0" : "min-h-11 gap-2 px-3 font-normal", className)}
+          aria-label={label === undefined ? title : undefined}
           title={title}
         >
           <AppIcon icon={SlidersHorizontal} size="sm" />
+          {label}
           {hasActiveFilters && <span aria-hidden="true" className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-text-300" />}
         </Button>
       </DrawerTrigger>

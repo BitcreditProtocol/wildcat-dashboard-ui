@@ -1,9 +1,9 @@
+import { cn } from "@bitcredit/ui-library";
 import { caseNextStepOwner, type CaseNextOwner } from "@bitcredit/ai-credit-shared";
 import { CircleAlert, CircleCheck, CircleDashed, Clock3 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { defineMessages, useIntl, type IntlShape } from "react-intl";
 import { operatorOwnsNextStep, type CaseBrief, type CaseNextStep, type CaseWorkItem } from "./case-brief";
-import { words } from "./decision-types";
 import { requestReason } from "./verification-reasons";
 
 const messages = defineMessages({
@@ -88,21 +88,6 @@ const messages = defineMessages({
     defaultMessage:
       "Repayment timing and source are the applicant’s statements, not independently confirmed. The current assessment permits an offer with this limitation.",
     description: "Residual uncertainty only when governed terms are currently actionable",
-  },
-  recordLimit: {
-    id: "quotes.brief.recordLimit",
-    defaultMessage: "Records acceptance and terms, not ability to pay.",
-    description: "Protocol authenticity is not solvency",
-  },
-  documentLimit: {
-    id: "quotes.brief.documentLimit",
-    defaultMessage: "Consistency with an applicant-supplied document, not independent confirmation of the trade.",
-    description: "Applicant document provenance limitation",
-  },
-  mintLimit: {
-    id: "quotes.brief.mintLimit",
-    defaultMessage: "Mint records only; not a guarantee of repayment or a check at other Mints.",
-    description: "Scope of Mint-owned checks",
   },
   ownerYou: { id: "quotes.brief.owner.you", defaultMessage: "You", description: "The signed-in Mint operator owns the next step" },
   ownerAgent: {
@@ -195,7 +180,7 @@ const messages = defineMessages({
   },
   notActionable: {
     id: "quotes.brief.step.notActionable",
-    defaultMessage: "Decisions stay disabled until the Mint assigns a credit program to this quote.",
+    defaultMessage: "Decisions stay disabled until the Mint assigns a minting program to this quote.",
     description: "Legacy assessment without program binding",
   },
   termsExpired: {
@@ -214,84 +199,11 @@ const messages = defineMessages({
     defaultMessage: "Open conversation",
     description: "Link to the applicant conversation in Case history",
   },
-  factsEbill: {
-    id: "quotes.brief.facts.signedEbill",
-    defaultMessage: "Signed eBill record",
-    description: "Signed protocol facts: authentic, not proof of the facts behind them or of the payer's ability to pay",
-  },
-  factsClaims: {
-    id: "quotes.brief.facts.claims",
-    defaultMessage: "Applicant's claims",
-    description: "What the applicant says; not evidence by itself",
-  },
-  factsDocuments: {
-    id: "quotes.brief.facts.applicantDocuments",
-    defaultMessage: "Checked against applicant documents",
-    description: "Checks whose only evidence is material the applicant provided; consistency, not independent proof",
-  },
-  factsIndependent: {
-    id: "quotes.brief.facts.independent",
-    defaultMessage: "Mint-owned checks",
-    description: "Records the Mint holds itself, not supplied by the applicant",
-  },
-  acceptance: {
-    id: "quotes.brief.facts.acceptance",
-    defaultMessage: "{state} by the payer",
-    description: "Protocol acceptance state of the eBill, e.g. Accepted by the payer",
-  },
-  acceptanceUnknown: {
-    id: "quotes.brief.facts.acceptanceUnknown",
-    defaultMessage: "Acceptance state not in this assessment",
-    description: "No bill acceptance state is available; do not infer one",
-  },
-  payer: { id: "quotes.brief.facts.payer", defaultMessage: "Payer at maturity", description: "eBill drawee" },
-  drawer: { id: "quotes.brief.facts.drawer", defaultMessage: "Drawer", description: "eBill drawer" },
-  useOfFunds: { id: "quotes.summary.purpose", defaultMessage: "Use of proceeds" },
-  repayment: { id: "quotes.summary.repayment", defaultMessage: "Repayment source" },
-  answerMissing: {
-    id: "quotes.summary.answerMissing",
-    defaultMessage: "No answer recorded",
-    description: "Missing applicant answer is not fabricated",
-  },
-  invoiceConsistent: {
-    id: "quotes.brief.documents.invoiceMatch",
-    defaultMessage: "Invoice fields match the eBill",
-    description: "Deterministic match of the applicant's own invoice to the eBill; consistency, not proof of the trade",
-  },
-  invoiceConflict: {
-    id: "quotes.brief.support.invoiceConflict",
-    defaultMessage: "Invoice does not match the eBill",
-    description: "Deterministic invoice to eBill mismatch",
-  },
-  invoiceUnchecked: {
-    id: "quotes.brief.support.invoiceUnchecked",
-    defaultMessage: "Invoice not yet checked against the eBill",
-    description: "Invoice consistency is unknown",
-  },
-  invoiceAbsent: {
-    id: "quotes.brief.support.invoiceAbsent",
-    defaultMessage: "No invoice submitted",
-    description: "No invoice in the case",
-  },
-  acceptorRisk: {
-    id: "quotes.brief.independent.acceptorRisk",
-    defaultMessage: "Mint-signed risk record for the payer",
-    description: "Current acceptor default and loss record whose Mint risk signature was verified",
-  },
-  duplicateClear: {
-    id: "quotes.brief.independent.duplicateClear",
-    defaultMessage: "No other financing of this bill in Mint records",
-    description: "The Mint's own duplicate-financing index found no reuse of this bill or invoice",
-  },
-  independentNone: {
-    id: "quotes.brief.independent.none",
-    defaultMessage: "None recorded",
-    description: "No record independent of the applicant exists for this case; do not imply verification",
-  },
-  repaymentUnresolved: {
-    id: "quotes.brief.claims.repaymentUnresolved",
-    defaultMessage: "Applicant statement only",
-    description: "The repayment claim rests only on the applicant's statement",
+  openPoints: {
+    id: "quotes.brief.openPoints",
+    defaultMessage:
+      "{count, plural, one {# open point from case preparation} other {# open points from case preparation}} · review before deciding",
+    description: "Pointer from the decision panel to agent-identified gaps that were not asked; not a blocker",
   },
   progress: {
     id: "quotes.brief.progress",
@@ -473,13 +385,28 @@ const blockerAction = {
 } satisfies Record<NonNullable<CaseBrief["outstanding"]>[number]["action"], (typeof messages)[keyof typeof messages]>;
 
 /** Who acts next and whether the operator must intervene; governed controls follow as `actions`. */
-export function CaseNextStepPanel({ next, brief, actions }: { next: CaseNextStep; brief?: CaseBrief; actions?: ReactNode }) {
+export function CaseNextStepPanel({
+  next,
+  brief,
+  actions,
+  variant = "header",
+  openPoints = 0,
+}: {
+  next: CaseNextStep;
+  brief?: CaseBrief;
+  actions?: ReactNode;
+  /** `panel` sits in the decision column, which owns its own spacing and actions. */
+  variant?: "header" | "panel";
+  /** Agent-identified gaps not yet asked; a pointer only, never a blocker. */
+  openPoints?: number;
+}) {
+  const headingId = useId();
   const intl = useIntl();
   if (next.kind === "closed") return actions ? <div className="mt-4 print:hidden">{actions}</div> : null;
   const operator = operatorOwnsNextStep(next);
   const link = stepLink[next.kind];
   return (
-    <section aria-labelledby="case-next-step" className="mt-5 border-t border-border pt-4">
+    <section aria-labelledby={headingId} className={variant === "panel" ? "" : "mt-5 border-t border-border pt-4"}>
       <p className={`mb-3 text-sm font-semibold ${next.kind === "decide_offer" ? "text-signal-success" : "text-foreground"}`}>
         {intl.formatMessage(
           next.kind === "decide_offer" ? messages.ready : next.kind === "confirm_no_fit" ? messages.noFit : messages.notReady
@@ -498,7 +425,7 @@ export function CaseNextStepPanel({ next, brief, actions }: { next: CaseNextStep
           </ul>
         </div>
       )}
-      <h2 id="case-next-step" className="flex flex-wrap items-baseline gap-x-2 text-sm">
+      <h2 id={headingId} className="flex flex-wrap items-baseline gap-x-2 text-sm">
         <span className="font-semibold">
           {intl.formatMessage(messages.nextStep)} · {ownerLabel(intl, next)}
         </span>
@@ -512,8 +439,17 @@ export function CaseNextStepPanel({ next, brief, actions }: { next: CaseNextStep
           </a>
         )}
       </p>
+      {next.kind === "decide_offer" && openPoints > 0 && (
+        <a
+          href="#case-open-points"
+          className="mt-3 flex gap-2 rounded-md bg-signal-alert/10 px-3 py-2 text-sm font-medium text-signal-alert hover:underline print:hidden"
+        >
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          {intl.formatMessage(messages.openPoints, { count: openPoints })}
+        </a>
+      )}
       {next.kind === "decide_offer" && brief?.repaymentUnverified && (
-        <div className="mt-4 border-l-2 border-signal-alert pl-3 text-sm">
+        <div className={cn("border-l-2 border-signal-alert pl-3", variant === "panel" ? "mt-3 text-xs" : "mt-4 text-sm")}>
           <h3 className="font-medium">{intl.formatMessage(messages.residual)}</h3>
           <p className="mt-1 text-muted-foreground">{intl.formatMessage(messages.residualRepayment)}</p>
         </div>
@@ -526,113 +462,11 @@ export function CaseNextStepPanel({ next, brief, actions }: { next: CaseNextStep
   );
 }
 
-function FactGroup({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="min-w-0 bg-card px-6 py-4">
-      <h2 className="text-xs font-semibold text-muted-foreground">{title}</h2>
-      <div className="mt-2 space-y-2 text-sm">{children}</div>
-    </section>
-  );
-}
-
-function Fact({ label, value, unresolved }: { label: string; value: string; unresolved?: string }) {
-  return (
-    <p className="break-words">
-      <span className="block text-xs text-muted-foreground">{label}</span>
-      <span className="whitespace-pre-wrap">{value}</span>
-      {unresolved !== undefined && (
-        <span className="mt-1 flex gap-1.5 text-xs font-medium text-signal-alert">
-          <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-          {unresolved}
-        </span>
-      )}
-    </p>
-  );
-}
-
-function Finding({ tone, children }: { tone: Tone; children: ReactNode }) {
-  return (
-    <li className="flex gap-2">
-      <ToneIcon tone={tone} />
-      {children}
-    </li>
-  );
-}
-
 /**
  * Evidence by provenance: signed eBill facts, the applicant's claims (with any unresolved status on
  * the claim itself), checks that rest only on applicant-provided material, and the Mint's own
  * records. Only the last column is independent of the applicant.
  */
-export function CaseFacts({
-  brief,
-  billAcceptanceState,
-  payerName,
-  drawerName,
-  useOfFunds,
-  repaymentSource,
-}: {
-  brief: CaseBrief;
-  billAcceptanceState?: string;
-  payerName: string;
-  drawerName: string;
-  useOfFunds?: string;
-  repaymentSource?: string;
-}) {
-  const intl = useIntl();
-  const answer = (value: string | undefined) => (value?.trim() ? value : intl.formatMessage(messages.answerMissing));
-  const { support } = brief;
-  const invoice = {
-    consistent: { tone: "done" as const, message: messages.invoiceConsistent },
-    conflict: { tone: "attention" as const, message: messages.invoiceConflict },
-    unchecked: { tone: "idle" as const, message: messages.invoiceUnchecked },
-    absent: { tone: "idle" as const, message: messages.invoiceAbsent },
-  }[support.invoice];
-  const hasIndependent = support.acceptorRiskRecord || support.duplicateCheckClear;
-  return (
-    <div className="grid gap-px border-b border-border bg-border md:grid-cols-2 xl:grid-cols-4">
-      <FactGroup title={intl.formatMessage(messages.factsEbill)}>
-        <p className="font-medium">
-          {billAcceptanceState
-            ? intl.formatMessage(messages.acceptance, { state: words(billAcceptanceState) })
-            : intl.formatMessage(messages.acceptanceUnknown)}
-        </p>
-        <Fact label={intl.formatMessage(messages.payer)} value={payerName} />
-        <Fact label={intl.formatMessage(messages.drawer)} value={drawerName} />
-        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.recordLimit)}</p>
-      </FactGroup>
-      <FactGroup title={intl.formatMessage(messages.factsClaims)}>
-        <Fact label={intl.formatMessage(messages.useOfFunds)} value={answer(useOfFunds)} />
-        <Fact
-          label={intl.formatMessage(messages.repayment)}
-          value={answer(repaymentSource)}
-          unresolved={brief.repaymentUnverified ? intl.formatMessage(messages.repaymentUnresolved) : undefined}
-        />
-      </FactGroup>
-      <FactGroup title={intl.formatMessage(messages.factsDocuments)}>
-        <ul className="space-y-2">
-          <Finding tone={invoice.tone}>{intl.formatMessage(invoice.message)}</Finding>
-        </ul>
-        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.documentLimit)}</p>
-        <a href="#documents-and-evidence" className="inline-block text-xs text-primary hover:underline">
-          {intl.formatMessage(messages.details)}
-        </a>
-      </FactGroup>
-      <FactGroup title={intl.formatMessage(messages.factsIndependent)}>
-        <ul className="space-y-2">
-          {support.acceptorRiskRecord && <Finding tone="done">{intl.formatMessage(messages.acceptorRisk)}</Finding>}
-          {support.duplicateCheckClear && <Finding tone="done">{intl.formatMessage(messages.duplicateClear)}</Finding>}
-          {!hasIndependent && <Finding tone="idle">{intl.formatMessage(messages.independentNone)}</Finding>}
-        </ul>
-        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.mintLimit)}</p>
-        <a href="#full-governed-assessment" className="inline-block text-xs text-primary hover:underline">
-          {intl.formatMessage(messages.details)}
-        </a>
-      </FactGroup>
-    </div>
-  );
-}
-
 function workRow(intl: IntlShape, item: CaseWorkItem): { title: string; owner: string; detail: string; tone: Tone; href?: string } {
   const formatTime = (value: string) => intl.formatDate(value, { dateStyle: "medium", timeStyle: "short" });
   switch (item.kind) {

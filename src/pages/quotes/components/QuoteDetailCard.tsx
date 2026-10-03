@@ -12,10 +12,15 @@ import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import type { CaseBrief } from "@/pages/credit/case-brief";
 import { caseHeadline, caseReason } from "@/pages/credit/case-brief-copy";
-import { CaseFacts, CaseNextStepPanel, CaseProgress } from "@/pages/credit/CaseBrief";
+import { CaseNextStepPanel, CaseProgress } from "@/pages/credit/CaseBrief";
+import { CaseCertainty } from "@/pages/credit/CaseCertainty";
+import { billApplicant } from "../quote-parties";
+import { cn } from "@bitcredit/ui-library";
 
 interface QuoteDetailCardProps {
   actions?: ReactNode;
+  /** `aside`: the page renders the next step and actions in its own decision column. */
+  decisionPlacement?: "header" | "aside";
   assessmentUnavailable?: boolean;
   assessmentLoading?: boolean;
   noFitExplanation?: ReactNode;
@@ -38,6 +43,20 @@ interface QuoteDetailCardProps {
     useOfFunds?: string;
     repaymentSource?: string;
     billAcceptanceState?: string;
+    acceptorRisk?: {
+      probabilityOfDefaultBps: number | null;
+      lossGivenDefaultBps: number | null;
+      validThrough: string;
+      evidenceState?: string;
+    };
+    /** The applicant's sector and country as the case records them (policy slugs, ISO country). */
+    profile?: { industry: string; country: string };
+    /** Agent-flagged points nobody has resolved. */
+    openPoints?: number;
+    duplicateCheck?: { result: string; evidenceState: string };
+    alreadyFinanced?: boolean | null;
+    /** Unresolved contradictions in the case snapshot. */
+    contradictions?: number;
     recommendedTerms?: {
       mintingFee: number;
       amountAvailableForMinting: number;
@@ -126,6 +145,7 @@ function LifecycleStage({
 
 export function QuoteDetailCard({
   actions,
+  decisionPlacement = "header",
   assessmentUnavailable = false,
   assessmentLoading = false,
   noFitExplanation,
@@ -152,7 +172,9 @@ export function QuoteDetailCard({
     decisionSummary?.recommendedTerms !== undefined &&
     governedTermsExpired(decisionSummary.recommendedTerms.offerExpiresOn, Date.now());
   const netProceeds = "discounted" in quote ? quote.discounted : null;
+  // Proposed terms describe a pending decision only; any recorded Mint outcome replaces them.
   const recommendedTerms =
+    effectiveQuoteStatus !== "Pending" ||
     assessmentUnavailable ||
     assessmentLoading ||
     isHistoricalAssessment ||
@@ -282,6 +304,32 @@ export function QuoteDetailCard({
     !assessmentLoading &&
     (effectiveQuoteStatus === "Pending" || brief.next.kind === "closed");
   const statusReason = statusReasonMessages[effectiveQuoteStatus as keyof typeof statusReasonMessages];
+  const headline =
+    assessmentUnavailable && effectiveQuoteStatus === "Pending"
+      ? intl.formatMessage({
+          id: "quotes.summary.assessmentUnavailable",
+          defaultMessage: "Assessment unavailable",
+          description: "Financial assessment failed to load, not a missing application",
+        })
+      : showBrief
+        ? caseHeadline(intl, brief)
+        : intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus));
+  const headlineTone =
+    offerExpired || (assessmentUnavailable && effectiveQuoteStatus === "Pending")
+      ? "alert"
+      : showBrief && brief.next.kind === "decide_offer"
+        ? "ready"
+        : "neutral";
+  const applicant = billApplicant(bill);
+  const receivedAt = "submitted" in quote ? quote.submitted : undefined;
+  const profile = decisionSummary?.profile;
+  const profileLine =
+    profile === undefined
+      ? undefined
+      : [
+          profile.industry.replace(/_/g, " ").replace(/^./, (first: string) => first.toUpperCase()),
+          new Intl.DisplayNames([intl.locale], { type: "region" }).of(profile.country.toUpperCase()) ?? profile.country,
+        ].join(" · ");
   // The mint-complete query currently reads the eBill payment endpoint. It can confirm payment,
   // but cannot establish redemption or issued/spendable value.
   const paymentConfirmed = ebillPaid || (!isMintCompleteLoading && isMintComplete);
@@ -293,17 +341,72 @@ export function QuoteDetailCard({
         <header className="relative border-b border-border bg-elevation-100 px-6 py-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h1 className={`pr-8 text-3xl font-semibold tracking-tight ${offerExpired ? "text-signal-alert" : ""}`}>
-                {assessmentUnavailable && effectiveQuoteStatus === "Pending"
+              {/* The state of the case is a label; the company it is about leads. */}
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pr-10 text-xs">
+                <span
+                  data-case-headline=""
+                  className={cn(
+                    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                    headlineTone === "ready" && "bg-signal-success/15 text-signal-success",
+                    headlineTone === "alert" && "bg-signal-alert/15 text-signal-alert",
+                    headlineTone === "neutral" && "bg-elevation-250 text-foreground"
+                  )}
+                >
+                  {headline}
+                </span>
+                {receivedAt !== undefined && (
+                  <span className="text-muted-foreground">
+                    {intl.formatMessage(
+                      {
+                        id: "quotes.summary.received",
+                        defaultMessage: "Received {when}",
+                        description: "When the Mint received the quote request",
+                      },
+                      { when: humanReadableDurationDays(intl.locale, new Date(receivedAt)) }
+                    )}
+                  </span>
+                )}
+              </p>
+              <h1 className="mt-3 pr-8 text-3xl font-semibold tracking-tight">
+                {applicant === null || applicant.anonymous
                   ? intl.formatMessage({
-                      id: "quotes.summary.assessmentUnavailable",
-                      defaultMessage: "Assessment unavailable",
-                      description: "Financial assessment failed to load, not a missing application",
+                      id: "quotes.summary.anonymousHolder",
+                      defaultMessage: "Anonymous holder",
+                      description: "Heading when the bill holder is not identified by name",
                     })
-                  : showBrief
-                    ? caseHeadline(intl, brief)
-                    : intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
+                  : applicant.name}
               </h1>
+              {applicant?.anonymous && <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">{applicant.nodeId}</p>}
+              {profileLine !== undefined && <p className="mt-0.5 text-sm text-muted-foreground">{profileLine}</p>}
+              <p className="mt-3 max-w-3xl text-base">
+                {intl.formatMessage(
+                  {
+                    id: "quotes.summary.caseSentencePayable",
+                    defaultMessage: "Asks to mint against a {amount} eBill payable by {payer} on {date}.",
+                    description:
+                      "One-sentence case summary from the bill's terms: amount, drawee and maturity; says nothing about acceptance",
+                  },
+                  {
+                    amount: `${intl.formatNumber(bill.sum)} sat`,
+                    payer: (
+                      <strong key="payer" className="font-semibold">
+                        {bill.drawee.name}
+                      </strong>
+                    ),
+                    date: intl.formatDate(bill.maturity_date, { dateStyle: "long", timeZone: "UTC" }),
+                  }
+                )}
+                {Boolean(bill.drawer.name) &&
+                  bill.drawer.node_id !== applicant?.nodeId &&
+                  ` ${intl.formatMessage(
+                    {
+                      id: "quotes.summary.drawnBy",
+                      defaultMessage: "Drawn by {drawer}.",
+                      description: "The bill's drawer, when it is not the applicant",
+                    },
+                    { drawer: bill.drawer.name }
+                  )}`}
+              </p>
               {showBrief ? (
                 <div className="mt-1 max-w-3xl text-sm text-muted-foreground">
                   {noFitExplanation && (brief.next.kind === "confirm_no_fit" || (brief.next.kind === "not_actionable" && brief.next.noFit))
@@ -354,7 +457,14 @@ export function QuoteDetailCard({
               <Printer className="size-4" aria-hidden="true" />
             </Button>
           </div>
-          {showBrief ? (
+          {decisionPlacement === "aside" ? (
+            // The decision column is screen-only; the printed executive summary keeps the next step and blockers.
+            showBrief && (
+              <div className="hidden print:block">
+                <CaseNextStepPanel next={brief.next} brief={brief} />
+              </div>
+            )
+          ) : showBrief ? (
             <CaseNextStepPanel next={brief.next} brief={brief} actions={actions} />
           ) : (
             actions && <div className="mt-4 print:hidden">{actions}</div>
@@ -431,13 +541,17 @@ export function QuoteDetailCard({
 
         {decisionSummary && brief ? (
           <>
-            <CaseFacts
+            <CaseCertainty
               brief={brief}
               billAcceptanceState={decisionSummary.billAcceptanceState}
               payerName={bill.drawee.name}
-              drawerName={bill.drawer.name}
               useOfFunds={decisionSummary.useOfFunds}
               repaymentSource={decisionSummary.repaymentSource}
+              acceptorRisk={decisionSummary.acceptorRisk}
+              openPoints={decisionSummary.openPoints ?? 0}
+              duplicateCheck={decisionSummary.duplicateCheck}
+              alreadyFinanced={decisionSummary.alreadyFinanced}
+              contradictions={decisionSummary.contradictions}
             />
             {showBrief && brief.next.kind !== "closed" && <CaseProgress work={brief.work} />}
           </>

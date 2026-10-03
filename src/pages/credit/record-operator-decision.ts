@@ -179,7 +179,7 @@ export function signedAuthorizationMatchesOffer(
   );
 }
 
-const FALLBACK_ERROR = "The AI Credit operator service rejected the request";
+const FALLBACK_ERROR = "The risk assessment service rejected the request";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -282,7 +282,7 @@ export async function fetchOperatorCapability(): Promise<OperatorCapability> {
   try {
     response = await authenticatedFetch("/api/ai-credit/operator-capability", { signal: AbortSignal.timeout(10_000) });
   } catch {
-    throw new Error("The AI Credit operator service is not reachable");
+    throw new Error("The risk assessment service is not reachable");
   }
   if (!response.ok) throw new Error(await responseError(response));
 
@@ -344,7 +344,7 @@ async function recordMintAuthorityEvidence(
     });
     return refreshResponse.ok ? { ok: true } : { ok: false, error: await responseError(refreshResponse) };
   } catch {
-    return { ok: false, error: "The Mint evidence authority or AI Credit operator service is not reachable" };
+    return { ok: false, error: "The Mint evidence authority or risk assessment service is not reachable" };
   }
 }
 
@@ -362,7 +362,7 @@ export async function retryOperatorVerificationSources(
     });
     return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
   } catch {
-    return { ok: false, error: "The AI Credit operator service is not reachable" };
+    return { ok: false, error: "The risk assessment service is not reachable" };
   }
 }
 
@@ -380,7 +380,7 @@ export async function reviewInvoiceEvidence(
     });
     return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
   } catch {
-    return { ok: false, error: "The AI Credit operator service is not reachable" };
+    return { ok: false, error: "The risk assessment service is not reachable" };
   }
 }
 
@@ -428,7 +428,7 @@ export async function recordApplicantHumanReviewUpdate(
     });
     return response.ok ? { ok: true } : { ok: false, error: await responseError(response) };
   } catch {
-    return { ok: false, error: "The AI Credit operator service is not reachable" };
+    return { ok: false, error: "The risk assessment service is not reachable" };
   }
 }
 
@@ -455,7 +455,7 @@ export async function recordOperatorDecision(
     if (!response.ok) return { ok: false, error: await responseError(response) };
     const body: unknown = await response.json().catch(() => null);
     if (!isRecord(body) || body.schemaVersion !== "ai-credit-operator-decision-response-v1") {
-      return { ok: false, error: "The AI Credit operator service returned an invalid decision response" };
+      return { ok: false, error: "The risk assessment service returned an invalid decision response" };
     }
     const offerDecision = input.action === "confirm_proposed_quote" || input.action === "propose_adjustment_and_requote";
     const denialDecision =
@@ -465,10 +465,10 @@ export async function recordOperatorDecision(
     const carriesAuthorization = body.signedAuthorization !== undefined;
     const authorization = isSignedOfferAuthorization(body.signedAuthorization) ? body.signedAuthorization : undefined;
     if (offerDecision && authorization === undefined) {
-      return { ok: false, error: "The AI Credit operator service returned an invalid offer authorization" };
+      return { ok: false, error: "The risk assessment service returned an invalid offer authorization" };
     }
     if (!offerDecision && carriesAuthorization) {
-      return { ok: false, error: "The AI Credit operator service signed a non-offer decision" };
+      return { ok: false, error: "The risk assessment service signed a non-offer decision" };
     }
     let mintDenial: MintQuoteDenialStatus | undefined;
     try {
@@ -487,11 +487,11 @@ export async function recordOperatorDecision(
         throw new Error("unexpected denial status");
       }
     } catch {
-      return { ok: false, error: "The AI Credit operator service returned an invalid Mint denial status" };
+      return { ok: false, error: "The risk assessment service returned an invalid Mint denial status" };
     }
     if (authorization !== undefined) return { ok: true, signedAuthorization: authorization };
     return mintDenial === undefined ? { ok: true } : { ok: true, mintDenial };
   } catch {
-    return { ok: false, error: "The AI Credit operator service is not reachable" };
+    return { ok: false, error: "The risk assessment service is not reachable" };
   }
 }

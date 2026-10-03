@@ -106,7 +106,7 @@ describe("QuoteDocuments", () => {
       />
     );
     expect(page.textContent).not.toContain("Public-source research");
-    expect(page.textContent).toContain("No submitted credit evidence is recorded");
+    expect(page.textContent).toContain("No submitted case evidence is recorded");
   });
   it("keeps answer-review concerns separate from deterministic checks with no recorded conflict", () => {
     const page = renderWithIntl(
@@ -197,7 +197,7 @@ describe("QuoteDocuments", () => {
     expect(page.textContent).toContain("contact-qrcode.png");
     expect(page.textContent).toContain("Submitted with the mint request");
     expect(page.textContent).toContain("invoice.pdf");
-    expect(page.textContent).toContain("No AI Credit assessment exists for this bill.");
+    expect(page.textContent).toContain("No AI assessment exists for this bill.");
 
     const buttons = Array.from(page.querySelectorAll("button"));
     const viewButtons = buttons.filter((button) => button.textContent === "View");
@@ -264,11 +264,11 @@ describe("QuoteDocuments", () => {
       />
     );
 
-    expect(page.textContent).toContain("Credit evidence unavailable");
+    expect(page.textContent).toContain("Case evidence unavailable");
     act(() => {
       page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(page.textContent).toContain("Credit evidence is unavailable. Do not treat this as an absence of evidence.");
+    expect(page.textContent).toContain("Case evidence is unavailable. Do not treat this as an absence of evidence.");
     expect(page.querySelector('[role="alert"]')).not.toBeNull();
   });
 

@@ -90,17 +90,17 @@ const messages = defineMessages({
   },
   evidenceLoadingSummary: {
     id: "quotes.documentsAndEvidence.evidenceLoadingSummary",
-    defaultMessage: "Loading credit evidence",
+    defaultMessage: "Loading case evidence",
     description: "Collapsed summary while AI Credit evidence is loading",
   },
   evidenceUnavailableSummary: {
     id: "quotes.documentsAndEvidence.evidenceUnavailableSummary",
-    defaultMessage: "Credit evidence unavailable",
+    defaultMessage: "Case evidence unavailable",
     description: "Collapsed summary when AI Credit evidence cannot be loaded",
   },
   noAssessmentSummary: {
     id: "quotes.documentsAndEvidence.noAssessmentSummary",
-    defaultMessage: "No credit assessment",
+    defaultMessage: "No risk assessment",
     description: "Collapsed summary when no AI Credit assessment exists for the bill",
   },
   show: {
@@ -140,27 +140,27 @@ const messages = defineMessages({
   },
   creditEvidence: {
     id: "quotes.documentsAndEvidence.creditEvidence",
-    defaultMessage: "Credit evidence",
+    defaultMessage: "Case evidence",
     description: "Heading for AI Credit evidence state",
   },
   loadingEvidence: {
     id: "quotes.documentsAndEvidence.loadingEvidence",
-    defaultMessage: "Loading submitted credit evidence…",
+    defaultMessage: "Loading submitted case evidence…",
     description: "Visible loading state for AI Credit evidence",
   },
   unavailableEvidence: {
     id: "quotes.documentsAndEvidence.unavailableEvidence",
-    defaultMessage: "Credit evidence is unavailable. Do not treat this as an absence of evidence.",
+    defaultMessage: "Case evidence is unavailable. Do not treat this as an absence of evidence.",
     description: "Fail-closed state when AI Credit evidence cannot be loaded",
   },
   absentAssessment: {
     id: "quotes.documentsAndEvidence.absentAssessment",
-    defaultMessage: "No AI Credit assessment exists for this bill.",
+    defaultMessage: "No AI assessment exists for this bill.",
     description: "State when the adapter has no assessment for the bill",
   },
   emptyEvidence: {
     id: "quotes.documentsAndEvidence.emptyEvidence",
-    defaultMessage: "No submitted credit evidence is recorded for this assessment. This is not an adverse finding.",
+    defaultMessage: "No submitted case evidence is recorded for this assessment. This is not an adverse finding.",
     description: "Non-adverse empty state for an assessment without submitted evidence",
   },
   sourceFiles: {

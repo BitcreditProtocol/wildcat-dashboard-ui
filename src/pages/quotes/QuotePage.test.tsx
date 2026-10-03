@@ -106,6 +106,7 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
     queryKey: [{ _id: "getMintopStatus", path }],
   }),
   getMintInfoOptions: () => ({ queryKey: [{ _id: "getMintInfo" }] }),
+  listQuotesOptions: ({ query }: { query: object }) => ({ queryKey: [{ _id: "listQuotes", query }] }),
   getEbillOptions: ({ path }: { path: { bid: string } }) => ({
     queryKey: [{ _id: "getEbill", path }],
   }),
@@ -384,11 +385,11 @@ describe("QuotePage", () => {
     quoteStatus = "Pending";
     const page = renderPage(`/quotes/${quoteId}`);
     const summary = page.querySelector("#minting-summary");
-    expect(summary?.querySelector("header h1")?.textContent).toBe("Needs your attention");
+    expect(summary?.querySelector("header [data-case-headline]")?.textContent).toBe("Needs your attention");
     expect(summary?.textContent).toContain("Next step · You");
     expect(summary?.textContent).toContain("Refresh acceptor evidence");
     expect(summary?.textContent).toContain("Confirm recourse");
-    expect(summary?.textContent).toContain("No answer recorded");
+    expect(summary?.textContent).toContain("Uses the funds for: no answer recorded");
     expect(summary?.querySelector("header")?.textContent?.match(/Refresh acceptor evidence/g)).toHaveLength(1);
     expect(summary?.querySelector<HTMLDetailsElement>('details[aria-labelledby="case-progress"]')?.open).toBe(false);
   });
@@ -446,6 +447,60 @@ describe("QuotePage", () => {
     expect(coverage?.textContent).toContain("Next step · You: open the bound agreement and check its current status.");
     expect(coverage?.querySelector(`a[href="/facilities?application=${facilityId}"]`)?.textContent).toBe("Agreement · version 2");
     expect(coverage?.textContent).not.toMatch(/Agreement limit|Remaining|sat/u);
+  });
+
+  it("shows proposed terms only while an offer decision is available, never after a Mint denial", () => {
+    const fixture = caseWithoutConfirmation();
+    const ready = {
+      ...fixture,
+      // A Mint credit-program binding is required before any decision is actionable.
+      creditProgram: { creditProgramId: "test_program", creditProgramVersion: "test-program-v1" },
+      creditProgramAssignment: { mintQuoteId: quoteId, creditProgramVersion: "test-program-v1" },
+      result: {
+        ...fixture.result,
+        assessmentStatus: "ready_for_decision",
+        recommendation: "offer_available",
+        verificationRequests: [],
+        terms: {
+          billSumSat: "100",
+          discountedSat: "95",
+          appliedDiscountSat: "4",
+          operatingCostSat: "1",
+          effectiveFeeSat: "5",
+          endorsementExposureSat: "100",
+          maturityDate: "2099-06-01",
+          offerExpiresOn: "2099-01-01",
+          tenorDays: 180,
+          annualDiscountBps: 500,
+          effectiveAnnualBps: 600,
+          feeRatioBps: 500,
+        },
+      },
+    } as unknown as DecisionCase;
+    const original = mockUseQuery.getMockImplementation();
+    const serve = (decision: DecisionCase) =>
+      mockUseQuery.mockImplementation((options) =>
+        options.queryKey[0]._id === undefined
+          ? { data: { issues: [], cases: [decision] }, isLoading: false, error: null }
+          : (original?.(options) ?? { data: undefined, isLoading: false, error: null })
+      );
+    quoteStatus = "Pending";
+    serve(ready);
+    const offerable = renderPage(`/quotes/${quoteId}`);
+    const panel = offerable.querySelector('aside[aria-labelledby="case-decision-title"]');
+    expect(panel?.textContent).toContain("Approval available · offer not sent");
+    expect(panel?.querySelector("#case-decision-terms")?.textContent).toBe("Proposed minting fee");
+    // The fee limits are stated in words, with the policy caps one click away.
+    expect(panel?.textContent).toContain("Within the Mint's fee limits");
+    // No approver capability in this fixture, so adjustment is not offered as an option.
+    expect(panel?.textContent).not.toContain("You can adjust the amount");
+
+    serve({ ...ready, mintDenial: { state: "syncing", operationId: `sha256:${"d".repeat(64)}` } });
+    const denied = renderPage(`/quotes/${quoteId}`);
+    const deniedPanel = denied.querySelector('aside[aria-labelledby="case-decision-title"]');
+    expect(deniedPanel?.querySelector("#case-decision-terms")).toBeNull();
+    expect(deniedPanel?.textContent).not.toContain("Approval available");
+    expect(deniedPanel?.textContent).toContain("Pending");
   });
 
   it("shows a non-ceiling no-fit reason in the executive summary", () => {
@@ -514,7 +569,7 @@ describe("QuotePage", () => {
     quoteStatus = "Pending";
     const page = renderPage(`/quotes/${quoteId}`);
     const summary = page.querySelector("#minting-summary");
-    expect(summary?.querySelector("header h1")?.textContent).toBe("Assessment unavailable");
+    expect(summary?.querySelector("header [data-case-headline]")?.textContent).toBe("Assessment unavailable");
     expect(summary?.querySelector('[role="alert"]')?.textContent).toContain("Do not offer");
     expect(summary?.textContent).not.toContain("No business assessment");
   });
@@ -522,9 +577,12 @@ describe("QuotePage", () => {
     const page = renderPage(`/quotes/${quoteId}`);
 
     expect(page.querySelector("#minting-summary")).not.toBeNull();
-    const headings = Array.from(page.querySelectorAll("h1"), (heading) => heading.textContent);
+    const headings = Array.from(page.querySelectorAll("[data-case-headline]"), (heading) => heading.textContent);
     expect(headings).toContain("Accepted");
-    expect(headings.some((heading) => heading?.startsWith("Quote"))).toBe(false);
+    // The page heading names the applicant (the bill's holder), never a quote id.
+    const h1 = Array.from(page.querySelectorAll("h1"), (heading) => heading.textContent);
+    expect(h1).toContain("Payee");
+    expect(h1.some((heading) => heading?.startsWith("Quote"))).toBe(false);
     expect(page.textContent).toContain("Processing & audit");
     expect(page.textContent).not.toContain("Audit receipt saved");
     expect(page.textContent).not.toContain("Print one-page summary");
@@ -915,7 +973,12 @@ describe("QuotePage", () => {
           data: [
             {
               id: "bill-1",
-              data: { files: [{ name: "signed-bill-invoice.pdf", hash: "hash-1", nostr_hash: "nostr-hash-1" }] },
+              participants: { drawee: { node_id: "drawee-node" }, endorsements: [] },
+              data: {
+                maturity_date: "2026-02-20",
+                sum: "1000",
+                files: [{ name: "signed-bill-invoice.pdf", hash: "hash-1", nostr_hash: "nostr-hash-1" }],
+              },
               status: { payment: { paid: false } },
             },
           ],

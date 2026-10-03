@@ -171,8 +171,8 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
               defaultMessage="Suggested: {governed} sat · maximum: {maximum} sat · expires: {expiresOn}"
               description="Governed amount, exposed absolute maximum and governed expiry shown above the Mint offer form"
               values={{
-                governed: governedTerms.discountedSat,
-                maximum: governedMaximum.toFixed(0),
+                governed: intl.formatNumber(Number(governedTerms.discountedSat)),
+                maximum: intl.formatNumber(Number(governedMaximum.toFixed(0))),
                 expiresOn: governedTerms.offerExpiresOn,
               }}
             />

@@ -128,7 +128,7 @@ describe("operator conversation spectator", () => {
     expect(page.textContent).toContain("Application conversation · Interviewer responding");
     expect(page.textContent).toContain("When will your buyer pay?");
     expect(page.textContent).toContain("Interviewer · server-recorded");
-    expect(page.textContent).toContain("Not submitted · no credit decision");
+    expect(page.textContent).toContain("Not submitted · no minting decision");
     expect(page.textContent).toContain("Live updates");
     expect(page.textContent).not.toContain("Full conversation not recorded");
     expect(page.textContent).not.toContain("Request reference");
@@ -154,7 +154,7 @@ describe("operator conversation spectator", () => {
     const page = render({ serverInitialApplication: application, transcript, updatesStatus: "unavailable" });
     expect(page.textContent).toContain("Application conversation · Submitted");
     expect(page.textContent).not.toContain("Live updates");
-    expect(page.textContent).not.toContain("Not submitted · no credit decision");
+    expect(page.textContent).not.toContain("Not submitted · no minting decision");
     const serverSection = [...page.querySelectorAll("details")].find((item) =>
       item.querySelector("summary")?.textContent?.startsWith("Application conversation")
     );

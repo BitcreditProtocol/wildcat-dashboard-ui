@@ -96,7 +96,7 @@ export function DenyConfirmDrawer({
           ? intl.formatMessage({
               id: "quotes.unableToAssess.description",
               defaultMessage:
-                "Close this case because the Mint cannot obtain the evidence needed for an informed decision. This is not a credit-risk denial, but the quote will be denied and no minting can occur.",
+                "Close this case because the Mint cannot obtain the evidence needed for an informed decision. This is not a risk denial, but the quote will be denied and no minting can occur.",
               description: "Explanation of the terminal unable-to-assess outcome",
             })
           : intl.formatMessage({

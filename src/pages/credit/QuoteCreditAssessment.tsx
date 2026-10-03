@@ -27,7 +27,7 @@ const messages = defineMessages({
   },
   absent: {
     id: "credit.quoteCard.absent",
-    defaultMessage: "No AI Credit assessment for this bill.",
+    defaultMessage: "No AI assessment for this bill.",
     description: "Shown when the adapter answered but has no decision for this bill",
   },
   fullAssessment: {
@@ -77,7 +77,7 @@ const messages = defineMessages({
   },
   issueProgramInvalid: {
     id: "credit.quoteCard.issue.mintProgramInvalid",
-    defaultMessage: "Credit program invalid",
+    defaultMessage: "Minting program invalid",
     description: "Reason label when the Mint credit program cannot be verified",
   },
   issueMintEvidenceInvalid: {
@@ -149,7 +149,7 @@ const messages = defineMessages({
   },
   actionProgram: {
     id: "credit.quoteCard.issue.action.program",
-    defaultMessage: "Review the Mint credit program, then rerun verification.",
+    defaultMessage: "Review the Mint minting program, then rerun verification.",
     description: "Next action for an invalid Mint credit program",
   },
   actionMintEvidence: {

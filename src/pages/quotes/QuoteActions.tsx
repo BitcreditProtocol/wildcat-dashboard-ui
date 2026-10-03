@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, LoaderIcon } from "lucide-react";
 import { AppIcon, Button, toast } from "@bitcredit/ui-library";
@@ -54,6 +54,8 @@ interface QuoteActionsProps {
   onAuthorizationVerified?: (receipt: VerifiedAuthorizationReceipt) => void;
   selectedInvestigationNeeds?: readonly InvestigationNeedSelection[];
   onInvestigationNeedsSubmitted?: () => void;
+  /** `stacked` fills a narrow decision column: one full-width control per row, primary first. */
+  layout?: "inline" | "stacked";
 }
 
 export function QuoteActions({
@@ -66,6 +68,7 @@ export function QuoteActions({
   timeOfRequestToPay,
   onAuthorizationVerified,
   onInvestigationNeedsSubmitted,
+  layout = "inline",
 }: QuoteActionsProps) {
   const intl = useIntl();
   const queryClient = useQueryClient();
@@ -293,7 +296,7 @@ export function QuoteActions({
   const roleUnavailableReason = operatorCapability.isLoading
     ? intl.formatMessage({
         id: "quotes.actions.role.checking",
-        defaultMessage: "Checking AI Credit operator authorization…",
+        defaultMessage: "Checking operator authorization…",
         description: "Explanation shown while operator authorization is checked",
       })
     : (operatorCapability.error ??
@@ -325,7 +328,7 @@ export function QuoteActions({
           })
         : intl.formatMessage({
             id: "quotes.actions.creditProgram.unavailable",
-            defaultMessage: "A fresh Mint credit-program assignment is required before this quote can be acted on.",
+            defaultMessage: "A fresh Mint minting-program assignment is required before this quote can be acted on.",
             description: "Explanation shown when an older assessment lacks the Mint-owned quote-to-program binding",
           });
   const showRequestToPayAction =
@@ -419,7 +422,7 @@ export function QuoteActions({
       else governanceFailed(recorded.error);
       return recorded.ok ? recorded : null;
     } catch {
-      governanceFailed("The AI Credit operator service is not reachable");
+      governanceFailed("The risk assessment service is not reachable");
       return null;
     } finally {
       governanceInFlight.current = false;
@@ -672,7 +675,11 @@ export function QuoteActions({
   // The overview names one next step; its control stays in view and manual exceptions are collapsed.
   const caseNext = decisionCase === undefined ? undefined : buildCaseBrief(decisionCase, { quoteId: value.id, now: Date.now() }).next.kind;
   const closeIsPrimary = closeAction !== null && caseNext === "decide_unresolved";
-  const exceptionActions = [requestAction, closeIsPrimary ? null : closeAction].filter((action) => action !== null);
+  const exceptionActions = [
+    requestAction && <Fragment key="ask">{requestAction}</Fragment>,
+    !closeIsPrimary && closeAction && <Fragment key="close">{closeAction}</Fragment>,
+  ].filter((action) => action !== null && action !== false);
+  const stacked = layout === "stacked";
 
   return (
     <>
@@ -717,33 +724,7 @@ export function QuoteActions({
         </div>
       )}
       {showPendingActions || showRequestToPayAction ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {showPendingActions &&
-            !hasUnresolvedEvidenceQuestions &&
-            decisionCase?.result.assessmentStatus === "ready_for_decision" &&
-            !offerTermsExpired && (
-              <DenyConfirmDrawer
-                title={denyTitle}
-                materialEvidenceOptions={declineMaterialEvidenceOptions}
-                open={denyConfirmDrawerOpen}
-                requireMaterialEvidence={denyAction === "decline_application"}
-                onOpenChange={setDenyConfirmDrawerOpen}
-                isPending={isGovernancePending}
-                onSubmit={(writtenBasis, materialEvidence) => {
-                  void submitGovernedDeny(writtenBasis, materialEvidence);
-                }}
-              >
-                <Button
-                  className="min-w-24"
-                  disabled={isFetching || isGovernancePending || !denyGovernanceAvailable}
-                  title={denyGovernanceAvailable ? undefined : denyUnavailableReason}
-                  variant="destructive"
-                >
-                  {denyButtonLabel} {isGovernancePending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
-                </Button>
-              </DenyConfirmDrawer>
-            )}
-
+        <div className={stacked ? "grid gap-2 [&_button]:w-full" : "flex flex-wrap items-center gap-2"}>
           {showGovernedOffer && (
             <OfferFormDrawer
               title={offerTitle}
@@ -776,6 +757,32 @@ export function QuoteActions({
               </Button>
             </OfferFormDrawer>
           )}
+
+          {showPendingActions &&
+            !hasUnresolvedEvidenceQuestions &&
+            decisionCase?.result.assessmentStatus === "ready_for_decision" &&
+            !offerTermsExpired && (
+              <DenyConfirmDrawer
+                title={denyTitle}
+                materialEvidenceOptions={declineMaterialEvidenceOptions}
+                open={denyConfirmDrawerOpen}
+                requireMaterialEvidence={denyAction === "decline_application"}
+                onOpenChange={setDenyConfirmDrawerOpen}
+                isPending={isGovernancePending}
+                onSubmit={(writtenBasis, materialEvidence) => {
+                  void submitGovernedDeny(writtenBasis, materialEvidence);
+                }}
+              >
+                <Button
+                  disabled={isFetching || isGovernancePending || !denyGovernanceAvailable}
+                  title={denyGovernanceAvailable ? undefined : denyUnavailableReason}
+                  variant="outline"
+                  className="min-w-24 border-signal-error/40 text-signal-error hover:border-signal-error"
+                >
+                  {denyButtonLabel} {isGovernancePending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
+                </Button>
+              </DenyConfirmDrawer>
+            )}
 
           {ENABLE_MANUAL_MINT_EVIDENCE_IMPORT && showGovernedResolution && hasMintRiskRequest && (
             <MintRiskAssessmentDrawer
@@ -854,7 +861,7 @@ export function QuoteActions({
             })}
             <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
           </summary>
-          <div className="mt-3 flex flex-wrap items-center gap-2">{exceptionActions}</div>
+          <div className={stacked ? "mt-3 grid gap-2 [&_button]:w-full" : "mt-3 flex flex-wrap items-center gap-2"}>{exceptionActions}</div>
         </details>
       )}
 

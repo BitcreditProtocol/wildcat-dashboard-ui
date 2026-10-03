@@ -6,8 +6,9 @@ type InputProps = React.ComponentProps<"input">;
 type RequiredInputHandler<T extends keyof InputProps> = NonNullable<InputProps[T]>;
 
 const FIELD_ROW_CLASS =
-  "flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700";
-const FIELD_LABEL_CLASS = "text-sm font-medium text-gray-900 dark:text-gray-100";
+  "flex justify-between items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700";
+// A long label wraps instead of squeezing the amount it describes.
+const FIELD_LABEL_CLASS = "max-w-[50%] text-sm font-medium text-gray-900 dark:text-gray-100";
 const INPUT_BASE_CLASS =
   "text-right text-lg font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
