@@ -147,3 +147,17 @@ export function facilityOperatorProgress(application: FacilityApplication) {
     return { reason: operatorProgressMessages.acceptedReason, nextStep: operatorProgressMessages.acceptedNext };
   return undefined;
 }
+
+/** Identity admission only: control of the eBill key, never KYC, truth of statements or solvency. */
+export const facilityIdentityMessages = defineMessages({
+  ebill_identity_key_proof: {
+    id: "facilities.identity.keyProof",
+    defaultMessage: "Controls this eBill identity",
+    description: "The applicant proved control of the active eBill identity key; not KYC or verification of any claim",
+  },
+  synthetic_unverified: {
+    id: "facilities.identity.unverified",
+    defaultMessage: "Identity control not proven",
+    description: "Older self-asserted application without proof of eBill identity control",
+  },
+} satisfies Record<FacilityApplication["identityAssurance"], { id: string; defaultMessage: string; description: string }>);

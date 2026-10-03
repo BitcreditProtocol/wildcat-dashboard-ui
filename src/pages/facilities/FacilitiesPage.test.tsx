@@ -270,6 +270,9 @@ describe("facility queue and case", () => {
     expect(row.getAttribute("href")).toContain(`application=${second.id}`);
     await click(row);
     expect(page.querySelector("article h2")?.textContent).toBe("Second Farm");
+    // The case view keeps the page title for assistive technology and its no-minting boundary.
+    expect(page.querySelector("h1")?.textContent).toBe("Facility applications");
+    expect(page.querySelector("article")?.textContent).toContain("No minting takes place here.");
     expect(page.querySelector("table")).toBeNull();
     expect(page.querySelector('[data-testid="route-location"]')?.textContent).toContain(`application=${second.id}`);
   });
