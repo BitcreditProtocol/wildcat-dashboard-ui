@@ -407,11 +407,14 @@ export function CaseNextStepPanel({
   const link = stepLink[next.kind];
   return (
     <section aria-labelledby={headingId} className={variant === "panel" ? "" : "mt-5 border-t border-border pt-4"}>
-      <p className={`mb-3 text-sm font-semibold ${next.kind === "decide_offer" ? "text-signal-success" : "text-foreground"}`}>
-        {intl.formatMessage(
-          next.kind === "decide_offer" ? messages.ready : next.kind === "confirm_no_fit" ? messages.noFit : messages.notReady
-        )}
-      </p>
+      {/* Beside the case, its status pill already states this; the panel starts with what happens next. */}
+      {variant === "header" && (
+        <p className={`mb-3 text-sm font-semibold ${next.kind === "decide_offer" ? "text-signal-success" : "text-foreground"}`}>
+          {intl.formatMessage(
+            next.kind === "decide_offer" ? messages.ready : next.kind === "confirm_no_fit" ? messages.noFit : messages.notReady
+          )}
+        </p>
+      )}
       {(brief?.outstanding?.length ?? 0) > 0 && (
         <div className="mb-4">
           <h3 className="text-xs text-muted-foreground">{intl.formatMessage(messages.blockers)}</h3>

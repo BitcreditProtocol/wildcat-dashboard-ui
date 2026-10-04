@@ -488,8 +488,15 @@ describe("QuotePage", () => {
     serve(ready);
     const offerable = renderPage(`/quotes/${quoteId}`);
     const panel = offerable.querySelector('aside[aria-labelledby="case-decision-title"]');
-    expect(panel?.textContent).toContain("Approval available · offer not sent");
+    expect(panel?.textContent).toContain("Next step · YouOffer the proposed terms or decline.");
     expect(panel?.querySelector("#case-decision-terms")?.textContent).toBe("Proposed minting fee");
+    // The summary beside it states the case; how long the terms are valid is said once, by the panel,
+    // and repeated only in the printed summary, which has no decision column.
+    const headline = offerable.querySelector("[data-case-headline]");
+    expect(headline?.textContent).toBe("Offer ready for approval");
+    const summaryHeader = headline?.closest("header");
+    const validity = [...(summaryHeader?.querySelectorAll("p") ?? [])].filter((line) => line.textContent?.includes("Terms valid through"));
+    expect(validity.map((line) => line.classList.contains("hidden") && line.classList.contains("print:block"))).toEqual([true]);
     // The fee limits are stated in words, with the policy caps one click away.
     expect(panel?.textContent).toContain("Within the Mint's fee limits");
     // No approver capability in this fixture, so adjustment is not offered as an option.
@@ -499,7 +506,7 @@ describe("QuotePage", () => {
     const denied = renderPage(`/quotes/${quoteId}`);
     const deniedPanel = denied.querySelector('aside[aria-labelledby="case-decision-title"]');
     expect(deniedPanel?.querySelector("#case-decision-terms")).toBeNull();
-    expect(deniedPanel?.textContent).not.toContain("Approval available");
+    expect(deniedPanel?.textContent).not.toContain("Offer the proposed terms");
     expect(deniedPanel?.textContent).toContain("Pending");
   });
 
@@ -573,6 +580,21 @@ describe("QuotePage", () => {
     expect(summary?.querySelector('[role="alert"]')?.textContent).toContain("Do not offer");
     expect(summary?.textContent).not.toContain("No business assessment");
   });
+  it("keeps a recorded offer's terms in the decision column only, beside a summary of the case", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    const panel = page.querySelector('aside[aria-labelledby="case-decision-title"]');
+
+    expect(panel?.querySelector("#case-decision-offer")?.textContent).toBe("Offer terms");
+    expect(panel?.textContent).toContain("Available to mint80sat");
+    expect(panel?.textContent).toContain("Minting fee20.00% of the bill20sat");
+    // The quote status is the summary's pill; the panel does not repeat it.
+    expect(panel?.querySelector("header")?.textContent).toBe("Decision");
+    // On screen the summary describes the case; its figures are kept for the printed summary only.
+    const figures = page.querySelector("[data-summary-figures]");
+    expect(figures?.classList.contains("hidden")).toBe(true);
+    expect(figures?.classList.contains("print:grid")).toBe(true);
+  });
+
   it("provides a compact Executive summary", () => {
     const page = renderPage(`/quotes/${quoteId}`);
 

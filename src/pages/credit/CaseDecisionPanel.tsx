@@ -6,7 +6,7 @@ import { Currency } from "@/components/Currency";
 import type { CaseBrief } from "./case-brief";
 import { CaseNextStepPanel } from "./CaseBrief";
 import type { DecisionCase, DecisionTerms } from "./decision-types";
-import type { FeeBreakdown, FeePart } from "./fee-breakdown";
+import type { FeeBreakdown } from "./fee-breakdown";
 import { calendarDate } from "./case-brief-copy";
 
 const messages = defineMessages({
@@ -67,23 +67,8 @@ const messages = defineMessages({
     description: "The minting fee as a share of the bill amount",
   },
   payerRisk: { id: "credit.decision.part.payerRisk", defaultMessage: "Payer risk", description: "Fee part for the payer not paying" },
-  payerRiskDetail: {
-    id: "credit.decision.part.payerRiskDetail",
-    defaultMessage: "{pd} non-payment × {lgd} loss",
-    description: "Default probability and loss share from the Mint-signed payer record",
-  },
   uncertainty: { id: "credit.decision.part.uncertainty", defaultMessage: "Uncertainty", description: "Fee part for evidence quality" },
-  uncertaintyDetail: {
-    id: "credit.decision.part.uncertaintyDetail",
-    defaultMessage: "Payer record {evidence}",
-    description: "Evidence level of the payer risk record, which sets the uncertainty part",
-  },
   funding: { id: "credit.decision.part.funding", defaultMessage: "Funding cost", description: "Fee part for the Mint's cost of funds" },
-  fundingDetail: {
-    id: "credit.decision.part.fundingDetail",
-    defaultMessage: "Until maturity",
-    description: "Why the funding cost depends on time",
-  },
   mintReturn: {
     id: "credit.decision.part.mintReturn",
     defaultMessage: "Mint margin",
@@ -116,18 +101,20 @@ const messages = defineMessages({
     defaultMessage: "You can adjust the amount in the offer form. A change is re-quoted against these limits and recorded with your basis.",
     description: "Operator adjustments are requoted by governed code inside policy bounds, never applied directly",
   },
-});
-
-const evidenceMessages = defineMessages({
-  independently_verified: {
-    id: "credit.decision.evidence.independentlyVerified",
-    defaultMessage: "independently verified",
-    description: "Evidence level of the payer risk record: independently verified by an admitted assessor",
+  offerTerms: {
+    id: "credit.decision.offerTerms",
+    defaultMessage: "Offer terms",
+    description: "Heading of the terms the Mint recorded with its offer; the quote status says where the offer stands",
   },
-  corroborated: {
-    id: "credit.decision.evidence.corroborated",
-    defaultMessage: "Mint-signed, corroborated",
-    description: "Evidence level of the payer risk record: the Mint's own record, corroborated",
+  offerExpires: {
+    id: "credit.decision.offerExpires",
+    defaultMessage: "Expires {date}",
+    description: "When the sent offer lapses if the holder does not answer",
+  },
+  availableToMint: {
+    id: "credit.decision.availableToMint",
+    defaultMessage: "Available to mint",
+    description: "Net amount of the recorded offer: the bill amount minus the minting fee; not issued value",
   },
 });
 
@@ -231,22 +218,6 @@ export function ProposedTerms({
 }) {
   const intl = useIntl();
   const percent = (bps: number) => intl.formatNumber(bps / 10_000, { style: "percent", minimumFractionDigits: 2 });
-  const partDetail = (key: FeePart["key"]): string | undefined => {
-    if (breakdown === undefined) return undefined;
-    if (key === "payerRisk")
-      return intl.formatMessage(messages.payerRiskDetail, {
-        pd: percent(breakdown.payerRisk.probabilityOfDefaultBps),
-        lgd: percent(breakdown.payerRisk.lossGivenDefaultBps),
-      });
-    if (key === "uncertainty") {
-      const evidence = evidenceMessages[breakdown.uncertainty.evidenceState as keyof typeof evidenceMessages];
-      return evidence === undefined
-        ? undefined
-        : intl.formatMessage(messages.uncertaintyDetail, { evidence: intl.formatMessage(evidence) });
-    }
-    if (key === "funding") return intl.formatMessage(messages.fundingDetail);
-    return undefined;
-  };
   return (
     <section aria-labelledby="case-decision-terms" className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -280,14 +251,9 @@ export function ProposedTerms({
           label={intl.formatMessage(messages.discount, { days: terms.tenorDays })}
           value={<Sat value={Number(terms.appliedDiscountSat)} />}
         />
+        {/* The payer's figures and the evidence behind them are in "How sure we are"; here only what each part costs. */}
         {breakdown?.parts.map((part) => (
-          <TermRow
-            key={part.key}
-            tone="part"
-            label={intl.formatMessage(PART_MESSAGES[part.key])}
-            detail={partDetail(part.key)}
-            value={<Sat value={part.sat} />}
-          />
+          <TermRow key={part.key} tone="part" label={intl.formatMessage(PART_MESSAGES[part.key])} value={<Sat value={part.sat} />} />
         ))}
         <TermRow
           label={intl.formatMessage(messages.operatingCost)}
@@ -311,6 +277,55 @@ export function ProposedTerms({
   );
 }
 
+/** The offer the Mint recorded, read from the quote itself once it left Pending. */
+export interface RecordedOffer {
+  billSat: number;
+  /** The bill amount minus the minting fee, as the Mint recorded it. */
+  availableToMintSat: number;
+  /** Only while the offer waits for the holder. */
+  expiresAt?: string;
+}
+
+function RecordedOfferTerms({ offer }: { offer: RecordedOffer }) {
+  const intl = useIntl();
+  const fee = offer.billSat - offer.availableToMintSat;
+  return (
+    <section aria-labelledby="case-decision-offer" className="space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 id="case-decision-offer" className="text-sm font-semibold">
+          {intl.formatMessage(messages.offerTerms)}
+        </h3>
+        {offer.expiresAt !== undefined && (
+          <span className="text-xs text-muted-foreground">
+            {intl.formatMessage(messages.offerExpires, {
+              date: intl.formatDate(offer.expiresAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+            })}
+          </span>
+        )}
+      </div>
+      <div>
+        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.availableToMint)}</p>
+        <p className="text-2xl font-semibold tracking-tight tabular-nums">
+          <Currency value={offer.availableToMintSat} sourceCurrency="sat" className="inline" amountClassName="text-current" />
+        </p>
+      </div>
+      <dl>
+        <TermRow
+          label={intl.formatMessage(messages.mintingFee)}
+          detail={
+            offer.billSat > 0
+              ? intl.formatMessage(messages.feeShare, {
+                  ratio: intl.formatNumber(fee / offer.billSat, { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                })
+              : undefined
+          }
+          value={<Sat value={fee} />}
+        />
+      </dl>
+    </section>
+  );
+}
+
 interface CaseDecisionPanelProps {
   /** Absent for quotes without an AI Credit case; the panel then only hosts the quote actions. */
   brief?: CaseBrief;
@@ -322,10 +337,10 @@ interface CaseDecisionPanelProps {
     synthetic: boolean;
     mayAdjust: boolean;
   };
-  /** The quote's own status, shown when there is no case next step to state. */
+  /** Terms of the offer the Mint already recorded; they replace any proposal. */
+  recordedOffer?: RecordedOffer;
+  /** The quote's own status, shown only when the panel has nothing else to state. */
   statusLabel?: string;
-  /** One line under the status, for a quote no case step speaks for (e.g. when an offer lapses). */
-  statusDetail?: string;
   openPoints?: number;
   /** Governed controls, owned by `QuoteActions`. */
   actions?: ReactNode;
@@ -339,8 +354,8 @@ interface CaseDecisionPanelProps {
  */
 export function CaseDecisionPanel({
   brief,
+  recordedOffer,
   statusLabel,
-  statusDetail,
   actionableTerms,
   openPoints = 0,
   actions,
@@ -355,19 +370,20 @@ export function CaseDecisionPanel({
         <h2 id="case-decision-title" className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {intl.formatMessage(messages.title)}
         </h2>
+        {/* The case summary states the status and why; the panel adds only who acts next. */}
         {showNextStep ? (
           <div className="mt-3">
             <CaseNextStepPanel variant="panel" next={brief.next} brief={brief} openPoints={openPoints} />
           </div>
         ) : (
-          statusLabel !== undefined && (
-            <>
-              <p className="mt-3 text-sm font-semibold">{statusLabel}</p>
-              {statusDetail !== undefined && <p className="mt-1 text-sm text-muted-foreground">{statusDetail}</p>}
-            </>
-          )
+          recordedOffer === undefined && statusLabel !== undefined && <p className="mt-3 text-sm font-semibold">{statusLabel}</p>
         )}
       </header>
+      {recordedOffer !== undefined && actionableTerms === undefined && (
+        <div className="border-b border-border px-5 py-4">
+          <RecordedOfferTerms offer={recordedOffer} />
+        </div>
+      )}
       {actionableTerms !== undefined && (
         <div className="border-b border-border px-5 py-4">
           <ProposedTerms

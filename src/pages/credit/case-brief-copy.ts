@@ -199,8 +199,11 @@ export function caseHeadline(intl: IntlShape, brief: CaseBrief): string {
   return intl.formatMessage(headlines[brief.next.kind]);
 }
 
-/** One case-specific sentence explaining the status. */
-export function caseReason(intl: IntlShape, brief: CaseBrief, payerName: string): string {
+/**
+ * One case-specific sentence explaining the status. `termsBeside`: the proposed terms and their
+ * validity are on screen next to it, so a ready case needs only its preparation notes, if any.
+ */
+export function caseReason(intl: IntlShape, brief: CaseBrief, payerName: string, { termsBeside = false } = {}): string {
   const { next, work } = brief;
   const outstanding = () => {
     const items = work.flatMap((item) => (item.kind === "verification" ? [requestReason(item, intl)] : []));
@@ -219,7 +222,7 @@ export function caseReason(intl: IntlShape, brief: CaseBrief, payerName: string)
     case "decide_offer":
       return [
         ...(brief.preparation?.status === "attention" ? brief.preparation.reasons.map((reason) => preparationReason(intl, reason)) : []),
-        intl.formatMessage(reasons.checksPassed, { date: calendarDate(intl, next.offerExpiresOn) }),
+        ...(termsBeside ? [] : [intl.formatMessage(reasons.checksPassed, { date: calendarDate(intl, next.offerExpiresOn) })]),
       ].join(" ");
     case "confirm_no_fit":
       return intl.formatMessage(reasons.noFit);

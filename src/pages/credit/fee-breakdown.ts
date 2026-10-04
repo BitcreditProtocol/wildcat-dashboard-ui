@@ -18,9 +18,6 @@ export interface FeeBreakdown {
   feeRatioBps: number;
   /** Time-priced parts, largest first; they sum exactly to the discount. */
   parts: FeePart[];
-  payerRisk: { probabilityOfDefaultBps: number; lossGivenDefaultBps: number };
-  /** The evidence level of the payer record, which set the uncertainty part. */
-  uncertainty: { evidenceState: string };
 }
 
 /**
@@ -43,7 +40,7 @@ export function feeBreakdown(decisionCase: DecisionCase): FeeBreakdown | undefin
   const uncertainty = input("uncertaintyMarginBps");
   const mintReturn = input("returnObjectiveBps");
   const subsidy = input("subsidyBps");
-  const { probabilityOfDefaultBps: pd, lossGivenDefaultBps: lgd, evidenceState } = decisionCase.snapshot.acceptor;
+  const { probabilityOfDefaultBps: pd, lossGivenDefaultBps: lgd } = decisionCase.snapshot.acceptor;
   if (
     funding === undefined ||
     payerRisk === undefined ||
@@ -97,7 +94,5 @@ export function feeBreakdown(decisionCase: DecisionCase): FeeBreakdown | undefin
     tenorDays: terms.tenorDays,
     feeRatioBps: terms.feeRatioBps,
     parts,
-    payerRisk: { probabilityOfDefaultBps: pd, lossGivenDefaultBps: lgd },
-    uncertainty: { evidenceState },
   };
 }

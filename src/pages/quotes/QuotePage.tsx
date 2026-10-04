@@ -448,6 +448,7 @@ function PageBody({ id }: { id: string }) {
           </div>
           <QuoteDetailCard
             decisionPlacement="aside"
+            termsBeside={actionableTerms !== undefined}
             assessmentUnavailable={creditAssessment.isUnavailable}
             assessmentLoading={creditAssessment.isLoading}
             noFitExplanation={
@@ -506,19 +507,16 @@ function PageBody({ id }: { id: string }) {
         <div className="@4xl:sticky @4xl:top-2 @4xl:col-start-2 @4xl:row-span-2 @4xl:row-start-1 @4xl:max-h-[calc(100svh-4.5rem)] @4xl:self-start @4xl:overflow-y-auto @4xl:overscroll-contain">
           <CaseDecisionPanel
             brief={panelBrief}
-            statusLabel={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
-            statusDetail={
-              effectiveQuoteStatus === "Offered" && "ttl" in quote && quote.ttl
-                ? intl.formatMessage(
-                    {
-                      id: "quotes.decision.offerExpires",
-                      defaultMessage: "Waiting for the holder. The offer lapses {date}.",
-                      description: "Decision column for a sent offer: who acts next and when the offer expires",
-                    },
-                    { date: intl.formatDate(quote.ttl, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) }
-                  )
+            recordedOffer={
+              effectiveQuoteStatus !== "Pending" && "discounted" in quote
+                ? {
+                    billSat: bill.sum,
+                    availableToMintSat: quote.discounted,
+                    expiresAt: effectiveQuoteStatus === "Offered" && quote.status === "Offered" ? quote.ttl : undefined,
+                  }
                 : undefined
             }
+            statusLabel={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
             actionableTerms={actionableTerms}
             openPoints={openPointCount(decisionCase)}
             actions={quoteActions}
