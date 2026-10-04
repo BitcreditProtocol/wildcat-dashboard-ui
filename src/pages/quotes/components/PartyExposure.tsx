@@ -1,4 +1,4 @@
-import { Button, Skeleton } from "@bitcredit/ui-library";
+import { Button, NodeIdDisplay, Skeleton } from "@bitcredit/ui-library";
 import { AlertTriangle } from "lucide-react";
 import { useId } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -11,21 +11,42 @@ import { truncateString } from "@/utils/strings";
 import { COMMITTED_STATUSES, partyListPath, type PartyQuoteBucket, type QuoteParty, type QuotePartyRole } from "../quote-parties";
 
 /**
- * What the Mint already has open with one applicant or one payer, read from the Mint's own quote
- * filters and eBills. Face values by the Mint's stored quote status: an accepted quote is not issued
- * value, and a missing payment confirmation is not a default.
+ * Who the applicant and the payer are, as they stated it in the eBill, and what the Mint already has
+ * with each, read from the Mint's own quote filters and eBills. Face values by the Mint's stored
+ * quote status: an accepted quote is not issued value, and a missing payment confirmation is not a
+ * default. The governed assessment checks none of these figures against a Mint limit.
  */
 
 const messages = defineMessages({
   title: {
     id: "quotes.party.title",
-    defaultMessage: "Across this Mint",
-    description: "Heading of the card comparing this case with the applicant's and payer's other open bills",
+    defaultMessage: "Applicant and payer",
+    description: "Heading of the card with who the applicant and payer are and their other bills with this Mint",
   },
   scope: {
     id: "quotes.party.scope",
-    defaultMessage: "Bills not yet due, by Mint quote status, at face value",
+    defaultMessage: "Bills not yet due, by Mint quote status, at face value.",
     description: "Which quotes the applicant and payer figures cover",
+  },
+  limitsNotChecked: {
+    id: "quotes.party.limitsNotChecked",
+    defaultMessage: "The assessment does not check them against any Mint limit.",
+    description: "The governed assessment has no Mint exposure limit; concentration is the operator's judgment",
+  },
+  anonymous: {
+    id: "quotes.party.anonymous",
+    defaultMessage: "Anonymous holder",
+    description: "The applicant holds the bill without a named identity",
+  },
+  paid: {
+    id: "quotes.party.paidLine",
+    defaultMessage: "{count, plural, one {# bill} other {# bills}} paid to this Mint · {amount}",
+    description: "Bills the Mint held for this party with a confirmed payment; when the payment came is not recorded",
+  },
+  noPaymentHistory: {
+    id: "quotes.party.noPaymentHistory",
+    defaultMessage: "No paid or overdue bills with this Mint yet",
+    description: "The Mint holds no bill of this party that was paid or is past maturity",
   },
   applicant: { id: "quotes.party.applicant", defaultMessage: "Applicant", description: "The bill's current holder, who asked to mint" },
   payer: { id: "quotes.party.payer", defaultMessage: "Payer", description: "The drawee, who pays the bill at maturity" },
@@ -128,7 +149,7 @@ function PartyFigures({
       </tr>
     );
   };
-  const overdue = state.overdue;
+  const payments = state.payments;
   return (
     <div className="space-y-2">
       <table className="w-full text-sm">
@@ -164,18 +185,52 @@ function PartyFigures({
           {row("Pending")}
         </tbody>
       </table>
-      {overdue !== undefined && overdue.count > 0 && (
+      {/* The payment record, good and bad: bills paid and bills past maturity without a confirmed payment. */}
+      {payments !== undefined && payments.paid.count > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {intl.formatMessage(messages.paid, { count: payments.paid.count, amount: <Sat key="paid" value={payments.paid.faceValueSat} /> })}
+        </p>
+      )}
+      {payments !== undefined && payments.overdue.count > 0 && (
         <p className="flex items-start gap-1.5 text-xs text-signal-alert">
           <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
           <span>
             {intl.formatMessage(messages.overdue, {
-              count: overdue.count,
-              amount: <Sat key="overdue" value={overdue.faceValueSat} />,
+              count: payments.overdue.count,
+              amount: <Sat key="overdue" value={payments.overdue.faceValueSat} />,
             })}
           </span>
         </p>
       )}
+      {payments?.paid.count === 0 && payments.overdue.count === 0 && (
+        <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.noPaymentHistory)}</p>
+      )}
       {!state.isComplete && <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.incomplete)}</p>}
+    </div>
+  );
+}
+
+/** Where to look the party up: the address and email from the eBill, and its node id to compare across bills. */
+function PartyIdentity({ party }: { party: QuoteParty }) {
+  const intl = useIntl();
+  const country = party.contact?.country;
+  const address = [
+    party.contact?.address,
+    country === undefined ? undefined : (new Intl.DisplayNames([intl.locale], { type: "region" }).of(country.toUpperCase()) ?? country),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return (
+    <div className="space-y-0.5 text-xs text-muted-foreground">
+      {address !== "" && <p className="break-words">{address}</p>}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+        {party.contact?.email && (
+          <a href={`mailto:${party.contact.email}`} className="break-all underline-offset-2 hover:text-foreground hover:underline">
+            {party.contact.email}
+          </a>
+        )}
+        <NodeIdDisplay nodeId={party.nodeId} maxLength={20} textClassName="text-xs text-muted-foreground" />
+      </div>
     </div>
   );
 }
@@ -205,7 +260,7 @@ function PartySection({ role, party, quote }: { role: QuotePartyRole; party: Quo
         <h3 id={headingId} className="min-w-0 text-sm">
           <span className="block text-xs text-muted-foreground">{intl.formatMessage(messages[role])}</span>
           <span className="block truncate font-semibold" title={party.name}>
-            {party.name}
+            {party.anonymous ? intl.formatMessage(messages.anonymous) : party.name}
           </span>
         </h3>
         <Link
@@ -215,6 +270,7 @@ function PartySection({ role, party, quote }: { role: QuotePartyRole; party: Quo
           {intl.formatMessage(role === "applicant" ? messages.allApplicant : messages.allPayer)}
         </Link>
       </div>
+      <PartyIdentity party={party} />
       <PartyFigures state={state} partyName={party.name} thisBill={{ faceValueSat: quote.faceValueSat }} />
       <DeniedLine count={state.deniedOtherBills} other />
     </section>
@@ -231,7 +287,9 @@ export function PartyExposureCard({ applicant, payer, quote }: { applicant: Quot
         <h2 id={titleId} className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {intl.formatMessage(messages.title)}
         </h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">{intl.formatMessage(messages.scope)}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {intl.formatMessage(messages.scope)} {intl.formatMessage(messages.limitsNotChecked)}
+        </p>
       </header>
       {/* Side by side where the card is wide, so applicant and payer read as one comparison. */}
       <div className="grid divide-y divide-border @2xl:grid-cols-2 @2xl:divide-x @2xl:divide-y-0">

@@ -48,6 +48,21 @@ interface CaseBlocker {
     | "review_capacity";
 }
 
+/**
+ * How far the applicant's invoice supports the bill, by the governed consistency check. One rule for
+ * the case summary and the claim table, so they never disagree about the same invoice. Either usable
+ * evidence state counts, as it does for the governed transaction-integrity check.
+ */
+export function invoiceSupport(invoice: DecisionCase["snapshot"]["invoice"] | undefined): CaseBrief["support"]["invoice"] {
+  if (invoice === null || invoice === undefined) return "absent";
+  if (invoice.plausibility === "implausible" || invoice.billAndClaimsConsistency === "mismatch") return "conflict";
+  return invoice.plausibility === "plausible" &&
+    invoice.billAndClaimsConsistency === "match" &&
+    (invoice.evidenceState === "corroborated" || invoice.evidenceState === "independently_verified")
+    ? "consistent"
+    : "unchecked";
+}
+
 export interface CaseBrief {
   next: CaseNextStep;
   /** Exact recorded outstanding items. Display only; never used to grant approval. */
@@ -210,16 +225,7 @@ export function buildCaseBrief(decisionCase: DecisionCase, options: { quoteId: s
     work,
     preparation,
     support: {
-      invoice:
-        invoice === null
-          ? "absent"
-          : invoice.plausibility === "implausible" || invoice.billAndClaimsConsistency === "mismatch"
-            ? "conflict"
-            : invoice.plausibility === "plausible" &&
-                invoice.billAndClaimsConsistency === "match" &&
-                (invoice.evidenceState === "corroborated" || invoice.evidenceState === "independently_verified")
-              ? "consistent"
-              : "unchecked",
+      invoice: invoiceSupport(invoice),
       acceptorRiskRecord:
         !hasOwner("mint_risk") &&
         acceptor?.evidenceState === "corroborated" &&

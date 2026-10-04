@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { governedTermsExpired } from "@bitcredit/ai-credit-shared";
-import { Button, Card, CardContent, Text } from "@bitcredit/ui-library";
-import { ParticipantDetail } from "@/components/ParticipantsOverview";
+import { Button, Card, CardContent } from "@bitcredit/ui-library";
 import { Currency } from "@/components/Currency";
 import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
@@ -64,6 +63,10 @@ interface QuoteDetailCardProps {
     alreadyFinanced?: boolean | null;
     /** Unresolved contradictions in the case snapshot. */
     contradictions?: number;
+    /** The applicant's confirmed acknowledgment of whole-bill liability. */
+    recourseAcknowledged?: boolean;
+    /** The snapshot's as-of date. */
+    assessedOn?: string;
     recommendedTerms?: {
       mintingFee: number;
       amountAvailableForMinting: number;
@@ -602,6 +605,8 @@ export function QuoteDetailCard({
               duplicateCheck={decisionSummary.duplicateCheck}
               alreadyFinanced={decisionSummary.alreadyFinanced}
               contradictions={decisionSummary.contradictions}
+              recourseAcknowledged={decisionSummary.recourseAcknowledged}
+              assessedOn={decisionSummary.assessedOn}
             />
             {showBrief && brief.next.kind !== "closed" && <CaseProgress work={brief.work} />}
           </>
@@ -779,37 +784,6 @@ export function QuoteDetailCard({
               ) : null}
             </div>
           </div>
-
-          <footer className="flex flex-col gap-4 border-t border-border px-6 py-5">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <Text variant="label" className="w-32">
-                  {intl.formatMessage({ id: "participants.role.drawee", defaultMessage: "Drawee" })}:
-                </Text>
-                <ParticipantDetail participant={bill.drawee} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Text variant="label" className="w-32">
-                  {intl.formatMessage({ id: "participants.role.drawer", defaultMessage: "Drawer" })}:
-                </Text>
-                <ParticipantDetail participant={bill.drawer} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Text variant="label" className="w-32">
-                  {intl.formatMessage({ id: "participants.role.payee", defaultMessage: "Payee" })}:
-                </Text>
-                <ParticipantDetail participant={bill.payee} />
-              </div>
-              {bill.endorsees && bill.endorsees.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Text variant="label" className="w-32">
-                    {intl.formatMessage({ id: "participants.role.holder", defaultMessage: "Holder" })}:
-                  </Text>
-                  <ParticipantDetail participant={bill.endorsees[bill.endorsees.length - 1]} />
-                </div>
-              )}
-            </div>
-          </footer>
         </details>
       </CardContent>
     </Card>

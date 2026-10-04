@@ -1,6 +1,7 @@
 import { ChevronRight, CircleAlert, CircleCheck, CircleHelp } from "lucide-react";
 import { defineMessages, type IntlShape, useIntl } from "react-intl";
 import { displayEvidenceLabel, words, type DecisionCase, type SubmittedEvidence, type VerificationRequest } from "./decision-types";
+import { invoiceSupport } from "./case-brief";
 import { reasonMessages, requestReason } from "./verification-reasons";
 
 export interface EvidenceCaseSummary {
@@ -253,9 +254,10 @@ function claimRows(summary: EvidenceCaseSummary, submittedEvidence: readonly Sub
   const invoiceEvidence = invoice === null ? undefined : submittedEvidence.find((evidence) => evidence.reference === invoice.reference);
   const invoiceSource =
     invoiceEvidence === undefined ? intl.formatMessage(messages.invoiceDocument) : displayEvidenceLabel(invoiceEvidence.label);
-  const invoiceConflict = invoice?.plausibility === "implausible" || invoice?.billAndClaimsConsistency === "mismatch";
-  const invoiceSupported =
-    invoice?.plausibility === "plausible" && invoice.billAndClaimsConsistency === "match" && invoice.evidenceState === "corroborated";
+  // The same rule as the case summary, so the two never disagree about this invoice.
+  const support = invoiceSupport(invoice);
+  const invoiceConflict = support === "conflict";
+  const invoiceSupported = support === "consistent";
   // Invoice consistency is a separate governed check, not an entry in snapshot.contradictions.
   // Unknown consistency and model-directed questions do not establish a conflict.
   const deterministicConflicts = [

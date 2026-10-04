@@ -82,6 +82,22 @@ it("includes the governed invoice mismatch in deterministic conflicts even witho
   expect(page.textContent).not.toContain("No conflict recorded by deterministic checks");
 });
 
+it("reads a matching invoice as consistent at either usable evidence level, as the case summary does", () => {
+  for (const evidenceState of ["corroborated", "independently_verified"]) {
+    const snapshot = structuredClone(invoiceSummary.snapshot);
+    if (snapshot.invoice === null || snapshot.bill === null) throw new Error("Missing invoice fixture");
+    snapshot.invoice.totalSat = snapshot.bill.faceValueSat;
+    snapshot.invoice.billAndClaimsConsistency = "match";
+    snapshot.invoice.plausibility = "plausible";
+    snapshot.invoice.evidenceState = evidenceState;
+    const page = renderBrief({ ...invoiceSummary, snapshot });
+    const trade = [...page.querySelectorAll("div")].find((row) => row.firstElementChild?.textContent === "Underlying trade");
+
+    expect(trade?.textContent).toContain("Applicant document consistent");
+    expect(trade?.textContent).not.toContain("Review required");
+  }
+});
+
 it("preserves recorded case conflicts alongside the separate invoice consistency check", () => {
   const snapshot = structuredClone(invoiceSummary.snapshot);
   snapshot.contradictions.push({ code: "acceptor_claim_bill_mismatch", state: "unresolved", evidenceState: "contradicted" });

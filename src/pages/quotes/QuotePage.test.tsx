@@ -595,6 +595,13 @@ describe("QuotePage", () => {
     expect(figures?.classList.contains("print:grid")).toBe(true);
   });
 
+  it("lists the drawer and drawee in the bill record, not in the summary's processing details", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    expect(page.textContent).toContain("Drawer and drawee");
+    expect(page.textContent?.match(/ParticipantDetailMock/g)).toHaveLength(2);
+  });
+
   it("provides a compact Executive summary", () => {
     const page = renderPage(`/quotes/${quoteId}`);
 

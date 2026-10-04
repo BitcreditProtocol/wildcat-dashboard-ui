@@ -1,11 +1,24 @@
 import type { BillInfo, BitcreditBill, LightBillParticipant, LightInfo } from "@/generated/client/types.gen";
-import { isIdentified, participantLabel, unwrapParticipant } from "@/utils/bill-participants";
+import { formatAddress, isIdentified, participantLabel, unwrapParticipant, type IdentifiedParticipant } from "@/utils/bill-participants";
 
 export interface QuoteParty {
   nodeId: string;
   name: string;
   /** The participant is anonymous: `name` is then its node id. */
   anonymous?: boolean;
+  /**
+   * Postal address and email as the party stated them in the eBill, for the operator's own lookups.
+   * `address` leaves out the country, which is an ISO code for the reader's locale to name.
+   */
+  contact?: { address: string; country?: string; email?: string };
+}
+
+function statedContact(participant: IdentifiedParticipant): QuoteParty["contact"] {
+  const postal = "city" in participant ? participant : undefined;
+  const address = postal === undefined ? "" : formatAddress({ ...postal, country: "" });
+  const country = postal !== undefined && postal.country !== "" ? postal.country : undefined;
+  const email = "email" in participant && participant.email ? participant.email : undefined;
+  return address === "" && country === undefined && email === undefined ? undefined : { address, country, email };
 }
 
 export type QuotePartyRole = "applicant" | "payer";
@@ -17,7 +30,10 @@ export type QuotePartyRole = "applicant" | "payer";
  */
 export function billApplicant(bill: BillInfo): QuoteParty | null {
   const holder = unwrapParticipant(bill.endorsees[bill.endorsees.length - 1] ?? bill.payee);
-  return holder ? { nodeId: holder.node_id, name: participantLabel(holder, holder.node_id), anonymous: !isIdentified(holder) } : null;
+  if (!holder) return null;
+  return isIdentified(holder)
+    ? { nodeId: holder.node_id, name: participantLabel(holder, holder.node_id), anonymous: false, contact: statedContact(holder) }
+    : { nodeId: holder.node_id, name: holder.node_id, anonymous: true };
 }
 
 /** Who passed the bill to the applicant by endorsement: the holder before them. Undefined for an unendorsed bill. */
@@ -29,7 +45,7 @@ export function billPreviousHolder(bill: BillInfo): string | undefined {
 
 /** The drawee pays at maturity. Wildcat's `bill_payer_id` matches the payee, so payer lists use `bill_drawee_id`. */
 export function billPayer(bill: BillInfo): QuoteParty {
-  return { nodeId: bill.drawee.node_id, name: bill.drawee.name };
+  return { nodeId: bill.drawee.node_id, name: bill.drawee.name, contact: statedContact(bill.drawee) };
 }
 
 /** The quote list filtered server-side to one applicant (holder) or one payer (drawee), on the given status page. */
@@ -84,28 +100,36 @@ function lightNodeId(participant: LightBillParticipant): string {
   return "Ident" in participant ? participant.Ident.node_id : participant.Anon.node_id;
 }
 
+export interface PaymentRecord {
+  /** Bills with a confirmed payment. */
+  paid: Tally;
+  /** Bills past maturity without a confirmed payment. */
+  overdue: Tally;
+}
+
 /**
- * Bills the Mint holds that are past maturity without a confirmed payment, for one party: as payer
- * (drawee) or as applicant (an endorser who passed the bill on, so recourse can reach them).
- * `paid` can lag the chain, so this is "not confirmed", never "defaulted".
+ * One party's payment record on the bills the Mint holds: as payer (drawee) or as applicant (an
+ * endorser who passed the bill on, so recourse can reach them). `paid` can lag the chain, so an
+ * overdue bill is "not confirmed", never "defaulted"; when a payment came is not recorded here.
  */
-export function overdueUnconfirmed(bills: readonly BitcreditBill[], role: QuotePartyRole, nodeId: string, today: string): Tally {
-  const tally: Tally = { count: 0, faceValueSat: 0 };
+export function paymentRecord(bills: readonly BitcreditBill[], role: QuotePartyRole, nodeId: string, today: string): PaymentRecord {
+  const record: PaymentRecord = { paid: { count: 0, faceValueSat: 0 }, overdue: { count: 0, faceValueSat: 0 } };
   for (const bill of bills as readonly Partial<BitcreditBill>[]) {
     // Older Mints and stubs answer partial bills; a bill without these fields cannot be judged, so it is skipped.
     const maturity = bill.data?.maturity_date;
     const paid = bill.status?.payment?.paid;
-    if (maturity === undefined || paid === undefined || bill.participants === undefined) continue;
-    if (maturity >= today || paid) continue;
+    if (maturity === undefined || paid === undefined || bill.participants === undefined || bill.data === undefined) continue;
     const involved =
       role === "payer"
         ? bill.participants.drawee?.node_id === nodeId
         : (bill.participants.endorsements ?? []).some((endorsement) => lightNodeId(endorsement.signed.data) === nodeId);
-    if (!involved || bill.data === undefined) continue;
+    if (!involved) continue;
+    const tally = paid ? record.paid : maturity < today ? record.overdue : undefined;
+    if (tally === undefined) continue;
     tally.count += 1;
     tally.faceValueSat += Number(bill.data.sum);
   }
-  return tally;
+  return record;
 }
 
 export interface ApplicantGroup<Row> {

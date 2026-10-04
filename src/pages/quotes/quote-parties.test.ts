@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BillInfo, BillParticipant, BitcreditBill, LightInfo } from "@/generated/client/types.gen";
-import { billApplicant, billPayer, billPreviousHolder, groupByApplicant, overdueUnconfirmed, summarizePartyQuotes } from "./quote-parties";
+import { billApplicant, billPayer, billPreviousHolder, groupByApplicant, paymentRecord, summarizePartyQuotes } from "./quote-parties";
 
 const party = (name: string) => ({ name, node_id: `node-${name}` }) as BillInfo["drawee"];
 const ident = (name: string): BillParticipant => ({ Ident: party(name) });
@@ -29,6 +29,21 @@ describe("billApplicant", () => {
       nodeId: "node-Holder",
       name: "Holder",
       anonymous: false,
+    });
+  });
+
+  it("carries the address and email the holder stated in the eBill, for the operator's own lookups", () => {
+    const holder = { ...party("Holder"), address: "Calle 5", zip: "03001", city: "Antigua", country: "GT", email: "farm@example.test" };
+
+    expect(billApplicant(bill({ endorsees: [{ Ident: holder }] }))?.contact).toEqual({
+      address: "Calle 5, 03001, Antigua",
+      country: "GT",
+      email: "farm@example.test",
+    });
+    expect(billPayer(bill({ drawee: { ...party("Payer"), address: "Av. 1", city: "Guatemala", country: "GT" } }))?.contact).toEqual({
+      address: "Av. 1, Guatemala",
+      country: "GT",
+      email: undefined,
     });
   });
 
@@ -101,10 +116,39 @@ describe("billPreviousHolder", () => {
   });
 });
 
-describe("overdueUnconfirmed", () => {
+describe("paymentRecord", () => {
+  const held = (drawee: string, endorser: string, maturity: string, paid: boolean, sum: string) =>
+    ({
+      id: `bill-${sum}`,
+      participants: { drawee: { node_id: drawee }, endorsements: [{ signed: { data: { Ident: { node_id: endorser } } } }] },
+      data: { maturity_date: maturity, sum },
+      status: { payment: { paid } },
+    }) as unknown as BitcreditBill;
+  const bills = [
+    held("node-Payer", "node-Applicant", "2026-08-01", true, "100"),
+    held("node-Payer", "node-Other", "2026-09-01", false, "200"),
+    held("node-Payer", "node-Applicant", "2027-01-01", false, "400"),
+    held("node-Elsewhere", "node-Applicant", "2026-07-01", true, "800"),
+  ];
+
+  it("counts paid bills and bills past maturity without a confirmed payment, per party role", () => {
+    expect(paymentRecord(bills, "payer", "node-Payer", "2026-10-03")).toEqual({
+      paid: { count: 1, faceValueSat: 100 },
+      overdue: { count: 1, faceValueSat: 200 },
+    });
+    // As applicant: bills they endorsed on to the Mint, whoever pays them.
+    expect(paymentRecord(bills, "applicant", "node-Applicant", "2026-10-03")).toEqual({
+      paid: { count: 2, faceValueSat: 900 },
+      overdue: { count: 0, faceValueSat: 0 },
+    });
+  });
+
   it("skips partial bills from older Mints instead of failing", () => {
     const partial = [{ id: "bill-a", sum: "8000000" }] as unknown as BitcreditBill[];
 
-    expect(overdueUnconfirmed(partial, "payer", "node-Payer", "2026-10-03")).toEqual({ count: 0, faceValueSat: 0 });
+    expect(paymentRecord(partial, "payer", "node-Payer", "2026-10-03")).toEqual({
+      paid: { count: 0, faceValueSat: 0 },
+      overdue: { count: 0, faceValueSat: 0 },
+    });
   });
 });

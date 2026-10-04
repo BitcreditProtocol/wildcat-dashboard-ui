@@ -165,10 +165,45 @@ describe("PartyExposureCard", () => {
 
     expect(section(page, "Payer").textContent).toContain("1 bill past maturity without a confirmed payment · 700,000sat");
     expect(section(page, "Applicant").textContent).toContain("1 bill past maturity without a confirmed payment · 500,000sat");
+    // The record shows payments too, not only what went wrong.
+    expect(section(page, "Payer").textContent).toContain("1 bill paid to this Mint · 900,000sat");
+    expect(section(page, "Applicant").textContent).not.toContain("paid to this Mint");
   });
 
-  it("omits the overdue row when nothing is past maturity", () => {
-    expect(card().textContent).not.toContain("Past maturity");
+  it("says when the Mint has no paid or overdue bill with a party yet", () => {
+    const page = card();
+
+    expect(page.textContent).not.toContain("past maturity");
+    expect(section(page, "Applicant").textContent).toContain("No paid or overdue bills with this Mint yet");
+    expect(section(page, "Payer").textContent).toContain("No paid or overdue bills with this Mint yet");
+  });
+
+  it("gives each party's stated address, email and node id for the operator's own lookups", () => {
+    const page = render(
+      <PartyExposureCard
+        applicant={{ ...APPLICANT, contact: { address: "Calle 5, Antigua", country: "GT", email: "farm@example.test" } }}
+        payer={PAYER}
+        quote={THIS}
+      />
+    );
+    const applicant = section(page, "Applicant");
+
+    expect(page.querySelector("h2")?.textContent).toBe("Applicant and payer");
+    expect(page.textContent).toContain("The assessment does not check them against any Mint limit.");
+    expect(applicant.textContent).toContain("Calle 5, Antigua, Guatemala");
+    expect(applicant.querySelector('a[href="mailto:farm@example.test"]')).not.toBeNull();
+    expect(applicant.textContent).toContain("holder-node");
+    expect(section(page, "Payer").textContent).toContain("drawee-node");
+  });
+
+  it("names an anonymous holder as such and still gives its node id", () => {
+    const page = render(
+      <PartyExposureCard applicant={{ nodeId: "anon-node", name: "anon-node", anonymous: true }} payer={PAYER} quote={THIS} />
+    );
+    const applicant = section(page, "Applicant");
+
+    expect(applicant.querySelector("h3")?.textContent).toBe("ApplicantAnonymous holder");
+    expect(applicant.textContent).toContain("anon-node");
   });
 
   it("reads a legacy Mint that answers every quote without a total", () => {

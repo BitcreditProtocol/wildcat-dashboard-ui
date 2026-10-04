@@ -24,6 +24,7 @@ import { type QuoteDocumentPreview, QuoteDocumentViewer } from "./QuoteDocumentV
 import { resolveDocumentMimeType } from "@/utils/document-preview";
 import { countAnswerReviewFollowUps, usesSyntheticData, type SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
+import { BillParties } from "./components/BillParties";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { FacilityCoveragePanel, FacilityCoverageUnavailable } from "../facilities/FacilityCoveragePanel";
 import { EndorseeList } from "./components/EndorseeList";
@@ -484,6 +485,8 @@ function PageBody({ id }: { id: string }) {
                     duplicateCheck: decisionCase.snapshot.duplicateCheck,
                     alreadyFinanced: decisionCase.snapshot.bill?.alreadyFinanced,
                     contradictions: decisionCase.snapshot.contradictions.length,
+                    recourseAcknowledged: decisionCase.snapshot.confirmedClaims?.wholeFaceRecourseAcknowledged,
+                    assessedOn: decisionCase.snapshot.asOfDate,
                     ...(decisionCase.assessmentCurrency === "current" && decisionCase.result.terms
                       ? {
                           recommendedTerms: {
@@ -582,7 +585,10 @@ function PageBody({ id }: { id: string }) {
               <div id="bill-record" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
                 <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
 
-                <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
+                <div className="flex min-w-0 flex-col gap-4">
+                  <BillParties bill={bill} />
+                  <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
+                </div>
               </div>
             }
           />
