@@ -3,11 +3,11 @@ import { listEbillsOptions, listQuotesOptions } from "@/generated/client/@tansta
 import type { LightInfo, ListQuotesData } from "@/generated/client/types.gen";
 import { getPageQuotes, type QuoteListPage } from "@/utils/quote-pages";
 import {
-  overdueUnconfirmed,
+  paymentRecord,
   summarizePartyQuotes,
   type PartyQuoteSummary,
+  type PaymentRecord,
   type QuotePartyRole,
-  type Tally,
 } from "@/pages/quotes/quote-parties";
 
 /** Enough for any one party's bills that are not yet due; a larger book is reported as incomplete. */
@@ -21,8 +21,8 @@ export interface PartyQuotesState {
   summary: PartyQuoteSummary | undefined;
   /** False when the Mint holds more of this party's bills than one read returned. */
   isComplete: boolean;
-  /** Bills the Mint holds past maturity without a confirmed payment; undefined while unknown. */
-  overdue: Tally | undefined;
+  /** Paid and overdue bills among those the Mint holds; undefined while unknown. */
+  payments: PaymentRecord | undefined;
   /**
    * Denied quotes of the applicant on other bills, over all time and for any reason (an evidence
    * closure is a denial too). Undefined for payers and while loading.
@@ -83,7 +83,7 @@ export function usePartyQuotes(
     error: open.error,
     summary: page === undefined ? undefined : summarizePartyQuotes(quotes, current),
     isComplete: pageTotal(page) <= quotes.length,
-    overdue: enabled && ebills.data !== undefined ? overdueUnconfirmed(ebills.data, role, nodeId, today) : undefined,
+    payments: enabled && ebills.data !== undefined ? paymentRecord(ebills.data, role, nodeId, today) : undefined,
     deniedOtherBills:
       countsDenials && deniedReady
         ? Math.max(0, pageTotal(denied.data) - (billId === undefined ? 0 : pageTotal(deniedThisBill.data)))

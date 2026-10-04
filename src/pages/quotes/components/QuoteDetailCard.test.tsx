@@ -493,10 +493,8 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("Mint operationUnavailable");
     expect(page.querySelector("details")?.open).toBe(false);
     expect(page.querySelector('button[aria-label="Print summary"]')).not.toBeNull();
-    expect(page.textContent).toContain("Drawee:");
-    expect(page.textContent).toContain("Drawer:");
-    expect(page.textContent).toContain("Payee:");
-    expect(page.textContent?.match(/ParticipantDetailMock/g)).toHaveLength(3);
+    // Party details sit with each party beside the case and in the bill record, not in processing & audit.
+    expect(page.textContent).not.toContain("ParticipantDetailMock");
   });
 
   it("says when no independent record exists and keeps a failed invoice check with the applicant's documents", () => {
@@ -863,6 +861,43 @@ describe("QuoteDetailCard", () => {
 
     expect(real.querySelector("[data-synthetic-badge]")).toBeNull();
     expect(real.textContent).not.toContain("Synthetic");
+  });
+
+  it("states the applicant's liability as the Mint's fallback and links every fact to the record behind it", () => {
+    const summary = {
+      assessmentCurrency: "current" as const,
+      synthetic: false,
+      useOfFunds: "Fertilizer",
+      repaymentSource: "The cooperative pays",
+      billAcceptanceState: "accepted",
+      acceptorRisk: { probabilityOfDefaultBps: 600, lossGivenDefaultBps: 4000, validThrough: "2026-11-08", evidenceState: "corroborated" },
+      duplicateCheck: { result: "clear", evidenceState: "corroborated" },
+      assessedOn: "2026-10-02",
+      brief: caseBrief({ kind: "manual_review" }),
+    };
+    const page = renderCard({ decisionSummary: { ...summary, recourseAcknowledged: true } });
+    const section = page.querySelector('section[aria-labelledby="case-certainty-title"]');
+
+    expect(section?.textContent).toContain("Assessed Oct 2, 2026 · 4 established · 3 applicant's word · 0 open");
+    expect(certainty(page)[1]).toContain(
+      "Applicant's word: Acknowledged being liable for the whole bill if the payer does not pay | Applicant's confirmation · ability to pay not assessed"
+    );
+    // Each source opens its record: the eBill, the governed calculation, the documents and the conversation.
+    expect([...(section?.querySelectorAll("li") ?? [])].map((item) => item.querySelector("a")?.getAttribute("href"))).toEqual([
+      "#bill-record",
+      "#full-governed-assessment",
+      "#full-governed-assessment",
+      "#documents-and-evidence",
+      "#case-conversation",
+      "#case-conversation",
+      "#case-conversation",
+    ]);
+
+    act(() => root?.unmount());
+    page.remove();
+    const missing = renderCard({ decisionSummary: { ...summary, recourseAcknowledged: false } });
+
+    expect(certainty(missing)[1]?.[0]).toBe("Open: Has not acknowledged being liable for the whole bill | Applicant's confirmation");
   });
 
   it("names a stale payer record as open instead of established", () => {

@@ -7,7 +7,8 @@ import { calendarDate } from "./case-brief-copy";
 /**
  * How sure the Mint can be about a case, one line per fact, sorted by what backs it: records the
  * applicant cannot write (verified), the applicant's own documents (checked), the applicant's word
- * alone, and what is still open. Display only: governed code decides what any of it permits.
+ * alone, and what is still open. Each source links to the record behind it, for the operator's own
+ * check. Display only: governed code decides what any of it permits.
  */
 
 type Level = "verified" | "checked" | "stated" | "open";
@@ -192,6 +193,31 @@ const messages = defineMessages({
     defaultMessage: "no answer recorded",
     description: "The applicant gave no answer",
   },
+  recourseAcknowledged: {
+    id: "credit.certainty.recourseAcknowledged",
+    defaultMessage: "Acknowledged being liable for the whole bill if the payer does not pay",
+    description: "Stated: the applicant confirmed whole-bill liability by endorsement, the Mint's fallback if the payer does not pay",
+  },
+  recourseMissing: {
+    id: "credit.certainty.recourseMissing",
+    defaultMessage: "Has not acknowledged being liable for the whole bill",
+    description: "Open: the applicant has not confirmed whole-bill liability",
+  },
+  confirmationSource: {
+    id: "credit.certainty.confirmationSource",
+    defaultMessage: "Applicant's confirmation",
+    description: "Source: the applicant's recorded confirmation of their answers",
+  },
+  abilityNotAssessed: {
+    id: "credit.certainty.abilityNotAssessed",
+    defaultMessage: "ability to pay not assessed",
+    description: "Nothing in the case assesses whether the applicant could pay the bill themselves",
+  },
+  assessedOn: {
+    id: "credit.certainty.assessedOn",
+    defaultMessage: "Assessed {date}",
+    description: "Date of the case snapshot the facts below come from",
+  },
   applicantSource: {
     id: "credit.certainty.applicantSource",
     defaultMessage: "Applicant's interview answer",
@@ -246,7 +272,7 @@ function Item({ item }: { item: CertaintyItem }) {
         <span className="block text-sm">{item.text}</span>
         <span className="block text-xs text-muted-foreground">
           {item.href ? (
-            <a href={item.href} className="underline-offset-2 hover:text-foreground hover:underline">
+            <a href={item.href} className="underline decoration-dotted underline-offset-2 hover:text-foreground hover:decoration-solid">
               {item.source}
             </a>
           ) : (
@@ -269,10 +295,12 @@ export function CaseCertainty({
   repaymentSource,
   acceptorRisk,
   synthetic,
+  recourseAcknowledged,
   duplicateCheck,
   alreadyFinanced,
   contradictions = 0,
   openPoints,
+  assessedOn,
 }: {
   brief: CaseBrief;
   billAcceptanceState?: string;
@@ -288,11 +316,15 @@ export function CaseCertainty({
   };
   /** The case's inputs or policy are synthetic; every Mint or assessor record then says so. */
   synthetic: boolean;
+  /** The applicant's confirmed acknowledgment of whole-bill liability, as the snapshot holds it. */
+  recourseAcknowledged?: boolean;
   duplicateCheck?: { result: string; evidenceState: string };
   alreadyFinanced?: boolean | null;
   /** Unresolved contradictions in the case snapshot. */
   contradictions?: number;
   openPoints: number;
+  /** The snapshot's as-of date (YYYY-MM-DD). */
+  assessedOn?: string;
 }) {
   const intl = useIntl();
   const percent = (bps: number) => intl.formatNumber(bps / 10_000, { style: "percent", minimumFractionDigits: 2 });
@@ -318,6 +350,7 @@ export function CaseCertainty({
       { payer: payerName }
     ),
     source: intl.formatMessage(messages.protocolSource),
+    href: "#bill-record",
   });
 
   // The payer's risk: read from the record itself, so a record from an independent assessor is not reported missing.
@@ -349,7 +382,12 @@ export function CaseCertainty({
       href: "#full-governed-assessment",
     });
   } else {
-    items.push({ level: "open", text: intl.formatMessage(messages.noPayerRisk), source: intl.formatMessage(messages.mintCheckSource) });
+    items.push({
+      level: "open",
+      text: intl.formatMessage(messages.noPayerRisk),
+      source: intl.formatMessage(messages.mintCheckSource),
+      href: "#full-governed-assessment",
+    });
   }
 
   // Double financing: a hard gate, so every outcome other than a usable clear check is open.
@@ -364,12 +402,14 @@ export function CaseCertainty({
       level: clear ? "verified" : "open",
       text: intl.formatMessage(clear ? messages.duplicateClear : (duplicateMessages[duplicateCheck.result] ?? messages.duplicateUnknown)),
       source: fromRecord(recordSource(duplicateCheck.evidenceState, messages.mintCheckSource)),
+      href: "#full-governed-assessment",
     });
   } else if (support.duplicateCheckClear) {
     items.push({
       level: "verified",
       text: intl.formatMessage(messages.duplicateClear),
       source: fromRecord(intl.formatMessage(messages.mintCheckSource)),
+      href: "#full-governed-assessment",
     });
   }
   if (alreadyFinanced === true && duplicateCheck?.result !== "already_financed") {
@@ -377,6 +417,7 @@ export function CaseCertainty({
       level: "open",
       text: intl.formatMessage(messages.duplicateAlreadyFinanced),
       source: intl.formatMessage(messages.protocolSource),
+      href: "#bill-record",
     });
   }
   if (contradictions > 0) {
@@ -411,6 +452,20 @@ export function CaseCertainty({
       level: answered ? "stated" : "open",
       text: intl.formatMessage(message, { answer: answered ? value : intl.formatMessage(messages.noAnswer) }),
       source: intl.formatMessage(messages.applicantSource),
+      href: "#case-conversation",
+    });
+  }
+  // The Mint's fallback if the payer does not pay: the applicant's liability as endorser. Acknowledging it
+  // is the applicant's word; whether they could pay is not part of the case.
+  if (recourseAcknowledged !== undefined) {
+    items.push({
+      level: recourseAcknowledged ? "stated" : "open",
+      text: intl.formatMessage(recourseAcknowledged ? messages.recourseAcknowledged : messages.recourseMissing),
+      source: [
+        intl.formatMessage(messages.confirmationSource),
+        ...(recourseAcknowledged ? [intl.formatMessage(messages.abilityNotAssessed)] : []),
+      ].join(" · "),
+      href: "#case-conversation",
     });
   }
   if (openPoints > 0) {
@@ -434,6 +489,7 @@ export function CaseCertainty({
           {intl.formatMessage(messages.title)}
         </h2>
         <p className="text-xs text-muted-foreground tabular-nums">
+          {assessedOn !== undefined && `${intl.formatMessage(messages.assessedOn, { date: calendarDate(intl, assessedOn) })} · `}
           {intl.formatMessage(messages.summary, { established: established.length, stated: stated.length, open: open.length })}
         </p>
       </div>
