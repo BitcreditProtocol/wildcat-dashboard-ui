@@ -19,8 +19,13 @@ import { cn } from "@bitcredit/ui-library";
 
 interface QuoteDetailCardProps {
   actions?: ReactNode;
-  /** `aside`: the page renders the next step and actions in its own decision column. */
+  /**
+   * `aside`: the page renders the next step, the terms and the actions in its own decision column, so
+   * on screen this card describes the case and does not repeat them.
+   */
   decisionPlacement?: "header" | "aside";
+  /** The decision column shows the proposed terms and how long they are valid. */
+  termsBeside?: boolean;
   assessmentUnavailable?: boolean;
   assessmentLoading?: boolean;
   noFitExplanation?: ReactNode;
@@ -143,9 +148,21 @@ function LifecycleStage({
   );
 }
 
+/** Text the decision column already shows is left out on screen; the printed summary keeps the full reason. */
+function CaseReason({ full, onScreen }: { full: string; onScreen: string }) {
+  if (onScreen === full) return <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{full}</p>;
+  return (
+    <>
+      {onScreen !== "" && <p className="mt-1 max-w-3xl text-sm text-muted-foreground print:hidden">{onScreen}</p>}
+      <p className="mt-1 hidden max-w-3xl text-sm text-muted-foreground print:block">{full}</p>
+    </>
+  );
+}
+
 export function QuoteDetailCard({
   actions,
   decisionPlacement = "header",
+  termsBeside = false,
   assessmentUnavailable = false,
   assessmentLoading = false,
   noFitExplanation,
@@ -428,11 +445,14 @@ export function QuoteDetailCard({
                   )}`}
               </p>
               {showBrief ? (
-                <div className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                  {noFitExplanation && (brief.next.kind === "confirm_no_fit" || (brief.next.kind === "not_actionable" && brief.next.noFit))
-                    ? noFitExplanation
-                    : caseReason(intl, brief, bill.drawee.name)}
-                </div>
+                noFitExplanation && (brief.next.kind === "confirm_no_fit" || (brief.next.kind === "not_actionable" && brief.next.noFit)) ? (
+                  <div className="mt-1 max-w-3xl text-sm text-muted-foreground">{noFitExplanation}</div>
+                ) : (
+                  <CaseReason
+                    full={caseReason(intl, brief, bill.drawee.name)}
+                    onScreen={caseReason(intl, brief, bill.drawee.name, { termsBeside })}
+                  />
+                )
               ) : (
                 statusReason !== undefined && (
                   <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{intl.formatMessage(statusReason)}</p>
@@ -491,7 +511,14 @@ export function QuoteDetailCard({
           )}
         </header>
 
-        <section className="grid grid-cols-2 border-t border-border bg-elevation-100 md:grid-cols-4">
+        {/* Beside a decision column these figures are its terms; only the printed summary repeats them. */}
+        <section
+          data-summary-figures=""
+          className={cn(
+            "grid-cols-2 border-t border-border bg-elevation-100 md:grid-cols-4",
+            decisionPlacement === "aside" ? "hidden print:grid" : "grid"
+          )}
+        >
           <div className="border-r border-b border-border px-5 py-4 md:border-b-0">
             <div className="text-xs leading-tight text-muted-foreground">
               {intl.formatMessage({ id: "quotes.detail.sum", defaultMessage: "Bill amount" })}

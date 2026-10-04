@@ -90,8 +90,4 @@ describe("feeBreakdown", () => {
     expect(feeBreakdown(decisionCase({ pd: 700 }))).toBeUndefined();
     expect(feeBreakdown(decisionCase({ inputs: { expectedLossBps: undefined as unknown as number } }))).toBeUndefined();
   });
-
-  it("names the evidence level that set the uncertainty part", () => {
-    expect(feeBreakdown(decisionCase())?.uncertainty).toEqual({ evidenceState: "independently_verified" });
-  });
 });

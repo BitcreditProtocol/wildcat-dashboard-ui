@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { afterEach, describe, expect, it } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
-import { ProposedTerms } from "./CaseDecisionPanel";
+import { CaseDecisionPanel, ProposedTerms } from "./CaseDecisionPanel";
 import type { DecisionCase, DecisionTerms } from "./decision-types";
 import type { FeeBreakdown } from "./fee-breakdown";
 
@@ -35,8 +35,6 @@ const breakdown: FeeBreakdown = {
     { key: "funding", sat: 40_000, bps: 100 },
     { key: "mintReturn", sat: 40_000, bps: 100 },
   ],
-  payerRisk: { probabilityOfDefaultBps: 600, lossGivenDefaultBps: 4000 },
-  uncertainty: { evidenceState: "corroborated" },
 };
 
 let root: Root | undefined;
@@ -79,9 +77,10 @@ describe("ProposedTerms", () => {
     expect(page.textContent).toContain("for a 8,000,000 sat bill due Feb 6, 2027");
     expect(rows(page)).toEqual([
       "Discount for 180 days216,000sat",
-      "Payer risk6.00% non-payment × 40.00% loss96,000sat",
-      "UncertaintyPayer record Mint-signed, corroborated40,000sat",
-      "Funding costUntil maturity40,000sat",
+      // The payer's figures and the record behind them are stated once, in "How sure we are".
+      "Payer risk96,000sat",
+      "Uncertainty40,000sat",
+      "Funding cost40,000sat",
       "Mint margin40,000sat",
       "Operating costFixed per case50,000sat",
       "Minting fee3.33% of the bill266,000sat",
@@ -130,5 +129,52 @@ describe("ProposedTerms", () => {
       "Applicant liable if unpaid8,000,000sat",
     ]);
     expect(page.textContent).toContain("Within the Mint's fee limits");
+  });
+});
+
+describe("CaseDecisionPanel", () => {
+  function renderPanel(props: Parameters<typeof CaseDecisionPanel>[0]) {
+    act(() => root?.unmount());
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    act(() =>
+      root?.render(
+        <IntlProvider locale="en">
+          <PreferencesProvider>
+            <CaseDecisionPanel {...props} />
+          </PreferencesProvider>
+        </IntlProvider>
+      )
+    );
+    return container;
+  }
+
+  it("shows a recorded offer's terms instead of repeating the quote status beside the case", () => {
+    const page = renderPanel({
+      statusLabel: "Offered",
+      recordedOffer: { billSat: 1_900_000, availableToMintSat: 1_830_745, expiresAt: "2026-10-05T18:00:00Z" },
+    });
+
+    expect(page.querySelector("#case-decision-offer")?.textContent).toBe("Offer terms");
+    expect(page.textContent).toContain("Expires Oct 5");
+    expect(page.textContent).toContain("Available to mint1,830,745sat");
+    expect(rows(page)).toEqual(["Minting fee3.65% of the bill69,255sat"]);
+    expect(page.textContent).not.toContain("Offered");
+  });
+
+  it("states the quote status only when it has nothing else to show", () => {
+    expect(renderPanel({ statusLabel: "Denied" }).querySelector("header")?.textContent).toBe("DecisionDenied");
+  });
+
+  it("lets proposed terms replace a recorded offer", () => {
+    const page = renderPanel({
+      statusLabel: "Pending",
+      recordedOffer: { billSat: 8_000_000, availableToMintSat: 7_000_000 },
+      actionableTerms: { terms, policy, synthetic: false, mayAdjust: false },
+    });
+
+    expect(page.querySelector("#case-decision-offer")).toBeNull();
+    expect(page.querySelector("#case-decision-terms")?.textContent).toBe("Proposed minting fee");
   });
 });
