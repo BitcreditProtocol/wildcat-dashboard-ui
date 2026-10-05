@@ -7,8 +7,10 @@ import { Currency } from "@/components/Currency";
 import { usePartyQuotes, type PartyQuotesState } from "@/hooks/use-party-quotes";
 import type { LightInfo } from "@/generated/client/types.gen";
 import { getQuoteStatusMessage } from "@/i18n/descriptors";
+import { countryName } from "@/utils/bill-participants";
 import { truncateString } from "@/utils/strings";
 import { COMMITTED_STATUSES, partyListPath, type PartyQuoteBucket, type QuoteParty, type QuotePartyRole } from "../quote-parties";
+import { PartyLookup } from "./PartyLookup";
 
 /**
  * Who the applicant and the payer are, as they stated it in the eBill, and what the Mint already has
@@ -214,10 +216,7 @@ function PartyFigures({
 function PartyIdentity({ party }: { party: QuoteParty }) {
   const intl = useIntl();
   const country = party.contact?.country;
-  const address = [
-    party.contact?.address,
-    country === undefined ? undefined : (new Intl.DisplayNames([intl.locale], { type: "region" }).of(country.toUpperCase()) ?? country),
-  ]
+  const address = [party.contact?.address, country === undefined ? undefined : countryName(country, intl.locale)]
     .filter(Boolean)
     .join(", ");
   return (
@@ -230,6 +229,8 @@ function PartyIdentity({ party }: { party: QuoteParty }) {
           </a>
         )}
         <NodeIdDisplay nodeId={party.nodeId} maxLength={20} textClassName="text-xs text-muted-foreground" />
+        {/* An anonymous holder has no name to look up. */}
+        {!party.anonymous && <PartyLookup name={party.name} country={country} />}
       </div>
     </div>
   );
