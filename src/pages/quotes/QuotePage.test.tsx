@@ -218,8 +218,8 @@ beforeEach(() => {
             id: "bill-1",
             sum: 100,
             maturity_date: "2026-03-01",
-            drawee: {},
-            drawer: {},
+            drawee: { name: "Payer Co", node_id: "drawee-node", address: "Ring 1", city: "Vienna", country: "AT" },
+            drawer: { name: "Drawer Co", node_id: "drawer-node", address: "Main St 2", city: "Graz", country: "AT" },
             payee: { Ident: { name: "Payee", node_id: "payee-node" } },
             endorsees: [],
           },
@@ -595,11 +595,20 @@ describe("QuotePage", () => {
     expect(figures?.classList.contains("print:grid")).toBe(true);
   });
 
-  it("lists the drawer and drawee in the bill record, not in the summary's processing details", () => {
+  it("lists everyone the bill names in the bill record, marking the applicant and the payer", () => {
     const page = renderPage(`/quotes/${quoteId}`);
+    const record = page.querySelector("#bill-record");
+    const rows = Array.from(record?.querySelectorAll("li") ?? [], (row) => row.textContent);
 
-    expect(page.textContent).toContain("Drawer and drawee");
-    expect(page.textContent?.match(/ParticipantDetailMock/g)).toHaveLength(2);
+    expect(record?.querySelector("h3")?.textContent).toBe("Parties on the bill");
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toContain("DrawerDrawer Co");
+    expect(rows[1]).toContain("DraweePayer CoPayer");
+    expect(rows[1]).toContain("Ring 1, Vienna, Austria");
+    expect(rows[2]).toContain("PayeePayeeApplicant");
+    // The summary's processing details do not list the parties a second time.
+    expect(page.textContent).not.toContain("ParticipantDetailMock");
+    expect(record?.textContent).toContain("EndorsementChainMock");
   });
 
   it("provides a compact Executive summary", () => {
@@ -697,8 +706,8 @@ describe("QuotePage", () => {
               id: "bill-2",
               sum: 50,
               maturity_date: "2026-03-10",
-              drawee: {},
-              drawer: {},
+              drawee: { name: "Payer Co", node_id: "drawee-node", address: "Ring 1", city: "Vienna", country: "AT" },
+              drawer: { name: "Drawer Co", node_id: "drawer-node", address: "Main St 2", city: "Graz", country: "AT" },
               payee: { Ident: { name: "Payee", node_id: "payee-node" } },
               endorsees: [],
             },
@@ -778,8 +787,8 @@ describe("QuotePage", () => {
               id: "bill-1",
               sum: 100,
               maturity_date: "2026-03-01",
-              drawee: {},
-              drawer: {},
+              drawee: { name: "Payer Co", node_id: "drawee-node", address: "Ring 1", city: "Vienna", country: "AT" },
+              drawer: { name: "Drawer Co", node_id: "drawer-node", address: "Main St 2", city: "Graz", country: "AT" },
               payee: { Ident: { name: "Payee", node_id: "payee-node" } },
               endorsees: [],
               file_urls: ["https://files.example.com/invoices/invoice-preview.pdf"],
@@ -948,9 +957,9 @@ describe("QuotePage", () => {
               id: "bill-not-here-yet",
               sum: 100,
               maturity_date: "2026-03-01",
-              drawee: {},
-              drawer: {},
-              payee: {},
+              drawee: { name: "Payer Co", node_id: "drawee-node", address: "Ring 1", city: "Vienna", country: "AT" },
+              drawer: { name: "Drawer Co", node_id: "drawer-node", address: "Main St 2", city: "Graz", country: "AT" },
+              payee: { Ident: { name: "Payee", node_id: "payee-node" } },
               endorsees: [],
             },
           },
@@ -985,8 +994,8 @@ describe("QuotePage", () => {
               id: "bill-1",
               sum: 100,
               maturity_date: "2026-03-01",
-              drawee: {},
-              drawer: {},
+              drawee: { name: "Payer Co", node_id: "drawee-node", address: "Ring 1", city: "Vienna", country: "AT" },
+              drawer: { name: "Drawer Co", node_id: "drawer-node", address: "Main St 2", city: "Graz", country: "AT" },
               payee: { Ident: { name: "Payee", node_id: "payee-node" } },
               endorsees: [],
               file_urls: ["https://files.example.com/invoices/request-copy.pdf"],

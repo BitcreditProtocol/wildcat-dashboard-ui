@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { ClaimInvestigationPanel } from "@/pages/credit/ClaimInvestigationPanel";
 import { CaseReviewTrail } from "@/pages/credit/CaseReviewTrail";
-import { EvidenceCaseBrief, type EvidenceCaseSummary } from "@/pages/credit/EvidenceCaseBrief";
+import { NextEvidenceRequest } from "@/pages/credit/NextEvidenceRequest";
 import type {
   ClaimInvestigationState,
   ApplicantConfirmation,
@@ -38,7 +38,6 @@ export type CreditEvidenceState =
       applicantConfirmation?: ApplicantConfirmation;
       applicantHumanReview?: ApplicantHumanReviewRecord;
       axes?: DecisionCase["result"]["axes"];
-      caseSummary: EvidenceCaseSummary;
     };
 
 interface QuoteDocumentsProps {
@@ -281,12 +280,7 @@ function CreditEvidence({
   if (state.submittedEvidence.length === 0) {
     return (
       <div className="space-y-4">
-        <EvidenceCaseBrief
-          summary={state.caseSummary}
-          submittedEvidence={state.submittedEvidence}
-          verificationRequests={state.verificationRequests}
-          assessmentCurrency={state.assessmentCurrency}
-        />
+        <NextEvidenceRequest verificationRequests={state.verificationRequests} assessmentCurrency={state.assessmentCurrency} />
         {showCaseRecord && (
           <CaseReviewTrail
             transcript={state.interviewTranscript}
@@ -310,12 +304,7 @@ function CreditEvidence({
   }
   return (
     <div className="space-y-4">
-      <EvidenceCaseBrief
-        summary={state.caseSummary}
-        submittedEvidence={state.submittedEvidence}
-        verificationRequests={state.verificationRequests}
-        assessmentCurrency={state.assessmentCurrency}
-      />
+      <NextEvidenceRequest verificationRequests={state.verificationRequests} assessmentCurrency={state.assessmentCurrency} />
       {showCaseRecord && (
         <CaseReviewTrail
           transcript={state.interviewTranscript}

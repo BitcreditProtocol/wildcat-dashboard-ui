@@ -14,6 +14,7 @@ import { caseHeadline, caseReason } from "@/pages/credit/case-brief-copy";
 import { CaseNextStepPanel, CaseProgress } from "@/pages/credit/CaseBrief";
 import { CaseCertainty } from "@/pages/credit/CaseCertainty";
 import { billApplicant } from "../quote-parties";
+import { countryName } from "@/utils/bill-participants";
 import { cn } from "@bitcredit/ui-library";
 
 interface QuoteDetailCardProps {
@@ -61,8 +62,8 @@ interface QuoteDetailCardProps {
     openPoints?: number;
     duplicateCheck?: { result: string; evidenceState: string };
     alreadyFinanced?: boolean | null;
-    /** Unresolved contradictions in the case snapshot. */
-    contradictions?: number;
+    /** Codes of the unresolved contradictions in the case snapshot. */
+    contradictions?: readonly string[];
     /** The applicant's confirmed acknowledgment of whole-bill liability. */
     recourseAcknowledged?: boolean;
     /** The snapshot's as-of date. */
@@ -355,7 +356,7 @@ export function QuoteDetailCard({
       ? undefined
       : [
           profile.industry.replace(/_/g, " ").replace(/^./, (first: string) => first.toUpperCase()),
-          new Intl.DisplayNames([intl.locale], { type: "region" }).of(profile.country.toUpperCase()) ?? profile.country,
+          countryName(profile.country, intl.locale),
         ].join(" · ");
   // The mint-complete query currently reads the eBill payment endpoint. It can confirm payment,
   // but cannot establish redemption or issued/spendable value.

@@ -811,7 +811,7 @@ describe("QuoteDetailCard", () => {
         },
         duplicateCheck: { result: "already_financed", evidenceState: "corroborated" },
         alreadyFinanced: true,
-        contradictions: 2,
+        contradictions: ["buyer_name_mismatch", "invoice_after_acceptance"],
         brief: caseBrief({ kind: "manual_review" }, [], {
           // The brief's narrower flags must not hide what the records say.
           support: { invoice: "unchecked", acceptorRiskRecord: false, duplicateCheckClear: false },
@@ -828,12 +828,14 @@ describe("QuoteDetailCard", () => {
       "Open: ACME Corp has not accepted the eBill | eBill record · acceptance, not ability to pay",
       // Shown once even though both the check and the bill record say so.
       "Open: This bill is already financed | Mint-signed record, corroborated",
-      "Open: 2 unresolved contradictions between claims and records | Deterministic case checks",
+      // Named one by one: each blocks the case.
+      "Open: Claims and records contradict each other: buyer name mismatch | Deterministic case checks",
+      "Open: Claims and records contradict each other: invoice after acceptance | Deterministic case checks",
       "Open: Invoice not checked yet | Applicant's document, not independent confirmation",
       "Applicant's word: Uses the funds for: Fertilizer | Applicant's interview answer",
       "Applicant's word: How the bill gets paid: The cooperative pays | Applicant's interview answer",
     ]);
-    expect(page.textContent).toContain("1 established · 2 applicant's word · 4 open");
+    expect(page.textContent).toContain("1 established · 2 applicant's word · 5 open");
   });
 
   it("marks synthetic test data on the case and on every Mint or assessor record it shows", () => {

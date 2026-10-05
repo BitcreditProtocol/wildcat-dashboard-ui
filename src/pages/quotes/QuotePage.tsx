@@ -22,12 +22,11 @@ import { authenticatedFetch } from "@/lib/api-client";
 import { type CreditEvidenceState, QuoteDocuments } from "./QuoteDocuments";
 import { type QuoteDocumentPreview, QuoteDocumentViewer } from "./QuoteDocumentViewer";
 import { resolveDocumentMimeType } from "@/utils/document-preview";
-import { countAnswerReviewFollowUps, usesSyntheticData, type SubmittedEvidence } from "@/pages/credit/decision-types";
+import { usesSyntheticData, type SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { BillParties } from "./components/BillParties";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { FacilityCoveragePanel, FacilityCoverageUnavailable } from "../facilities/FacilityCoveragePanel";
-import { EndorseeList } from "./components/EndorseeList";
 import { useSyncBillChain } from "./components/useSyncBillChain";
 import type { InfoReply } from "@/generated/client/types.gen";
 import NotFoundPage from "@/pages/NotFoundPage";
@@ -153,22 +152,6 @@ function PageBody({ id }: { id: string }) {
               applicantConfirmation: creditAssessment.decisionCase.applicantConfirmation,
               applicantHumanReview: creditAssessment.decisionCase.applicantHumanReview,
               axes: creditAssessment.decisionCase.result.axes,
-              caseSummary: {
-                answerReviewFollowUpCount: countAnswerReviewFollowUps(
-                  creditAssessment.decisionCase.interviewTranscript,
-                  creditAssessment.decisionCase.liveInterview,
-                  ...(creditAssessment.decisionCase.interviewHistory ?? [])
-                ),
-                snapshot: {
-                  confirmedClaims: creditAssessment.decisionCase.snapshot.confirmedClaims,
-                  contradictions: creditAssessment.decisionCase.snapshot.contradictions,
-                  bill: creditAssessment.decisionCase.snapshot.bill,
-                  invoice: creditAssessment.decisionCase.snapshot.invoice,
-                },
-                assessmentStatus: creditAssessment.decisionCase.result.assessmentStatus,
-                recommendation: creditAssessment.decisionCase.result.recommendation,
-                assessmentHistory: creditAssessment.decisionCase.assessmentHistory ?? [],
-              },
             };
 
   if (error) {
@@ -484,7 +467,7 @@ function PageBody({ id }: { id: string }) {
                     openPoints: effectiveQuoteStatus === "Pending" ? openPointCount(decisionCase) : 0,
                     duplicateCheck: decisionCase.snapshot.duplicateCheck,
                     alreadyFinanced: decisionCase.snapshot.bill?.alreadyFinanced,
-                    contradictions: decisionCase.snapshot.contradictions.length,
+                    contradictions: decisionCase.snapshot.contradictions.map(({ code }) => code),
                     recourseAcknowledged: decisionCase.snapshot.confirmedClaims?.wholeFaceRecourseAcknowledged,
                     assessedOn: decisionCase.snapshot.asOfDate,
                     ...(decisionCase.assessmentCurrency === "current" && decisionCase.result.terms
@@ -582,13 +565,10 @@ function PageBody({ id }: { id: string }) {
               />
             }
             record={
-              <div id="bill-record" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+              // The bill as signed: who it names, then what each of them signed.
+              <div id="bill-record" className="@container scroll-mt-4 space-y-6">
+                <BillParties bill={bill} />
                 <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
-
-                <div className="flex min-w-0 flex-col gap-4">
-                  <BillParties bill={bill} />
-                  <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
-                </div>
               </div>
             }
           />
