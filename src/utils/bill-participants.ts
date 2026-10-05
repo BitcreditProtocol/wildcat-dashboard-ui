@@ -39,3 +39,17 @@ export function participantLabel(participant: IdentifiedParticipant | AnonymousP
 export function formatAddress(address: PostalAddress): string {
   return [address.address, address.zip, address.city, address.country].filter(Boolean).join(", ");
 }
+
+/** The reader's name for a country stated as an ISO region code; anything else is shown as stated. */
+export function countryName(country: string, locale: string): string {
+  try {
+    return new Intl.DisplayNames([locale], { type: "region" }).of(country.toUpperCase()) ?? country;
+  } catch {
+    return country; // Not a region code: a party may have typed the country out.
+  }
+}
+
+/** A postal address as the party stated it, with the country named for the reader. */
+export function statedAddress(address: PostalAddress, locale: string): string {
+  return formatAddress({ ...address, country: address.country === "" ? "" : countryName(address.country, locale) });
+}

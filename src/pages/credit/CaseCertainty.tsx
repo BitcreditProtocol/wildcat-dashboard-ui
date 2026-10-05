@@ -122,10 +122,10 @@ const messages = defineMessages({
     defaultMessage: "Double-financing check has no usable result",
     description: "Open: the double-financing check is unknown or its evidence is not usable",
   },
-  contradictions: {
-    id: "credit.certainty.contradictions",
-    defaultMessage: "{count, plural, one {# unresolved contradiction} other {# unresolved contradictions}} between claims and records",
-    description: "Open: deterministic checks found conflicts that still block the case",
+  contradiction: {
+    id: "credit.certainty.contradiction",
+    defaultMessage: "Claims and records contradict each other: {name}",
+    description: "Open: one conflict that deterministic checks found and that still blocks the case; name is the check's code in words",
   },
   checksSource: {
     id: "credit.certainty.checksSource",
@@ -298,7 +298,7 @@ export function CaseCertainty({
   recourseAcknowledged,
   duplicateCheck,
   alreadyFinanced,
-  contradictions = 0,
+  contradictions = [],
   openPoints,
   assessedOn,
 }: {
@@ -320,8 +320,8 @@ export function CaseCertainty({
   recourseAcknowledged?: boolean;
   duplicateCheck?: { result: string; evidenceState: string };
   alreadyFinanced?: boolean | null;
-  /** Unresolved contradictions in the case snapshot. */
-  contradictions?: number;
+  /** Codes of the unresolved contradictions in the case snapshot. */
+  contradictions?: readonly string[];
   openPoints: number;
   /** The snapshot's as-of date (YYYY-MM-DD). */
   assessedOn?: string;
@@ -420,12 +420,13 @@ export function CaseCertainty({
       href: "#bill-record",
     });
   }
-  if (contradictions > 0) {
+  // Each one by name: they block the case, and the calculation lists the same checks.
+  for (const code of contradictions) {
     items.push({
       level: "open",
-      text: intl.formatMessage(messages.contradictions, { count: contradictions }),
+      text: intl.formatMessage(messages.contradiction, { name: words(code) }),
       source: intl.formatMessage(messages.checksSource),
-      href: "#documents-and-evidence",
+      href: "#full-governed-assessment",
     });
   }
 

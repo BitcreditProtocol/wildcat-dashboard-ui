@@ -441,7 +441,10 @@ export function SubmittedDocuments({
                   >
                     {independence}
                   </span>
-                  <span className={`whitespace-nowrap text-xs font-medium ${isMatched ? "text-signal-success" : "text-muted-foreground"}`}>
+                  {/* Wraps within its fixed column on wide screens, so a long status never runs under the chevron. */}
+                  <span
+                    className={`whitespace-nowrap text-xs font-medium md:whitespace-normal md:leading-tight ${isMatched ? "text-signal-success" : "text-muted-foreground"}`}
+                  >
                     {intl.formatMessage(reviewStatus)}
                   </span>
                   <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />

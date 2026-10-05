@@ -2,8 +2,6 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
-import type { EvidenceCaseSummary } from "@/pages/credit/EvidenceCaseBrief";
-import { EvidenceCaseBrief } from "@/pages/credit/EvidenceCaseBrief";
 import { QuoteDocuments } from "./QuoteDocuments";
 
 let root: Root | null = null;
@@ -51,32 +49,28 @@ beforeEach(() => {
   window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 });
 
-const evidenceCaseSummary = {
-  snapshot: {
-    confirmedClaims: {
-      useOfFunds: "Coffee harvest",
-      acceptorRef: "acceptor-1",
-      repaymentSource: "Coffee sale proceeds",
-      wholeFaceRecourseAcknowledged: true,
-      evidenceState: "applicant_confirmed",
-    },
-    contradictions: [],
-    bill: {
-      billId: "bill-1",
-      billStateDigest: `sha256:${"1".repeat(64)}`,
-      acceptanceState: "accepted",
-      holderRef: "holder-1",
-      acceptorRef: "acceptor-1",
-      faceValueSat: "8100000",
-      acceptedDate: "2026-08-22",
-      maturityDate: "2027-02-22",
-      alreadyFinanced: false,
-    },
-    invoice: null,
+const caseSnapshot = {
+  confirmedClaims: {
+    useOfFunds: "Coffee harvest",
+    acceptorRef: "acceptor-1",
+    repaymentSource: "Coffee sale proceeds",
+    wholeFaceRecourseAcknowledged: true,
+    evidenceState: "applicant_confirmed",
   },
-  assessmentStatus: "blocked_pending_verification",
-  recommendation: null,
-} satisfies EvidenceCaseSummary;
+  contradictions: [],
+  bill: {
+    billId: "bill-1",
+    billStateDigest: `sha256:${"1".repeat(64)}`,
+    acceptanceState: "accepted",
+    holderRef: "holder-1",
+    acceptorRef: "acceptor-1",
+    faceValueSat: "8100000",
+    acceptedDate: "2026-08-22",
+    maturityDate: "2027-02-22",
+    alreadyFinanced: false,
+  },
+  invoice: null,
+};
 
 describe("QuoteDocuments", () => {
   it("does not repeat public research when the quote workspace hosts it under Investigation", () => {
@@ -96,7 +90,6 @@ describe("QuoteDocuments", () => {
           evidencePackets: [],
           invoiceAssessment: null,
           verificationRequests: [],
-          caseSummary: evidenceCaseSummary,
           claimInvestigation: { status: "running", inputDigest: `sha256:${"a".repeat(64)}`, modelId: "synthetic-reviewer" },
         }}
         openingDocumentHash={null}
@@ -107,20 +100,6 @@ describe("QuoteDocuments", () => {
     );
     expect(page.textContent).not.toContain("Public-source research");
     expect(page.textContent).toContain("No submitted case evidence is recorded");
-  });
-  it("keeps answer-review concerns separate from deterministic checks with no recorded conflict", () => {
-    const page = renderWithIntl(
-      <EvidenceCaseBrief
-        summary={{ ...evidenceCaseSummary, answerReviewFollowUpCount: 2 }}
-        submittedEvidence={[]}
-        verificationRequests={[]}
-        assessmentCurrency="current"
-      />
-    );
-    expect(page.textContent).toContain("No conflict recorded by deterministic checks");
-    expect(page.textContent).toContain("2 targeted follow-ups");
-    expect(page.textContent).toContain("Resolution not independently checked");
-    expect(page.textContent).not.toContain("No internal conflicts");
   });
   it("renders collapsed by default", () => {
     const page = renderWithIntl(
@@ -138,7 +117,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
-          caseSummary: evidenceCaseSummary,
           submittedEvidence: [],
           evidencePackets: [],
           invoiceAssessment: null,
@@ -282,7 +260,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
-          caseSummary: evidenceCaseSummary,
           submittedEvidence: [
             {
               reference: "invoice-ref",
@@ -329,7 +306,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
-          caseSummary: evidenceCaseSummary,
           submittedEvidence: [evidence],
           evidencePackets: [{ evidence, status: "quarantined", byteLength: 42 }],
           invoiceAssessment: null,
@@ -373,7 +349,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
-          caseSummary: evidenceCaseSummary,
           submittedEvidence: [evidence],
           evidencePackets: [
             {
@@ -451,7 +426,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
-          caseSummary: evidenceCaseSummary,
           submittedEvidence: [evidence],
           evidencePackets: [
             {
@@ -545,28 +519,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "historical",
           caseId: "case-1",
           resultDigest: "sha256:result",
-          caseSummary: {
-            ...evidenceCaseSummary,
-            snapshot: {
-              ...evidenceCaseSummary.snapshot,
-              invoice: {
-                reference: evidence.reference,
-                invoiceNumber: "DEMO-43",
-                goodsDescription: "Coffee crop inputs",
-                sellerRef: "holder-1",
-                buyerRef: "acceptor-1",
-                issueDate: "2026-08-22",
-                totalSat: "8000000",
-                plausibility: "plausible",
-                billAndClaimsConsistency: "mismatch",
-                evidenceState: "unconfirmed",
-                methodologyVersion: "invoice-v1",
-                assessedBy: "credit_evidence_gateway",
-                validThrough: "2026-11-20",
-              },
-              contradictions: [{ code: "invoice_amount_mismatch", state: "unresolved", evidenceState: "contradicted" }],
-            },
-          },
           submittedEvidence: [evidence],
           evidencePackets: [{ evidence, status: "quarantined", byteLength: 920 }],
           invoiceAssessment: null,
@@ -592,8 +544,6 @@ describe("QuoteDocuments", () => {
     act(() => {
       page.querySelector('button[aria-expanded="false"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(page.textContent).toContain("Claim coverage");
-    expect(page.textContent).toContain("Underlying tradeCoffee crop inputs · 8,000,000 satcorrected-commercial-invoice.pdfConflict");
     expect(page.textContent).toContain("Next evidence requestHistorical assessment · read-only");
     expect(page.textContent).toContain("Correct answers · upload supporting document");
     expect(page.textContent).toContain("eBill notification and application");
@@ -616,7 +566,7 @@ describe("QuoteDocuments", () => {
       origin: "applicant_upload" as const,
     };
     const mismatchSnapshot = {
-      ...evidenceCaseSummary.snapshot,
+      ...caseSnapshot,
       invoice: {
         reference: originalEvidence.reference,
         invoiceNumber: "DEMO-43",
@@ -634,7 +584,7 @@ describe("QuoteDocuments", () => {
       },
     };
     const currentSnapshot = {
-      ...evidenceCaseSummary.snapshot,
+      ...caseSnapshot,
       invoice: {
         ...mismatchSnapshot.invoice,
         reference: correctedEvidence.reference,
@@ -642,31 +592,6 @@ describe("QuoteDocuments", () => {
         billAndClaimsConsistency: "match" as const,
         evidenceState: "corroborated",
       },
-    };
-    const blockedResult = {
-      assessmentStatus: "blocked_pending_verification" as const,
-      recommendation: null,
-      axes: [],
-      terms: null,
-      verificationRequests: [
-        {
-          code: "invoice_consistency" as const,
-          axis: "transaction_integrity" as const,
-          requiredItem: "Clarify the invoice and eBill amount difference",
-          reasonCode: "verification_invoice_consistency_required",
-          owner: "applicant" as const,
-          resolutionAction: "request_applicant_information" as const,
-        },
-      ],
-      reasonCodes: [],
-      assessmentTrace: [],
-      calculationTrace: [],
-    };
-    const readyResult = {
-      ...blockedResult,
-      assessmentStatus: "ready_for_decision" as const,
-      recommendation: "offer_available" as const,
-      verificationRequests: [],
     };
     const page = renderWithIntl(
       <QuoteDocuments
@@ -677,16 +602,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
-          caseSummary: {
-            ...evidenceCaseSummary,
-            snapshot: currentSnapshot,
-            assessmentStatus: "ready_for_decision",
-            recommendation: "offer_available",
-            assessmentHistory: [
-              { snapshot: mismatchSnapshot, result: blockedResult, submittedEvidence: [originalEvidence] },
-              { snapshot: currentSnapshot, result: readyResult, submittedEvidence: [correctedEvidence] },
-            ],
-          },
           submittedEvidence: [correctedEvidence],
           evidencePackets: [{ evidence: correctedEvidence, status: "quarantined", byteLength: 920 }],
           invoiceAssessment: currentSnapshot.invoice,
@@ -719,7 +634,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "case-1",
           resultDigest: "sha256:result",
-          caseSummary: evidenceCaseSummary,
           submittedEvidence: [],
           evidencePackets: [],
           invoiceAssessment: null,
@@ -807,7 +721,6 @@ describe("QuoteDocuments", () => {
           assessmentCurrency: "current",
           caseId: "legacy-case",
           resultDigest: "sha256:result",
-          caseSummary: evidenceCaseSummary,
           submittedEvidence: [],
           evidencePackets: [],
           invoiceAssessment: null,

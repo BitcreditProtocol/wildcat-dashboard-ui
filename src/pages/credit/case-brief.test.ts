@@ -1,6 +1,6 @@
 import type { InformationNeed } from "@bitcredit/ai-credit-shared";
 import { describe, expect, it } from "vitest";
-import { buildCaseBrief, operatorOwnsNextStep } from "./case-brief";
+import { buildCaseBrief, invoiceSupport, operatorOwnsNextStep } from "./case-brief";
 import {
   activeDialogue,
   firstRun,
@@ -356,5 +356,36 @@ describe("buildCaseBrief", () => {
         { kind: "applicant", state: "replied", at: submittedDialogue.updatedAt, submissions: 2 },
       ])
     );
+  });
+});
+
+describe("invoiceSupport", () => {
+  // Only the three fields the rule reads; the rest of a governed invoice does not change the outcome.
+  const invoice = (
+    fields: Pick<NonNullable<DecisionCase["snapshot"]["invoice"]>, "plausibility" | "billAndClaimsConsistency" | "evidenceState">
+  ) => fields as NonNullable<DecisionCase["snapshot"]["invoice"]>;
+
+  it("reads a matching, plausible invoice as consistent at either usable evidence level", () => {
+    for (const evidenceState of ["corroborated", "independently_verified"])
+      expect(invoiceSupport(invoice({ plausibility: "plausible", billAndClaimsConsistency: "match", evidenceState }))).toBe("consistent");
+  });
+
+  it("reports a mismatch or an implausible invoice as a conflict, whatever the evidence level", () => {
+    expect(
+      invoiceSupport(invoice({ plausibility: "plausible", billAndClaimsConsistency: "mismatch", evidenceState: "corroborated" }))
+    ).toBe("conflict");
+    expect(invoiceSupport(invoice({ plausibility: "implausible", billAndClaimsConsistency: "match", evidenceState: "unavailable" }))).toBe(
+      "conflict"
+    );
+  });
+
+  it("never invents a conflict or a match from an unknown comparison, and names a missing invoice", () => {
+    expect(invoiceSupport(invoice({ plausibility: "unknown", billAndClaimsConsistency: "unknown", evidenceState: "corroborated" }))).toBe(
+      "unchecked"
+    );
+    expect(invoiceSupport(invoice({ plausibility: "plausible", billAndClaimsConsistency: "match", evidenceState: "stale" }))).toBe(
+      "unchecked"
+    );
+    expect(invoiceSupport(null)).toBe("absent");
   });
 });
