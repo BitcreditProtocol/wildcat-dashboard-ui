@@ -196,6 +196,32 @@ describe("PartyExposureCard", () => {
     expect(section(page, "Payer").textContent).toContain("drawee-node");
   });
 
+  it("offers outside lookups per named party as a mock-up that links nowhere and sends nothing", () => {
+    const page = render(
+      <PartyExposureCard applicant={{ ...APPLICANT, contact: { address: "Calle 5, Antigua", country: "GT" } }} payer={PAYER} quote={THIS} />
+    );
+    const trigger = Array.from(section(page, "Applicant").querySelectorAll("button")).find((button) => button.textContent === "Look up");
+    expect(trigger).toBeDefined();
+    expect(document.querySelector("[data-party-lookup]")).toBeNull();
+
+    act(() => {
+      trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const lookup = document.querySelector("[data-party-lookup]");
+
+    expect(lookup?.textContent).toContain("Look up Finca VerdeNot connected yet");
+    expect(Array.from(lookup?.querySelectorAll("li") ?? [], (source) => source.firstElementChild?.nextElementSibling?.textContent)).toEqual(
+      [
+        "Business register · GuatemalaRegistered and active, and who may sign for it",
+        "Sanctions listsEU, UN and US lists",
+        "Web and newsThe name and city in a web search",
+      ]
+    );
+    expect(lookup?.querySelectorAll('li[aria-disabled="true"]')).toHaveLength(3);
+    expect(lookup?.querySelector("a, [href]")).toBeNull();
+    expect(lookup?.textContent).toContain("sends that service the party's name and country");
+  });
+
   it("names an anonymous holder as such and still gives its node id", () => {
     const page = render(
       <PartyExposureCard applicant={{ nodeId: "anon-node", name: "anon-node", anonymous: true }} payer={PAYER} quote={THIS} />
@@ -204,6 +230,9 @@ describe("PartyExposureCard", () => {
 
     expect(applicant.querySelector("h3")?.textContent).toBe("ApplicantAnonymous holder");
     expect(applicant.textContent).toContain("anon-node");
+    // There is no name to look up.
+    expect(applicant.textContent).not.toContain("Look up");
+    expect(section(page, "Payer").textContent).toContain("Look up");
   });
 
   it("reads a legacy Mint that answers every quote without a total", () => {
