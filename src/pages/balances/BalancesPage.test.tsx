@@ -35,21 +35,25 @@ interface MockHistory {
   error: unknown;
 }
 
+interface MockForeignBalance {
+  data?: { balances: { mint_id: string; settled: number; unsettled: number }[] };
+  isPending: boolean;
+  isError: boolean;
+  error: unknown;
+}
+
 const mockUseCoverageQuery = vi.fn<() => MockCoverage>();
 const mockUseCollectFeesQuery = vi.fn<() => MockFeesToken>();
 const mockUseHistoryQuery = vi.fn<(queryId: string) => MockHistory>();
+const mockUseForeignBalanceQuery = vi.fn<() => MockForeignBalance>();
 
 const HISTORY_QUERY_IDS = new Set(["onchainHistory", "billsBalanceHistory", "keysetsBalance"]);
 
 const SECONDS_PER_DAY = 24 * 60 * 60;
 
-/** A keyset balance as the aggregator reports it: a byte-array id and no unit of its own. */
-function keysetBalance(hexId: string, expiry: number, value: number) {
-  return {
-    keyset_id: { version: "Version00", id: { V1: hexId.match(/../g)?.map((pair) => Number.parseInt(pair, 16)) ?? [] } },
-    expiry,
-    balance: { value, unit: null },
-  };
+/** A keyset balance as the aggregator reports it: a hex id and a bare integer balance. */
+function keysetBalance(keysetId: string, expiry: number, balance: number) {
+  return { keyset_id: keysetId, expiry, balance };
 }
 
 vi.mock("@tanstack/react-query", async () => {
@@ -68,6 +72,9 @@ vi.mock("@tanstack/react-query", async () => {
       }
       if (queryId === "addReserveStatus") {
         return { data: undefined, error: null, isError: false, refetch: vi.fn() };
+      }
+      if (queryId === "foreignBalance") {
+        return mockUseForeignBalanceQuery();
       }
       if (typeof queryId === "string" && HISTORY_QUERY_IDS.has(queryId)) {
         return mockUseHistoryQuery(queryId);
@@ -98,6 +105,9 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   }),
   getKeysetsBalanceOptions: () => ({
     queryKey: [{ _id: "keysetsBalance" }],
+  }),
+  getForeignBalanceOptions: () => ({
+    queryKey: [{ _id: "foreignBalance" }],
   }),
 }));
 
@@ -244,6 +254,7 @@ beforeEach(() => {
     refetch: vi.fn(),
   });
   mockUseHistoryQuery.mockImplementation((queryId) => ({ data: emptyHistory(queryId), isPending: false, error: null }));
+  mockUseForeignBalanceQuery.mockReturnValue({ data: { balances: [] }, isPending: false, isError: false, error: null });
   storageData = {};
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
@@ -288,6 +299,19 @@ describe("BalancesPage", () => {
       isError: false,
       refetch: vi.fn(),
     });
+    // The e-IOU card reads the treasury's foreign balances, not `eiou_collateral`: 555 settled
+    // across two mints, with 1,000 more still owed to it.
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: {
+        balances: [
+          { mint_id: "https://alpha.example", settled: 500, unsettled: 400 },
+          { mint_id: "https://beta.example", settled: 55, unsettled: 600 },
+        ],
+      },
+      isPending: false,
+      isError: false,
+      error: null,
+    });
 
     const page = renderWithProviders(<BalancesPage />);
     await flush();
@@ -297,10 +321,67 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("50,000,000");
     expect(page.textContent).toContain("45,000.00");
     expect(page.textContent).toContain("42,000");
-    // 555 e-IOU at the fixed 0.067 euro-cent peg.
+    // 555 e-IOU at the fixed 0.067 euro-cent peg: the settled total, not `eiou_collateral`.
     expect(page.textContent).toContain("555e-IOU0.37eur");
+    // Value still owed by the foreign mints is named on its own line, never folded into the headline.
+    expect(page.textContent).toContain("Unsettled1,000e-IOU0.67eur");
     // A crsat is worth exactly one sat, so it converts at the sat rate.
     expect(page.textContent).toContain("777crsat0.70eur");
+  });
+
+  it("shows a dash rather than zero when the foreign balance endpoint fails", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("treasury unreachable"),
+    });
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.textContent).toContain("Foreign balances unavailable");
+    expect(page.textContent).not.toContain("Unsettled");
+    // Coverage still loaded, so the cards that do not depend on the treasury are unaffected.
+    expect(page.textContent).toContain("Bitcoin balance");
+  });
+
+  it("breaks the e-IOU balance down by foreign mint in its drawer", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: {
+        balances: [
+          { mint_id: "https://small.example", settled: 10, unsettled: 0 },
+          { mint_id: "https://large.example", settled: 9_000, unsettled: 1 },
+        ],
+      },
+      isPending: false,
+      isError: false,
+      error: null,
+    });
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(document.body.textContent).not.toContain("Foreign eCash by mint");
+
+    await openBalanceCard("e-IOU balance");
+
+    // The chart itself is recharts, mocked away here; `sortForeignBalances` covers the bar order.
+    expect(document.body.textContent).toContain("Foreign eCash by mint");
+    expect(document.body.textContent).not.toContain("The mint holds no foreign eCash yet.");
+  });
+
+  it("tells the operator the mint holds no foreign eCash rather than showing an empty drawer", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("e-IOU balance");
+
+    expect(document.body.textContent).toContain("The mint holds no foreign eCash yet.");
   });
 
   it("shows only original sat amounts when fiat rates are unavailable", async () => {

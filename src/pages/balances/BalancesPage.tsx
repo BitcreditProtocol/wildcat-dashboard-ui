@@ -1,17 +1,19 @@
 import { PropsWithChildren, type ReactNode, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton, cn } from "@bitcredit/ui-library";
-import { getClowderLocalCoverageOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton, Text, cn } from "@bitcredit/ui-library";
+import { getClowderLocalCoverageOptions, getForeignBalanceOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage } from "react-intl";
 import { Currency } from "@/components/Currency";
 import { isSourceCurrencyCode } from "@/lib/currency";
+import { foreignBalanceTotals } from "@/utils/foreign-balance";
 import { CollectFeesCard } from "./CollectFeesCard";
 import { AddReserveCard } from "./AddReserveCard";
 import { BalanceChartDrawer } from "./BalanceChartDrawer";
 import { OnChainBalanceChart } from "./OnChainBalanceChart";
 import { EbillCollateralChart } from "./EbillCollateralChart";
+import { ForeignBalanceBreakdown } from "./ForeignBalanceBreakdown";
 import { KeysetBalanceChart } from "./KeysetBalanceChart";
 
 function Loader() {
@@ -35,6 +37,7 @@ function Loader() {
 interface BalanceDisplay {
   amount: string;
   unit: string;
+  unavailable?: boolean;
 }
 
 function formatAmountValue(amount?: Amount | number | null) {
@@ -49,16 +52,19 @@ interface BalanceCardProps extends BalanceDisplay {
   title: ReactNode;
   className: string;
   chart?: ReactNode;
+  detail?: ReactNode;
 }
 
-function BalanceCard({ title, className, amount, unit, chart }: BalanceCardProps) {
+function BalanceCard({ title, className, amount, unit, unavailable, chart, detail }: BalanceCardProps) {
   const card = (
     <Card className={cn(className, "h-full text-left text-text-on-tint", chart && "cursor-pointer transition-opacity hover:opacity-90")}>
       <CardHeader>
         <CardTitle className="text-text-on-tint">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <BalanceText amount={amount} unit={unit} />
+        <BalanceText amount={amount} unit={unit} unavailable={unavailable}>
+          {detail}
+        </BalanceText>
       </CardContent>
     </Card>
   );
@@ -81,11 +87,13 @@ function BalanceCard({ title, className, amount, unit, chart }: BalanceCardProps
   );
 }
 
-export function BalanceText({ amount, unit, children }: PropsWithChildren<BalanceDisplay>) {
+export function BalanceText({ amount, unit, unavailable, children }: PropsWithChildren<BalanceDisplay>) {
   return (
     <>
       <Heading as="h3" variant="page" className="text-text-on-tint">
-        {isSourceCurrencyCode(unit) ? (
+        {unavailable ? (
+          "—"
+        ) : isSourceCurrencyCode(unit) ? (
           <Currency
             value={Number(amount)}
             sourceCurrency={unit}
@@ -113,7 +121,15 @@ function useBalances() {
     retry: 2,
   });
 
+  const { data: foreign, isError: isForeignError } = useQuery({
+    ...getForeignBalanceOptions(),
+    refetchInterval: 30_000,
+    staleTime: 25_000,
+    retry: 2,
+  });
+
   const error = isError ? "Failed to load coverage data" : null;
+  const foreignTotals = foreignBalanceTotals(foreign?.balances ?? []);
 
   const balances: Record<string, BalanceDisplay> = {
     bitcoin: {
@@ -125,8 +141,9 @@ function useBalances() {
       unit: "sat",
     },
     eiou: {
-      amount: coverage?.eiou_collateral?.toString() ?? "0",
+      amount: foreignTotals.settled.toString(),
       unit: "eiou",
+      unavailable: isForeignError,
     },
     credit: {
       amount: formatAmountValue(coverage?.credit_circulating_supply),
@@ -138,11 +155,11 @@ function useBalances() {
     },
   };
 
-  return { balances, error, refetch };
+  return { balances, foreignTotals, isForeignError, error, refetch };
 }
 
 function PageBodyWithDevSection() {
-  const { balances, error } = useBalances();
+  const { balances, foreignTotals, isForeignError, error } = useBalances();
 
   if (error) {
     return (
@@ -183,6 +200,25 @@ function PageBodyWithDevSection() {
             className="bg-orange-100"
             amount={balances.eiou.amount}
             unit={balances.eiou.unit}
+            unavailable={balances.eiou.unavailable}
+            detail={
+              isForeignError ? (
+                <Text variant="caption" className="mt-1 text-text-on-tint-muted">
+                  <FormattedMessage id="balances.eiou.unavailable" defaultMessage="Foreign balances unavailable" />
+                </Text>
+              ) : (
+                <Text variant="caption" className="mt-1 flex flex-wrap items-baseline gap-1 text-text-on-tint-muted">
+                  <FormattedMessage id="balances.eiou.unsettled" defaultMessage="Unsettled" />
+                  <Currency
+                    value={foreignTotals.unsettled}
+                    sourceCurrency="eiou"
+                    amountClassName="text-current"
+                    currencyClassName="text-current"
+                  />
+                </Text>
+              )
+            }
+            chart={<ForeignBalanceBreakdown />}
           />
           <BalanceCard
             title={<FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />}

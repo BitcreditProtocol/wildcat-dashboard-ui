@@ -1251,6 +1251,26 @@
           }
         }
       }
+    },
+    "/v1/admin/treasury/foreign/balance": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_foreign_balance",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForeignBalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2598,6 +2618,44 @@
           }
         }
       },
+      "ForeignBalanceEntry": {
+        "type": "object",
+        "description": "--------------------------- foreign eCash balance",
+        "required": [
+          "mint_id",
+          "settled",
+          "unsettled"
+        ],
+        "properties": {
+          "mint_id": {
+            "type": "string"
+          },
+          "settled": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "unsettled": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "ForeignBalanceResponse": {
+        "type": "object",
+        "required": [
+          "balances"
+        ],
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForeignBalanceEntry"
+            }
+          }
+        }
+      },
       "Id": {
         "type": "object",
         "description": "A keyset ID is an identifier for a specific keyset. It can be derived by\nanyone who knows the set of public keys of a mint. The keyset ID **CAN**\nbe stored in a Cashu token such that the token can be used to identify\nwhich mint or keyset it was generated from.",
@@ -3115,7 +3173,7 @@
         ],
         "properties": {
           "keyset_id": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string"
           },
           "expiry": {
             "type": "integer",
@@ -3123,7 +3181,9 @@
             "minimum": 0
           },
           "balance": {
-            "$ref": "#/components/schemas/Amount"
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -3662,7 +3722,7 @@
       },
       "PendingOutage": {
         "type": "object",
-        "description": "An outage the Beta mints still hold against this Alpha mint, with the swaps it owes once it recovers",
+        "description": "One outage as the alpha's Betas collectively hold it against the alpha.",
         "required": [
           "evidence_digest",
           "betas_holding",
@@ -3676,32 +3736,25 @@
               "type": "integer",
               "format": "int32",
               "minimum": 0
-            },
-            "description": "Digest of the outage evidence the Betas hold"
+            }
           },
           "substitute": {
             "type": [
               "string",
               "null"
-            ],
-            "description": "The elected substitute Beta, hex-encoded public key; `null` while no substitute is elected."
+            ]
           },
           "betas_holding": {
             "type": "integer",
-            "format": "int64",
-            "description": "How many Betas still hold this outage.",
             "minimum": 0
           },
           "pending_exchanges": {
             "type": "integer",
-            "format": "int64",
-            "description": "Number of swaps the Alpha still has to make, each counted once.",
             "minimum": 0
           },
           "pending_amount": {
             "type": "integer",
             "format": "int64",
-            "description": "Total of the pending swaps, in satoshis.",
             "minimum": 0
           }
         }
@@ -3719,13 +3772,6 @@
               "null"
             ]
           },
-          "pending_outages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PendingOutage"
-            },
-            "description": "One entry per outage the Betas still hold against this Alpha; empty once the Alpha is online again."
-          },
           "alpha_state": {
             "$ref": "#/components/schemas/MintState"
           },
@@ -3737,6 +3783,13 @@
             "format": "int64",
             "description": "Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.",
             "minimum": 0
+          },
+          "pending_outages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingOutage"
+            },
+            "description": "Outages the Betas still hold against this alpha; empty once it is online."
           }
         }
       },
