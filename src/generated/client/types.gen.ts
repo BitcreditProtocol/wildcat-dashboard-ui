@@ -359,6 +359,19 @@ export type File = {
 };
 
 /**
+ * --------------------------- foreign eCash balance
+ */
+export type ForeignBalanceEntry = {
+    mint_id: string;
+    settled: number;
+    unsettled: number;
+};
+
+export type ForeignBalanceResponse = {
+    balances: Array<ForeignBalanceEntry>;
+};
+
+/**
  * A keyset ID is an identifier for a specific keyset. It can be derived by
  * anyone who knows the set of public keys of a mint. The keyset ID **CAN**
  * be stored in a Cashu token such that the token can be used to identify
@@ -500,9 +513,9 @@ export type KeySetVersion = 'Version00' | 'Version01';
  * --------------------------- per-keyset outstanding eCash balance
  */
 export type KeysetBalance = {
-    keyset_id: Id;
+    keyset_id: string;
     expiry: number;
-    balance: Amount;
+    balance: number;
 };
 
 export type KeysetsBalanceResponse = {
@@ -662,28 +675,13 @@ export type PaymentStatus = {
 };
 
 /**
- * An outage the Beta mints still hold against this Alpha mint, with the swaps it owes once it recovers
+ * One outage as the alpha's Betas collectively hold it against the alpha.
  */
 export type PendingOutage = {
-    /**
-     * Digest of the outage evidence the Betas hold
-     */
     evidence_digest: Array<number>;
-    /**
-     * The elected substitute Beta, hex-encoded public key; `null` while no substitute is elected.
-     */
     substitute?: string | null;
-    /**
-     * How many Betas still hold this outage.
-     */
     betas_holding: number;
-    /**
-     * Number of swaps the Alpha still has to make, each counted once.
-     */
     pending_exchanges: number;
-    /**
-     * Total of the pending swaps, in satoshis.
-     */
     pending_amount: number;
 };
 
@@ -692,15 +690,15 @@ export type PendingOutage = {
  */
 export type PerceivedState = {
     substitute_beta?: string | null;
-    /**
-     * One entry per outage the Betas still hold against this Alpha; empty once the Alpha is online again.
-     */
-    pending_outages?: Array<PendingOutage>;
     alpha_state: MintState;
     /**
      * Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.
      */
     offline_since?: number | null;
+    /**
+     * Outages the Betas still hold against this alpha; empty once it is online.
+     */
+    pending_outages?: Array<PendingOutage>;
 };
 
 export type PostalAddress = {
@@ -1714,3 +1712,19 @@ export type CollectFeesTokenResponses = {
 };
 
 export type CollectFeesTokenResponse = CollectFeesTokenResponses[keyof CollectFeesTokenResponses];
+
+export type GetForeignBalanceData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/treasury/foreign/balance';
+};
+
+export type GetForeignBalanceResponses = {
+    /**
+     * Successful response
+     */
+    200: ForeignBalanceResponse;
+};
+
+export type GetForeignBalanceResponse = GetForeignBalanceResponses[keyof GetForeignBalanceResponses];
