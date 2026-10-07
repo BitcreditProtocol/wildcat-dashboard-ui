@@ -45,7 +45,7 @@ export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
 
   const config = {
     balance: {
-      label: intl.formatMessage({ id: "balances.history.keysets.series", defaultMessage: "Outstanding eCash" }),
+      label: intl.formatMessage({ id: "balances.history.keysets.series", defaultMessage: "Outstanding e-cash" }),
       color: "var(--color-chart-4)",
     },
   } satisfies ChartConfig;
@@ -58,7 +58,7 @@ export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
 
   return (
     <HistoryChartCard
-      title={<FormattedMessage id="balances.history.keysets.title" defaultMessage="Outstanding eCash by keyset" />}
+      title={<FormattedMessage id="balances.history.keysets.title" defaultMessage="Outstanding e-cash by keyset" />}
       description={
         <FormattedMessage
           id="balances.history.keysets.description"

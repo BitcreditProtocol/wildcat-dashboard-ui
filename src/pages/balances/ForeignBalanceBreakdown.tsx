@@ -54,7 +54,7 @@ export function ForeignBalanceBreakdown() {
 
   return (
     <HistoryChartCard
-      title={<FormattedMessage id="balances.foreign.title" defaultMessage="Foreign eCash by mint" />}
+      title={<FormattedMessage id="balances.foreign.title" defaultMessage="Foreign e-cash by mint" />}
       description={
         <FormattedMessage
           id="balances.foreign.description"
@@ -64,7 +64,7 @@ export function ForeignBalanceBreakdown() {
       isPending={isPending}
       error={error}
       isEmpty={series.every((point) => point.settled === 0 && point.unsettled === 0)}
-      emptyMessage={<FormattedMessage id="balances.foreign.empty" defaultMessage="The mint holds no foreign eCash yet." />}
+      emptyMessage={<FormattedMessage id="balances.foreign.empty" defaultMessage="The mint holds no foreign e-cash yet." />}
       table={
         <HistoryTable
           rows={series}

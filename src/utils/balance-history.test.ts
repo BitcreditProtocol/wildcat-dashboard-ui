@@ -29,14 +29,8 @@ function bill(overrides: Partial<BillBalanceEntry>): BillBalanceEntry {
   };
 }
 
-function keysetBalance(hexId: string, expiry: number, value: number): KeysetBalance {
-  const bytes = hexId.match(/../g)?.map((pair) => Number.parseInt(pair, 16)) ?? [];
-
-  return {
-    keyset_id: { version: "Version00", id: { V1: bytes } },
-    expiry,
-    balance: { value, unit: null },
-  };
+function keysetBalance(keysetId: string, expiry: number, balance: number): KeysetBalance {
+  return { keyset_id: keysetId, expiry, balance };
 }
 
 describe("signedOnChainAmount", () => {
@@ -218,29 +212,23 @@ describe("keysetBalanceSeries", () => {
     expect(keysetBalanceSeries([])).toEqual([]);
   });
 
-  it("serializes the keyset id the way the keyset routes do", () => {
-    expect(keysetBalanceSeries([keysetBalance("abcd", 10, 5)])).toEqual([{ keysetId: "00abcd", expiry: 10, balance: 5 }]);
+  it("carries the hex keyset id the aggregator sends straight through", () => {
+    expect(keysetBalanceSeries([keysetBalance("01539548", 1_789_776_000, 19_512)])).toEqual([
+      { keysetId: "01539548", expiry: 1_789_776_000, balance: 19_512 },
+    ]);
   });
 
   it("orders by expiry, then by keyset id so equal expiries stay stable", () => {
-    const series = keysetBalanceSeries([keysetBalance("ff", 20, 1), keysetBalance("bb", 10, 2), keysetBalance("aa", 10, 3)]);
+    const series = keysetBalanceSeries([keysetBalance("00ff", 20, 1), keysetBalance("00bb", 10, 2), keysetBalance("00aa", 10, 3)]);
 
     expect(series.map((point) => point.keysetId)).toEqual(["00aa", "00bb", "00ff"]);
-  });
-
-  // What the aggregator actually sends: a hex keyset id and the balance as a bare integer,
-  // where the spec promises an `Id` object and an `Amount`.
-  it("reads the balance the aggregator sends, not only the Amount the spec promises", () => {
-    const wireEntry = { keyset_id: "01539548", expiry: 1_789_776_000, balance: 19_512 } as unknown as KeysetBalance;
-
-    expect(keysetBalanceSeries([wireEntry])).toEqual([{ keysetId: "01539548", expiry: 1_789_776_000, balance: 19_512 }]);
   });
 
   it("drops a balance it cannot read rather than plotting a bar of no height", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const unreadable = { keyset_id: "01539548", expiry: 10, balance: { unit: null } } as unknown as KeysetBalance;
 
-    expect(keysetBalanceSeries([unreadable, keysetBalance("aa", 20, 3)])).toEqual([{ keysetId: "00aa", expiry: 20, balance: 3 }]);
+    expect(keysetBalanceSeries([unreadable, keysetBalance("00aa", 20, 3)])).toEqual([{ keysetId: "00aa", expiry: 20, balance: 3 }]);
     expect(error).toHaveBeenCalled();
     error.mockRestore();
   });

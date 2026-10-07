@@ -230,15 +230,12 @@ export interface KeysetBalancePoint {
 }
 
 /**
- * The satoshis on one keyset entry. The spec types `balance` as an `Amount`, but the aggregator
- * sends a bare integer; read either, the way the coverage card already reads its own amounts.
- * Anything else is reported and dropped rather than charted as a bar of undefined height, which
- * draws nothing while leaving the chart looking merely empty.
+ * The satoshis on one keyset entry. The spec and the aggregator now agree on a bare integer,
+ * but a value that is not one is still reported and dropped rather than charted as a bar of
+ * undefined height, which draws nothing while leaving the chart looking merely empty.
  */
 function keysetBalanceValue(balance: KeysetBalance["balance"]): number | null {
-  const value: unknown = typeof balance === "object" && balance !== null ? balance.value : balance;
-
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  return Number.isFinite(balance) ? balance : null;
 }
 
 /**
