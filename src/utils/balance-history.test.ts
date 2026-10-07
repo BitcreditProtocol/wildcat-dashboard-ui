@@ -4,10 +4,12 @@ import {
   clipBalanceSeries,
   clipKeysetBalances,
   clipMaturityBuckets,
+  ebillCollateralEntries,
   ebillCollateralByMaturity,
   keysetBalanceSeries,
   keysetBalancesForToken,
   onChainBalanceSeries,
+  onChainLedger,
   signedOnChainAmount,
   withTodayMarker,
 } from "./balance-history";
@@ -86,6 +88,74 @@ describe("onChainBalanceSeries", () => {
     onChainBalanceSeries(operations);
 
     expect(operations[0].timestamp).toBe(3_000);
+  });
+});
+
+describe("onChainLedger", () => {
+  const operations = [
+    operation({ type: "Melt", quote_id: "q2" }, 300, 3_000),
+    operation({ type: "Mint", quote_id: "q1" }, 1_000, 1_000),
+    operation({ type: "AddReserve", reserve_id: "r1" }, 200, 2_000),
+  ];
+
+  it("lists every operation oldest first with the balance it leaves behind", () => {
+    const ledger = onChainLedger(operations, null);
+
+    expect(ledger.opening).toBe(0);
+    expect(ledger.entries.map(({ change, balance }) => ({ change, balance }))).toEqual([
+      { change: 1_000, balance: 1_000 },
+      { change: 200, balance: 1_200 },
+      { change: -300, balance: 900 },
+    ]);
+    expect(ledger.closing).toBe(900);
+  });
+
+  it("opens a narrowed window on the balance carried into it, so the changes still add up", () => {
+    const ledger = onChainLedger(operations, { from: 1_500, to: 2_500 });
+
+    expect(ledger.opening).toBe(1_000);
+    expect(ledger.entries.map((entry) => entry.change)).toEqual([200]);
+    expect(ledger.closing).toBe(ledger.opening + 200);
+  });
+
+  it("closes on the opening balance when the window holds no operations", () => {
+    const ledger = onChainLedger(operations, { from: 5_000, to: 6_000 });
+
+    expect(ledger.entries).toEqual([]);
+    expect(ledger.closing).toBe(900);
+  });
+});
+
+describe("ebillCollateralEntries", () => {
+  it("puts each bill's sum in paid or outstanding, earliest maturity first", () => {
+    const entries = ebillCollateralEntries(
+      [
+        bill({ id: "late", maturity_date: "2026-08-01", sum: "300", paid: false }),
+        bill({ id: "early", maturity_date: "2026-07-01", sum: "500", paid: true }),
+      ],
+      null
+    );
+
+    expect(entries).toEqual([
+      { id: "early", maturityDate: "2026-07-01", paid: 500, outstanding: 0 },
+      { id: "late", maturityDate: "2026-08-01", paid: 0, outstanding: 300 },
+    ]);
+  });
+
+  it("keeps only bills maturing inside the window", () => {
+    const july = Math.floor(Date.UTC(2026, 6, 1) / 1000);
+    const entries = ebillCollateralEntries(
+      [bill({ id: "in", maturity_date: "2026-07-01" }), bill({ id: "out", maturity_date: "2026-09-01" })],
+      { from: july, to: july + 24 * 60 * 60 }
+    );
+
+    expect(entries.map((entry) => entry.id)).toEqual(["in"]);
+  });
+
+  it("drops a bill whose sum does not parse", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(ebillCollateralEntries([bill({ sum: "not-a-number" })], null)).toEqual([]);
   });
 });
 

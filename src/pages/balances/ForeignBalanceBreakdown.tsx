@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
@@ -12,9 +13,10 @@ import {
 } from "@/components/ui/chart";
 import { getForeignBalanceOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { mintLabel } from "@/pages/home/components/clowder-peers/clowder-peer-utils";
-import { sortForeignBalances } from "@/utils/foreign-balance";
+import { foreignBalanceTotals, sortForeignBalances } from "@/utils/foreign-balance";
 import { useAmountFormatter } from "@/utils/amount-format";
 import { CHART_BODY_CLASS, HistoryChartCard } from "./HistoryChartCard";
+import { HistoryTable, TotalLabel } from "./HistoryTable";
 
 export function ForeignBalanceBreakdown() {
   const intl = useIntl();
@@ -29,12 +31,15 @@ export function ForeignBalanceBreakdown() {
   const series = useMemo(
     () =>
       sortForeignBalances(data?.balances ?? []).map((entry) => ({
+        mintId: entry.mint_id,
         mint: mintLabel(entry.mint_id),
         settled: entry.settled,
         unsettled: entry.unsettled,
       })),
     [data]
   );
+
+  const totals = foreignBalanceTotals(data?.balances ?? []);
 
   const config = {
     settled: {
@@ -49,7 +54,7 @@ export function ForeignBalanceBreakdown() {
 
   return (
     <HistoryChartCard
-      title={<FormattedMessage id="balances.foreign.title" defaultMessage="Foreign eCash by mint" />}
+      title={<FormattedMessage id="balances.foreign.title" defaultMessage="Foreign e-cash by mint" />}
       description={
         <FormattedMessage
           id="balances.foreign.description"
@@ -59,7 +64,40 @@ export function ForeignBalanceBreakdown() {
       isPending={isPending}
       error={error}
       isEmpty={series.every((point) => point.settled === 0 && point.unsettled === 0)}
-      emptyMessage={<FormattedMessage id="balances.foreign.empty" defaultMessage="The mint holds no foreign eCash yet." />}
+      emptyMessage={<FormattedMessage id="balances.foreign.empty" defaultMessage="The mint holds no foreign e-cash yet." />}
+      table={
+        <HistoryTable
+          rows={series}
+          rowKey={(point) => point.mintId}
+          columns={[
+            {
+              key: "mint",
+              header: <FormattedMessage id="balances.foreign.table.mint" defaultMessage="Mint" />,
+              cell: (point) => <TruncatedTextPopover text={point.mintId} as="span" />,
+              truncate: true,
+            },
+            {
+              key: "settled",
+              header: config.settled.label,
+              cell: (point) => formatAmount(point.settled),
+              numeric: true,
+            },
+            {
+              key: "unsettled",
+              header: config.unsettled.label,
+              cell: (point) => formatAmount(point.unsettled),
+              numeric: true,
+            },
+          ]}
+          summary={[
+            {
+              key: "total",
+              label: <TotalLabel />,
+              cells: { settled: formatAmount(totals.settled), unsettled: formatAmount(totals.unsettled) },
+            },
+          ]}
+        />
+      }
     >
       <ChartContainer config={config} className={CHART_BODY_CLASS}>
         <BarChart accessibilityLayer data={series} margin={{ top: 5, right: 12, left: 5, bottom: 5 }}>

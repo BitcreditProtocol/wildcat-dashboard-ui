@@ -189,7 +189,7 @@ function PageBodyWithDevSection() {
             chart={<OnChainBalanceChart />}
           />
           <BalanceCard
-            title={<FormattedMessage id="balances.ebillCollateral" defaultMessage="eBill collateral balance" />}
+            title={<FormattedMessage id="balances.ebillCollateral" defaultMessage="E-bill collateral balance" />}
             className="bg-teal-200"
             amount={balances.ebillCollateral.amount}
             unit={balances.ebillCollateral.unit}
