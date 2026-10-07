@@ -80,6 +80,83 @@ export function clipBalanceSeries(series: OnChainBalancePoint[], bounds: RangeBo
   return clipped.length === 1 ? [...clipped, { timestamp: bounds.to, balance: opening.balance }] : clipped;
 }
 
+export interface OnChainLedgerEntry {
+  key: string;
+  timestamp: number;
+  operation: OnChainOperation;
+  change: number;
+  balance: number;
+}
+
+export interface OnChainLedger {
+  opening: number;
+  entries: OnChainLedgerEntry[];
+  closing: number;
+}
+
+/**
+ * The on-chain balance as the operations that make it up, so `opening` plus every `change`
+ * adds up to `closing`. Like `clipBalanceSeries`, the balance is accumulated over the whole
+ * history before the window is applied, so a narrowed window still opens on the true balance.
+ */
+export function onChainLedger(operations: OnChainOperation[], bounds: RangeBounds | null): OnChainLedger {
+  const ordered = [...operations].sort((a, b) => a.timestamp - b.timestamp);
+  const entries: OnChainLedgerEntry[] = [];
+  let opening = 0;
+  let balance = 0;
+
+  ordered.forEach((operation, index) => {
+    const change = signedOnChainAmount(operation);
+    balance += change;
+
+    if (bounds !== null && operation.timestamp < bounds.from) {
+      opening = balance;
+    } else if (bounds === null || isWithinBounds(operation.timestamp, bounds)) {
+      entries.push({ key: `${operation.timestamp}-${index}`, timestamp: operation.timestamp, operation, change, balance });
+    }
+  });
+
+  return { opening, entries, closing: entries[entries.length - 1]?.balance ?? opening };
+}
+
+export interface EbillCollateralEntry {
+  id: string;
+  maturityDate: string;
+  paid: number;
+  outstanding: number;
+}
+
+/**
+ * The bills behind the maturity ladder, one row each, earliest maturity first. A bill's sum sits
+ * in `paid` or `outstanding`, never both, so the columns total to the ladder's two stacks.
+ */
+export function ebillCollateralEntries(bills: BillBalanceEntry[], bounds: RangeBounds | null): EbillCollateralEntry[] {
+  const entries: EbillCollateralEntry[] = [];
+
+  for (const bill of bills) {
+    const sum = Number(bill.sum);
+    const utcStart = getUtcStartOfDate(bill.maturity_date);
+
+    if (!Number.isFinite(sum)) {
+      logger.error("Unparseable bill sum", bill.id, bill.sum);
+      continue;
+    }
+
+    if (bounds !== null && (utcStart === null || !isWithinBounds(Math.floor(utcStart.getTime() / 1000), bounds))) {
+      continue;
+    }
+
+    entries.push({
+      id: bill.id,
+      maturityDate: bill.maturity_date,
+      paid: bill.paid ? sum : 0,
+      outstanding: bill.paid ? 0 : sum,
+    });
+  }
+
+  return entries.sort((a, b) => a.maturityDate.localeCompare(b.maturityDate) || a.id.localeCompare(b.id));
+}
+
 export interface EbillMaturityBucket {
   maturityDate: string;
   paid: number;

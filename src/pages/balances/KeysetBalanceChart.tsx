@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { TruncatedTextPopover } from "@bitcredit/ui-library";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { FormattedMessage, useIntl } from "react-intl";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -12,6 +13,7 @@ import type { TokenKind } from "@/utils/keyset";
 import { ChartRangeToggle } from "./ChartRangeToggle";
 import { useChartRange } from "./use-chart-range";
 import { CHART_BODY_CLASS, HistoryChartCard } from "./HistoryChartCard";
+import { HistoryTable, TotalLabel } from "./HistoryTable";
 
 const KEYSET_CHART_DIRECTION: Record<TokenKind, RangeDirection> = {
   credit: "future",
@@ -74,6 +76,38 @@ export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
         )
       }
       actions={<ChartRangeToggle value={range} onChange={setRange} direction={direction} picked={picked} onPickedChange={setPicked} />}
+      table={
+        <HistoryTable
+          rows={series}
+          rowKey={(point) => point.keysetId}
+          columns={[
+            {
+              key: "keyset",
+              header: <FormattedMessage id="balances.history.keysets.table.keyset" defaultMessage="Keyset" />,
+              cell: (point) => <TruncatedTextPopover text={point.keysetId} className="font-mono" as="span" />,
+              truncate: true,
+            },
+            {
+              key: "expiry",
+              header: <FormattedMessage id="balances.history.keysets.table.expiry" defaultMessage="Expiry" />,
+              cell: (point) => formatDateShort(new Date(point.expiry * 1000), intl.locale),
+            },
+            {
+              key: "balance",
+              header: config.balance.label,
+              cell: (point) => formatAmount(point.balance),
+              numeric: true,
+            },
+          ]}
+          summary={[
+            {
+              key: "total",
+              label: <TotalLabel />,
+              cells: { balance: formatAmount(series.reduce((sum, point) => sum + point.balance, 0)) },
+            },
+          ]}
+        />
+      }
     >
       <ChartContainer config={config} className={CHART_BODY_CLASS}>
         <BarChart accessibilityLayer data={series} margin={{ top: 5, right: 12, left: 5, bottom: 5 }}>

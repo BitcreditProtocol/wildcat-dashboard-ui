@@ -303,6 +303,108 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("777crsat0.70eur");
   });
 
+<<<<<<< Updated upstream
+=======
+  it("shows a dash rather than zero when the foreign balance endpoint fails", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("treasury unreachable"),
+    });
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.textContent).toContain("Foreign balances unavailable");
+    expect(page.textContent).not.toContain("Unsettled");
+    // Coverage still loaded, so the cards that do not depend on the treasury are unaffected.
+    expect(page.textContent).toContain("Bitcoin balance");
+  });
+
+  it("breaks the e-IOU balance down by foreign mint in its drawer", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: {
+        balances: [
+          { mint_id: "https://small.example", settled: 10, unsettled: 0 },
+          { mint_id: "https://large.example", settled: 9_000, unsettled: 1 },
+        ],
+      },
+      isPending: false,
+      isError: false,
+      error: null,
+    });
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(document.body.textContent).not.toContain("Foreign eCash by mint");
+
+    await openBalanceCard("e-IOU balance");
+
+    // The chart itself is recharts, mocked away here; `sortForeignBalances` covers the bar order.
+    expect(document.body.textContent).toContain("Foreign eCash by mint");
+    expect(document.body.textContent).not.toContain("The mint holds no foreign eCash yet.");
+  });
+
+  it("switches a drawer from its chart to a table of the same values", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: {
+        balances: [
+          { mint_id: "https://large.example", settled: 9_000, unsettled: 1_234 },
+          { mint_id: "https://small.example", settled: 10, unsettled: 0 },
+        ],
+      },
+      isPending: false,
+      isError: false,
+      error: null,
+    });
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+    await openBalanceCard("e-IOU balance");
+
+    // The chart is the default view, so no table is drawn yet.
+    expect(document.querySelector('[role="dialog"] table')).toBeNull();
+
+    const tableToggle = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
+      (button) => button.textContent === "Table"
+    );
+    if (!tableToggle) {
+      throw new Error("The drawer offers no table view");
+    }
+    act(() => {
+      tableToggle.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    const table = document.querySelector('[role="dialog"] table');
+    expect(table).not.toBeNull();
+    expect(table?.textContent).toContain("Mint");
+    expect(table?.textContent).toContain("9,000");
+    expect(table?.textContent).toContain("1,234");
+    // The total row adds the mints up to the figure on the e-IOU card.
+    const total = table?.querySelector("tfoot")?.textContent;
+    expect(total).toContain("Total");
+    expect(total).toContain("9,010");
+    expect(total).toContain("1,234");
+  });
+
+  it("tells the operator the mint holds no foreign eCash rather than showing an empty drawer", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("e-IOU balance");
+
+    expect(document.body.textContent).toContain("The mint holds no foreign eCash yet.");
+  });
+
+>>>>>>> Stashed changes
   it("shows only original sat amounts when fiat rates are unavailable", async () => {
     storageData["user-preferences"] = JSON.stringify({ currency: "usd" });
     vi.stubGlobal(
