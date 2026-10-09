@@ -336,6 +336,36 @@ export type DeniedMeltOperations = {
     ops: Array<DeniedMeltOp>;
 };
 
+/**
+ * --------------------------- e-iou deposits
+ */
+export type EiouDepositRequest = {
+    request_id: string;
+    /**
+     * Whole brc-20 tokens, not sats: the eIOU ticker is deployed with `dec = 0`.
+     */
+    amount: number;
+};
+
+export type EiouDepositResponse = {
+    request_id: string;
+    address: string;
+    /**
+     * The declared amount — what gets credited as collateral.
+     */
+    amount: number;
+    status: EiouDepositStatus;
+};
+
+export type EiouDepositStatus = 'Pending' | {
+    Completed: {
+        /**
+         * The indexer's tip watermark when the credit was observed.
+         */
+        block_height: number;
+    };
+};
+
 export type EnableMintingResponse = {
     [key: string]: unknown;
 };
@@ -1599,6 +1629,50 @@ export type PostAddReserveResponses = {
 };
 
 export type PostAddReserveResponse = PostAddReserveResponses[keyof PostAddReserveResponses];
+
+export type GetEiouDepositStatusData = {
+    body?: never;
+    path: {
+        /**
+         * the eiou deposit request id
+         */
+        rid: string;
+    };
+    query?: never;
+    url: '/v1/admin/clowder/eiou_deposit/{rid}';
+};
+
+export type GetEiouDepositStatusErrors = {
+    /**
+     * eiou deposit id not found
+     */
+    404: unknown;
+};
+
+export type GetEiouDepositStatusResponses = {
+    /**
+     * Successful response
+     */
+    200: EiouDepositResponse;
+};
+
+export type GetEiouDepositStatusResponse = GetEiouDepositStatusResponses[keyof GetEiouDepositStatusResponses];
+
+export type PostEiouDepositData = {
+    body: EiouDepositRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/eiou_deposit';
+};
+
+export type PostEiouDepositResponses = {
+    /**
+     * Successful response
+     */
+    200: EiouDepositResponse;
+};
+
+export type PostEiouDepositResponse = PostEiouDepositResponses[keyof PostEiouDepositResponses];
 
 export type GetOnchainHistoryData = {
     body?: never;
