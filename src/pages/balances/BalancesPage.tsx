@@ -10,6 +10,7 @@ import { isSourceCurrencyCode } from "@/lib/currency";
 import { foreignBalanceTotals } from "@/utils/foreign-balance";
 import { CollectFeesCard } from "./CollectFeesCard";
 import { AddReserveCard } from "./AddReserveCard";
+import { EiouDepositCard } from "./EiouDepositCard";
 import { BalanceChartDrawer } from "./BalanceChartDrawer";
 import { OnChainBalanceChart } from "./OnChainBalanceChart";
 import { EbillCollateralChart } from "./EbillCollateralChart";
@@ -26,7 +27,8 @@ function Loader() {
         <Skeleton className="h-32 rounded-lg" />
         <Skeleton className="h-32 rounded-lg" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <Skeleton className="h-96 rounded-lg" />
         <Skeleton className="h-96 rounded-lg" />
         <Skeleton className="h-96 rounded-lg" />
       </div>
@@ -236,9 +238,10 @@ function PageBodyWithDevSection() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <CollectFeesCard />
           <AddReserveCard />
+          <EiouDepositCard />
         </div>
       </div>
     </>

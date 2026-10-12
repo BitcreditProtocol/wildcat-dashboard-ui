@@ -70,7 +70,7 @@ vi.mock("@tanstack/react-query", async () => {
       if (queryId === "collectFeesToken") {
         return mockUseCollectFeesQuery();
       }
-      if (queryId === "addReserveStatus") {
+      if (queryId === "addReserveStatus" || queryId === "eiouDepositStatus") {
         return { data: undefined, error: null, isError: false, refetch: vi.fn() };
       }
       if (queryId === "foreignBalance") {
@@ -96,6 +96,12 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   }),
   getAddReserveStatusOptions: () => ({
     queryKey: [{ _id: "addReserveStatus" }],
+  }),
+  postEiouDepositMutation: () => ({
+    mutationFn: () => Promise.resolve(undefined),
+  }),
+  getEiouDepositStatusOptions: () => ({
+    queryKey: [{ _id: "eiouDepositStatus" }],
   }),
   getOnchainHistoryOptions: () => ({
     queryKey: [{ _id: "onchainHistory" }],

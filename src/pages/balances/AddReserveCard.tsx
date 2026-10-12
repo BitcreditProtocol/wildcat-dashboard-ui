@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AppIcon, Button, Card, CardContent, CardHeader, CardTitle, Input, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { getAddReserveStatusOptions, postAddReserveMutation } from "@/generated/client/@tanstack/react-query.gen";
@@ -51,7 +51,7 @@ export function AddReserveCard() {
   const reserve = statusQuery.data ?? createReserve.data;
   const status = reserve?.status;
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const amount = Number(amountInput);
     if (!Number.isInteger(amount) || amount <= 0) {
