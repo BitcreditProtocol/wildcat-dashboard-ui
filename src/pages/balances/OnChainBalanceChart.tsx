@@ -33,6 +33,15 @@ function operationReference(opType: OnChainOperationType): string {
   }
 }
 
+const LOCAL_DATE_TIME: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZoneName: "short",
+};
+
 function tooltipTimestamp(payload: unknown): number | null {
   if (!Array.isArray(payload)) {
     return null;
@@ -96,11 +105,13 @@ export function OnChainBalanceChart() {
         <HistoryTable
           rows={ledger.entries}
           rowKey={(entry) => entry.key}
+          defaultSort={{ key: "timestamp", direction: "asc" }}
           columns={[
             {
               key: "timestamp",
               header: <FormattedMessage id="balances.history.onchain.table.date" defaultMessage="Date" />,
-              cell: (entry) => intl.formatDate(new Date(entry.timestamp * 1000), { dateStyle: "medium", timeStyle: "short" }),
+              cell: (entry) => intl.formatDate(new Date(entry.timestamp * 1000), LOCAL_DATE_TIME),
+              sortValue: (entry) => entry.timestamp,
             },
             {
               key: "operation",

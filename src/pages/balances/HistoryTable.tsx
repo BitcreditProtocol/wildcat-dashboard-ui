@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { cn } from "@bitcredit/ui-library";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { FormattedMessage } from "react-intl";
 import { CHART_BODY_CLASS } from "./HistoryChartCard";
 
@@ -8,12 +9,16 @@ export interface HistoryTableColumn<Row> {
   header: ReactNode;
   cell: (row: Row) => ReactNode;
   numeric?: boolean;
-  /**
-   * The column gives up width first when the drawer is too narrow, cutting its text to fit, so a
-   * long id shortens instead of pushing the amounts off screen.
-   */
   truncate?: boolean;
+  sortValue?: (row: Row) => number | string;
   className?: string;
+}
+
+export type SortDirection = "asc" | "desc";
+
+export interface HistoryTableSort {
+  key: string;
+  direction: SortDirection;
 }
 
 /**
@@ -35,6 +40,36 @@ interface HistoryTableProps<Row> {
   rows: Row[];
   rowKey: (row: Row) => string;
   summary?: HistoryTableSummary[];
+  defaultSort?: HistoryTableSort;
+}
+
+function compareValues(a: number | string, b: number | string): number {
+  if (typeof a === "number" && typeof b === "number") {
+    return a - b;
+  }
+
+  return String(a).localeCompare(String(b));
+}
+
+function sortRows<Row>(rows: Row[], columns: HistoryTableColumn<Row>[], sort: HistoryTableSort | undefined): Row[] {
+  const sortValue = columns.find((column) => column.key === sort?.key)?.sortValue;
+
+  if (!sort || !sortValue) {
+    return rows;
+  }
+
+  const sign = sort.direction === "asc" ? 1 : -1;
+
+  return rows
+    .map((row, index) => ({ row, index, value: sortValue(row) }))
+    .sort((a, b) => sign * (compareValues(a.value, b.value) || a.index - b.index))
+    .map(({ row }) => row);
+}
+
+function SortIcon({ direction }: { direction: SortDirection | undefined }) {
+  const Icon = direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : ArrowUpDown;
+
+  return <Icon className={cn("size-3.5 shrink-0", direction === undefined && "opacity-40")} aria-hidden />;
 }
 
 const ROW_CLASS = "col-span-full grid grid-cols-subgrid";
@@ -55,21 +90,46 @@ function gridTemplate<Row>(columns: HistoryTableColumn<Row>[]): string {
  * where a table would hand it all to the truncating one and open a gap between an id and its
  * amounts. Rows are subgrids, which keeps them on the shared column tracks.
  */
-export function HistoryTable<Row>({ columns, rows, rowKey, summary = [] }: HistoryTableProps<Row>) {
+export function HistoryTable<Row>({ columns, rows, rowKey, summary = [], defaultSort }: HistoryTableProps<Row>) {
+  const [sort, setSort] = useState(defaultSort);
+  const sortedRows = useMemo(() => sortRows(rows, columns, sort), [columns, rows, sort]);
+
+  const toggleSort = (key: string) =>
+    setSort((current) => ({ key, direction: current?.key === key && current.direction === "asc" ? "desc" : "asc" }));
+
   return (
     <div className={cn(CHART_BODY_CLASS, "overflow-auto rounded-lg border")}>
-      <table className="grid w-full text-sm" style={{ gridTemplateColumns: gridTemplate(columns) }}>
-        <thead className={cn(ROW_CLASS, "sticky top-0 border-b bg-elevation-50")}>
+      <table className="grid w-full min-w-xl text-sm" style={{ gridTemplateColumns: gridTemplate(columns) }}>
+        <thead className={cn(ROW_CLASS, "sticky top-0 z-10 border-b bg-elevation-50")}>
           <tr className={ROW_CLASS}>
-            {columns.map((column) => (
-              <th key={column.key} className={cn("p-3 font-semibold whitespace-nowrap", column.numeric ? "text-right" : "text-left")}>
-                {column.header}
-              </th>
-            ))}
+            {columns.map((column) => {
+              const direction = sort?.key === column.key ? sort.direction : undefined;
+
+              return (
+                <th
+                  key={column.key}
+                  aria-sort={direction === "asc" ? "ascending" : direction === "desc" ? "descending" : undefined}
+                  className={cn("p-3 font-semibold whitespace-nowrap", column.numeric ? "text-right" : "text-left")}
+                >
+                  {column.sortValue ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleSort(column.key)}
+                      className={cn("inline-flex items-center gap-1 hover:underline", column.numeric && "flex-row-reverse")}
+                    >
+                      {column.header}
+                      <SortIcon direction={direction} />
+                    </button>
+                  ) : (
+                    column.header
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody className={ROW_CLASS}>
-          {rows.map((row) => (
+          {sortedRows.map((row) => (
             <tr key={rowKey(row)} className={cn(ROW_CLASS, "border-b last:border-b-0")}>
               {columns.map((column) => (
                 <td
