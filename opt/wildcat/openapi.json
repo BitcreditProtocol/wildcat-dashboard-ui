@@ -1108,6 +1108,71 @@
         }
       }
     },
+    "/v1/admin/clowder/eiou_deposit/{rid}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_eiou_deposit_status",
+        "parameters": [
+          {
+            "name": "rid",
+            "in": "path",
+            "description": "the eiou deposit request id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EiouDepositResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "eiou deposit id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/eiou_deposit": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "post_eiou_deposit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EiouDepositRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EiouDepositResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/clowder/history/onchain": {
       "get": {
         "tags": [
@@ -2549,6 +2614,83 @@
             }
           }
         }
+      },
+      "EiouDepositRequest": {
+        "type": "object",
+        "description": "--------------------------- e-iou deposits",
+        "required": [
+          "request_id",
+          "amount"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Whole brc-20 tokens, not sats: the eIOU ticker is deployed with `dec = 0`.",
+            "minimum": 0
+          }
+        }
+      },
+      "EiouDepositResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "address",
+          "amount",
+          "status"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The declared amount — what gets credited as collateral.",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/EiouDepositStatus"
+          }
+        }
+      },
+      "EiouDepositStatus": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "Pending"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "Completed"
+            ],
+            "properties": {
+              "Completed": {
+                "type": "object",
+                "required": [
+                  "block_height"
+                ],
+                "properties": {
+                  "block_height": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "The indexer's tip watermark when the credit was observed.",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       "EnableMintingResponse": {
         "type": "object"
