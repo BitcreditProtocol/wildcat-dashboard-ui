@@ -379,7 +379,7 @@ describe("BalancesPage", () => {
     expect(document.body.textContent).not.toContain("The mint holds no foreign e-cash yet.");
   });
 
-  it("switches a drawer from its chart to a table of the same values", async () => {
+  it("opens a drawer on its table and switches to the chart", async () => {
     mockUseCoverageQuery.mockReturnValue(zeroCoverage());
     mockUseForeignBalanceQuery.mockReturnValue({
       data: {
@@ -397,20 +397,7 @@ describe("BalancesPage", () => {
     await flush();
     await openBalanceCard("e-IOU balance");
 
-    // The chart is the default view, so no table is drawn yet.
-    expect(document.querySelector('[role="dialog"] table')).toBeNull();
-
-    const tableToggle = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
-      (button) => button.textContent === "Table"
-    );
-    if (!tableToggle) {
-      throw new Error("The drawer offers no table view");
-    }
-    act(() => {
-      tableToggle.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    });
-    await flush();
-
+    // The table is the default view.
     const table = document.querySelector('[role="dialog"] table');
     expect(table).not.toBeNull();
     expect(table?.textContent).toContain("Mint");
@@ -421,6 +408,19 @@ describe("BalancesPage", () => {
     expect(total).toContain("Total");
     expect(total).toContain("9,010");
     expect(total).toContain("1,234");
+
+    const chartToggle = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
+      (button) => button.textContent === "Chart"
+    );
+    if (!chartToggle) {
+      throw new Error("The drawer offers no chart view");
+    }
+    act(() => {
+      chartToggle.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(document.querySelector('[role="dialog"] table')).toBeNull();
   });
 
   it("tells the operator the mint holds no foreign e-cash rather than showing an empty drawer", async () => {

@@ -84,11 +84,13 @@ export function EbillCollateralChart() {
         <HistoryTable
           rows={entries}
           rowKey={(entry) => entry.id}
+          defaultSort={{ key: "maturity", direction: "asc" }}
           columns={[
             {
               key: "maturity",
               header: <FormattedMessage id="balances.history.ebill.table.maturity" defaultMessage="Maturity" />,
               cell: (entry) => formatMaturity(entry.maturityDate, intl.locale),
+              sortValue: (entry) => entry.maturityDate,
             },
             {
               key: "bill",

@@ -80,6 +80,7 @@ export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
         <HistoryTable
           rows={series}
           rowKey={(point) => point.keysetId}
+          defaultSort={{ key: "expiry", direction: "asc" }}
           columns={[
             {
               key: "keyset",
@@ -91,6 +92,7 @@ export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
               key: "expiry",
               header: <FormattedMessage id="balances.history.keysets.table.expiry" defaultMessage="Expiry" />,
               cell: (point) => formatDateShort(new Date(point.expiry * 1000), intl.locale),
+              sortValue: (point) => point.expiry,
             },
             {
               key: "balance",

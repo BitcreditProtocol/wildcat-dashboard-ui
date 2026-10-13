@@ -68,12 +68,12 @@ export function HistoryChartCard({
   table,
   children,
 }: HistoryChartCardProps) {
-  const [view, setView] = useState<HistoryView>("chart");
+  const [view, setView] = useState<HistoryView>("table");
 
   return (
     <Card className="@container py-4">
       <CardHeader className="px-6 pb-2">
-        <div className="flex flex-col gap-3 @min-[42rem]:flex-row @min-[42rem]:items-start @min-[42rem]:justify-between">
+        <div className="flex flex-col gap-3 @min-[64rem]:flex-row @min-[64rem]:items-start @min-[64rem]:justify-between">
           <div className="flex min-w-0 flex-col gap-1.5">
             <CardTitle>{title}</CardTitle>
             <Text as="p" variant="caption" className="text-muted-foreground">
