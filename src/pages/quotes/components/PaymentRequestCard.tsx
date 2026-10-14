@@ -7,6 +7,8 @@ interface PaymentRequestCardProps {
   quoteId: string;
   requestedToPay: boolean;
   paid: boolean;
+  /** The payer refused; the details below are what was requested, kept for the record. */
+  rejected?: boolean;
   addressToPay?: string;
   linkToPay?: string;
   effectiveRequestTime: number | null;
@@ -18,6 +20,7 @@ export function PaymentRequestCard({
   quoteId,
   requestedToPay,
   paid,
+  rejected = false,
   addressToPay,
   linkToPay,
   effectiveRequestTime,
@@ -36,6 +39,14 @@ export function PaymentRequestCard({
         <CheckBillPaymentButton billId={billId} quoteId={quoteId} requestedToPay={requestedToPay} paid={paid} />
       </div>
       <div className="space-y-1">
+        {rejected && !paid && (
+          <Text as="p" variant="caption" className="mb-2 text-red-700 dark:text-red-400">
+            {intl.formatMessage({
+              id: "quotes.paymentRequest.rejected",
+              defaultMessage: "The payer rejected to pay this bill. The payment details below are from the original request.",
+            })}
+          </Text>
+        )}
         {addressToPay && (
           <div className="flex items-center gap-2">
             <Text variant="label" className="w-32">
