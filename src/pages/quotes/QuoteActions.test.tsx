@@ -1,6 +1,7 @@
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { BillHistoryBlock } from "@/generated/client/types.gen";
 import { IntlProvider } from "react-intl";
 import { QuoteActions } from "./QuoteActions";
 
@@ -94,14 +95,21 @@ const quoteValue = {
   },
 } as never;
 
-function renderComponent() {
+function renderComponent(historyBlocks?: BillHistoryBlock[]) {
   const mount = document.createElement("div");
   document.body.appendChild(mount);
   const mountRoot = createRoot(mount);
   act(() => {
     mountRoot.render(
       <IntlProvider locale="en">
-        <QuoteActions value={quoteValue} isFetching={false} ebillPaid={false} isMintComplete={false} requestedToPay={false} />
+        <QuoteActions
+          value={quoteValue}
+          isFetching={false}
+          ebillPaid={false}
+          isMintComplete={false}
+          requestedToPay={false}
+          historyBlocks={historyBlocks}
+        />
       </IntlProvider>
     );
   });
@@ -206,6 +214,34 @@ describe("QuoteActions", () => {
 
     expect(page.textContent).not.toContain("Payment request");
     expect(page.textContent).not.toContain("Check payment");
+  });
+
+  it("keeps the requested payment details after the payer rejected to pay", () => {
+    // A rejection ends the waiting state, so the bill itself no longer carries the address.
+    mockUseQuery.mockImplementation((options: { queryKey: [{ _id: string }] }) =>
+      options.queryKey[0]._id === "getEbill"
+        ? { data: { status: { payment: { requested_to_pay: false, rejected_to_pay: true, paid: false } } }, error: null }
+        : { data: undefined, error: null }
+    );
+
+    const signed = { data: { Anon: { node_id: "node" } } } as BillHistoryBlock["signed"];
+    const page = renderComponent([
+      { block_id: 1, block_type: "Issue", signed, signing_timestamp: 1_000 },
+      {
+        block_id: 2,
+        block_type: "RequestToPay",
+        signed,
+        signing_timestamp: 1_767_225_600,
+        request_deadline: 1_767_830_400,
+        payment_data: { sum: "100", currency: "sat", payment_address: "tb1qrequested" },
+      },
+      { block_id: 3, block_type: "RejectToPay", signed, signing_timestamp: 1_767_312_000 },
+    ]);
+
+    expect(page.textContent).toContain("Payment request");
+    expect(page.textContent).toContain("tb1qrequested");
+    expect(page.textContent).toContain("Deadline");
+    expect(page.textContent).toContain("The payer rejected to pay this bill.");
   });
 
   it("drops the payment check once the bill is paid", () => {

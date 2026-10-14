@@ -508,6 +508,7 @@
   "quotes.paymentRequest.addressToPay": "Address to pay",
   "quotes.paymentRequest.deadline": "Deadline",
   "quotes.paymentRequest.linkToMempool": "Link to mempool",
+  "quotes.paymentRequest.rejected": "The payer rejected to pay this bill. The payment details below are from the original request.",
   "quotes.paymentRequest.requestedAt": "Requested at",
   "quotes.paymentRequest.title": "Payment request",
   "quotes.redemption.complete": "Complete",

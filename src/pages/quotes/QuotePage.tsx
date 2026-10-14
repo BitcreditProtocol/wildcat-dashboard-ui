@@ -241,6 +241,7 @@ function PageBody({ id }: { id: string }) {
         requestedToPay={requestedToPay}
         paymentDeadlineTs={paymentDeadlineTs}
         timeOfRequestToPay={timeOfRequestToPay}
+        historyBlocks={historyBlocks}
       />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
