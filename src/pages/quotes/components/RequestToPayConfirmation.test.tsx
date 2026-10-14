@@ -181,7 +181,7 @@ describe("RequestToPayConfirmation", () => {
 
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith({
-      title: "Request to pay is available on the maturity date (2026-03-01).",
+      title: "Request to pay is available on the maturity date (01 Mar 2026).",
       variant: "info",
     });
   });

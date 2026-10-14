@@ -1,7 +1,6 @@
 import { differenceInCalendarYears, differenceInMinutes } from "date-fns";
 import { differenceInCalendarDays, differenceInCalendarMonths, differenceInHours, differenceInSeconds } from "date-fns";
 
-const UTC_TIME_ZONE = "UTC";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const ISO_DATE_PART_PATTERN = /^(\d{4})-(\d{2})-(\d{2})/;
 
@@ -48,38 +47,6 @@ export function humanReadableDurationDays(locale: string, from: Date, until = ne
   const diffDays = differenceInCalendarDays(from, until);
   return relativeTimeFormatter.format(diffDays, "day");
 }
-
-export const formatDate = (locale: string, date: Date): string => {
-  const year = new Intl.DateTimeFormat(locale, {
-    year: "2-digit",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-  const month = new Intl.DateTimeFormat(locale, {
-    month: "short",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-  const day = new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-  return `${day}-${month}-${year}`;
-};
-
-export const formatDateShort = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-};
-
-export const formatYearNumeric = (date: Date, locale: string): string => {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
-};
 
 /** The `YYYY-MM-DD` key a date falls under in UTC, the form maturity dates arrive in. */
 export const toUtcDateKey = (date: Date): string => {

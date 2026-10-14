@@ -241,6 +241,7 @@ describe("QuoteItemCard", () => {
     expect(page.textContent).toContain("Bill ID:");
     expect(page.textContent).toContain("bill-abc-123");
     expect(page.textContent).toContain("Maturity:");
-    expect(page.textContent).toContain("2099-01-31");
+    // "Auto" date format: the US pattern for an en-US browser.
+    expect(page.textContent).toContain("01/31/2099");
   });
 });

@@ -3,6 +3,7 @@ import { getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen
 import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import { InfoField } from "@/components/InfoField";
 import { Heading, Text } from "@bitcredit/ui-library";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 const versionMessages = defineMessages({
   wildcat: { id: "home.mint.version.wildcat", defaultMessage: "Wildcat" },
@@ -12,6 +13,7 @@ const versionMessages = defineMessages({
 
 export function MintInfoCard() {
   const intl = useIntl();
+  const { formatDateTime } = useDateDisplay();
   const {
     data: mintData,
     isLoading: mintLoading,
@@ -95,18 +97,14 @@ export function MintInfoCard() {
                 <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                   <FormattedMessage id="home.mint.startedAt" defaultMessage="Started At" />
                 </span>
-                <Text variant="caption">{new Date(mintData.uptime_timestamp).toLocaleString(undefined, { timeZone: "UTC" })}</Text>
+                <Text variant="caption">{formatDateTime(new Date(mintData.uptime_timestamp))}</Text>
               </div>
               {mintData.build_time && (
                 <div className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                     <FormattedMessage id="home.mint.buildTime" defaultMessage="Build Time" />
                   </span>
-                  <Text variant="caption">
-                    {new Date(mintData.build_time).toLocaleString(undefined, {
-                      timeZone: "UTC",
-                    })}
-                  </Text>
+                  <Text variant="caption">{formatDateTime(new Date(mintData.build_time))}</Text>
                 </div>
               )}
             </div>

@@ -14,20 +14,16 @@ import {
 import { getBillsBalanceHistoryOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { clipMaturityBuckets, ebillCollateralByMaturity, ebillCollateralEntries, withTodayMarker } from "@/utils/balance-history";
 import { useAmountFormatter } from "@/utils/amount-format";
-import { formatDateShort, getUtcStartOfDate, toUtcDateKey } from "@/utils/dates";
+import { toUtcDateKey } from "@/utils/dates";
+import { useDateDisplay } from "@/hooks/use-date-display";
 import { ChartRangeToggle } from "./ChartRangeToggle";
 import { useChartRange } from "./use-chart-range";
 import { CHART_BODY_CLASS, HistoryChartCard } from "./HistoryChartCard";
 import { HistoryTable, TotalLabel } from "./HistoryTable";
 
-function formatMaturity(maturityDate: string, locale: string): string {
-  const utcStart = getUtcStartOfDate(maturityDate);
-
-  return utcStart ? formatDateShort(utcStart, locale) : maturityDate;
-}
-
 export function EbillCollateralChart() {
   const intl = useIntl();
+  const { formatCalendarDate: formatMaturity } = useDateDisplay();
   const { formatAmount } = useAmountFormatter();
   const { range, setRange, picked, setPicked, bounds } = useChartRange();
 
@@ -89,7 +85,7 @@ export function EbillCollateralChart() {
             {
               key: "maturity",
               header: <FormattedMessage id="balances.history.ebill.table.maturity" defaultMessage="Maturity" />,
-              cell: (entry) => formatMaturity(entry.maturityDate, intl.locale),
+              cell: (entry) => formatMaturity(entry.maturityDate),
               sortValue: (entry) => entry.maturityDate,
             },
             {
@@ -131,13 +127,11 @@ export function EbillCollateralChart() {
             tickMargin={10}
             axisLine={false}
             interval="preserveStartEnd"
-            tickFormatter={(value: string) => formatMaturity(value, intl.locale)}
+            tickFormatter={(value: string) => formatMaturity(value)}
           />
           <YAxis width={88} tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value: number) => formatAmount(value)} />
           <ChartTooltip
-            content={
-              <ChartTooltipContent labelFormatter={(label) => (typeof label === "string" ? formatMaturity(label, intl.locale) : null)} />
-            }
+            content={<ChartTooltipContent labelFormatter={(label) => (typeof label === "string" ? formatMaturity(label) : null)} />}
           />
           <Bar dataKey="outstanding" stackId="collateral" fill="var(--color-outstanding)" radius={[0, 0, 4, 4]} />
           <Bar dataKey="paid" stackId="collateral" fill="var(--color-paid)" radius={[4, 4, 0, 0]} />

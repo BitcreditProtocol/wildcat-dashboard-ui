@@ -7,6 +7,7 @@ import { getNextQuotePageOffset, getPageQuotes, isPaginatedPage } from "@/utils/
 import * as React from "react";
 import { useState } from "react";
 import { useIntl } from "react-intl";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 export type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "MintingEnabled";
 
@@ -150,6 +151,7 @@ function compareOptionalDates(left: string | undefined, right: string | undefine
 
 export function useQuoteList(status?: QuoteStatus) {
   const intl = useIntl();
+  const { formatCalendarDate } = useDateDisplay();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>(DEFAULT_SORT_BY);
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(DEFAULT_QUICK_FILTER);
@@ -295,6 +297,7 @@ export function useQuoteList(status?: QuoteStatus) {
       quote.sum.toString(),
       bill?.id ?? "",
       bill?.maturity_date ?? "",
+      bill?.maturity_date ? formatCalendarDate(bill.maturity_date) : "",
       ...getParticipantSearchValues(bill),
       payment?.requested_to_pay ? "request to pay requested requested to pay req to pay" : "",
       isReadyToRequestToPay ? "ready request to pay ready req to pay can request to pay" : "",

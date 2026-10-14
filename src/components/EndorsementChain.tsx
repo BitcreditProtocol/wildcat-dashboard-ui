@@ -19,6 +19,7 @@ import type { BillHistoryBlock, BillParticipant } from "@/generated/client/types
 import { AppIcon, Button, Text } from "@bitcredit/ui-library";
 import { NodeIdDisplay, Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 interface EndorsementChainProps {
   historyBlocks?: BillHistoryBlock[];
@@ -198,6 +199,7 @@ export function EndorsementChain({ historyBlocks, isLoading, maturityDate }: End
 
 function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; maturityDate?: string }) {
   const intl = useIntl();
+  const { formatCalendarDate, formatDateTimeFromSeconds } = useDateDisplay();
   const config = BLOCK_TYPE_CONFIG[block.block_type];
   const label = config ? intl.formatMessage(eventMessages[config.messageKey]) : block.block_type;
   const IconComponent: LucideIcon = config?.icon ?? HelpCircle;
@@ -212,14 +214,7 @@ function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; matur
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <AppIcon icon={Clock} size={12} />
-        <span>
-          {new Date(block.signing_timestamp * 1000).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            timeZone: "UTC",
-          })}
-        </span>
+        <span>{formatDateTimeFromSeconds(block.signing_timestamp)}</span>
       </div>
 
       {block.block_type === "Issue" && maturityDate && (
@@ -230,7 +225,7 @@ function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; matur
               defaultMessage: "Maturity date:",
             })}{" "}
           </span>
-          {maturityDate}
+          {formatCalendarDate(maturityDate)}
         </div>
       )}
 
@@ -289,12 +284,7 @@ function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; matur
       {block.request_deadline && (
         <div className="text-xs text-muted-foreground">
           <span className="font-semibold">{intl.formatMessage({ id: "bill.history.deadline", defaultMessage: "Deadline:" })} </span>
-          {new Date(block.request_deadline * 1000).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            timeZone: "UTC",
-          })}
+          {formatDateTimeFromSeconds(block.request_deadline)}
         </div>
       )}
 

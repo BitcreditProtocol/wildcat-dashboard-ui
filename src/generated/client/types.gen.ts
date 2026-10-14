@@ -590,7 +590,7 @@ export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc' | 's
  * --------------------------- Mint operation status
  */
 export type MintOperationStatus = {
-    kid: Id;
+    kid: string;
     quote_id: string;
     target: Amount;
     current: Amount;
