@@ -1,13 +1,13 @@
 import { Heading, Text, TruncatedLinkPopover, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import { CheckBillPaymentButton } from "@/components/CheckBillPaymentButton";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 interface PaymentRequestCardProps {
   billId?: string;
   quoteId: string;
   requestedToPay: boolean;
   paid: boolean;
-  /** The payer refused; the details below are what was requested, kept for the record. */
   rejected?: boolean;
   addressToPay?: string;
   linkToPay?: string;
@@ -27,6 +27,8 @@ export function PaymentRequestCard({
   effectiveDeadlineTs,
 }: PaymentRequestCardProps) {
   const intl = useIntl();
+  const { formatDateTimeFromSeconds } = useDateDisplay();
+
   return (
     <div className="p-4 dark:bg-elevation-200 bg-white rounded border">
       <div className="mb-3 flex items-start justify-between gap-2">
@@ -83,7 +85,7 @@ export function PaymentRequestCard({
                 defaultMessage: "Requested at",
               })}
             </Text>
-            <Text variant="caption">{new Date(effectiveRequestTime * 1000).toLocaleString(intl.locale, { timeZone: "UTC" })}</Text>
+            <Text variant="caption">{formatDateTimeFromSeconds(effectiveRequestTime)}</Text>
           </div>
         )}
         {effectiveDeadlineTs && (
@@ -94,7 +96,7 @@ export function PaymentRequestCard({
                 defaultMessage: "Deadline",
               })}
             </Text>
-            <Text variant="caption">{new Date(effectiveDeadlineTs * 1000).toLocaleString(intl.locale, { timeZone: "UTC" })}</Text>
+            <Text variant="caption">{formatDateTimeFromSeconds(effectiveDeadlineTs)}</Text>
           </div>
         )}
       </div>

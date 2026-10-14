@@ -8,7 +8,7 @@ import { getOnchainHistoryOptions } from "@/generated/client/@tanstack/react-que
 import type { OnChainOperationType } from "@/generated/client/types.gen";
 import { clipBalanceSeries, onChainBalanceSeries, onChainLedger } from "@/utils/balance-history";
 import { useAmountFormatter } from "@/utils/amount-format";
-import { formatDateShort } from "@/utils/dates";
+import { useDateDisplay } from "@/hooks/use-date-display";
 import { ChartRangeToggle } from "./ChartRangeToggle";
 import { useChartRange } from "./use-chart-range";
 import { CHART_BODY_CLASS, HistoryChartCard } from "./HistoryChartCard";
@@ -33,15 +33,6 @@ function operationReference(opType: OnChainOperationType): string {
   }
 }
 
-const LOCAL_DATE_TIME: Intl.DateTimeFormatOptions = {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-  timeZoneName: "short",
-};
-
 function tooltipTimestamp(payload: unknown): number | null {
   if (!Array.isArray(payload)) {
     return null;
@@ -59,6 +50,7 @@ function tooltipTimestamp(payload: unknown): number | null {
 
 export function OnChainBalanceChart() {
   const intl = useIntl();
+  const { formatDateFromSeconds, formatDateTimeFromSeconds } = useDateDisplay();
   const { formatAmount } = useAmountFormatter();
   const { range, setRange, picked, setPicked, bounds } = useChartRange();
 
@@ -110,7 +102,7 @@ export function OnChainBalanceChart() {
             {
               key: "timestamp",
               header: <FormattedMessage id="balances.history.onchain.table.date" defaultMessage="Date" />,
-              cell: (entry) => intl.formatDate(new Date(entry.timestamp * 1000), LOCAL_DATE_TIME),
+              cell: (entry) => formatDateTimeFromSeconds(entry.timestamp),
               sortValue: (entry) => entry.timestamp,
             },
             {
@@ -173,7 +165,7 @@ export function OnChainBalanceChart() {
             tickLine={false}
             tickMargin={10}
             axisLine={false}
-            tickFormatter={(value: number) => formatDateShort(new Date(value * 1000), intl.locale)}
+            tickFormatter={(value: number) => formatDateFromSeconds(value)}
           />
           <YAxis
             dataKey="balance"
@@ -188,7 +180,7 @@ export function OnChainBalanceChart() {
               <ChartTooltipContent
                 labelFormatter={(_label, payload) => {
                   const timestamp = tooltipTimestamp(payload);
-                  return timestamp === null ? null : formatDateShort(new Date(timestamp * 1000), intl.locale);
+                  return timestamp === null ? null : formatDateFromSeconds(timestamp);
                 }}
               />
             }

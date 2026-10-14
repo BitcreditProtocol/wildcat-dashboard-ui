@@ -3,7 +3,6 @@ import {
   addUtcDays,
   calendarDayToUtc,
   daysBetween,
-  formatDate,
   getDefaultDeadline,
   getUtcStartOfDate,
   humanReadableDuration,
@@ -26,11 +25,6 @@ describe("dates utils", () => {
     const start = new Date("2026-02-18T23:59:59.000Z");
     const end = new Date("2026-02-20T00:00:01.000Z");
     expect(daysBetween(start, end)).toBe(2);
-  });
-
-  it("formats date in day-month-year (UTC)", () => {
-    const date = new Date("2026-02-20T10:11:12.000Z");
-    expect(formatDate("en-US", date)).toBe("20-Feb-26");
   });
 
   it("returns relative day label", () => {

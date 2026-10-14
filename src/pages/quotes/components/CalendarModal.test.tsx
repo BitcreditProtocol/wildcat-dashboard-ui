@@ -105,7 +105,7 @@ describe.each([
   it("labels the draft date by its UTC day", () => {
     const { page } = renderModal({ draftDate: new Date("2026-09-13T00:00:00.000Z") });
 
-    expect(page.textContent).toContain("Sep 13, 2026");
+    expect(page.textContent).toContain("13 Sep 2026");
   });
 
   it("keeps the minimum day selectable", () => {
