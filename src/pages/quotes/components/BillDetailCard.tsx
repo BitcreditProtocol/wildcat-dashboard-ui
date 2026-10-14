@@ -6,6 +6,7 @@ import { defineMessages, useIntl, type IntlShape } from "react-intl";
 import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { type AnyParticipant, formatAddress, isIdentified, participantLabel, unwrapParticipant } from "@/utils/bill-participants";
 import { Link } from "react-router";
+import { useDateDisplay } from "@/hooks/use-date-display";
 import type {
   BillAcceptanceStatus,
   BillCurrentWaitingState,
@@ -98,10 +99,6 @@ interface BillDetailCardProps {
   billAtMint?: boolean;
 }
 
-function formatTimestamp(intl: IntlShape, value?: number | null): string {
-  return value ? new Date(value * 1000).toLocaleString(intl.locale) : intl.formatMessage(messages.unknown);
-}
-
 function formatPlace(intl: IntlShape, city: string, country: string): string {
   const countryMessage = getCountryMessage(country);
   const countryLabel = countryMessage ? intl.formatMessage(countryMessage) : country;
@@ -126,7 +123,9 @@ function BooleanField({ label, value }: { label: string; value: boolean }) {
 
 function TimestampField({ label, value }: { label: string; value?: number | null }) {
   const intl = useIntl();
-  return <Field label={label}>{formatTimestamp(intl, value)}</Field>;
+  const { formatDateTimeFromSeconds } = useDateDisplay();
+
+  return <Field label={label}>{value ? formatDateTimeFromSeconds(value) : intl.formatMessage(messages.unknown)}</Field>;
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -346,6 +345,7 @@ function BillSections({
   billAtMint?: boolean;
 }) {
   const intl = useIntl();
+  const { formatCalendarDate } = useDateDisplay();
   const { data, participants, status } = bill;
 
   return (
@@ -364,9 +364,9 @@ function BillSections({
         {data && (
           <>
             <Field label={intl.formatMessage(messages.sum)}>{`${data.sum} ${data.currency}`}</Field>
-            <Field label={intl.formatMessage(messages.issueDate)}>{data.issue_date}</Field>
+            <Field label={intl.formatMessage(messages.issueDate)}>{formatCalendarDate(data.issue_date)}</Field>
             <TimestampField label={intl.formatMessage(messages.drawnAt)} value={data.time_of_drawing} />
-            <Field label={intl.formatMessage(messages.maturityDate)}>{data.maturity_date}</Field>
+            <Field label={intl.formatMessage(messages.maturityDate)}>{formatCalendarDate(data.maturity_date)}</Field>
             <TimestampField label={intl.formatMessage(messages.maturesAt)} value={data.time_of_maturity} />
             <Field label={intl.formatMessage(messages.issuedIn)}>{formatPlace(intl, data.city_of_issuing, data.country_of_issuing)}</Field>
             <Field label={intl.formatMessage(messages.payableIn)}>{formatPlace(intl, data.city_of_payment, data.country_of_payment)}</Field>

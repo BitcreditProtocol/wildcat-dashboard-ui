@@ -6,6 +6,7 @@ import type { KeySetInfo } from "@/generated/client/types.gen";
 import { Search as SearchComponent } from "@bitcredit/ui-library";
 import { HighlightText } from "@/components/ui/highlight-text";
 import { FormattedMessage, useIntl } from "react-intl";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 interface KeysetCardProps {
   keyset: KeySetInfo;
@@ -15,17 +16,9 @@ interface KeysetCardProps {
 
 export function KeysetCard({ keyset, searchQuery, noExpiryText }: KeysetCardProps) {
   const intl = useIntl();
+  const { formatDateFromSeconds } = useDateDisplay();
 
-  const finalExpiryDate = keyset.final_expiry
-    ? new Date(keyset.final_expiry * 1000)
-        .toLocaleDateString("en-US", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          timeZone: "UTC",
-        })
-        .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
-    : noExpiryText;
+  const finalExpiryDate = keyset.final_expiry ? formatDateFromSeconds(keyset.final_expiry) : noExpiryText;
 
   const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom;
 

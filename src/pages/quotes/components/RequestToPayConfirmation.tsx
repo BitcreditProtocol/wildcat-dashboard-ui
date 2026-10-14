@@ -8,6 +8,7 @@ import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useIntl } from "react-intl";
 import { getItem, setItem } from "@/utils/local-storage";
 import { getDefaultDeadline, getUtcStartOfDate, toUtcEndOfDay } from "@/utils/dates";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 interface RequestToPayConfirmationProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function RequestToPayConfirmation({
   billId,
 }: RequestToPayConfirmationProps) {
   const intl = useIntl();
+  const { formatCalendarDate } = useDateDisplay();
   const [validUntilDate, setValidUntilDate] = useState<Date | undefined>(undefined);
   const [showPaymentCalendar, setShowPaymentCalendar] = useState(false);
   const [draftValidUntilDate, setDraftValidUntilDate] = useState<Date | undefined>(undefined);
@@ -58,7 +60,7 @@ export function RequestToPayConfirmation({
       id: "quotes.requestToPay.blockedUntilMaturity",
       defaultMessage: "Request to pay is available on the maturity date ({maturityDate}).",
     },
-    { maturityDate: maturityDate ?? "" }
+    { maturityDate: maturityDate ? formatCalendarDate(maturityDate) : "" }
   );
 
   useEffect(() => {

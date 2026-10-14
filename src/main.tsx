@@ -22,6 +22,7 @@ import KeysetDetailPage from "@/pages/keysets/KeysetDetailPage";
 import MeltRequestsPage from "@/pages/melts/MeltRequestsPage";
 import { LanguageProvider } from "@/context/language/LanguageProvider";
 import { PreferencesProvider, Toaster } from "@bitcredit/ui-library";
+import { TimeZoneProvider } from "@/context/time-zone/TimeZoneProvider";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { initSentry, sentryRootOptions } from "@/lib/sentry";
@@ -69,8 +70,10 @@ void prepare().then(() => {
       <LanguageProvider>
         <GlobalErrorBoundary>
           <PreferencesProvider>
-            <App />
-            <Toaster />
+            <TimeZoneProvider>
+              <App />
+              <Toaster />
+            </TimeZoneProvider>
           </PreferencesProvider>
         </GlobalErrorBoundary>
       </LanguageProvider>
