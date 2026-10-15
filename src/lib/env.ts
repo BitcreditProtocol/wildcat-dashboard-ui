@@ -6,6 +6,10 @@ type RuntimeEnv = Partial<{
   VITE_KEYCLOAK_CLIENT_ID: string;
   VITE_ESPLORA_BASE_URL: string;
   VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING: string;
+  VITE_SENTRY_ENABLED: string;
+  VITE_SENTRY_DSN: string;
+  VITE_SENTRY_ENVIRONMENT: string;
+  VITE_SENTRY_RELEASE: string;
 }>;
 
 const runtimeEnv: RuntimeEnv = typeof window !== "undefined" ? ((window as { __ENV__?: RuntimeEnv }).__ENV__ ?? {}) : {};
@@ -53,4 +57,11 @@ export const env = {
   keycloakClientId: getRequiredEnvValue("VITE_KEYCLOAK_CLIENT_ID"),
   esploraBaseUrl: getEnvValue("VITE_ESPLORA_BASE_URL") ?? "https://esplora.minibill.tech",
   crowdinInContextToolingEnabled: (getEnvValue("VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING") ?? "false") === "true",
+  sentry: {
+    // Off unless explicitly "true", so a deployment without a DSN never reports anywhere.
+    enabled: (getEnvValue("VITE_SENTRY_ENABLED") ?? "false") === "true",
+    dsn: getEnvValue("VITE_SENTRY_DSN"),
+    environment: getEnvValue("VITE_SENTRY_ENVIRONMENT"),
+    release: getEnvValue("VITE_SENTRY_RELEASE"),
+  },
 };
