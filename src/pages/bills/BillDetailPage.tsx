@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { defineMessages, useIntl } from "react-intl";
 import { Link, useParams } from "react-router";
 import { CheckBillPaymentButton } from "@/components/CheckBillPaymentButton";
+import { DownloadBillPdfButton } from "@/components/DownloadBillPdfButton";
 import { getEbillHistoryOptions, getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { useQuoteIdByBill } from "@/hooks/use-quote-id-by-bill";
 import { BillDetailCard } from "@/pages/quotes/components/BillDetailCard";
@@ -62,6 +63,8 @@ export default function BillDetailPage() {
           </span>
         </Heading>
         <div className="flex items-center gap-2">
+          {bill && <DownloadBillPdfButton billId={billId} />}
+
           <CheckBillPaymentButton
             billId={billId}
             quoteId={quoteId}

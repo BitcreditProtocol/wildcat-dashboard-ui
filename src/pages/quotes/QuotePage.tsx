@@ -1,5 +1,6 @@
 import { toast, Heading, AppIcon, cn } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { DownloadBillPdfButton } from "@/components/DownloadBillPdfButton";
 import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
@@ -335,6 +336,8 @@ export default function QuotePage() {
           </span>
         </Heading>
         <div className="flex items-center gap-2">
+          {hasKeysetId && <DownloadBillPdfButton billId={quoteData.bill.id} />}
+
           {hasSyncableBill && (
             <Button
               variant="outline"
