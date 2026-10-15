@@ -17,6 +17,9 @@ const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const billId = "bitcrtFPUa5QAPNeJ57qNQykbA5vJ56qZsRrJvYdmuLYKcMRt6";
 const quoteId = "97e45adf-fc86-4b30-9322-afae434c3287";
 
+// Printing has its own test; the page only decides where the button sits.
+vi.mock("@/components/DownloadBillPdfButton", () => ({ DownloadBillPdfButton: () => null }));
+
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
