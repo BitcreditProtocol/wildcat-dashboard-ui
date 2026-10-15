@@ -25,10 +25,12 @@ import { PreferencesProvider, Toaster } from "@bitcredit/ui-library";
 import { TimeZoneProvider } from "@/context/time-zone/TimeZoneProvider";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
+import { initSentry, sentryRootOptions } from "@/lib/sentry";
 
 const queryClient = new QueryClient();
 
 const prepare = async () => {
+  await initSentry();
   apiClient.getConfig();
   await initKeycloak();
 };
@@ -63,7 +65,7 @@ function App() {
 }
 
 void prepare().then(() => {
-  createRoot(document.getElementById("root")!).render(
+  createRoot(document.getElementById("root")!, sentryRootOptions()).render(
     <StrictMode>
       <LanguageProvider>
         <GlobalErrorBoundary>
