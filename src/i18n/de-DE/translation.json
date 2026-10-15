@@ -132,6 +132,8 @@
   "bills.item.payee": "Payee: {name}",
   "bills.item.requestedToPay": "Requested to pay",
   "bills.page.title": "Bills",
+  "bills.pdf.download": "Print bill",
+  "bills.pdf.error": "The bill could not be printed",
   "bills.search.noMatch": "No bills match your search criteria",
   "bills.search.placeholder": "Search by bill ID, participant, amount, or maturity...",
   "bills.sort.lastActivity": "Last activity",
