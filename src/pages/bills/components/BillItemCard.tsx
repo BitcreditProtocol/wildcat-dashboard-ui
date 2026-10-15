@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { defineMessages, useIntl } from "react-intl";
 import type { BitcreditBill } from "@/generated/client/types.gen";
 import { type AnyParticipant, isIdentified, unwrapParticipant } from "@/utils/bill-participants";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 const messages = defineMessages<{
   maturity: { date: string };
@@ -31,6 +32,7 @@ function nameOf(participant: AnyParticipant | null | undefined, anonymousLabel: 
 
 export function BillItemCard({ bill, searchQuery }: { bill: BitcreditBill; searchQuery: string }) {
   const intl = useIntl();
+  const { formatCalendarDate } = useDateDisplay();
   const anonymousLabel = intl.formatMessage(messages.anonymous);
   const payment = bill.status?.payment;
 
@@ -42,7 +44,9 @@ export function BillItemCard({ bill, searchQuery }: { bill: BitcreditBill; searc
             <Text variant="mono" monoSize="sm" className="break-all">
               <HighlightText text={bill.id} highlight={searchQuery} />
             </Text>
-            <Text variant="bodyMuted">{intl.formatMessage(messages.maturity, { date: bill.data?.maturity_date ?? "" })}</Text>
+            <Text variant="bodyMuted">
+              {intl.formatMessage(messages.maturity, { date: bill.data?.maturity_date ? formatCalendarDate(bill.data.maturity_date) : "" })}
+            </Text>
             <Text variant="bodyMuted">
               {intl.formatMessage(messages.drawee, { name: nameOf(bill.participants?.drawee, anonymousLabel) })}
             </Text>

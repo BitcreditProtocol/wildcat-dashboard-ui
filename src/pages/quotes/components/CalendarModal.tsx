@@ -5,8 +5,8 @@ import { CalendarIcon } from "lucide-react";
 import { isAfter, isBefore, isSameDay } from "date-fns";
 import { cn } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
-import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
-import { addUtcDays, calendarDayToUtc, utcToCalendarDay } from "@/utils/dates";
+import { useDateDisplay } from "@/hooks/use-date-display";
+import { addUtcDays, calendarDayToUtc, toUtcDateKey, utcToCalendarDay } from "@/utils/dates";
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -34,7 +34,7 @@ export function CalendarModal({
   onCancel,
 }: CalendarModalProps) {
   const intl = useIntl();
-  const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale);
+  const { formatCalendarDate } = useDateDisplay();
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [month, setMonth] = useState<Date>(utcToCalendarDay(draftDate ?? selectedDate ?? minDate ?? new Date()));
@@ -68,7 +68,7 @@ export function CalendarModal({
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
             <Text as="div" variant="body">
-              {draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}
+              {draftDate ? formatCalendarDate(toUtcDateKey(draftDate)) : "-"}
             </Text>
 
             {showYearPicker ? (
@@ -141,7 +141,7 @@ interface DatePickerButtonProps {
 
 export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
   const intl = useIntl();
-  const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale);
+  const { formatCalendarDate } = useDateDisplay();
 
   return (
     <button
@@ -152,7 +152,7 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
       <AppIcon icon={CalendarIcon} size="md" weight="default" className="text-gray-500 dark:text-gray-400" />
       <span className="text-gray-900 dark:text-gray-100">
         {date
-          ? formatDateMmmDdYyyy(date)
+          ? formatCalendarDate(toUtcDateKey(date))
           : intl.formatMessage({
               id: "quotes.calendar.selectDate",
               defaultMessage: "Select date",

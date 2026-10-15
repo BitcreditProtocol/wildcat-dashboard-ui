@@ -7,7 +7,7 @@ import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } f
 import { getKeysetsBalanceOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { clipKeysetBalances, keysetBalanceSeries, keysetBalancesForToken } from "@/utils/balance-history";
 import { useAmountFormatter } from "@/utils/amount-format";
-import { formatDateShort } from "@/utils/dates";
+import { useDateDisplay } from "@/hooks/use-date-display";
 import type { RangeDirection } from "@/utils/chart-range";
 import type { TokenKind } from "@/utils/keyset";
 import { ChartRangeToggle } from "./ChartRangeToggle";
@@ -26,6 +26,7 @@ interface KeysetBalanceChartProps {
 
 export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
   const intl = useIntl();
+  const { formatDateFromSeconds } = useDateDisplay();
   const { formatAmount } = useAmountFormatter();
   const direction = KEYSET_CHART_DIRECTION[token];
   const { range, setRange, picked, setPicked, bounds } = useChartRange();
@@ -53,7 +54,7 @@ export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
   const formatExpiryTick = (keysetId: string) => {
     const expiry = expiryByKeyset.get(keysetId);
 
-    return expiry === undefined ? keysetId : formatDateShort(new Date(expiry * 1000), intl.locale);
+    return expiry === undefined ? keysetId : formatDateFromSeconds(expiry);
   };
 
   return (
@@ -91,7 +92,7 @@ export function KeysetBalanceChart({ token }: KeysetBalanceChartProps) {
             {
               key: "expiry",
               header: <FormattedMessage id="balances.history.keysets.table.expiry" defaultMessage="Expiry" />,
-              cell: (point) => formatDateShort(new Date(point.expiry * 1000), intl.locale),
+              cell: (point) => formatDateFromSeconds(point.expiry),
               sortValue: (point) => point.expiry,
             },
             {

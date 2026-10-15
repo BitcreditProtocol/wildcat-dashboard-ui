@@ -17,12 +17,14 @@ import { useIntl } from "react-intl";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { Currency } from "@/components/Currency";
 import { humanReadableDurationDays } from "@/utils/dates";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 const RETRY_COUNT = 2;
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
 
 export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: LightInfo; effectiveStatus: string; searchQuery: string }) {
   const intl = useIntl();
+  const { formatCalendarDate } = useDateDisplay();
   const navigate = useNavigate();
 
   const queryResult = useQuery({
@@ -107,7 +109,7 @@ export function QuoteItemCard({ quote, effectiveStatus, searchQuery }: { quote: 
                 </span>
                 {bill.maturity_date ? (
                   <span className="whitespace-nowrap">
-                    <HighlightText text={bill.maturity_date} highlight={searchQuery} />
+                    <HighlightText text={formatCalendarDate(bill.maturity_date)} highlight={searchQuery} />
                     {maturityLabel && ` (${maturityLabel})`}
                   </span>
                 ) : (

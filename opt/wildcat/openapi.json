@@ -3486,7 +3486,7 @@
         ],
         "properties": {
           "kid": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string"
           },
           "quote_id": {
             "type": "string",

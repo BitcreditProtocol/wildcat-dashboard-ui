@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { KeySetInfo } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 type SortField = "maturity" | "status" | "currency";
 type SortDirection = "asc" | "desc";
@@ -13,6 +14,7 @@ export const DEFAULT_KEYSET_SORT: SortBy = "maturity-asc";
 
 export function useKeysetFiltering(keysets: KeySetInfo[]) {
   const intl = useIntl();
+  const { formatDateFromSeconds } = useDateDisplay();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>(DEFAULT_KEYSET_SORT);
   const [keysetFilter, setKeysetFilter] = useState<KeysetFilter>(DEFAULT_KEYSET_FILTER);
@@ -50,17 +52,7 @@ export function useKeysetFiltering(keysets: KeySetInfo[]) {
     const query = searchQuery.toLowerCase();
     const keysetId = keyset.id.toLowerCase();
     const currencyUnit = (typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom).toLowerCase();
-    const finalExpiryDate = keyset.final_expiry
-      ? new Date(keyset.final_expiry * 1000)
-          .toLocaleDateString("en-US", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            timeZone: "UTC",
-          })
-          .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
-          .toLowerCase()
-      : noExpiryText.toLowerCase();
+    const finalExpiryDate = keyset.final_expiry ? formatDateFromSeconds(keyset.final_expiry).toLowerCase() : noExpiryText.toLowerCase();
     const status = keyset.active
       ? intl
           .formatMessage({

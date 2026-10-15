@@ -2,7 +2,7 @@ import { DatePicker, type DateRange } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { RANGES_BY_DIRECTION, type ChartRange, type RangeDirection } from "@/utils/chart-range";
-import { formatDateShort } from "@/utils/dates";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 const rangeMessages = defineMessages({
   all: { id: "balances.history.range.all", defaultMessage: "All" },
@@ -34,9 +34,10 @@ interface ChartRangeToggleProps {
 
 export function ChartRangeToggle({ value, onChange, direction, picked, onPickedChange }: ChartRangeToggleProps) {
   const intl = useIntl();
+  const { formatPickedDay } = useDateDisplay();
   const customLabel =
     value === "custom" && picked?.from && picked.to
-      ? `${formatDateShort(picked.from, intl.locale)} – ${formatDateShort(picked.to, intl.locale)}`
+      ? `${formatPickedDay(picked.from)} – ${formatPickedDay(picked.to)}`
       : intl.formatMessage(rangeMessages.custom);
 
   return (

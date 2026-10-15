@@ -2,6 +2,7 @@ import { AlignVerticalJustifyCenterIcon, Ban, Bitcoin, Globe, Home, Inbox, Key, 
 import { useContext, useState } from "react";
 import {
   AppIcon,
+  DateFormat,
   DecimalSeparator,
   DisplayCurrency,
   LanguagePreference,
@@ -14,6 +15,7 @@ import {
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar";
 // import { NavUser } from "./nav/NavUser"
 import { NavMain } from "./nav/NavMain";
+import { TimeZonePreference } from "./TimeZonePreference";
 // import { useKeycloak } from "../lib/keycloak-user"
 import { LanguageContext, CROWDIN_PSEUDO_LOCALE, DEFAULT_LOCALE_PROD, isInContextToolAvailable } from "@/context/language/LanguageContext";
 import { usePreferences } from "@/context/preferences/PreferencesContext";
@@ -151,6 +153,10 @@ export function AppSidebar() {
               defaultValue={decimalFormat}
             />
           </DecimalSeparator>
+          <Separator className="bg-divider-75 w-auto" />
+          <DateFormat />
+          <Separator className="bg-divider-75 w-auto" />
+          <TimeZonePreference />
           <Separator className="bg-divider-75 w-auto" />
           <Theme />
           {isInContextToolAvailable && (

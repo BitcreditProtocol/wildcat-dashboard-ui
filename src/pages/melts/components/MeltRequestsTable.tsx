@@ -3,7 +3,7 @@ import { LoaderIcon, Trash2 } from "lucide-react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Currency } from "@/components/Currency";
 import type { DeniedMeltOp } from "@/generated/client/types.gen";
-import { UTC_TIME_ZONE } from "../constants";
+import { useDateDisplay } from "@/hooks/use-date-display";
 import { formatCreatedAt } from "../utils";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
 
@@ -19,6 +19,7 @@ export function MeltRequestsTable({
   onDelete: (operation: DeniedMeltOp) => void;
 }) {
   const intl = useIntl();
+  const { formatDateTime } = useDateDisplay();
 
   return (
     <Card>
@@ -53,10 +54,7 @@ export function MeltRequestsTable({
                     <td className="p-3">
                       <Currency value={operation.amount} sourceCurrency="sat" amountClassName="text-current" />
                     </td>
-                    <td className="p-3 whitespace-nowrap text-muted-foreground">
-                      {formatCreatedAt(operation.created, intl.locale)}
-                      <span className="ml-1 text-xs">{UTC_TIME_ZONE}</span>
-                    </td>
+                    <td className="p-3 whitespace-nowrap text-muted-foreground">{formatCreatedAt(operation.created, formatDateTime)}</td>
                     <td className="p-3 text-right">
                       <Button
                         type="button"

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { LoaderIcon } from "lucide-react";
 import { AppIcon, Button } from "@bitcredit/ui-library";
 import { getEbillOptions, getMintInfoOptions } from "@/generated/client/@tanstack/react-query.gen";
-import type { InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen";
+import type { BillHistoryBlock, InfoReply, BillWaitingStatePaymentData } from "@/generated/client/types.gen";
 import { OfferFormDrawer, type OfferFormResult } from "./components/OfferFormDrawer";
 import { DenyConfirmDrawer } from "./components/DenyConfirmDrawer";
 import { removeItem } from "@/utils/local-storage";
@@ -14,6 +14,7 @@ import { useQuoteMutations } from "./components/useQuoteMutations";
 import { useIntl } from "react-intl";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { buildMempoolTransactionUrl } from "@/utils/mempool";
+import { hasRejectedToPay, latestPaymentRequest } from "@/utils/payment-request";
 
 interface QuoteActionsProps {
   value: InfoReply;
@@ -23,6 +24,7 @@ interface QuoteActionsProps {
   requestedToPay: boolean;
   paymentDeadlineTs?: number | null;
   timeOfRequestToPay?: number | null;
+  historyBlocks?: BillHistoryBlock[];
 }
 
 export function QuoteActions({
@@ -33,6 +35,7 @@ export function QuoteActions({
   requestedToPay,
   paymentDeadlineTs,
   timeOfRequestToPay,
+  historyBlocks,
 }: QuoteActionsProps) {
   const intl = useIntl();
   const billId = value.bill.id;
@@ -61,11 +64,23 @@ export function QuoteActions({
     waitingPaymentData = cws.Payment.payment_data;
   }
 
+  const historyRequest = latestPaymentRequest(historyBlocks);
+  const rejectedToPayEff = paymentStatus?.rejected_to_pay === true || hasRejectedToPay(historyBlocks);
+
   const requestedToPayEff = Boolean(requestedToPay || paymentStatus?.requested_to_pay);
   const ebillPaidEff = Boolean(ebillPaid || (paymentStatus?.paid && isMintComplete));
-  const effectiveRequestTime = timeOfRequestToPay ?? paymentStatus?.time_of_request_to_pay ?? waitingPaymentData?.time_of_request ?? null;
+  const effectiveRequestTime =
+    timeOfRequestToPay ??
+    paymentStatus?.time_of_request_to_pay ??
+    waitingPaymentData?.time_of_request ??
+    historyRequest?.requestedAt ??
+    null;
   const effectiveDeadlineTs =
-    paymentDeadlineTs ?? paymentStatus?.payment_deadline_timestamp ?? waitingPaymentData?.payment_deadline ?? null;
+    paymentDeadlineTs ??
+    paymentStatus?.payment_deadline_timestamp ??
+    waitingPaymentData?.payment_deadline ??
+    historyRequest?.deadline ??
+    null;
   const mintInfoQuery = useQuery({
     ...getMintInfoOptions(),
     retry: 1,
@@ -76,7 +91,7 @@ export function QuoteActions({
     txId: waitingPaymentData?.tx_id,
     network: mintInfoQuery.data?.network,
   });
-  const addressToPay: string | undefined = waitingPaymentData?.address_to_pay;
+  const addressToPay: string | undefined = waitingPaymentData?.address_to_pay ?? historyRequest?.paymentAddress;
 
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>();
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false);
@@ -184,12 +199,13 @@ export function QuoteActions({
         </div>
       ) : null}
 
-      {requestedToPayEff && (
+      {(requestedToPayEff || historyRequest) && (
         <PaymentRequestCard
           billId={billId}
           quoteId={value.id}
-          requestedToPay={requestedToPayEff}
+          requestedToPay={requestedToPayEff || historyRequest !== null}
           paid={Boolean(paymentStatus?.paid)}
+          rejected={rejectedToPayEff}
           addressToPay={addressToPay}
           linkToPay={linkToPay}
           effectiveRequestTime={effectiveRequestTime}

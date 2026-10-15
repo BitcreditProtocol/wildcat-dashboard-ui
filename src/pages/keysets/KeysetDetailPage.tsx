@@ -9,6 +9,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
 import { KeysetQuoteTableRow } from "@/pages/keysets/components/KeysetQuoteTableRow";
 import { useKeysetDetail } from "@/hooks/use-keyset-detail";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 interface LocationState {
   from?: string;
@@ -25,6 +26,7 @@ function getLocationState(value: unknown): LocationState | null {
 
 function PageBody({ keysetId }: { keysetId: string }) {
   const intl = useIntl();
+  const { formatDateFromSeconds } = useDateDisplay();
   const { keyset, quoteRows, keysetsLoading, quotesLoading, unresolvedQuoteCount } = useKeysetDetail(keysetId);
 
   if (keysetsLoading) {
@@ -50,16 +52,7 @@ function PageBody({ keysetId }: { keysetId: string }) {
     defaultMessage: "No expiry",
   });
 
-  const finalExpiryDate = keyset.final_expiry
-    ? new Date(keyset.final_expiry * 1000)
-        .toLocaleDateString("en-US", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          timeZone: "UTC",
-        })
-        .replace(/(\d{2}) (\w{3}), (\d{4})/, "$1. $2. $3")
-    : noExpiryText;
+  const finalExpiryDate = keyset.final_expiry ? formatDateFromSeconds(keyset.final_expiry) : noExpiryText;
 
   const currencyUnit = typeof keyset.unit === "string" ? keyset.unit : keyset.unit.Custom;
 

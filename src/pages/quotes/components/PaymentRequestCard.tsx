@@ -1,12 +1,14 @@
 import { Heading, Text, TruncatedLinkPopover, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import { CheckBillPaymentButton } from "@/components/CheckBillPaymentButton";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 interface PaymentRequestCardProps {
   billId?: string;
   quoteId: string;
   requestedToPay: boolean;
   paid: boolean;
+  rejected?: boolean;
   addressToPay?: string;
   linkToPay?: string;
   effectiveRequestTime: number | null;
@@ -18,12 +20,15 @@ export function PaymentRequestCard({
   quoteId,
   requestedToPay,
   paid,
+  rejected = false,
   addressToPay,
   linkToPay,
   effectiveRequestTime,
   effectiveDeadlineTs,
 }: PaymentRequestCardProps) {
   const intl = useIntl();
+  const { formatDateTimeFromSeconds } = useDateDisplay();
+
   return (
     <div className="p-4 dark:bg-elevation-200 bg-white rounded border">
       <div className="mb-3 flex items-start justify-between gap-2">
@@ -36,6 +41,14 @@ export function PaymentRequestCard({
         <CheckBillPaymentButton billId={billId} quoteId={quoteId} requestedToPay={requestedToPay} paid={paid} />
       </div>
       <div className="space-y-1">
+        {rejected && !paid && (
+          <Text as="p" variant="caption" className="mb-2 text-red-700 dark:text-red-400">
+            {intl.formatMessage({
+              id: "quotes.paymentRequest.rejected",
+              defaultMessage: "The payer rejected to pay this bill. The payment details below are from the original request.",
+            })}
+          </Text>
+        )}
         {addressToPay && (
           <div className="flex items-center gap-2">
             <Text variant="label" className="w-32">
@@ -72,7 +85,7 @@ export function PaymentRequestCard({
                 defaultMessage: "Requested at",
               })}
             </Text>
-            <Text variant="caption">{new Date(effectiveRequestTime * 1000).toLocaleString(intl.locale, { timeZone: "UTC" })}</Text>
+            <Text variant="caption">{formatDateTimeFromSeconds(effectiveRequestTime)}</Text>
           </div>
         )}
         {effectiveDeadlineTs && (
@@ -83,7 +96,7 @@ export function PaymentRequestCard({
                 defaultMessage: "Deadline",
               })}
             </Text>
-            <Text variant="caption">{new Date(effectiveDeadlineTs * 1000).toLocaleString(intl.locale, { timeZone: "UTC" })}</Text>
+            <Text variant="caption">{formatDateTimeFromSeconds(effectiveDeadlineTs)}</Text>
           </div>
         )}
       </div>
