@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  displayCurrencyUnit,
   EUR_PER_EIOU,
   SATS_PER_BTC,
   convertAmount,
@@ -122,5 +123,18 @@ describe("locale resolution", () => {
     expect(getLocaleForFormat("en-GB", "comma")).toBe("en-US");
     expect(getLocaleForFormat("en-GB", "point")).toBe("de-DE");
     expect(getLocaleForFormat("en-GB", "space")).toBe("fr-FR");
+  });
+});
+
+describe("displayCurrencyUnit", () => {
+  it("writes sat lowercase whatever case the API sends", () => {
+    expect(displayCurrencyUnit("SAT")).toBe("sat");
+    expect(displayCurrencyUnit("Sat")).toBe("sat");
+    expect(displayCurrencyUnit("sat")).toBe("sat");
+  });
+
+  it("leaves other currency codes untouched", () => {
+    expect(displayCurrencyUnit("EUR")).toBe("EUR");
+    expect(displayCurrencyUnit("")).toBe("");
   });
 });

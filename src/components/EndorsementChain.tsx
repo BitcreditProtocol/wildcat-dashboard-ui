@@ -20,6 +20,7 @@ import { AppIcon, Button, Text } from "@bitcredit/ui-library";
 import { NodeIdDisplay, Separator, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { defineMessages, useIntl } from "react-intl";
 import { useDateDisplay } from "@/hooks/use-date-display";
+import { displayCurrencyUnit } from "@/lib/currency";
 
 interface EndorsementChainProps {
   historyBlocks?: BillHistoryBlock[];
@@ -272,7 +273,7 @@ function BlockEventRow({ block, maturityDate }: { block: BillHistoryBlock; matur
         <div className="text-xs text-muted-foreground mt-2 space-y-1">
           <div>
             <span className="font-semibold">{intl.formatMessage({ id: "bill.history.amount", defaultMessage: "Amount:" })} </span>
-            {block.payment_data.sum} {block.payment_data.currency}
+            {block.payment_data.sum} {displayCurrencyUnit(block.payment_data.currency)}
           </div>
           <div>
             <span className="font-semibold">{intl.formatMessage({ id: "bill.history.paymentAddress", defaultMessage: "Address:" })} </span>

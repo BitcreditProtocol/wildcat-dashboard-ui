@@ -40,6 +40,11 @@ const TOKEN_LABELS: Record<TokenCurrencyCode, string> = {
   eiou: "e-IOU",
 };
 
+/** A currency code as shown to users; the API sends "SAT", but sat is always written lowercase. */
+export function displayCurrencyUnit(currency: string): string {
+  return currency.toLowerCase() === "sat" ? "sat" : currency;
+}
+
 export function isTokenCurrency(currency: SourceCurrencyCode): currency is TokenCurrencyCode {
   return TOKEN_CURRENCY_CODES.has(currency);
 }
