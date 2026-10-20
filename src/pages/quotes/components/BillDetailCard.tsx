@@ -7,6 +7,7 @@ import { getEbillOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { type AnyParticipant, formatAddress, isIdentified, participantLabel, unwrapParticipant } from "@/utils/bill-participants";
 import { Link } from "react-router";
 import { useDateDisplay } from "@/hooks/use-date-display";
+import { displayCurrencyUnit } from "@/lib/currency";
 import type {
   BillAcceptanceStatus,
   BillCurrentWaitingState,
@@ -225,7 +226,9 @@ function HistoryBlockRow({ block }: { block: BillHistoryBlock }) {
       {endorsee && <Field label={intl.formatMessage(messages.endorsedTo)}>{participantLabel(endorsee, fallback)}</Field>}
       {block.payment_data && (
         <>
-          <Field label={intl.formatMessage(messages.sum)}>{`${block.payment_data.sum} ${block.payment_data.currency}`}</Field>
+          <Field
+            label={intl.formatMessage(messages.sum)}
+          >{`${block.payment_data.sum} ${displayCurrencyUnit(block.payment_data.currency)}`}</Field>
           <Field label={intl.formatMessage(messages.paymentAddress)}>
             <MonoValue value={block.payment_data.payment_address} />
           </Field>
@@ -316,7 +319,7 @@ function WaitingStateSection({ waitingState }: { waitingState: BillCurrentWaitin
       {paymentData && (
         <>
           <TimestampField label={intl.formatMessage(messages.requestedAt)} value={paymentData.time_of_request} />
-          <Field label={intl.formatMessage(messages.sum)}>{`${paymentData.sum} ${paymentData.currency}`}</Field>
+          <Field label={intl.formatMessage(messages.sum)}>{`${paymentData.sum} ${displayCurrencyUnit(paymentData.currency)}`}</Field>
           <Field label={intl.formatMessage(messages.addressToPay)}>
             <MonoValue value={paymentData.address_to_pay} />
           </Field>
@@ -363,7 +366,7 @@ function BillSections({
         )}
         {data && (
           <>
-            <Field label={intl.formatMessage(messages.sum)}>{`${data.sum} ${data.currency}`}</Field>
+            <Field label={intl.formatMessage(messages.sum)}>{`${data.sum} ${displayCurrencyUnit(data.currency)}`}</Field>
             <Field label={intl.formatMessage(messages.issueDate)}>{formatCalendarDate(data.issue_date)}</Field>
             <TimestampField label={intl.formatMessage(messages.drawnAt)} value={data.time_of_drawing} />
             <Field label={intl.formatMessage(messages.maturityDate)}>{formatCalendarDate(data.maturity_date)}</Field>

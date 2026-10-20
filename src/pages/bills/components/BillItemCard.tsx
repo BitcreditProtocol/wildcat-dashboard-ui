@@ -6,6 +6,7 @@ import { defineMessages, useIntl } from "react-intl";
 import type { BitcreditBill } from "@/generated/client/types.gen";
 import { type AnyParticipant, isIdentified, unwrapParticipant } from "@/utils/bill-participants";
 import { useDateDisplay } from "@/hooks/use-date-display";
+import { displayCurrencyUnit } from "@/lib/currency";
 
 const messages = defineMessages<{
   maturity: { date: string };
@@ -55,7 +56,7 @@ export function BillItemCard({ bill, searchQuery }: { bill: BitcreditBill; searc
             </Text>
           </div>
           <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-            <Text variant="titleSm">{`${bill.data?.sum ?? ""} ${bill.data?.currency ?? ""}`}</Text>
+            <Text variant="titleSm">{`${bill.data?.sum ?? ""} ${displayCurrencyUnit(bill.data?.currency ?? "")}`}</Text>
             <div className="flex flex-wrap gap-1">
               {bill.status?.acceptance?.accepted && <Badge variant="success">{intl.formatMessage(messages.accepted)}</Badge>}
               {payment?.paid && <Badge variant="success">{intl.formatMessage(messages.paid)}</Badge>}
