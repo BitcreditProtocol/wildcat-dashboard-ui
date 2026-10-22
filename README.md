@@ -2,12 +2,14 @@
 
 ## Development
 
-Prerequisite: Node.js 25.x (see `.nvmrc`).
+Prerequisite: Node.js 24.22.1 LTS and npm 11.19.1 (bundled with Node.js).
+Run `nvm install` and `nvm use` to select the version in `.nvmrc`, which is also
+used by CI and Cloudflare deployments.
 
 ### Install
 
 ```
-npm install
+npm ci
 ```
 
 ### Run Development
@@ -24,6 +26,16 @@ Copy `.env.example` to `.env` and adjust
 just build
 just run
 ```
+
+Docker uses digest-pinned Node.js 24 LTS and nginx 1.31.8 images. When updating
+Node.js, keep the Dockerfile, `.nvmrc`, package engines, and Node.js type definitions
+aligned. Docker reads runtime settings from the container environment;
+local `.env` files are excluded from the build context (Compose still reads
+`.env`); the tracked `.env.development` and `.env.example` files remain available.
+
+The `js-yaml` override keeps the OpenAPI generator's pinned parser dependency on
+the patched 4.x release. Remove it once the upstream dependency requires 4.3.2 or
+newer and `npm audit` remains clean.
 
 ### shadcn
 

@@ -1,5 +1,24 @@
 version: 2
 updates:
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:30"
+      timezone: "Europe/Vienna"
+    target-branch: "dev"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    ignore:
+      # Move to a new Node.js major only after it enters LTS and is validated.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+    assignees:
+      - "JulianVIE"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     groups:

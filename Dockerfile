@@ -1,7 +1,7 @@
 ARG NODE_ENV
 ARG VITE_MODE
 
-FROM node:25-slim AS builder
+FROM node:24.22.1-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS builder
 ARG NODE_ENV
 ARG VITE_MODE
 ENV NODE_ENV=${NODE_ENV:-production}
@@ -11,13 +11,13 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install --no-fund --no-audit --include=dev
+RUN npm ci --no-fund --no-audit --include=dev
 
 COPY . .
 
 RUN npm run build -- --mode=${VITE_MODE}
 
-FROM nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+FROM nginx:1.31.8-alpine@sha256:e2d97c2b8c016f12c2f1a27d095685063b2f281c4edf2babfde6001cf4fb77a8
 
 RUN apk add --no-cache jq
 
