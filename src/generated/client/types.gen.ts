@@ -366,6 +366,31 @@ export type EiouDepositStatus = 'Pending' | {
     };
 };
 
+export type EiouOperation = {
+    op_type: EiouOperationType;
+    /**
+     * Whole brc-20 tokens, not sats: the eIOU ticker is deployed with `dec = 0`.
+     */
+    amount: number;
+    /**
+     * The bitcoin block the credit landed in, as recorded on the ledger entry.
+     */
+    block_height: number;
+    /**
+     * Unix seconds, from that block's header.
+     */
+    timestamp: number;
+};
+
+export type EiouOperationType = {
+    request_id: string;
+    type: 'Deposit';
+};
+
+export type EiouOperationsResponse = {
+    operations: Array<EiouOperation>;
+};
+
 export type EnableMintingResponse = {
     [key: string]: unknown;
 };
@@ -1689,6 +1714,22 @@ export type GetOnchainHistoryResponses = {
 };
 
 export type GetOnchainHistoryResponse = GetOnchainHistoryResponses[keyof GetOnchainHistoryResponses];
+
+export type GetEiouHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/history/eiou';
+};
+
+export type GetEiouHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: EiouOperationsResponse;
+};
+
+export type GetEiouHistoryResponse = GetEiouHistoryResponses[keyof GetEiouHistoryResponses];
 
 export type GetKeysetsBalanceData = {
     body?: never;

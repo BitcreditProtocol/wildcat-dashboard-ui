@@ -1,15 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import type { BillBalanceEntry, KeysetBalance, OnChainOperation, OnChainOperationType } from "@/generated/client/types.gen";
+import type { BillBalanceEntry, EiouOperation, KeysetBalance, OnChainOperation, OnChainOperationType } from "@/generated/client/types.gen";
 import {
   clipBalanceSeries,
   clipKeysetBalances,
   clipMaturityBuckets,
   ebillCollateralEntries,
+  eiouBalanceSeries,
+  eiouLedger,
   ebillCollateralByMaturity,
   keysetBalanceSeries,
   keysetBalancesForToken,
   onChainBalanceSeries,
   onChainLedger,
+  signedEiouAmount,
   signedOnChainAmount,
   withTodayMarker,
 } from "./balance-history";
@@ -123,6 +126,35 @@ describe("onChainLedger", () => {
 
     expect(ledger.entries).toEqual([]);
     expect(ledger.closing).toBe(900);
+  });
+});
+
+function eiouDeposit(requestId: string, amount: number, timestamp: number): EiouOperation {
+  return { op_type: { type: "Deposit", request_id: requestId }, amount, block_height: 900_000, timestamp };
+}
+
+describe("e-IOU history", () => {
+  const deposits = [eiouDeposit("r2", 50, 2_000), eiouDeposit("r1", 100, 1_000), eiouDeposit("r3", 25, 3_000)];
+
+  it("counts a deposit as collateral coming in, whatever sign the wire value carries", () => {
+    expect(signedEiouAmount(eiouDeposit("r", 40, 1))).toBe(40);
+    expect(signedEiouAmount(eiouDeposit("r", -40, 1))).toBe(40);
+  });
+
+  it("accumulates the e-IOU collateral in timestamp order", () => {
+    expect(eiouBalanceSeries(deposits)).toEqual([
+      { timestamp: 1_000, balance: 100 },
+      { timestamp: 2_000, balance: 150 },
+      { timestamp: 3_000, balance: 175 },
+    ]);
+  });
+
+  it("opens a narrowed window on the collateral carried into it", () => {
+    const ledger = eiouLedger(deposits, { from: 1_500, to: 2_500 });
+
+    expect(ledger.opening).toBe(100);
+    expect(ledger.entries.map((entry) => entry.operation.op_type.request_id)).toEqual(["r2"]);
+    expect(ledger.closing).toBe(150);
   });
 });
 
