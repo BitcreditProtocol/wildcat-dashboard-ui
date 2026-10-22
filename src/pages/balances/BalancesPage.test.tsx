@@ -2,7 +2,7 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import BalancesPage from "./BalancesPage";
@@ -29,8 +29,32 @@ interface MockFeesToken {
   refetch: ReturnType<typeof vi.fn>;
 }
 
+interface MockHistory {
+  data?: unknown;
+  isPending: boolean;
+  error: unknown;
+}
+
+interface MockForeignBalance {
+  data?: { balances: { mint_id: string; settled: number; unsettled: number }[] };
+  isPending: boolean;
+  isError: boolean;
+  error: unknown;
+}
+
 const mockUseCoverageQuery = vi.fn<() => MockCoverage>();
 const mockUseCollectFeesQuery = vi.fn<() => MockFeesToken>();
+const mockUseHistoryQuery = vi.fn<(queryId: string) => MockHistory>();
+const mockUseForeignBalanceQuery = vi.fn<() => MockForeignBalance>();
+
+const HISTORY_QUERY_IDS = new Set(["onchainHistory", "billsBalanceHistory", "keysetsBalance", "eiouHistory"]);
+
+const SECONDS_PER_DAY = 24 * 60 * 60;
+
+/** A keyset balance as the aggregator reports it: a hex id and a bare integer balance. */
+function keysetBalance(keysetId: string, expiry: number, balance: number) {
+  return { keyset_id: keysetId, expiry, balance };
+}
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
@@ -46,8 +70,14 @@ vi.mock("@tanstack/react-query", async () => {
       if (queryId === "collectFeesToken") {
         return mockUseCollectFeesQuery();
       }
-      if (queryId === "addReserveStatus") {
+      if (queryId === "addReserveStatus" || queryId === "eiouDepositStatus") {
         return { data: undefined, error: null, isError: false, refetch: vi.fn() };
+      }
+      if (queryId === "foreignBalance") {
+        return mockUseForeignBalanceQuery();
+      }
+      if (typeof queryId === "string" && HISTORY_QUERY_IDS.has(queryId)) {
+        return mockUseHistoryQuery(queryId);
       }
       return mockUseCoverageQuery();
     },
@@ -67,6 +97,27 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getAddReserveStatusOptions: () => ({
     queryKey: [{ _id: "addReserveStatus" }],
   }),
+  postEiouDepositMutation: () => ({
+    mutationFn: () => Promise.resolve(undefined),
+  }),
+  getEiouDepositStatusOptions: () => ({
+    queryKey: [{ _id: "eiouDepositStatus" }],
+  }),
+  getEiouHistoryOptions: () => ({
+    queryKey: [{ _id: "eiouHistory" }],
+  }),
+  getOnchainHistoryOptions: () => ({
+    queryKey: [{ _id: "onchainHistory" }],
+  }),
+  getBillsBalanceHistoryOptions: () => ({
+    queryKey: [{ _id: "billsBalanceHistory" }],
+  }),
+  getKeysetsBalanceOptions: () => ({
+    queryKey: [{ _id: "keysetsBalance" }],
+  }),
+  getForeignBalanceOptions: () => ({
+    queryKey: [{ _id: "foreignBalance" }],
+  }),
 }));
 
 vi.mock("@/components/Breadcrumbs", () => ({
@@ -81,12 +132,17 @@ vi.mock("@/components/ui/chart", () => ({
   ChartContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   ChartLegend: () => null,
   ChartLegendContent: () => null,
+  ChartTooltip: () => null,
+  ChartTooltipContent: () => null,
 }));
 
 vi.mock("recharts", () => ({
+  Area: () => null,
+  AreaChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Bar: () => null,
   BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CartesianGrid: () => null,
+  ReferenceLine: () => null,
   XAxis: () => null,
   YAxis: () => null,
 }));
@@ -119,6 +175,60 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
   );
 }
 
+/** What each history endpoint returns when the mint has nothing to plot yet. */
+function emptyHistory(queryId: string) {
+  switch (queryId) {
+    case "onchainHistory":
+    case "eiouHistory":
+      return { operations: [] };
+    case "billsBalanceHistory":
+      return { bills: [] };
+    default:
+      return { balances: [] };
+  }
+}
+
+function zeroCoverage(): MockCoverage {
+  return {
+    data: {
+      onchain_collateral: 0,
+      ebill_collateral: 0,
+      eiou_collateral: 0,
+      credit_circulating_supply: 0,
+      debit_circulating_supply: 0,
+    },
+    isError: false,
+    refetch: vi.fn(),
+  };
+}
+
+/** Clicks the balance card carrying `title`, which opens the drawer holding its chart. */
+async function openBalanceCard(title: string) {
+  const trigger = [...document.querySelectorAll("button")].find((button) => button.textContent?.includes(title));
+
+  if (!trigger) {
+    throw new Error(`No balance card opens a chart for "${title}"`);
+  }
+
+  act(() => {
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  });
+  await flush();
+}
+
+async function closeDrawer() {
+  const close = document.querySelector<HTMLButtonElement>('[role="dialog"] button[aria-label]');
+
+  if (!close) {
+    throw new Error("The open drawer has no close button");
+  }
+
+  act(() => {
+    close.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  });
+  await flush();
+}
+
 async function flush() {
   for (let i = 0; i < 5; i++) {
     await act(async () => {
@@ -128,6 +238,19 @@ async function flush() {
     });
   }
 }
+
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
+  if (root && container) {
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
+    root = null;
+    container = null;
+  }
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -140,6 +263,8 @@ beforeEach(() => {
     isFetching: false,
     refetch: vi.fn(),
   });
+  mockUseHistoryQuery.mockImplementation((queryId) => ({ data: emptyHistory(queryId), isPending: false, error: null }));
+  mockUseForeignBalanceQuery.mockReturnValue({ data: { balances: [] }, isPending: false, isError: false, error: null });
   storageData = {};
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
@@ -153,18 +278,10 @@ beforeEach(() => {
       },
     },
   });
-  if (root && container) {
-    act(() => {
-      root?.unmount();
-    });
-    container.remove();
-    root = null;
-    container = null;
-  }
 });
 
 describe("BalancesPage", () => {
-  it("shows secondary fiat display for sat balances and leaves custom units unchanged", async () => {
+  it("shows secondary fiat display for sat, crsat and e-IOU balances", async () => {
     storageData["user-preferences"] = JSON.stringify({ currency: "eur" });
     vi.stubGlobal(
       "fetch",
@@ -192,6 +309,19 @@ describe("BalancesPage", () => {
       isError: false,
       refetch: vi.fn(),
     });
+    // The foreign e-cash card reads the treasury's foreign balances: 300 settled across two mints,
+    // with 1,000 more still owed to it.
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: {
+        balances: [
+          { mint_id: "https://alpha.example", settled: 200, unsettled: 400 },
+          { mint_id: "https://beta.example", settled: 100, unsettled: 600 },
+        ],
+      },
+      isPending: false,
+      isError: false,
+      error: null,
+    });
 
     const page = renderWithProviders(<BalancesPage />);
     await flush();
@@ -200,9 +330,149 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("90,000.00");
     expect(page.textContent).toContain("50,000,000");
     expect(page.textContent).toContain("45,000.00");
-    expect(page.textContent).toContain("555 e-IOU");
-    expect(page.textContent).toContain("777 crsat");
     expect(page.textContent).toContain("42,000");
+    // The e-IOU card is the mint's own collateral: 555 e-IOU at the fixed 0.067 euro-cent peg.
+    expect(page.textContent).toContain("555e-IOU0.37eur");
+    // The foreign e-cash card is the settled credit e-cash held from other mints, valued like any crsat.
+    expect(page.textContent).toContain("300crsat0.27eur");
+    // Value still waiting on an offline mint is named on its own line, never folded into the headline.
+    expect(page.textContent).toContain("Unsettled1,000crsat0.90eur");
+    // A crsat is worth exactly one sat, so it converts at the sat rate.
+    expect(page.textContent).toContain("777crsat0.70eur");
+  });
+
+  it("shows a dash rather than zero when the foreign balance endpoint fails", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("treasury unreachable"),
+    });
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.textContent).toContain("Foreign balances unavailable");
+    expect(page.textContent).not.toContain("Unsettled");
+    // Coverage still loaded, so the cards that do not depend on the treasury are unaffected.
+    expect(page.textContent).toContain("Bitcoin balance");
+  });
+
+  it("breaks the foreign e-cash balance down by mint in its own card's drawer", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: {
+        balances: [
+          { mint_id: "https://small.example", settled: 10, unsettled: 0 },
+          { mint_id: "https://large.example", settled: 9_000, unsettled: 1 },
+        ],
+      },
+      isPending: false,
+      isError: false,
+      error: null,
+    });
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(document.body.textContent).not.toContain("Foreign e-cash by mint");
+
+    // The e-IOU drawer is the mint's own deposits only.
+    await openBalanceCard("e-IOU balance");
+    expect(document.body.textContent).toContain("e-IOU deposits");
+    expect(document.body.textContent).not.toContain("Foreign e-cash by mint");
+    await closeDrawer();
+
+    await openBalanceCard("Foreign e-cash balance");
+
+    // The chart itself is recharts, mocked away here; `sortForeignBalances` covers the bar order.
+    expect(document.body.textContent).toContain("Foreign e-cash by mint");
+    expect(document.body.textContent).not.toContain("e-IOU deposits");
+    expect(document.body.textContent).not.toContain("The mint holds no foreign e-cash yet.");
+  });
+
+  it("lists the e-IOU deposits behind the collateral in the e-IOU drawer", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseHistoryQuery.mockImplementation((queryId) => ({
+      data:
+        queryId === "eiouHistory"
+          ? {
+              operations: [
+                { op_type: { type: "Deposit", request_id: "req-early" }, amount: 1_200, block_height: 900_001, timestamp: 1_767_225_600 },
+                { op_type: { type: "Deposit", request_id: "req-late" }, amount: 300, block_height: 900_123, timestamp: 1_767_312_000 },
+              ],
+            }
+          : emptyHistory(queryId),
+      isPending: false,
+      error: null,
+    }));
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+    await openBalanceCard("e-IOU balance");
+
+    expect(document.body.textContent).toContain("e-IOU deposits");
+    const depositTable = [...document.querySelectorAll('[role="dialog"] table')].find((table) => table.textContent?.includes("Request ID"));
+    expect(depositTable?.textContent).toContain("Deposit");
+    expect(depositTable?.textContent).toContain("900123");
+    // 1,200 + 300 deposited, so the collateral closes on 1,500.
+    expect(depositTable?.querySelector("tfoot")?.textContent).toContain("+1,500");
+  });
+
+  it("opens a drawer on its table and switches to the chart", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({
+      data: {
+        balances: [
+          { mint_id: "https://large.example", settled: 9_000, unsettled: 1_234 },
+          { mint_id: "https://small.example", settled: 10, unsettled: 0 },
+        ],
+      },
+      isPending: false,
+      isError: false,
+      error: null,
+    });
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+    await openBalanceCard("Foreign e-cash balance");
+
+    // The table is the default view.
+    const table = document.querySelector('[role="dialog"] table');
+    expect(table).not.toBeNull();
+    expect(table?.textContent).toContain("Mint");
+    expect(table?.textContent).toContain("9,000");
+    expect(table?.textContent).toContain("1,234");
+    // The total row adds the mints up to the figure on the foreign e-cash card.
+    const total = table?.querySelector("tfoot")?.textContent;
+    expect(total).toContain("Total");
+    expect(total).toContain("9,010");
+    expect(total).toContain("1,234");
+
+    const chartToggle = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
+      (button) => button.textContent === "Chart"
+    );
+    if (!chartToggle) {
+      throw new Error("The drawer offers no chart view");
+    }
+    act(() => {
+      chartToggle.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(document.querySelector('[role="dialog"] table')).toBeNull();
+  });
+
+  it("tells the operator the mint holds no foreign e-cash rather than showing an empty drawer", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("Foreign e-cash balance");
+
+    expect(document.body.textContent).toContain("The mint holds no foreign e-cash yet.");
   });
 
   it("shows only original sat amounts when fiat rates are unavailable", async () => {
@@ -236,5 +506,88 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("sat");
     expect(page.textContent).not.toContain("$");
     expect(page.textContent).not.toContain("usd");
+  });
+
+  it("keeps every chart shut until its balance card is clicked", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.textContent).not.toContain("No on-chain operations have settled yet.");
+
+    await openBalanceCard("Bitcoin balance");
+
+    expect(document.body.textContent).toContain("No on-chain operations have settled yet.");
+    // The card the drawer belongs to is the only history it shows.
+    expect(document.body.textContent).not.toContain("The mint holds no e-bills yet.");
+  });
+
+  it("gives each balance card the chart that belongs to it", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("E-bill collateral balance");
+    expect(document.body.textContent).toContain("The mint holds no e-bills yet.");
+    // The maturity ladder straddles today, so it narrows to either side of it.
+    expect(document.body.textContent).toContain("Last 30d");
+    expect(document.body.textContent).toContain("Next 30d");
+    await closeDrawer();
+
+    await openBalanceCard("Credit token balance");
+    expect(document.body.textContent).toContain("No keyset carries an outstanding balance.");
+    // Credit looks ahead of today, so its range toggle offers future windows.
+    expect(document.body.textContent).toContain("Next 30d");
+    await closeDrawer();
+
+    await openBalanceCard("Debit token balance");
+    // Debit looks back from today, so the same chart offers past windows instead.
+    expect(document.body.textContent).toContain("Last 30d");
+    expect(document.body.textContent).not.toContain("Next 30d");
+  });
+
+  it("splits the keyset balances between the credit and the debit chart by expiry", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    // Only a keyset still running carries a balance, so credit has one to plot and debit does not.
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    mockUseHistoryQuery.mockImplementation((queryId) => ({
+      data: queryId === "keysetsBalance" ? { balances: [keysetBalance("aa", nowSeconds + SECONDS_PER_DAY, 5)] } : emptyHistory(queryId),
+      isPending: false,
+      error: null,
+    }));
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("Credit token balance");
+    expect(document.body.textContent).not.toContain("No keyset carries an outstanding balance.");
+    await closeDrawer();
+
+    // The expired side is empty rather than borrowing the running keyset from credit.
+    await openBalanceCard("Debit token balance");
+    expect(document.body.textContent).toContain("No keyset carries an outstanding balance.");
+  });
+
+  it("keeps a failing history endpoint inside its own chart", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseHistoryQuery.mockImplementation((queryId) =>
+      queryId === "onchainHistory"
+        ? { data: undefined, isPending: false, error: new Error("aggregator unreachable") }
+        : { data: emptyHistory(queryId), isPending: false, error: null }
+    );
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+
+    await openBalanceCard("Bitcoin balance");
+    expect(document.body.textContent).toContain("Failed to load history: aggregator unreachable");
+    await closeDrawer();
+
+    // The neighbouring chart is unaffected by that failure.
+    await openBalanceCard("E-bill collateral balance");
+    expect(document.body.textContent).toContain("The mint holds no e-bills yet.");
+    expect(document.body.textContent).not.toContain("Failed to load history");
   });
 });

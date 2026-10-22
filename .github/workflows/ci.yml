@@ -53,14 +53,14 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{ !inputs.skip_coverage_upload }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
 
       - name: Upload test results to Codecov
         if: ${{ !inputs.skip_coverage_upload }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/junit.xml
@@ -77,7 +77,10 @@ jobs:
           ref: ${{ github.sha }}
 
       - name: Check workflow gates
-        run: python3 .github/scripts/test_nightly.py
+        run: python3 .github/scripts/test_workflows.py
+
+      - name: Check smoke-test failure handling
+        run: python3 .github/scripts/test_smoke_container.py
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
@@ -92,7 +95,7 @@ jobs:
           push: false
           tags: wildcat-dashboard-ui:ci
           cache-from: type=gha,scope=dashboard-ci
-          cache-to: type=gha,mode=max,scope=dashboard-ci
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=dashboard-ci' || '' }}
 
       - name: Smoke-test nginx and runtime configuration
         run: python3 .github/scripts/smoke_container.py wildcat-dashboard-ui:ci

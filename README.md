@@ -2,7 +2,7 @@
 
 ## Development
 
-Prerequisite: Node.js 24.22.1 LTS and npm 11.19.1 (bundled with Node.js).
+Prerequisite: Node.js 26.x and npm 11.x (validated with Node 26.12.1 / npm 11.20.0).
 Run `nvm install` and `nvm use` to select the version in `.nvmrc`, which is also
 used by CI and Cloudflare deployments.
 
@@ -27,9 +27,11 @@ just build
 just run
 ```
 
-Docker uses digest-pinned Node.js 24 LTS and nginx 1.31.8 images. When updating
-Node.js, keep the Dockerfile, `.nvmrc`, package engines, and Node.js type definitions
-aligned. Docker reads runtime settings from the container environment;
+Docker uses digest-pinned Node.js 26 and nginx 1.31.8 images. `.nvmrc` tracks the
+Node 26 release line; CI checks that the Docker tag uses the same major. Dependabot
+refreshes the pinned image digest. Keep package engines and Node.js type
+definitions aligned when changing major versions. Docker reads runtime settings
+from the container environment;
 local `.env` files are excluded from the build context (Compose still reads
 `.env`); the tracked `.env.development` and `.env.example` files remain available.
 
@@ -48,8 +50,9 @@ The smoke test checks nginx configuration, page and asset serving, SPA routing,
 and runtime settings with custom and empty explorer URLs. It uses temporary
 containers on random localhost ports and removes them afterward.
 
-The `js-yaml` override keeps the OpenAPI generator's pinned parser dependency on
-the patched 4.x release. Remove it once the upstream dependency requires 4.3.2 or
+The `js-yaml` override is scoped to `@hey-api/json-schema-ref-parser` and keeps
+the OpenAPI generator's pinned parser dependency on the patched 4.x release.
+Remove it once the upstream dependency requires 4.3.2 or
 newer and `npm audit` remains clean.
 
 ### CI and deployments
@@ -58,10 +61,13 @@ Every pull request runs application validation and a Docker build and smoke test
 The reusable CI workflow also gates all GitHub Actions Cloudflare deployments,
 including manual runs. Those jobs deploy the same commit SHA that passed
 validation. Reusable calls skip duplicate Codecov uploads and do not receive
-deployment secrets.
+deployment secrets. Invalid manual deployment targets fail before CI starts.
+A newer deployment run for the same Git ref cancels the older run, including its
+CI jobs, so slower checks cannot deploy an older commit afterward.
 
 Nightly and release workflows build and publish images without rerunning the full
-CI suite. A failed Docker build prevents publishing.
+CI suite. Their existing nightly tests stay independent of deployment-gate tests,
+which run in CI only. A failed Docker build prevents publishing.
 
 Cloudflare Pages' native Git integration is separate: its automatic previews do
 not wait for these GitHub Actions gates. To require CI for every deployment,

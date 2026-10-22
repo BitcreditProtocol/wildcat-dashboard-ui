@@ -1,4 +1,4 @@
-import { Button, buttonVariants } from "@bitcredit/ui-library";
+import { Button, buttonVariants, cn } from "@bitcredit/ui-library";
 import {
   Drawer,
   DrawerClose,
@@ -19,12 +19,13 @@ type BaseDrawerProps = DrawerProps & {
   description?: string;
   trigger?: React.ReactNode;
   children?: React.ReactNode;
+  contentClassName?: string;
 };
-export function BaseDrawer({ title, description = "", trigger, children, ...drawerProps }: BaseDrawerProps) {
+export function BaseDrawer({ title, description = "", trigger, children, contentClassName, ...drawerProps }: BaseDrawerProps) {
   return (
     <Drawer {...drawerProps}>
       {trigger && <DrawerTrigger asChild>{trigger}</DrawerTrigger>}
-      <DrawerContent className="max-h-[calc(100dvh-1rem)] max-w-full overflow-y-auto overscroll-contain border-x-0">
+      <DrawerContent className={cn("max-h-[calc(100dvh-1rem)] max-w-full overflow-y-auto overscroll-contain border-x-0", contentClassName)}>
         <div className="mx-auto w-full max-w-sm pb-[env(safe-area-inset-bottom)]">
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>

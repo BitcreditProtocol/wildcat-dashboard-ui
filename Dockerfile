@@ -1,7 +1,7 @@
 ARG NODE_ENV
 ARG VITE_MODE
 
-FROM node:24.22.1-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS builder
+FROM node:26-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS builder
 ARG NODE_ENV
 ARG VITE_MODE
 ENV NODE_ENV=${NODE_ENV:-production}

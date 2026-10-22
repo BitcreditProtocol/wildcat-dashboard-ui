@@ -2,6 +2,7 @@ import { Text } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import type { ConnectedMintResponse, SimpleAlphaState } from "@/generated/client/types.gen";
 import { mintLabel, statusDotClass, statusKind, statusMessages, statusTimestamp } from "./clowder-peer-utils";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 interface PeerStatusRowProps {
   id?: string;
@@ -16,6 +17,7 @@ interface PeerStatusRowProps {
 
 export function PeerStatusRow({ id, controls, peer, state, isLoading, isError, isSelected = false, onSelect }: PeerStatusRowProps) {
   const intl = useIntl();
+  const { formatDateTimeFromSeconds } = useDateDisplay();
   const kind = isLoading || isError ? "unknown" : statusKind(state);
   const timestamp = statusTimestamp(state);
   const className = `grid w-full min-w-0 grid-cols-1 gap-2 rounded-sm border p-2.5 text-left transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3 sm:p-3 ${
@@ -34,9 +36,7 @@ export function PeerStatusRow({ id, controls, peer, state, isLoading, isError, i
           <span className={`h-2 w-2 rounded-full ${statusDotClass[kind]}`} aria-hidden="true" />
           <Text variant="caption">{intl.formatMessage(statusMessages[kind])}</Text>
         </div>
-        {timestamp !== undefined && (
-          <span className="text-xs text-muted-foreground">{new Date(timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}</span>
-        )}
+        {timestamp !== undefined && <span className="text-xs text-muted-foreground">{formatDateTimeFromSeconds(timestamp)}</span>}
       </div>
     </>
   );

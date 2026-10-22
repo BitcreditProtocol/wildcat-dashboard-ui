@@ -13,7 +13,7 @@ updates:
       - "dependencies"
       - "docker"
     ignore:
-      # Move to a new Node.js major only after it enters LTS and is validated.
+      # Review Node.js major upgrades together with .nvmrc and package engines.
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
     assignees:

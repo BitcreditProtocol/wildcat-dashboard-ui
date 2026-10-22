@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import time
 from urllib.error import URLError
 from urllib.request import ProxyHandler, build_opener
@@ -37,7 +38,7 @@ class Assets(HTMLParser):
 
 def fetch(base, path):
     with HTTP.open(base + path, timeout=2) as response:
-        return response.read().decode(), response.headers
+        return response.read(), response.headers
 
 
 def check_image(image, esplora):
@@ -49,6 +50,10 @@ def check_image(image, esplora):
         "VITE_KEYCLOAK_CLIENT_ID": "dashboard",
         "VITE_API_MOCKING_ENABLED": "false",
         "VITE_BITCR_DEV_INCLUDE_CROWDIN_IN_CONTEXT_TOOLING": "false",
+        "VITE_SENTRY_ENABLED": "false",
+        "VITE_SENTRY_DSN": "https://public@example.test/1",
+        "VITE_SENTRY_ENVIRONMENT": "smoke-test",
+        "VITE_SENTRY_RELEASE": "container-smoke-test",
     }
     compose = json.loads(docker(
         "compose", "--env-file", ".env.example", "config", "--format", "json",
@@ -56,12 +61,14 @@ def check_image(image, esplora):
     environment = compose["services"]["app"]["environment"]
     for key, value in expected.items():
         require(environment.get(key) == value, f"Compose did not forward {key}")
-    args = ["run", "--detach", "--rm", "--publish", "127.0.0.1::80"]
+    args = ["run", "--detach", "--publish", "127.0.0.1::80"]
     for key in expected:
         args.extend(["--env", f"{key}={environment[key]}"])
     container = docker(*args, image)
     try:
         details = json.loads(docker("inspect", container))[0]
+        require(details["State"]["Running"],
+                f"Container exited during startup (exit code {details['State']['ExitCode']})")
         port = details["NetworkSettings"]["Ports"]["80/tcp"][0]["HostPort"]
         base = f"http://127.0.0.1:{port}"
         deadline = time.monotonic() + 30
@@ -70,27 +77,30 @@ def check_image(image, esplora):
                 html, _ = fetch(base, "/")
                 break
             except (URLError, TimeoutError, ConnectionError):
+                state = json.loads(docker("inspect", container))[0]["State"]
+                require(state["Running"],
+                        f"Container exited during startup (exit code {state['ExitCode']})")
                 if time.monotonic() >= deadline:
                     raise RuntimeError("nginx did not become ready within 30 seconds")
                 time.sleep(0.5)
 
         docker("exec", container, "nginx", "-t")
-        require('<div id="root">' in html, "The app HTML was not served")
-        require('/config.js' in html, "The app does not load runtime configuration")
+        require(b'<div id="root">' in html, "The app HTML was not served")
+        require(b'/config.js' in html, "The app does not load runtime configuration")
         spa, _ = fetch(base, "/smoke-test/nested-route")
         require(spa == html, "SPA routing did not fall back to index.html")
         config, headers = fetch(base, "/config.js")
         require("no-store" in headers.get("Cache-Control", ""),
                 "Runtime configuration must not be cached")
-        prefix = "window.__ENV__ = "
-        require(config.startswith(prefix) and config.strip().endswith(";"),
+        prefix = b"window.__ENV__ = "
+        require(config.startswith(prefix) and config.strip().endswith(b";"),
                 "config.js did not assign window.__ENV__")
-        actual = json.loads(config[len(prefix):].strip().removesuffix(";"))
+        actual = json.loads(config[len(prefix):].strip().removesuffix(b";"))
         for key, value in expected.items():
             require(actual.get(key) == value, f"Runtime configuration lost {key}")
 
         assets = Assets()
-        assets.feed(html)
+        assets.feed(html.decode())
         require(any(path.endswith(".js") for path in assets.paths),
                 "No built JavaScript asset found in index.html")
         for path in sorted(assets.paths):
@@ -99,11 +109,17 @@ def check_image(image, esplora):
                     f"Static asset was missing or served HTML: {path}")
         print(f"PASS: nginx, SPA, assets, runtime config (Esplora={esplora!r})")
     except Exception:
-        print(docker("logs", container))
+        try:
+            subprocess.run(["docker", "logs", container], check=False, timeout=10)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            print(f"Could not retrieve container logs: {error}", file=sys.stderr)
         raise
     finally:
-        subprocess.run(["docker", "rm", "--force", container], check=True,
-                       stdout=subprocess.DEVNULL, timeout=30)
+        try:
+            subprocess.run(["docker", "rm", "--force", container], check=False,
+                           stdout=subprocess.DEVNULL, timeout=30)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            print(f"Could not remove test container {container}: {error}", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check deployment gates, nightly guards, and image recording without publishing."""
+"""Exercise the actual nightly guard and image-recording step without publishing."""
 import json
 import os
 from pathlib import Path
@@ -15,10 +15,6 @@ WORKFLOW = json.loads(subprocess.check_output(
 
 BUILD = json.loads(subprocess.check_output(
     ["yq", "-o=json", ".", str(ROOT / "workflows/build-image.yml")], text=True))
-CI = json.loads(subprocess.check_output(
-    ["yq", "-o=json", ".", str(ROOT / "workflows/ci.yml")], text=True))
-DEPLOY = json.loads(subprocess.check_output(
-    ["yq", "-o=json", ".", str(ROOT / "workflows/deploy.yml")], text=True))
 
 
 class NightlyTests(unittest.TestCase):
@@ -88,48 +84,6 @@ class NightlyTests(unittest.TestCase):
         self.assertEqual(save["with"]["if-no-files-found"], "error")
         self.assertIn("github.run_attempt", save["with"]["name"])
         self.assertIn("inputs.candidate_run_id", WORKFLOW["concurrency"]["group"])
-
-
-class DeploymentGateTests(unittest.TestCase):
-    def test_every_deployment_requires_ci_for_the_same_commit(self):
-        jobs = DEPLOY["jobs"]
-        self.assertEqual(jobs["ci"]["uses"], "./.github/workflows/ci.yml")
-        self.assertEqual(jobs["ci"]["permissions"], {"contents": "read"})
-        self.assertNotIn("secrets", jobs["ci"])
-        for name, job in jobs.items():
-            if name == "ci":
-                continue
-            with self.subTest(job=name):
-                self.assertEqual(job["needs"], "ci")
-                # Status functions could bypass the default success() dependency gate.
-                for override in ("always(", "failure(", "cancelled("):
-                    self.assertNotIn(override, job.get("if", ""))
-                checkout = next(s for s in job["steps"]
-                                if s.get("uses", "").startswith("actions/checkout@"))
-                self.assertEqual(checkout["with"]["ref"], "${{ github.sha }}")
-
-    def test_prs_build_and_smoke_test_without_publishing(self):
-        self.assertIn("workflow_call", CI["on"])
-        self.assertIsNone(CI["on"]["pull_request"])
-        self.assertEqual(CI["permissions"], {"contents": "read"})
-        self.assertNotIn("concurrency", CI)
-        for job in CI["jobs"].values():
-            self.assertNotIn("if", job)
-            checkout = next(s for s in job["steps"]
-                            if s.get("uses", "").startswith("actions/checkout@"))
-            self.assertEqual(checkout["with"]["ref"], "${{ github.sha }}")
-        container = CI["jobs"]["container"]
-        self.assertNotIn("secrets.", json.dumps(container))
-        self.assertNotIn("docker/login-action", json.dumps(container))
-        build = next(s for s in container["steps"]
-                     if s.get("uses", "").startswith("docker/build-push-action@"))
-        self.assertFalse(build["with"]["push"])
-        self.assertTrue(build["with"]["load"])
-        self.assertFalse(build.get("continue-on-error", False))
-        smoke = next(s for s in container["steps"]
-                     if "smoke_container.py" in s.get("run", ""))
-        self.assertFalse(smoke.get("continue-on-error", False))
-        self.assertIn(build["with"]["tags"], smoke["run"])
 
 
 if __name__ == "__main__":

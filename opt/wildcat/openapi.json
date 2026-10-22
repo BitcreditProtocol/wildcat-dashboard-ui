@@ -587,6 +587,55 @@
         }
       }
     },
+    "/v1/admin/ebill/balance": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_bills_balance_history",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillBalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/ebill/check_payment": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "check_bill_payment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckBillPaymentPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "404": {
+            "description": "bill-id not found"
+          }
+        }
+      }
+    },
     "/v1/admin/ebill/endorsements/{bid}": {
       "get": {
         "tags": [
@@ -1059,6 +1108,131 @@
         }
       }
     },
+    "/v1/admin/clowder/eiou_deposit/{rid}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_eiou_deposit_status",
+        "parameters": [
+          {
+            "name": "rid",
+            "in": "path",
+            "description": "the eiou deposit request id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EiouDepositResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "eiou deposit id not found"
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/eiou_deposit": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "post_eiou_deposit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EiouDepositRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EiouDepositResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/history/onchain": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_onchain_history",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnchainOperationsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/history/eiou": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_eiou_history",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EiouOperationsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/clowder/history/keysets": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_keysets_balance",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeysetsBalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/treasury/ebill/reqtopay": {
       "post": {
         "tags": [
@@ -1156,6 +1330,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FeesTokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/treasury/foreign/balance": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_foreign_balance",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForeignBalanceResponse"
                 }
               }
             }
@@ -1326,6 +1520,49 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "BillBalanceEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "issue_date",
+          "maturity_date",
+          "sum",
+          "paid"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "issue_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "maturity_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "sum": {
+            "type": "string"
+          },
+          "paid": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BillBalanceResponse": {
+        "type": "object",
+        "required": [
+          "bills"
+        ],
+        "properties": {
+          "bills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillBalanceEntry"
             }
           }
         }
@@ -2176,6 +2413,17 @@
           }
         }
       },
+      "CheckBillPaymentPayload": {
+        "type": "object",
+        "required": [
+          "bill_id"
+        ],
+        "properties": {
+          "bill_id": {
+            "type": "string"
+          }
+        }
+      },
       "ClowderNodeInfo": {
         "type": "object",
         "description": "--------------------------- Clowder Node Information",
@@ -2387,6 +2635,151 @@
           }
         }
       },
+      "EiouDepositRequest": {
+        "type": "object",
+        "description": "--------------------------- e-iou deposits",
+        "required": [
+          "request_id",
+          "amount"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Whole brc-20 tokens, not sats: the eIOU ticker is deployed with `dec = 0`.",
+            "minimum": 0
+          }
+        }
+      },
+      "EiouDepositResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "address",
+          "amount",
+          "status"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The declared amount — what gets credited as collateral.",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/EiouDepositStatus"
+          }
+        }
+      },
+      "EiouDepositStatus": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "Pending"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "Completed"
+            ],
+            "properties": {
+              "Completed": {
+                "type": "object",
+                "required": [
+                  "block_height"
+                ],
+                "properties": {
+                  "block_height": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "The indexer's tip watermark when the credit was observed.",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "EiouOperation": {
+        "type": "object",
+        "required": [
+          "op_type",
+          "amount",
+          "block_height",
+          "timestamp"
+        ],
+        "properties": {
+          "op_type": {
+            "$ref": "#/components/schemas/EiouOperationType"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Whole brc-20 tokens, not sats: the eIOU ticker is deployed with `dec = 0`.",
+            "minimum": 0
+          },
+          "block_height": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The bitcoin block the credit landed in, as recorded on the ledger entry.",
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix seconds, from that block's header.",
+            "minimum": 0
+          }
+        }
+      },
+      "EiouOperationType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "request_id",
+              "type"
+            ],
+            "properties": {
+              "request_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Deposit"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EiouOperationsResponse": {
+        "type": "object",
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EiouOperation"
+            }
+          }
+        }
+      },
       "EnableMintingResponse": {
         "type": "object"
       },
@@ -2452,6 +2845,44 @@
           },
           "nostr_hash": {
             "type": "string"
+          }
+        }
+      },
+      "ForeignBalanceEntry": {
+        "type": "object",
+        "description": "--------------------------- foreign eCash balance",
+        "required": [
+          "mint_id",
+          "settled",
+          "unsettled"
+        ],
+        "properties": {
+          "mint_id": {
+            "type": "string"
+          },
+          "settled": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "unsettled": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "ForeignBalanceResponse": {
+        "type": "object",
+        "required": [
+          "balances"
+        ],
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForeignBalanceEntry"
+            }
           }
         }
       },
@@ -2962,6 +3393,44 @@
           "Version01"
         ]
       },
+      "KeysetBalance": {
+        "type": "object",
+        "description": "--------------------------- per-keyset outstanding eCash balance",
+        "required": [
+          "keyset_id",
+          "expiry",
+          "balance"
+        ],
+        "properties": {
+          "keyset_id": {
+            "type": "string"
+          },
+          "expiry": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "balance": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "KeysetsBalanceResponse": {
+        "type": "object",
+        "required": [
+          "balances"
+        ],
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeysetBalance"
+            }
+          }
+        }
+      },
       "LightBillAnonParticipant": {
         "type": "object",
         "required": [
@@ -3105,7 +3574,7 @@
         ],
         "properties": {
           "kid": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string"
           },
           "quote_id": {
             "type": "string",
@@ -3178,6 +3647,129 @@
           "Bill",
           "Contact"
         ]
+      },
+      "OnChainOperation": {
+        "type": "object",
+        "required": [
+          "op_type",
+          "txids",
+          "amount",
+          "timestamp"
+        ],
+        "properties": {
+          "op_type": {
+            "$ref": "#/components/schemas/OnChainOperationType"
+          },
+          "txids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The txids of the onchain transactions that are part of this operation. For example, a mint operation may have multiple txids if the mint was funded by multiple transactions."
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The amount of the operation in satoshis. For example, for a mint operation, this would be the amount of satoshis that were minted."
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The timestamp of the operation in Unix seconds. This is the time when the operation was completed onchain.",
+            "minimum": 0
+          }
+        }
+      },
+      "OnChainOperationType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "quote_id",
+              "type"
+            ],
+            "properties": {
+              "quote_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Mint"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "quote_id",
+              "type"
+            ],
+            "properties": {
+              "quote_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Melt"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "bill_id",
+              "type"
+            ],
+            "properties": {
+              "bill_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "EbillPayment"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "reserve_id",
+              "type"
+            ],
+            "properties": {
+              "reserve_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AddReserve"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "--------------------------- Onchain transaction history"
+      },
+      "OnchainOperationsResponse": {
+        "type": "object",
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnChainOperation"
+            }
+          }
+        }
       },
       "OptionalPostalAddress": {
         "type": "object",
@@ -3358,6 +3950,45 @@
           }
         ]
       },
+      "PendingOutage": {
+        "type": "object",
+        "description": "One outage as the alpha's Betas collectively hold it against the alpha.",
+        "required": [
+          "evidence_digest",
+          "betas_holding",
+          "pending_exchanges",
+          "pending_amount"
+        ],
+        "properties": {
+          "evidence_digest": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "substitute": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "betas_holding": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending_exchanges": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending_amount": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "PerceivedState": {
         "type": "object",
         "description": "Reflects what the majority of Beta mints think about the current Alpha mint",
@@ -3382,6 +4013,13 @@
             "format": "int64",
             "description": "Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.",
             "minimum": 0
+          },
+          "pending_outages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingOutage"
+            },
+            "description": "Outages the Betas still hold against this alpha; empty once it is online."
           }
         }
       },

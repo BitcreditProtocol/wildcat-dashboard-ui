@@ -3,19 +3,24 @@ import { useInfiniteQuery, useQuery, useQueries } from "@tanstack/react-query";
 import type { BitcreditBill, BillInfo, InfoReply, LightInfo, ListSort } from "@/generated/client/types.gen";
 import { getEffectiveQuoteStatus } from "@/utils/quote-status";
 import { isBeforeUtcStartOfDate } from "@/utils/dates";
+import { getNextQuotePageOffset, getPageQuotes, isPaginatedPage } from "@/utils/quote-pages";
 import * as React from "react";
 import { useState } from "react";
 import { useIntl } from "react-intl";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 export type QuoteStatus = "Accepted" | "Denied" | "OfferExpired" | "Offered" | "Pending" | "Rejected" | "Canceled" | "MintingEnabled";
 
-type SortField = "status" | "sum" | "maturity" | "statusChange";
+type SortField = "priority" | "status" | "sum" | "maturity" | "statusChange";
 type SortDirection = "asc" | "desc";
 export type SortBy = `${SortField}-${SortDirection}`;
 
-export type QuickFilter = "all" | "requested-to-pay" | "ready-to-request-to-pay" | "active-fee-token" | "maturity-today";
+export type QuickFilter = "all" | "requested-to-pay" | "ready-to-request-to-pay" | "paid" | "active-fee-token" | "maturity-today";
 
 export type ItemsPerPageValue = number | typeof ALL_PAGE_SIZE_VALUE;
+
+export const DEFAULT_SORT_BY: SortBy = "priority-asc";
+export const DEFAULT_QUICK_FILTER: QuickFilter = "all";
 
 export const PAGE_SIZE = 25;
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
@@ -26,37 +31,6 @@ const RETRY_COUNT = 2;
 const QUOTE_STATUS_POLL_INTERVAL_MS = 10_000;
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 const retryDelay = (attempt: number) => Math.min(1000 * 2 ** attempt, 10_000);
-
-function isLightInfo(value: unknown): value is LightInfo {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "id" in value &&
-    typeof value.id === "string" &&
-    "status" in value &&
-    typeof value.status === "string" &&
-    "sum" in value &&
-    typeof value.sum === "number"
-  );
-}
-
-interface QuoteListPage {
-  data?: unknown[];
-  quotes?: unknown[];
-  total?: number;
-}
-
-function getPageQuotes(page: QuoteListPage | undefined): LightInfo[] {
-  if (!page) {
-    return [];
-  }
-
-  return (page.data ?? page.quotes ?? []).filter(isLightInfo);
-}
-
-function isPaginatedPage(page: QuoteListPage | undefined): boolean {
-  return Array.isArray(page?.data) && typeof page?.total === "number";
-}
 
 function getParticipantSearchValues(bill: BillInfo | null | undefined): string[] {
   if (!bill) {
@@ -124,9 +98,31 @@ function getApiSort(sortBy: SortBy): ListSort | undefined {
       return "bill_maturity_date_asc";
     case "maturity-desc":
       return "bill_maturity_date_desc";
+    case "statusChange-asc":
+    case "priority-asc":
+      return "submitted_asc";
+    case "statusChange-desc":
+      return "submitted_desc";
     default:
       return undefined;
   }
+}
+
+const QUOTE_PRIORITY_RANK = new Map<string, number>([
+  ["Pending", 0],
+  ["Offered", 1],
+  ["Accepted", 2],
+  ["Minting", 2],
+  ["MintingEnabled", 2],
+  ["OfferExpired", 3],
+  ["Denied", 3],
+  ["Rejected", 3],
+  ["Canceled", 3],
+]);
+const FINISHED_QUOTE_RANK = 3;
+
+function getQuotePriorityRank(status: string): number {
+  return QUOTE_PRIORITY_RANK.get(status) ?? FINISHED_QUOTE_RANK;
 }
 
 function getQuoteStatusTimestamp(quoteDetails: InfoReply | undefined): string | undefined {
@@ -155,9 +151,10 @@ function compareOptionalDates(left: string | undefined, right: string | undefine
 
 export function useQuoteList(status?: QuoteStatus) {
   const intl = useIntl();
+  const { formatCalendarDate } = useDateDisplay();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortBy>("maturity-asc");
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>(DEFAULT_SORT_BY);
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>(DEFAULT_QUICK_FILTER);
   const [itemsPerPage, setItemsPerPage] = useState<ItemsPerPageValue>(PAGE_SIZE);
   const limit = itemsPerPage === ALL_PAGE_SIZE_VALUE ? ALL_PAGE_SIZE_LIMIT : itemsPerPage;
   const apiSort = getApiSort(sortBy);
@@ -176,11 +173,7 @@ export function useQuoteList(status?: QuoteStatus) {
     refetchInterval: shouldPollStatusPage(status) ? QUOTE_STATUS_POLL_INTERVAL_MS : false,
     refetchIntervalInBackground: true,
     initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const loadedCount = allPages.reduce((sum, page) => sum + getPageQuotes(page).length, 0);
-      const total = lastPage.total ?? getPageQuotes(lastPage).length;
-      return loadedCount < total ? loadedCount : undefined;
-    },
+    getNextPageParam: getNextQuotePageOffset,
     retry: RETRY_COUNT,
     retryDelay,
   });
@@ -188,10 +181,22 @@ export function useQuoteList(status?: QuoteStatus) {
   const quotes = React.useMemo(() => data?.pages.flatMap((page) => getPageQuotes(page)) ?? [], [data]);
   const totalQuotes = data?.pages[0]?.total ?? quotes.length;
   const usesLegacyFallback = data?.pages.some((page) => !isPaginatedPage(page)) ?? false;
+  const shouldLoadAllPages = normalizedSearchQuery.length > 0 || quickFilter !== "all";
+  const isLoadingAllPages = shouldLoadAllPages && (hasNextPage || isFetchingNextPage);
+
+  React.useEffect(() => {
+    if (!shouldLoadAllPages || !hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    void fetchNextPage();
+  }, [shouldLoadAllPages, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const shouldFetchEbills =
     shouldFetchEbillsForStatusPage(status) ||
     quickFilter === "requested-to-pay" ||
     quickFilter === "ready-to-request-to-pay" ||
+    quickFilter === "paid" ||
     paymentSearchRequested;
   const { data: ebills } = useQuery({
     ...listEbillsOptions(),
@@ -263,6 +268,11 @@ export function useQuoteList(status?: QuoteStatus) {
           return false;
         }
         break;
+      case "paid":
+        if (!payment?.paid) {
+          return false;
+        }
+        break;
       case "active-fee-token":
         if (!hasActiveFeeToken) {
           return false;
@@ -285,7 +295,9 @@ export function useQuoteList(status?: QuoteStatus) {
       quote.id,
       effectiveStatus,
       quote.sum.toString(),
+      bill?.id ?? "",
       bill?.maturity_date ?? "",
+      bill?.maturity_date ? formatCalendarDate(bill.maturity_date) : "",
       ...getParticipantSearchValues(bill),
       payment?.requested_to_pay ? "request to pay requested requested to pay req to pay" : "",
       isReadyToRequestToPay ? "ready request to pay ready req to pay can request to pay" : "",
@@ -298,14 +310,26 @@ export function useQuoteList(status?: QuoteStatus) {
     return searchableContent.includes(normalizedSearchQuery);
   });
 
-  const sortedQuotes = [...filteredQuotes].sort((a, b) => {
+  const sortsLocally = apiSort === undefined || sortBy.startsWith("priority-");
+  const preserveBackendOrder = !usesLegacyFallback && !sortsLocally;
+
+  const compareQuotes = (a: LightInfo, b: LightInfo) => {
     const aIndex = quotes.findIndex((q) => q.id === a.id);
     const bIndex = quotes.findIndex((q) => q.id === b.id);
 
     const aBill = aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data?.bill : null;
     const bBill = bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data?.bill : null;
 
+    const aTimestamp = getQuoteStatusTimestamp(aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data : undefined);
+    const bTimestamp = getQuoteStatusTimestamp(bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data : undefined);
+
     switch (sortBy) {
+      case "priority-asc": {
+        const rankDifference =
+          getQuotePriorityRank(effectiveStatusByQuoteId.get(a.id) ?? a.status) -
+          getQuotePriorityRank(effectiveStatusByQuoteId.get(b.id) ?? b.status);
+        return rankDifference !== 0 ? rankDifference : compareOptionalDates(aTimestamp, bTimestamp);
+      }
       case "status-asc":
         return (effectiveStatusByQuoteId.get(a.id) ?? a.status).localeCompare(effectiveStatusByQuoteId.get(b.id) ?? b.status);
       case "status-desc":
@@ -327,28 +351,45 @@ export function useQuoteList(status?: QuoteStatus) {
         return new Date(bBill.maturity_date).getTime() - new Date(aBill.maturity_date).getTime();
       }
       case "statusChange-asc":
-        return compareOptionalDates(
-          getQuoteStatusTimestamp(aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data : undefined),
-          getQuoteStatusTimestamp(bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data : undefined)
-        );
+        return compareOptionalDates(aTimestamp, bTimestamp);
       case "statusChange-desc":
-        return compareOptionalDates(
-          getQuoteStatusTimestamp(bIndex >= 0 ? quoteDetailsQueries[bIndex]?.data : undefined),
-          getQuoteStatusTimestamp(aIndex >= 0 ? quoteDetailsQueries[aIndex]?.data : undefined)
-        );
+        return compareOptionalDates(bTimestamp, aTimestamp);
       default:
         return 0;
     }
-  });
+  };
+
+  const sortedQuotes = preserveBackendOrder ? filteredQuotes : [...filteredQuotes].sort(compareQuotes);
 
   const toggleSort = (field: SortField) => {
-    if (sortBy.startsWith(`${field}-`)) {
-      const nextDirection: SortDirection = sortBy.endsWith("asc") ? "desc" : "asc";
-      setSortBy(`${field}-${nextDirection}`);
+    if (field === "priority") {
+      setSortBy(DEFAULT_SORT_BY);
+      return;
+    }
+
+    if (sortBy === `${field}-asc`) {
+      setSortBy(`${field}-desc`);
+      return;
+    }
+
+    if (sortBy === `${field}-desc`) {
+      setSortBy(DEFAULT_SORT_BY);
       return;
     }
 
     setSortBy(`${field}-asc`);
+  };
+
+  const toggleQuickFilter = (value: QuickFilter) => {
+    setQuickFilter(value === quickFilter ? DEFAULT_QUICK_FILTER : value);
+  };
+
+  const hasNonDefaultFilters = quickFilter !== DEFAULT_QUICK_FILTER || sortBy !== DEFAULT_SORT_BY || itemsPerPage !== PAGE_SIZE;
+
+  const resetFilters = () => {
+    setQuickFilter(DEFAULT_QUICK_FILTER);
+    setSortBy(DEFAULT_SORT_BY);
+    setItemsPerPage(PAGE_SIZE);
   };
 
   const sortOptions = [
@@ -386,13 +427,6 @@ export function useQuoteList(status?: QuoteStatus) {
 
   const quickFilterOptions = [
     {
-      value: "all" as const,
-      label: intl.formatMessage({
-        id: "quotes.filter.all",
-        defaultMessage: "All quotes",
-      }),
-    },
-    {
       value: "requested-to-pay" as const,
       label: intl.formatMessage({
         id: "quotes.filter.requestedToPay",
@@ -404,6 +438,14 @@ export function useQuoteList(status?: QuoteStatus) {
       label: intl.formatMessage({
         id: "quotes.filter.readyToRequestToPay",
         defaultMessage: "Ready to request to pay",
+      }),
+    },
+    {
+      value: "paid" as const,
+      label: intl.formatMessage({
+        id: "quotes.filter.paid",
+        defaultMessage: "Paid",
+        description: "Quick filter for quotes whose e-bill payment status is paid",
       }),
     },
     {
@@ -429,6 +471,9 @@ export function useQuoteList(status?: QuoteStatus) {
     setSortBy,
     quickFilter,
     setQuickFilter,
+    toggleQuickFilter,
+    hasNonDefaultFilters,
+    resetFilters,
     itemsPerPage,
     setItemsPerPage,
     quotes,
@@ -444,6 +489,7 @@ export function useQuoteList(status?: QuoteStatus) {
     noQuotesMessage,
     isFetching,
     isFetchingNextPage,
+    isLoadingAllPages,
     hasNextPage,
     fetchNextPage,
     isLoading,

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CollectFeesTokenData, CollectFeesTokenResponses, DeleteDeniedMeltopData, DeleteDeniedMeltopErrors, DeleteDeniedMeltopResponses, GetAddReserveStatusData, GetAddReserveStatusErrors, GetAddReserveStatusResponses, GetClowderAlphasData, GetClowderAlphasResponses, GetClowderBetasData, GetClowderBetasResponses, GetClowderForeignCoverageData, GetClowderForeignCoverageErrors, GetClowderForeignCoverageResponses, GetClowderInfoData, GetClowderInfoResponses, GetClowderLocalCoverageData, GetClowderLocalCoverageResponses, GetClowderMystatusData, GetClowderMystatusResponses, GetClowderStatusData, GetClowderStatusErrors, GetClowderStatusResponses, GetEbillAttachmentData, GetEbillAttachmentErrors, GetEbillAttachmentResponses, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsErrors, GetEbillEndorsementsResponses, GetEbillErrors, GetEbillFileFromRequestToMintData, GetEbillFileFromRequestToMintErrors, GetEbillFileFromRequestToMintResponses, GetEbillHistoryData, GetEbillHistoryErrors, GetEbillHistoryResponses, GetEbillPaymentactionsData, GetEbillPaymentactionsErrors, GetEbillPaymentactionsResponses, GetEbillPaymentstatusData, GetEbillPaymentstatusErrors, GetEbillPaymentstatusResponses, GetEbillResponses, GetHealthData, GetHealthResponses, GetIdentityData, GetIdentityResponses, GetKeysetInfoData, GetKeysetInfoErrors, GetKeysetInfoResponses, GetMintInfoData, GetMintInfoResponses, GetMintopStatusData, GetMintopStatusErrors, GetMintopStatusResponses, GetQuoteData, GetQuoteErrors, GetQuoteResponses, GetSharedEbillHistoryData, GetSharedEbillHistoryErrors, GetSharedEbillHistoryResponses, ListDeniedMeltopsData, ListDeniedMeltopsResponses, ListEbillsData, ListEbillsResponses, ListKeysetInfosData, ListKeysetInfosResponses, ListMintopsData, ListMintopsErrors, ListMintopsResponses, ListQuotesData, ListQuotesResponses, PatchEnableQuoteMintingData, PatchEnableQuoteMintingErrors, PatchEnableQuoteMintingResponses, PostAddReserveData, PostAddReserveResponses, PostEbillReqtopayData, PostEbillReqtopayErrors, PostEbillReqtopayResponses, SyncEbillChainData, SyncEbillChainErrors, SyncEbillChainResponses, UpdateQuoteData, UpdateQuoteErrors, UpdateQuoteResponses } from './types.gen';
+import type { CheckBillPaymentData, CheckBillPaymentErrors, CheckBillPaymentResponses, CollectFeesTokenData, CollectFeesTokenResponses, DeleteDeniedMeltopData, DeleteDeniedMeltopErrors, DeleteDeniedMeltopResponses, GetAddReserveStatusData, GetAddReserveStatusErrors, GetAddReserveStatusResponses, GetBillsBalanceHistoryData, GetBillsBalanceHistoryResponses, GetClowderAlphasData, GetClowderAlphasResponses, GetClowderBetasData, GetClowderBetasResponses, GetClowderForeignCoverageData, GetClowderForeignCoverageErrors, GetClowderForeignCoverageResponses, GetClowderInfoData, GetClowderInfoResponses, GetClowderLocalCoverageData, GetClowderLocalCoverageResponses, GetClowderMystatusData, GetClowderMystatusResponses, GetClowderStatusData, GetClowderStatusErrors, GetClowderStatusResponses, GetEbillAttachmentData, GetEbillAttachmentErrors, GetEbillAttachmentResponses, GetEbillData, GetEbillEndorsementsData, GetEbillEndorsementsErrors, GetEbillEndorsementsResponses, GetEbillErrors, GetEbillFileFromRequestToMintData, GetEbillFileFromRequestToMintErrors, GetEbillFileFromRequestToMintResponses, GetEbillHistoryData, GetEbillHistoryErrors, GetEbillHistoryResponses, GetEbillPaymentactionsData, GetEbillPaymentactionsErrors, GetEbillPaymentactionsResponses, GetEbillPaymentstatusData, GetEbillPaymentstatusErrors, GetEbillPaymentstatusResponses, GetEbillResponses, GetEiouDepositStatusData, GetEiouDepositStatusErrors, GetEiouDepositStatusResponses, GetEiouHistoryData, GetEiouHistoryResponses, GetForeignBalanceData, GetForeignBalanceResponses, GetHealthData, GetHealthResponses, GetIdentityData, GetIdentityResponses, GetKeysetInfoData, GetKeysetInfoErrors, GetKeysetInfoResponses, GetKeysetsBalanceData, GetKeysetsBalanceResponses, GetMintInfoData, GetMintInfoResponses, GetMintopStatusData, GetMintopStatusErrors, GetMintopStatusResponses, GetOnchainHistoryData, GetOnchainHistoryResponses, GetQuoteData, GetQuoteErrors, GetQuoteResponses, GetSharedEbillHistoryData, GetSharedEbillHistoryErrors, GetSharedEbillHistoryResponses, ListDeniedMeltopsData, ListDeniedMeltopsResponses, ListEbillsData, ListEbillsResponses, ListKeysetInfosData, ListKeysetInfosResponses, ListMintopsData, ListMintopsErrors, ListMintopsResponses, ListQuotesData, ListQuotesResponses, PatchEnableQuoteMintingData, PatchEnableQuoteMintingErrors, PatchEnableQuoteMintingResponses, PostAddReserveData, PostAddReserveResponses, PostEbillReqtopayData, PostEbillReqtopayErrors, PostEbillReqtopayResponses, PostEiouDepositData, PostEiouDepositResponses, SyncEbillChainData, SyncEbillChainErrors, SyncEbillChainResponses, UpdateQuoteData, UpdateQuoteErrors, UpdateQuoteResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -52,6 +52,17 @@ export const getIdentity = <ThrowOnError extends boolean = false>(options?: Opti
 export const getEbill = <ThrowOnError extends boolean = false>(options: Options<GetEbillData, ThrowOnError>): RequestResult<GetEbillResponses, GetEbillErrors, ThrowOnError> => (options.client ?? client).get<GetEbillResponses, GetEbillErrors, ThrowOnError>({ url: '/v1/admin/ebill/bills/{bid}', ...options });
 
 export const listEbills = <ThrowOnError extends boolean = false>(options?: Options<ListEbillsData, ThrowOnError>): RequestResult<ListEbillsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListEbillsResponses, unknown, ThrowOnError>({ url: '/v1/admin/ebill/bills', ...options });
+
+export const getBillsBalanceHistory = <ThrowOnError extends boolean = false>(options?: Options<GetBillsBalanceHistoryData, ThrowOnError>): RequestResult<GetBillsBalanceHistoryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetBillsBalanceHistoryResponses, unknown, ThrowOnError>({ url: '/v1/admin/ebill/balance', ...options });
+
+export const checkBillPayment = <ThrowOnError extends boolean = false>(options: Options<CheckBillPaymentData, ThrowOnError>): RequestResult<CheckBillPaymentResponses, CheckBillPaymentErrors, ThrowOnError> => (options.client ?? client).post<CheckBillPaymentResponses, CheckBillPaymentErrors, ThrowOnError>({
+    url: '/v1/admin/ebill/check_payment',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 export const getEbillEndorsements = <ThrowOnError extends boolean = false>(options: Options<GetEbillEndorsementsData, ThrowOnError>): RequestResult<GetEbillEndorsementsResponses, GetEbillEndorsementsErrors, ThrowOnError> => (options.client ?? client).get<GetEbillEndorsementsResponses, GetEbillEndorsementsErrors, ThrowOnError>({ url: '/v1/admin/ebill/endorsements/{bid}', ...options });
 
@@ -105,6 +116,23 @@ export const postAddReserve = <ThrowOnError extends boolean = false>(options: Op
     }
 });
 
+export const getEiouDepositStatus = <ThrowOnError extends boolean = false>(options: Options<GetEiouDepositStatusData, ThrowOnError>): RequestResult<GetEiouDepositStatusResponses, GetEiouDepositStatusErrors, ThrowOnError> => (options.client ?? client).get<GetEiouDepositStatusResponses, GetEiouDepositStatusErrors, ThrowOnError>({ url: '/v1/admin/clowder/eiou_deposit/{rid}', ...options });
+
+export const postEiouDeposit = <ThrowOnError extends boolean = false>(options: Options<PostEiouDepositData, ThrowOnError>): RequestResult<PostEiouDepositResponses, unknown, ThrowOnError> => (options.client ?? client).post<PostEiouDepositResponses, unknown, ThrowOnError>({
+    url: '/v1/admin/clowder/eiou_deposit',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getOnchainHistory = <ThrowOnError extends boolean = false>(options?: Options<GetOnchainHistoryData, ThrowOnError>): RequestResult<GetOnchainHistoryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetOnchainHistoryResponses, unknown, ThrowOnError>({ url: '/v1/admin/clowder/history/onchain', ...options });
+
+export const getEiouHistory = <ThrowOnError extends boolean = false>(options?: Options<GetEiouHistoryData, ThrowOnError>): RequestResult<GetEiouHistoryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetEiouHistoryResponses, unknown, ThrowOnError>({ url: '/v1/admin/clowder/history/eiou', ...options });
+
+export const getKeysetsBalance = <ThrowOnError extends boolean = false>(options?: Options<GetKeysetsBalanceData, ThrowOnError>): RequestResult<GetKeysetsBalanceResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetKeysetsBalanceResponses, unknown, ThrowOnError>({ url: '/v1/admin/clowder/history/keysets', ...options });
+
 export const postEbillReqtopay = <ThrowOnError extends boolean = false>(options: Options<PostEbillReqtopayData, ThrowOnError>): RequestResult<PostEbillReqtopayResponses, PostEbillReqtopayErrors, ThrowOnError> => (options.client ?? client).post<PostEbillReqtopayResponses, PostEbillReqtopayErrors, ThrowOnError>({
     url: '/v1/admin/treasury/ebill/reqtopay',
     ...options,
@@ -119,3 +147,5 @@ export const listDeniedMeltops = <ThrowOnError extends boolean = false>(options?
 export const deleteDeniedMeltop = <ThrowOnError extends boolean = false>(options: Options<DeleteDeniedMeltopData, ThrowOnError>): RequestResult<DeleteDeniedMeltopResponses, DeleteDeniedMeltopErrors, ThrowOnError> => (options.client ?? client).delete<DeleteDeniedMeltopResponses, DeleteDeniedMeltopErrors, ThrowOnError>({ url: '/v1/admin/treasury/onchain/meltops/denied/{qid}', ...options });
 
 export const collectFeesToken = <ThrowOnError extends boolean = false>(options?: Options<CollectFeesTokenData, ThrowOnError>): RequestResult<CollectFeesTokenResponses, unknown, ThrowOnError> => (options?.client ?? client).get<CollectFeesTokenResponses, unknown, ThrowOnError>({ url: '/v1/admin/fees/token', ...options });
+
+export const getForeignBalance = <ThrowOnError extends boolean = false>(options?: Options<GetForeignBalanceData, ThrowOnError>): RequestResult<GetForeignBalanceResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetForeignBalanceResponses, unknown, ThrowOnError>({ url: '/v1/admin/treasury/foreign/balance', ...options });

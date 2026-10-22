@@ -52,6 +52,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
       })}
       open={open}
       onOpenChange={onOpenChange}
+      contentClassName="overflow-visible"
       submitButtonDisabled={!validUntilDateTime}
       onSubmit={() => {
         if (!offerFormData || !validUntilDateTime) {
@@ -107,7 +108,7 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, onSubmit,
           </Text>
           <div className="flex-1">
             <DatePicker
-              className="max-w-full [&>div]:mx-auto [&>div]:w-full [&>div]:max-w-[430px]"
+              className="max-w-full max-h-[calc(100dvh-1rem)] [&>div]:mx-auto [&>div]:w-full [&>div]:max-w-[430px]"
               mode="single"
               withTime
               timeFormat="24h"

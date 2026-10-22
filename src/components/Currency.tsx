@@ -4,11 +4,19 @@ import { HighlightText } from "@/components/ui/highlight-text";
 import { cn, useRates } from "@bitcredit/ui-library";
 import { QueryClientContext } from "@tanstack/react-query";
 import { usePreferences, type CurrencyCode } from "@/context/preferences/PreferencesContext";
-import { convertAmount, formatAmountNumber, getLocaleForFormat, type Rates } from "@/lib/currency";
+import {
+  convertAmount,
+  formatAmountNumber,
+  getAliasedCurrency,
+  getCurrencyLabel,
+  getLocaleForFormat,
+  type Rates,
+  type SourceCurrencyCode,
+} from "@/lib/currency";
 
 export interface CurrencyProps {
   value: number;
-  sourceCurrency?: CurrencyCode;
+  sourceCurrency?: SourceCurrencyCode;
   currency?: CurrencyCode;
   highlightQuery?: string;
   className?: string;
@@ -65,7 +73,8 @@ function CurrencyBody({
 
   const primarySign = value < 0 ? "-" : "";
   const secondarySign = resolvedValue !== null && resolvedValue < 0 ? "-" : "";
-  const showSecondary = resolvedValue !== null && resolvedCurrency !== sourceCurrency;
+  const showSecondary =
+    resolvedValue !== null && resolvedCurrency !== sourceCurrency && resolvedCurrency !== getAliasedCurrency(sourceCurrency);
 
   return (
     <span className={cn("inline-flex items-baseline gap-2", className)}>
@@ -74,7 +83,9 @@ function CurrencyBody({
           {primarySign}
           <HighlightText text={primaryFormatted} highlight={highlightQuery ?? ""} />
         </span>
-        <span className={cn("text-xs font-normal leading-normal text-muted-foreground", currencyClassName)}>{sourceCurrency}</span>
+        <span className={cn("text-xs font-normal leading-normal text-muted-foreground", currencyClassName)}>
+          {getCurrencyLabel(sourceCurrency)}
+        </span>
       </span>
       {showSecondary ? (
         <span className={cn("inline-flex items-baseline gap-1 text-sm text-muted-foreground", secondaryClassName)}>
