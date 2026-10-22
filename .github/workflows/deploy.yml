@@ -33,27 +33,15 @@ jobs:
         env:
           DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          if [[ "$GITHUB_EVENT_NAME" != 'workflow_dispatch' ]]; then
-            exit 0
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            case "$DEPLOY_ENVIRONMENT:$GITHUB_REF" in
+              dev:refs/heads/dev|staging:refs/tags/*|production:refs/tags/*) ;;
+              *)
+                echo "::error::Deploy dev from the dev branch, or staging/production from a tag."
+                exit 1
+                ;;
+            esac
           fi
-          case "$DEPLOY_ENVIRONMENT" in
-            dev)
-              if [[ "$GITHUB_REF" != 'refs/heads/dev' ]]; then
-                echo "::error::Manual dev deployments must use the dev branch."
-                exit 1
-              fi
-              ;;
-            staging|production)
-              if [[ "$GITHUB_REF_TYPE" != 'tag' ]]; then
-                echo "::error::Manual staging and production deployments must use a tag."
-                exit 1
-              fi
-              ;;
-            *)
-              echo "::error::Unknown deployment environment."
-              exit 1
-              ;;
-          esac
 
   ci:
     needs: validate-target
@@ -83,7 +71,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev'
 
     ##############################################################################
-    # keep section similar, dev has different validation step
+    # Keep environment-specific build settings together.
     env:
       CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}

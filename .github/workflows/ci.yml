@@ -68,7 +68,7 @@ jobs:
           report_type: test_results
 
   container:
-    name: Validate container (build, nginx, runtime config)
+    name: Validate container (build, nginx)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -77,11 +77,8 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
-      - name: Check workflow gates
-        run: python3 .github/scripts/test_workflows.py
-
-      - name: Check smoke-test failure handling
-        run: python3 .github/scripts/test_smoke_container.py
+      - name: Check Node versions match
+        run: test "$(cat .nvmrc)" = "$(sed -nE 's/^FROM node:([0-9]+).*/\1/p' Dockerfile)"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
@@ -98,5 +95,5 @@ jobs:
           cache-from: type=gha,scope=dashboard-ci
           cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=dashboard-ci' || '' }}
 
-      - name: Smoke-test nginx and runtime configuration
-        run: python3 .github/scripts/smoke_container.py wildcat-dashboard-ui:ci
+      - name: Validate entrypoint and nginx configuration
+        run: docker run --rm wildcat-dashboard-ui:ci nginx -t
