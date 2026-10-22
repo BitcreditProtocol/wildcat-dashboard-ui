@@ -33,9 +33,38 @@ aligned. Docker reads runtime settings from the container environment;
 local `.env` files are excluded from the build context (Compose still reads
 `.env`); the tracked `.env.development` and `.env.example` files remain available.
 
+Set `VITE_ESPLORA_BASE_URL` in `.env` to select a transaction explorer. Compose
+passes it to the container and the entrypoint writes it into `/config.js` at
+startup. Leave it empty to use the application's default explorer.
+
+To run the container checks locally (Docker with Compose and Python 3 required):
+
+```shell
+docker build --pull -t wildcat-dashboard-ui:ci .
+python3 .github/scripts/smoke_container.py wildcat-dashboard-ui:ci
+```
+
+The smoke test checks nginx configuration, page and asset serving, SPA routing,
+and runtime settings with custom and empty explorer URLs. It uses temporary
+containers on random localhost ports and removes them afterward.
+
 The `js-yaml` override keeps the OpenAPI generator's pinned parser dependency on
 the patched 4.x release. Remove it once the upstream dependency requires 4.3.2 or
 newer and `npm audit` remains clean.
+
+### CI and deployments
+
+Every pull request runs application validation and a Docker build and smoke test.
+The reusable CI workflow also gates nightly/release image publishing and all
+GitHub Actions Cloudflare deployments, including manual runs. Those jobs deploy
+the same commit SHA that passed validation. Reusable calls skip duplicate Codecov
+uploads and do not receive deployment secrets.
+
+Cloudflare Pages' native Git integration is separate: its automatic previews do
+not wait for these GitHub Actions gates. To require CI for every deployment,
+disable automatic Git deployments in the Cloudflare project settings and use the
+gated GitHub Actions workflow. Repository workflow changes do not alter that
+Cloudflare setting.
 
 ### shadcn
 

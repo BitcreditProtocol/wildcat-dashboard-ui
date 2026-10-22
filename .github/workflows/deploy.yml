@@ -19,11 +19,17 @@ on:
           - production
 
 jobs:
+  ci:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+
   ######################################################################
   # ENV:          dev
   # CF project:   wildcat-dashboard
   ######################################################################
   deploy-dev:
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -52,7 +58,7 @@ jobs:
       - name: Checkout ${{ github.ref_name }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       # for dev: only allow dev branch
@@ -94,6 +100,7 @@ jobs:
   # CF project:   wildcat-dashboard-staging
   ######################################################################
   deploy-staging:
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -123,7 +130,7 @@ jobs:
       - name: Checkout ${{ github.ref_name }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Validate tag on manual dispatch
@@ -186,6 +193,7 @@ jobs:
   # CF project:   wildcat-dashboard-production
   ######################################################################
   deploy-production:
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -215,7 +223,7 @@ jobs:
       - name: Checkout ${{ github.ref_name }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Validate tag on manual dispatch

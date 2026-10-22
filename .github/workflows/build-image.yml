@@ -27,8 +27,14 @@ env:
   IMAGE_NAME: "bcr-wdc-dashboard-ui"
 
 jobs:
+  ci:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+
   build:
     if: github.event_name != 'pull_request'
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,6 +57,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
 
       - name: Login to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
