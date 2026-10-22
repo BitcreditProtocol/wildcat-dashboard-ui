@@ -91,23 +91,22 @@ class NightlyTests(unittest.TestCase):
 
 
 class DeploymentGateTests(unittest.TestCase):
-    def test_every_publisher_requires_ci_for_the_same_commit(self):
-        for workflow in (BUILD, DEPLOY):
-            jobs = workflow["jobs"]
-            self.assertEqual(jobs["ci"]["uses"], "./.github/workflows/ci.yml")
-            self.assertEqual(jobs["ci"]["permissions"], {"contents": "read"})
-            self.assertNotIn("secrets", jobs["ci"])
-            for name, job in jobs.items():
-                if name == "ci":
-                    continue
-                with self.subTest(job=name):
-                    self.assertEqual(job["needs"], "ci")
-                    # Status functions could bypass the default success() dependency gate.
-                    for override in ("always(", "failure(", "cancelled("):
-                        self.assertNotIn(override, job.get("if", ""))
-                    checkout = next(s for s in job["steps"]
-                                    if s.get("uses", "").startswith("actions/checkout@"))
-                    self.assertEqual(checkout["with"]["ref"], "${{ github.sha }}")
+    def test_every_deployment_requires_ci_for_the_same_commit(self):
+        jobs = DEPLOY["jobs"]
+        self.assertEqual(jobs["ci"]["uses"], "./.github/workflows/ci.yml")
+        self.assertEqual(jobs["ci"]["permissions"], {"contents": "read"})
+        self.assertNotIn("secrets", jobs["ci"])
+        for name, job in jobs.items():
+            if name == "ci":
+                continue
+            with self.subTest(job=name):
+                self.assertEqual(job["needs"], "ci")
+                # Status functions could bypass the default success() dependency gate.
+                for override in ("always(", "failure(", "cancelled("):
+                    self.assertNotIn(override, job.get("if", ""))
+                checkout = next(s for s in job["steps"]
+                                if s.get("uses", "").startswith("actions/checkout@"))
+                self.assertEqual(checkout["with"]["ref"], "${{ github.sha }}")
 
     def test_prs_build_and_smoke_test_without_publishing(self):
         self.assertIn("workflow_call", CI["on"])

@@ -27,14 +27,8 @@ env:
   IMAGE_NAME: "bcr-wdc-dashboard-ui"
 
 jobs:
-  ci:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/ci.yml
-
   build:
     if: github.event_name != 'pull_request'
-    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read

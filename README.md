@@ -55,10 +55,13 @@ newer and `npm audit` remains clean.
 ### CI and deployments
 
 Every pull request runs application validation and a Docker build and smoke test.
-The reusable CI workflow also gates nightly/release image publishing and all
-GitHub Actions Cloudflare deployments, including manual runs. Those jobs deploy
-the same commit SHA that passed validation. Reusable calls skip duplicate Codecov
-uploads and do not receive deployment secrets.
+The reusable CI workflow also gates all GitHub Actions Cloudflare deployments,
+including manual runs. Those jobs deploy the same commit SHA that passed
+validation. Reusable calls skip duplicate Codecov uploads and do not receive
+deployment secrets.
+
+Nightly and release workflows build and publish images without rerunning the full
+CI suite. A failed Docker build prevents publishing.
 
 Cloudflare Pages' native Git integration is separate: its automatic previews do
 not wait for these GitHub Actions gates. To require CI for every deployment,
