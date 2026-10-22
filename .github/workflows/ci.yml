@@ -2,13 +2,14 @@ name: CI
 
 on:
   push:
-    branches: ["master", "dev"]
+    # Master pushes are validated once by deploy.yml before deployment.
+    branches: ["dev"]
   pull_request:
   workflow_dispatch:
   workflow_call:
     inputs:
       skip_coverage_upload:
-        description: Reusable deployment gates do not need duplicate Codecov uploads
+        description: Skip Codecov uploads when revalidating manual or tag deployments
         type: boolean
         default: true
     secrets:

@@ -57,11 +57,17 @@ newer and `npm audit` remains clean.
 
 ### CI and deployments
 
-Every pull request runs application validation and a Docker build and smoke test.
-The reusable CI workflow also gates all GitHub Actions Cloudflare deployments,
-including manual runs. Those jobs deploy the same commit SHA that passed
-validation. Reusable calls skip duplicate Codecov uploads and do not receive
-deployment secrets. Invalid manual deployment targets fail before CI starts.
+Every pull request and push to `dev` runs application validation and a Docker
+build and smoke test through CI. A push to `master` runs these checks once through
+the deployment workflow, with Codecov uploads, before deployment. Standalone CI
+does not also trigger on master pushes.
+
+The reusable CI workflow gates all GitHub Actions Cloudflare deployments,
+including manual and tag runs. Those jobs deploy the same commit SHA that passed
+validation. Manual and tag runs skip Codecov uploads. Reusable CI receives only
+the Codecov token, not deployment secrets. Invalid manual deployment targets fail
+before CI starts. All Node setup steps use `.nvmrc`, so GitHub `NODE_VERSION`
+variables do not control these workflows.
 A newer deployment run for the same Git ref cancels the older run, including its
 CI jobs, so slower checks cannot deploy an older commit afterward.
 

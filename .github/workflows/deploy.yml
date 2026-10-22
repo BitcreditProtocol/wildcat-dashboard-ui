@@ -60,6 +60,10 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml
+    with:
+      skip_coverage_upload: ${{ github.event_name != 'push' || github.ref != 'refs/heads/master' }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   ######################################################################
   # ENV:          dev

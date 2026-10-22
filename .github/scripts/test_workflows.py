@@ -20,6 +20,35 @@ DEPLOY = workflow("deploy.yml")
 
 
 class DeploymentGateTests(unittest.TestCase):
+    def test_each_branch_push_has_one_ci_entry_point(self):
+        standalone_branches = set(CI["on"]["push"]["branches"])
+        deployment_branches = set(DEPLOY["on"]["push"]["branches"])
+        self.assertFalse(standalone_branches & deployment_branches)
+        self.assertEqual(standalone_branches | deployment_branches, {"dev", "master"})
+        self.assertIn("master", deployment_branches)
+        self.assertIn("dev", standalone_branches)
+        self.assertIsNone(CI["on"]["pull_request"])
+        self.assertIn("workflow_dispatch", CI["on"])
+
+    def test_master_deployment_ci_retains_coverage_uploads(self):
+        call = DEPLOY["jobs"]["ci"]
+        self.assertEqual(call["with"]["skip_coverage_upload"],
+                         "${{ github.event_name != 'push' || github.ref != 'refs/heads/master' }}")
+        uploads = [step for step in CI["jobs"]["validate"]["steps"]
+                   if step.get("uses", "").startswith("codecov/codecov-action@")]
+        self.assertEqual(len(uploads), 2)
+        for step in uploads:
+            self.assertEqual(step["if"], "${{ !inputs.skip_coverage_upload }}")
+
+    def test_node_selection_does_not_depend_on_github_variables(self):
+        for workflow_config in (CI, DEPLOY):
+            self.assertNotIn("vars.NODE_VERSION", json.dumps(workflow_config))
+            for job in workflow_config["jobs"].values():
+                for step in job.get("steps", []):
+                    if step.get("uses", "").startswith("actions/setup-node@"):
+                        self.assertEqual(step["with"]["node-version-file"], ".nvmrc")
+                        self.assertNotIn("node-version", step["with"])
+
     def test_new_deployments_cancel_older_runs_including_ci(self):
         self.assertEqual(DEPLOY["concurrency"]["group"], "deploy-${{ github.ref }}")
         self.assertTrue(DEPLOY["concurrency"]["cancel-in-progress"])
@@ -59,7 +88,8 @@ class DeploymentGateTests(unittest.TestCase):
         jobs = DEPLOY["jobs"]
         self.assertEqual(jobs["ci"]["uses"], "./.github/workflows/ci.yml")
         self.assertEqual(jobs["ci"]["permissions"], {"contents": "read"})
-        self.assertNotIn("secrets", jobs["ci"])
+        self.assertEqual(jobs["ci"]["secrets"],
+                         {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"})
         for name, job in jobs.items():
             if not name.startswith("deploy-"):
                 continue
