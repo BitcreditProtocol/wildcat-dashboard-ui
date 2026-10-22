@@ -15,12 +15,14 @@ import { BalanceChartDrawer } from "./BalanceChartDrawer";
 import { OnChainBalanceChart } from "./OnChainBalanceChart";
 import { EbillCollateralChart } from "./EbillCollateralChart";
 import { ForeignBalanceBreakdown } from "./ForeignBalanceBreakdown";
+import { EiouHistoryChart } from "./EiouHistoryChart";
 import { KeysetBalanceChart } from "./KeysetBalanceChart";
 
 function Loader() {
   return (
-    <div className="flex flex-col gap-4 my-2">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+    <div className="@container flex flex-col gap-4 my-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 @min-[128rem]:grid-cols-6 gap-4">
+        <Skeleton className="h-32 rounded-lg" />
         <Skeleton className="h-32 rounded-lg" />
         <Skeleton className="h-32 rounded-lg" />
         <Skeleton className="h-32 rounded-lg" />
@@ -143,8 +145,12 @@ function useBalances() {
       unit: "sat",
     },
     eiou: {
-      amount: foreignTotals.settled.toString(),
+      amount: coverage?.eiou_collateral?.toString() ?? "0",
       unit: "eiou",
+    },
+    foreign: {
+      amount: foreignTotals.settled.toString(),
+      unit: "crsat",
       unavailable: isForeignError,
     },
     credit: {
@@ -181,8 +187,8 @@ function PageBodyWithDevSection() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 my-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="@container flex flex-col gap-4 my-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 @min-[128rem]:grid-cols-6 gap-4">
           <BalanceCard
             title={<FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />}
             className="bg-indigo-100"
@@ -202,7 +208,28 @@ function PageBodyWithDevSection() {
             className="bg-orange-100"
             amount={balances.eiou.amount}
             unit={balances.eiou.unit}
-            unavailable={balances.eiou.unavailable}
+            chart={<EiouHistoryChart />}
+          />
+          <BalanceCard
+            title={<FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />}
+            className="bg-purple-400"
+            amount={balances.debit.amount}
+            unit={balances.debit.unit}
+            chart={<KeysetBalanceChart token="debit" />}
+          />
+          <BalanceCard
+            title={<FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />}
+            className="bg-purple-200"
+            amount={balances.credit.amount}
+            unit={balances.credit.unit}
+            chart={<KeysetBalanceChart token="credit" />}
+          />
+          <BalanceCard
+            title={<FormattedMessage id="balances.foreign" defaultMessage="Foreign e-cash balance" />}
+            className="bg-amber-100"
+            amount={balances.foreign.amount}
+            unit={balances.foreign.unit}
+            unavailable={balances.foreign.unavailable}
             detail={
               isForeignError ? (
                 <Text variant="caption" className="mt-1 text-text-on-tint-muted">
@@ -213,7 +240,7 @@ function PageBodyWithDevSection() {
                   <FormattedMessage id="balances.eiou.unsettled" defaultMessage="Unsettled" />
                   <Currency
                     value={foreignTotals.unsettled}
-                    sourceCurrency="eiou"
+                    sourceCurrency="crsat"
                     amountClassName="text-current"
                     currencyClassName="text-current"
                   />
@@ -221,20 +248,6 @@ function PageBodyWithDevSection() {
               )
             }
             chart={<ForeignBalanceBreakdown />}
-          />
-          <BalanceCard
-            title={<FormattedMessage id="balances.creditToken" defaultMessage="Credit token balance" />}
-            className="bg-purple-200"
-            amount={balances.credit.amount}
-            unit={balances.credit.unit}
-            chart={<KeysetBalanceChart token="credit" />}
-          />
-          <BalanceCard
-            title={<FormattedMessage id="balances.debitToken" defaultMessage="Debit token balance" />}
-            className="bg-purple-400"
-            amount={balances.debit.amount}
-            unit={balances.debit.unit}
-            chart={<KeysetBalanceChart token="debit" />}
           />
         </div>
 

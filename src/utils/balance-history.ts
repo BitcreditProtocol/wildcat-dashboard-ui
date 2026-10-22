@@ -1,4 +1,11 @@
-import type { BillBalanceEntry, KeysetBalance, OnChainOperation, OnChainOperationType } from "@/generated/client/types.gen";
+import type {
+  BillBalanceEntry,
+  EiouOperation,
+  EiouOperationType,
+  KeysetBalance,
+  OnChainOperation,
+  OnChainOperationType,
+} from "@/generated/client/types.gen";
 import { createLogger } from "@/lib/logger";
 import { type RangeBounds, isWithinBounds } from "@/utils/chart-range";
 import { getUtcStartOfDate } from "@/utils/dates";
@@ -24,23 +31,49 @@ export function signedOnChainAmount(operation: OnChainOperation): number {
   return onChainOperationDirection(operation.op_type) * Math.abs(operation.amount);
 }
 
-export interface OnChainBalancePoint {
+/**
+ * Which way an e-IOU operation moves the mint's e-IOU collateral. A `Deposit` is the only kind the
+ * ledger records so far, and it credits; the switch makes a new kind a compile error here rather
+ * than a silent inflow.
+ */
+export function eiouOperationDirection(opType: EiouOperationType): 1 | -1 {
+  switch (opType.type) {
+    case "Deposit":
+      return 1;
+  }
+}
+
+/** The operation's effect on the e-IOU collateral, in whole e-IOU tokens. */
+export function signedEiouAmount(operation: EiouOperation): number {
+  return eiouOperationDirection(operation.op_type) * Math.abs(operation.amount);
+}
+
+export interface BalancePoint {
   timestamp: number;
   balance: number;
 }
 
+export type OnChainBalancePoint = BalancePoint;
+
+interface TimedOperation {
+  timestamp: number;
+}
+
 /**
- * The running on-chain balance, oldest first. The endpoint reports discrete operations
- * rather than a balance series, so the series is accumulated here; operations sharing a
- * timestamp collapse into the one closing balance they produce.
+ * A running balance, oldest first. The history endpoints report discrete operations rather than
+ * a balance series, so the series is accumulated here; operations sharing a timestamp collapse
+ * into the one closing balance they produce.
  */
-export function onChainBalanceSeries(operations: OnChainOperation[]): OnChainBalancePoint[] {
+function balanceSeries<Operation extends TimedOperation>(
+  operations: Operation[],
+  signedAmount: (operation: Operation) => number
+): BalancePoint[] {
   const ordered = [...operations].sort((a, b) => a.timestamp - b.timestamp);
-  const series: OnChainBalancePoint[] = [];
+  const series: BalancePoint[] = [];
   let balance = 0;
 
   for (const operation of ordered) {
-    balance += signedOnChainAmount(operation);
+    balance += signedAmount(operation);
     const last = series[series.length - 1];
 
     if (last?.timestamp === operation.timestamp) {
@@ -53,6 +86,16 @@ export function onChainBalanceSeries(operations: OnChainOperation[]): OnChainBal
   return series;
 }
 
+/** The running on-chain balance, oldest first. */
+export function onChainBalanceSeries(operations: OnChainOperation[]): BalancePoint[] {
+  return balanceSeries(operations, signedOnChainAmount);
+}
+
+/** The running e-IOU collateral, oldest first. */
+export function eiouBalanceSeries(operations: EiouOperation[]): BalancePoint[] {
+  return balanceSeries(operations, signedEiouAmount);
+}
+
 /**
  * The running balance narrowed to a window.
  *
@@ -62,7 +105,7 @@ export function onChainBalanceSeries(operations: OnChainOperation[]): OnChainBal
  * start. A window whose only point is that opening balance is extended to the window end, so a
  * quiet period reads as a flat line rather than a single invisible dot.
  */
-export function clipBalanceSeries(series: OnChainBalancePoint[], bounds: RangeBounds | null): OnChainBalancePoint[] {
+export function clipBalanceSeries(series: BalancePoint[], bounds: RangeBounds | null): BalancePoint[] {
   if (bounds === null) {
     return series;
   }
@@ -80,33 +123,41 @@ export function clipBalanceSeries(series: OnChainBalancePoint[], bounds: RangeBo
   return clipped.length === 1 ? [...clipped, { timestamp: bounds.to, balance: opening.balance }] : clipped;
 }
 
-export interface OnChainLedgerEntry {
+export interface LedgerEntry<Operation> {
   key: string;
   timestamp: number;
-  operation: OnChainOperation;
+  operation: Operation;
   change: number;
   balance: number;
 }
 
-export interface OnChainLedger {
+export interface Ledger<Operation> {
   opening: number;
-  entries: OnChainLedgerEntry[];
+  entries: LedgerEntry<Operation>[];
   closing: number;
 }
 
+export type OnChainLedgerEntry = LedgerEntry<OnChainOperation>;
+export type OnChainLedger = Ledger<OnChainOperation>;
+export type EiouLedger = Ledger<EiouOperation>;
+
 /**
- * The on-chain balance as the operations that make it up, so `opening` plus every `change`
- * adds up to `closing`. Like `clipBalanceSeries`, the balance is accumulated over the whole
- * history before the window is applied, so a narrowed window still opens on the true balance.
+ * A balance as the operations that make it up, so `opening` plus every `change` adds up to
+ * `closing`. Like `clipBalanceSeries`, the balance is accumulated over the whole history before
+ * the window is applied, so a narrowed window still opens on the true balance.
  */
-export function onChainLedger(operations: OnChainOperation[], bounds: RangeBounds | null): OnChainLedger {
+function ledger<Operation extends TimedOperation>(
+  operations: Operation[],
+  bounds: RangeBounds | null,
+  signedAmount: (operation: Operation) => number
+): Ledger<Operation> {
   const ordered = [...operations].sort((a, b) => a.timestamp - b.timestamp);
-  const entries: OnChainLedgerEntry[] = [];
+  const entries: LedgerEntry<Operation>[] = [];
   let opening = 0;
   let balance = 0;
 
   ordered.forEach((operation, index) => {
-    const change = signedOnChainAmount(operation);
+    const change = signedAmount(operation);
     balance += change;
 
     if (bounds !== null && operation.timestamp < bounds.from) {
@@ -117,6 +168,16 @@ export function onChainLedger(operations: OnChainOperation[], bounds: RangeBound
   });
 
   return { opening, entries, closing: entries[entries.length - 1]?.balance ?? opening };
+}
+
+/** The on-chain balance as the operations that make it up. */
+export function onChainLedger(operations: OnChainOperation[], bounds: RangeBounds | null): OnChainLedger {
+  return ledger(operations, bounds, signedOnChainAmount);
+}
+
+/** The e-IOU collateral as the deposits that make it up. */
+export function eiouLedger(operations: EiouOperation[], bounds: RangeBounds | null): EiouLedger {
+  return ledger(operations, bounds, signedEiouAmount);
 }
 
 export interface EbillCollateralEntry {

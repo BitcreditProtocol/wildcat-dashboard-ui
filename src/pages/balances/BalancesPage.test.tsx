@@ -47,7 +47,7 @@ const mockUseCollectFeesQuery = vi.fn<() => MockFeesToken>();
 const mockUseHistoryQuery = vi.fn<(queryId: string) => MockHistory>();
 const mockUseForeignBalanceQuery = vi.fn<() => MockForeignBalance>();
 
-const HISTORY_QUERY_IDS = new Set(["onchainHistory", "billsBalanceHistory", "keysetsBalance"]);
+const HISTORY_QUERY_IDS = new Set(["onchainHistory", "billsBalanceHistory", "keysetsBalance", "eiouHistory"]);
 
 const SECONDS_PER_DAY = 24 * 60 * 60;
 
@@ -102,6 +102,9 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   }),
   getEiouDepositStatusOptions: () => ({
     queryKey: [{ _id: "eiouDepositStatus" }],
+  }),
+  getEiouHistoryOptions: () => ({
+    queryKey: [{ _id: "eiouHistory" }],
   }),
   getOnchainHistoryOptions: () => ({
     queryKey: [{ _id: "onchainHistory" }],
@@ -176,6 +179,7 @@ function renderWithProviders(element: ReactElement): HTMLDivElement {
 function emptyHistory(queryId: string) {
   switch (queryId) {
     case "onchainHistory":
+    case "eiouHistory":
       return { operations: [] };
     case "billsBalanceHistory":
       return { bills: [] };
@@ -305,13 +309,13 @@ describe("BalancesPage", () => {
       isError: false,
       refetch: vi.fn(),
     });
-    // The e-IOU card reads the treasury's foreign balances, not `eiou_collateral`: 555 settled
-    // across two mints, with 1,000 more still owed to it.
+    // The foreign e-cash card reads the treasury's foreign balances: 300 settled across two mints,
+    // with 1,000 more still owed to it.
     mockUseForeignBalanceQuery.mockReturnValue({
       data: {
         balances: [
-          { mint_id: "https://alpha.example", settled: 500, unsettled: 400 },
-          { mint_id: "https://beta.example", settled: 55, unsettled: 600 },
+          { mint_id: "https://alpha.example", settled: 200, unsettled: 400 },
+          { mint_id: "https://beta.example", settled: 100, unsettled: 600 },
         ],
       },
       isPending: false,
@@ -327,10 +331,12 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("50,000,000");
     expect(page.textContent).toContain("45,000.00");
     expect(page.textContent).toContain("42,000");
-    // 555 e-IOU at the fixed 0.067 euro-cent peg: the settled total, not `eiou_collateral`.
+    // The e-IOU card is the mint's own collateral: 555 e-IOU at the fixed 0.067 euro-cent peg.
     expect(page.textContent).toContain("555e-IOU0.37eur");
-    // Value still owed by the foreign mints is named on its own line, never folded into the headline.
-    expect(page.textContent).toContain("Unsettled1,000e-IOU0.67eur");
+    // The foreign e-cash card is the settled credit e-cash held from other mints, valued like any crsat.
+    expect(page.textContent).toContain("300crsat0.27eur");
+    // Value still waiting on an offline mint is named on its own line, never folded into the headline.
+    expect(page.textContent).toContain("Unsettled1,000crsat0.90eur");
     // A crsat is worth exactly one sat, so it converts at the sat rate.
     expect(page.textContent).toContain("777crsat0.70eur");
   });
@@ -353,7 +359,7 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("Bitcoin balance");
   });
 
-  it("breaks the e-IOU balance down by foreign mint in its drawer", async () => {
+  it("breaks the foreign e-cash balance down by mint in its own card's drawer", async () => {
     mockUseCoverageQuery.mockReturnValue(zeroCoverage());
     mockUseForeignBalanceQuery.mockReturnValue({
       data: {
@@ -372,11 +378,46 @@ describe("BalancesPage", () => {
 
     expect(document.body.textContent).not.toContain("Foreign e-cash by mint");
 
+    // The e-IOU drawer is the mint's own deposits only.
     await openBalanceCard("e-IOU balance");
+    expect(document.body.textContent).toContain("e-IOU deposits");
+    expect(document.body.textContent).not.toContain("Foreign e-cash by mint");
+    await closeDrawer();
+
+    await openBalanceCard("Foreign e-cash balance");
 
     // The chart itself is recharts, mocked away here; `sortForeignBalances` covers the bar order.
     expect(document.body.textContent).toContain("Foreign e-cash by mint");
+    expect(document.body.textContent).not.toContain("e-IOU deposits");
     expect(document.body.textContent).not.toContain("The mint holds no foreign e-cash yet.");
+  });
+
+  it("lists the e-IOU deposits behind the collateral in the e-IOU drawer", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseHistoryQuery.mockImplementation((queryId) => ({
+      data:
+        queryId === "eiouHistory"
+          ? {
+              operations: [
+                { op_type: { type: "Deposit", request_id: "req-early" }, amount: 1_200, block_height: 900_001, timestamp: 1_767_225_600 },
+                { op_type: { type: "Deposit", request_id: "req-late" }, amount: 300, block_height: 900_123, timestamp: 1_767_312_000 },
+              ],
+            }
+          : emptyHistory(queryId),
+      isPending: false,
+      error: null,
+    }));
+
+    renderWithProviders(<BalancesPage />);
+    await flush();
+    await openBalanceCard("e-IOU balance");
+
+    expect(document.body.textContent).toContain("e-IOU deposits");
+    const depositTable = [...document.querySelectorAll('[role="dialog"] table')].find((table) => table.textContent?.includes("Request ID"));
+    expect(depositTable?.textContent).toContain("Deposit");
+    expect(depositTable?.textContent).toContain("900123");
+    // 1,200 + 300 deposited, so the collateral closes on 1,500.
+    expect(depositTable?.querySelector("tfoot")?.textContent).toContain("+1,500");
   });
 
   it("opens a drawer on its table and switches to the chart", async () => {
@@ -395,7 +436,7 @@ describe("BalancesPage", () => {
 
     renderWithProviders(<BalancesPage />);
     await flush();
-    await openBalanceCard("e-IOU balance");
+    await openBalanceCard("Foreign e-cash balance");
 
     // The table is the default view.
     const table = document.querySelector('[role="dialog"] table');
@@ -403,7 +444,7 @@ describe("BalancesPage", () => {
     expect(table?.textContent).toContain("Mint");
     expect(table?.textContent).toContain("9,000");
     expect(table?.textContent).toContain("1,234");
-    // The total row adds the mints up to the figure on the e-IOU card.
+    // The total row adds the mints up to the figure on the foreign e-cash card.
     const total = table?.querySelector("tfoot")?.textContent;
     expect(total).toContain("Total");
     expect(total).toContain("9,010");
@@ -429,7 +470,7 @@ describe("BalancesPage", () => {
     renderWithProviders(<BalancesPage />);
     await flush();
 
-    await openBalanceCard("e-IOU balance");
+    await openBalanceCard("Foreign e-cash balance");
 
     expect(document.body.textContent).toContain("The mint holds no foreign e-cash yet.");
   });

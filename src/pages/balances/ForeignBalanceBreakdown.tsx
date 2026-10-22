@@ -58,7 +58,7 @@ export function ForeignBalanceBreakdown() {
       description={
         <FormattedMessage
           id="balances.foreign.description"
-          defaultMessage="e-IOU value this mint holds with each foreign mint. Settled value it can act on now; unsettled is still owed to it."
+          defaultMessage="Credit e-cash (crsat) this mint holds from each foreign mint. Settled is swapped and owned outright; unsettled is held while the issuing mint is offline."
         />
       }
       isPending={isPending}

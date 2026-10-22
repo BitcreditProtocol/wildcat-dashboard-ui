@@ -1193,6 +1193,26 @@
         }
       }
     },
+    "/v1/admin/clowder/history/eiou": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "operationId": "get_eiou_history",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EiouOperationsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/clowder/history/keysets": {
       "get": {
         "tags": [
@@ -2691,6 +2711,74 @@
             }
           }
         ]
+      },
+      "EiouOperation": {
+        "type": "object",
+        "required": [
+          "op_type",
+          "amount",
+          "block_height",
+          "timestamp"
+        ],
+        "properties": {
+          "op_type": {
+            "$ref": "#/components/schemas/EiouOperationType"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Whole brc-20 tokens, not sats: the eIOU ticker is deployed with `dec = 0`.",
+            "minimum": 0
+          },
+          "block_height": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The bitcoin block the credit landed in, as recorded on the ledger entry.",
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix seconds, from that block's header.",
+            "minimum": 0
+          }
+        }
+      },
+      "EiouOperationType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "request_id",
+              "type"
+            ],
+            "properties": {
+              "request_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Deposit"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "EiouOperationsResponse": {
+        "type": "object",
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EiouOperation"
+            }
+          }
+        }
       },
       "EnableMintingResponse": {
         "type": "object"
