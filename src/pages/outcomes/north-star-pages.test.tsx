@@ -97,7 +97,7 @@ describe("Outcomes", () => {
     expect(text).toContain("Continued without the assistant1 of 4 (25%)");
     expect(text).toContain("Recourse if the payer does not pay0 of 2 (0%)");
     expect(text).toContain("Answered1 of 2 (50%)");
-    expect(text).toContain("Time from assessment to the operator's actionmedian 10 min");
+    expect(text).toContain("Time a ready case waited for a personmedian 10 min");
     expect(text).toContain("Time until a second review startedno samples yet");
     expect(text).toContain("Seeded-error detection by reviewers · Cases carry no seeded-error ground truth.");
     expect(text).toContain("Approval percentage");

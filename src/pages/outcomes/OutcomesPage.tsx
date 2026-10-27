@@ -51,8 +51,8 @@ const messages = defineMessages({
   },
   reviewTime: {
     id: "outcomes.reviewTime",
-    defaultMessage: "Time from assessment to the operator's action",
-    description: "Metric: includes information requests, not only financial decisions",
+    defaultMessage: "Time a ready case waited for a person",
+    description: "Metric: from the case first becoming ready for decision to any operator action, including information requests",
   },
   deviations: {
     id: "outcomes.deviations",

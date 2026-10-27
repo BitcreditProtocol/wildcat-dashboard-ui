@@ -1400,7 +1400,7 @@
   "outcomes.reachedReview": "Reached the review of their answers",
   "outcomes.reproducibility": "Current decisions reproduced from stored inputs",
   "outcomes.review": "Review by people",
-  "outcomes.reviewTime": "Time from assessment to the operator's action",
+  "outcomes.reviewTime": "Time a ready case waited for a person",
   "outcomes.reviewed": "Acted on by a person (decision or information request)",
   "outcomes.stalled": "Stalled for over a day, by last step",
   "outcomes.step.answering": "answering",
