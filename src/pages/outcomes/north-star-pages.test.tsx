@@ -160,7 +160,7 @@ describe("Help requests", () => {
     act(() => getByRole(page, "button", { name: "Send reply" }).click());
     await flush();
     expect(posted).toMatchObject({ action: "reply", requestId: view.requests[0]?.requestId, text: "La Mint puede reclamarle." });
-    expect(page.textContent).toContain("Replied by democat");
+    expect(page.textContent).toContain("Replied by operator democat");
   });
 
   it("shows only this bill's requests on a quote and nothing for others", async () => {

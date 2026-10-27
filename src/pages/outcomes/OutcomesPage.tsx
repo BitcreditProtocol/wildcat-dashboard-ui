@@ -69,6 +69,7 @@ const messages = defineMessages({
     description: "A duration summary",
   },
   noSamples: { id: "outcomes.noSamples", defaultMessage: "no samples yet", description: "A duration without samples" },
+  noneYet: { id: "outcomes.noneYet", defaultMessage: "none yet", description: "A rate whose denominator is still zero" },
 });
 
 const topicMessages = defineMessages({
@@ -142,6 +143,7 @@ const antiMetricMessages: Record<string, MessageDescriptor> = defineMessages({
 });
 
 function formatRate(intl: IntlShape, rate: MetricRate): string {
+  if (rate.denominator === 0) return intl.formatMessage(messages.noneYet);
   return rate.ratio === null
     ? intl.formatMessage(messages.rateNone, { numerator: rate.numerator, denominator: rate.denominator })
     : intl.formatMessage(messages.rate, {
@@ -153,6 +155,7 @@ function formatRate(intl: IntlShape, rate: MetricRate): string {
 
 function formatSpan(intl: IntlShape, ms: number | null): string {
   if (ms === null) return "–";
+  if (ms < 60_000) return intl.formatNumber(ms / 1_000, { style: "unit", unit: "second", unitDisplay: "short", maximumFractionDigits: 0 });
   const minutes = ms / 60_000;
   if (minutes < 60) return intl.formatNumber(minutes, { style: "unit", unit: "minute", unitDisplay: "short", maximumFractionDigits: 0 });
   const hours = minutes / 60;
@@ -173,17 +176,17 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-lg border border-border p-4">
       <h2 className="mb-3 font-medium">{title}</h2>
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-[minmax(0,1fr)_auto]">{children}</dl>
+      <dl className="space-y-2 text-sm">{children}</dl>
     </section>
   );
 }
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <>
+    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-0.5">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium tabular-nums sm:text-right">{value}</dd>
-    </>
+      <dd className="font-medium tabular-nums">{value}</dd>
+    </div>
   );
 }
 

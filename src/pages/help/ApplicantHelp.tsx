@@ -33,7 +33,11 @@ const messages = defineMessages({
   reply: { id: "help.reply", defaultMessage: "Reply", description: "Opens the reply field for a help request" },
   replyLabel: { id: "help.replyLabel", defaultMessage: "Your reply to the applicant", description: "Label of the reply field" },
   send: { id: "help.send", defaultMessage: "Send reply", description: "Sends a reply to a help request" },
-  replied: { id: "help.replied", defaultMessage: "Replied by {operator} · {time}", description: "Who replied to a help request and when" },
+  replied: {
+    id: "help.replied",
+    defaultMessage: "Replied by operator {operator} · {time}",
+    description: "Who replied to a help request and when",
+  },
   replyFailed: {
     id: "help.replyFailed",
     defaultMessage: "The reply could not be saved. Refresh: someone may have answered already.",
@@ -79,7 +83,8 @@ function HelpRequestItem({ request, showQuoteLink }: { request: ApplicantHelpReq
           <p className="whitespace-pre-wrap">{request.reply.text}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {intl.formatMessage(messages.replied, {
-              operator: request.reply.operatorId,
+              // The operator id is the signed-in subject; its first block is enough to tell people apart.
+              operator: request.reply.operatorId.split("-")[0] ?? request.reply.operatorId,
               time: intl.formatDate(request.reply.repliedAt, { dateStyle: "medium", timeStyle: "short" }),
             })}
           </p>
