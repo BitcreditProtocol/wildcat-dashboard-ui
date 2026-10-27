@@ -2,19 +2,9 @@ name: CI
 
 on:
   push:
-    # Master pushes are validated once by deploy.yml before deployment.
-    branches: ["dev"]
+    branches: ["master", "dev"]
   pull_request:
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      skip_coverage_upload:
-        description: Skip Codecov uploads when revalidating manual or tag deployments
-        type: boolean
-        default: true
-    secrets:
-      CODECOV_TOKEN:
-        required: false
 
 permissions:
   contents: read
@@ -22,14 +12,12 @@ permissions:
 jobs:
   validate:
     name: Validate (style, lint, test, build)
-    runs-on: ubuntu-latest
     timeout-minutes: 15
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -53,14 +41,12 @@ jobs:
         run: npm run build
 
       - name: Upload coverage to Codecov
-        if: ${{ !inputs.skip_coverage_upload }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
 
       - name: Upload test results to Codecov
-        if: ${{ !inputs.skip_coverage_upload }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -74,8 +60,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
 
       - name: Check Node versions match
         run: test "$(cat .nvmrc)" = "$(sed -nE 's/^FROM node:([0-9]+).*/\1/p' Dockerfile)"

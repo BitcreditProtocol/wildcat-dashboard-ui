@@ -2,9 +2,9 @@
 
 ## Development
 
-Prerequisite: Node.js 26.x and npm 11.x (validated with Node 26.12.1 / npm 11.20.0).
-Run `nvm install` and `nvm use` to select the version in `.nvmrc`, which is also
-used by CI and Cloudflare deployments.
+Prerequisite: Node.js 26.x and npm 11.x (see `.nvmrc` and `packageManager` in
+`package.json`). Run `nvm install` and `nvm use` to select the version in `.nvmrc`,
+which CI also uses.
 
 ### Install
 
@@ -27,7 +27,7 @@ just build
 just run
 ```
 
-Docker uses digest-pinned Node.js 26 and nginx 1.31.8 images, updated by Dependabot.
+Docker uses digest-pinned Node.js and nginx images, updated by Dependabot.
 CI checks that the Docker Node major matches `.nvmrc`. Local `.env` files are
 excluded from the build context; Compose still reads `.env` for runtime settings.
 
@@ -44,19 +44,6 @@ docker run --rm wildcat-dashboard-ui:ci nginx -t
 
 The scoped `js-yaml` override patches the OpenAPI parser dependency. Remove it
 once the upstream dependency requires 4.3.2 or newer and `npm audit` stays clean.
-
-### CI and deployments
-
-PRs (including drafts) and `dev` pushes run application and container checks.
-`master` pushes run them once through the deployment workflow, including Codecov.
-All GitHub Actions Cloudflare deployments require CI for the same commit SHA;
-manual and tag runs skip Codecov uploads. Manual dev deployments require the
-`dev` branch; staging/production require a tag. A newer deployment run cancels
-older runs for the same Git ref, including their CI jobs.
-
-Nightly/release image publishing stays independent of full CI; a failed Docker
-build prevents publishing. Cloudflare's native Git previews also remain separate
-from the GitHub Actions gate and require a Cloudflare setting change to gate them.
 
 ### shadcn
 

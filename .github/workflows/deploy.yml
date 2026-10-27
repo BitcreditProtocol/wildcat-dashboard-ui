@@ -18,52 +18,20 @@ on:
           - staging
           - production
 
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  validate-target:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    permissions:
-      contents: read
-    steps:
-      - name: Validate deployment target
-        env:
-          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-            case "$DEPLOY_ENVIRONMENT:$GITHUB_REF" in
-              dev:refs/heads/dev|staging:refs/tags/*|production:refs/tags/*) ;;
-              *)
-                echo "::error::Deploy dev from the dev branch, or staging/production from a tag."
-                exit 1
-                ;;
-            esac
-          fi
-
-  ci:
-    needs: validate-target
-    permissions:
-      contents: read
-    uses: ./.github/workflows/ci.yml
-    with:
-      skip_coverage_upload: ${{ github.event_name != 'push' || github.ref != 'refs/heads/master' }}
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
   ######################################################################
   # ENV:          dev
   # CF project:   wildcat-dashboard
   ######################################################################
   deploy-dev:
-    needs: ci
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
+    concurrency:
+      group: "deploy-dev-${{ github.ref_name }}"
+      cancel-in-progress: true
 
     # SET ENVIRONMENT
     environment: dev
@@ -71,7 +39,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev'
 
     ##############################################################################
-    # Keep environment-specific build settings together.
+    # keep section similar, dev has different validation step
     env:
       CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
@@ -90,8 +58,18 @@ jobs:
       - name: Checkout ${{ github.ref_name }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.ref }}
           fetch-depth: 0
+
+      # for dev: only allow dev branch
+      - name: Validate correct branch on manual dispatch
+        run: |
+          if [[ "${{ github.ref_name }}" != 'dev' ]]; then
+            echo "::error::Manual deployments to the 'dev' environment must be triggered from the 'dev' branch."
+            echo "::error::Please select the 'dev' branch from the 'Use workflow from' dropdown."
+            exit 1
+          fi
+          echo "Validation successful: Running from 'dev' branch."
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -122,12 +100,14 @@ jobs:
   # CF project:   wildcat-dashboard-staging
   ######################################################################
   deploy-staging:
-    needs: ci
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
+    concurrency:
+      group: "deploy-staging-${{ github.ref_name }}"
+      cancel-in-progress: true
 
     # SET ENVIRONMENT
     environment: staging
@@ -155,8 +135,18 @@ jobs:
       - name: Checkout ${{ github.ref_name }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.ref }}
           fetch-depth: 0
+
+      - name: Validate tag on manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ "${{ github.ref_type }}" != 'tag' ]]; then
+            echo "::error::Manual deployments must be triggered from a tag."
+            echo "::error::Please select a tag from the 'Use workflow from' dropdown, not a branch."
+            exit 1
+          fi
+          echo "Validation successful: Running from tag '${{ github.ref_name }}'."
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -208,12 +198,14 @@ jobs:
   # CF project:   wildcat-dashboard-production
   ######################################################################
   deploy-production:
-    needs: ci
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
+    concurrency:
+      group: "deploy-production-${{ github.ref_name }}"
+      cancel-in-progress: true
 
     # SET ENVIRONMENT
     environment: production
@@ -241,8 +233,18 @@ jobs:
       - name: Checkout ${{ github.ref_name }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.ref }}
           fetch-depth: 0
+
+      - name: Validate tag on manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ "${{ github.ref_type }}" != 'tag' ]]; then
+            echo "::error::Manual deployments must be triggered from a tag."
+            echo "::error::Please select a tag from the 'Use workflow from' dropdown, not a branch."
+            exit 1
+          fi
+          echo "Validation successful: Running from tag '${{ github.ref_name }}'."
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
