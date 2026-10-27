@@ -149,4 +149,3 @@ This section is the per-task delta.
 - `master` is promoted from `dev` by PR and is what deploys; CI, the nightly image and
   Dependabot run on `dev`. Title a promotion PR by what it ships, not by the branch name,
   because that title becomes the release-notes line.
-
