@@ -112,6 +112,17 @@ describe("Currency", () => {
     expect(page.textContent).toContain("btc");
   });
 
+  it("labels the converted amount as a conversion, not a second balance", async () => {
+    window.localStorage.setItem("user-preferences", JSON.stringify({ theme: "system", currency: "eur", decimalFormat: "comma" }));
+
+    // e-IOU is pegged to the euro, so no rates are needed: 1,000 e-IOU at 0.067 euro cent each.
+    const page = renderWithProviders(<Currency value={1_000} sourceCurrency="eiou" />);
+
+    await flush();
+
+    expect(page.textContent).toBe("1,000e-IOU(worth 0.67 eur)");
+  });
+
   it("renders only the primary amount when preferred currency matches source", async () => {
     window.localStorage.setItem(
       "user-preferences",
