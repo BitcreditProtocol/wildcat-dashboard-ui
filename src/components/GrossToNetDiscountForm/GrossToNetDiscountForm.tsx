@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import Big from "big.js";
 import { parseFloatSafe, parseIntSafe } from "@/utils/numbers";
@@ -35,6 +35,7 @@ const GrossToNetDiscountForm = ({
   quoteId,
   suggestedNet,
   confirmDisabled: externallyDisabled = false,
+  onNetChange,
 }: GrossToNetProps) => {
   const intl = useIntl();
   const { formatAmount: formatAmountByPreference, formatGroupedSats, parseAmount: parseAmountByPreference } = useAmountFormatter();
@@ -220,6 +221,11 @@ const GrossToNetDiscountForm = ({
     setNetInputDisplay,
     setValue,
   });
+
+  const reportedNet = net === undefined ? null : net.value.round(0, Big.roundDown).toFixed(0);
+  useEffect(() => {
+    onNetChange?.(reportedNet);
+  }, [onNetChange, reportedNet]);
 
   const handleFormSubmit = () => {
     if (net === undefined || discountRate === undefined || days === undefined) {

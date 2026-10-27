@@ -20,6 +20,9 @@ interface QueryResult {
 }
 
 const mockUseQuery = vi.fn<() => QueryResult>();
+/** Governed code's recalculation per proposed amount; absent means it has not arrived. */
+const previews = new Map<string, unknown>();
+let reportNet: ((net: string | null) => void) | undefined;
 const mintSubmit = vi.fn<(result: OfferFormResult) => void>();
 /** The form's submit handler, so a submission can be driven without a real form. */
 let submitForm:
@@ -31,7 +34,15 @@ const confirmDisabledValues: (boolean | undefined)[] = [];
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
-  return { ...actual, useQuery: () => mockUseQuery() };
+  return {
+    ...actual,
+    useQuery: (options: { queryKey: readonly unknown[]; enabled?: boolean }) => {
+      if (options.queryKey[1] !== "requote-preview") return mockUseQuery();
+      const amount = String(options.queryKey[4]);
+      const data = options.enabled === false ? undefined : previews.get(amount);
+      return { data, isError: false, isPlaceholderData: false };
+    },
+  };
 });
 
 vi.mock("@/components/Drawers", () => ({
@@ -42,6 +53,7 @@ vi.mock("@/components/GrossToNetDiscountForm/GrossToNetDiscountForm", () => ({
   GrossToNetDiscountForm: (props: {
     suggestedNet?: string;
     confirmDisabled?: boolean;
+    onNetChange?: (net: string | null) => void;
     onSubmit: (values: {
       days: number;
       discountRate: Big;
@@ -52,6 +64,7 @@ vi.mock("@/components/GrossToNetDiscountForm/GrossToNetDiscountForm", () => ({
     suggestedNets.push(props.suggestedNet);
     confirmDisabledValues.push(props.confirmDisabled);
     submitForm = props.onSubmit;
+    reportNet = props.onNetChange;
     return (
       <form data-testid="discount-form">
         <input defaultValue={props.suggestedNet} id="netInput" />
@@ -203,14 +216,34 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
     root = createRoot(container);
     mockUseQuery.mockReset();
     suggestedNets.length = 0;
+    confirmDisabledValues.length = 0;
+    previews.clear();
     submitForm = undefined;
     mintSubmit.mockReset();
   });
+
+  const accepted = (net: string) => ({
+    schemaVersion: "operator-requote-preview-v1",
+    decisionResultDigest: decisionCase.resultDigest,
+    outcome: { ok: true, terms: { ...decisionCase.result.terms, discountedSat: net } },
+  });
+  const refused = {
+    schemaVersion: "operator-requote-preview-v1",
+    decisionResultDigest: decisionCase.resultDigest,
+    outcome: { ok: false, reasonCode: "adjustment_above_effective_annual_ceiling", observed: {}, policy: {} },
+  };
 
   const submitWith = (net: string, basis = "Reviewed the governed terms and supporting evidence.") => {
     mockUseQuery.mockReturnValue({ data: { issues: [], cases: [decisionCase] }, isLoading: false, error: null });
     renderDrawer();
     enterWrittenBasis(basis);
+    // The form reports the amount it would submit; the preview is requested after a short pause.
+    act(() => {
+      reportNet?.(net);
+    });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     act(() => {
       submitForm?.({
         days: 180,
@@ -240,7 +273,8 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
     expect(mintSubmit.mock.calls[0]?.[0].ttl.ttl.toISOString()).toBe("2026-08-12T23:59:59.999Z");
   });
 
-  it("prepares an adjustment, and names the amount, when the operator edits it", () => {
+  it("prepares an adjustment, and names the amount, once governed code accepted it", () => {
+    previews.set("7800000", accepted("7800000"));
     submitWith("7800000");
 
     expect(mintSubmit.mock.calls[0]?.[0]).toMatchObject({
@@ -252,12 +286,21 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
     });
   });
 
-  it("leaves lower adjustment policy validation to the governed service", () => {
+  it("submits no adjustment the policy refused, and keeps confirmation disabled", () => {
+    previews.set("7000000", refused);
     submitWith("7000000");
 
-    expect(mintSubmit.mock.calls[0]?.[0]).toMatchObject({
-      governance: { action: "propose_adjustment_and_requote", discountedSat: "7000000" },
-    });
+    expect(mintSubmit).not.toHaveBeenCalled();
+    expect(confirmDisabledValues[confirmDisabledValues.length - 1]).toBe(true);
+    expect(container.textContent).toContain("above the policy ceiling");
+  });
+
+  it("submits no adjustment before governed code has recalculated that exact amount", () => {
+    previews.set("7800000", accepted("7800000"));
+    submitWith("7790000");
+
+    expect(mintSubmit).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("Checking 7,790,000 sat against the policy");
   });
 
   it("submits nothing when the bill has no assessment", () => {
@@ -278,12 +321,8 @@ describe("OfferFormDrawer prepares the operator's decision", () => {
   it("validates a direct net edit immediately", () => {
     mockUseQuery.mockReturnValue({ data: { issues: [], cases: [decisionCase] }, isLoading: false, error: null });
     renderDrawer();
-    const netInput = container.querySelector<HTMLInputElement>("#netInput");
-    if (netInput === null) throw new Error("Net amount was not rendered");
-
     act(() => {
-      netInput.value = "7975001";
-      netInput.dispatchEvent(new Event("input", { bubbles: true }));
+      reportNet?.("7975001");
     });
 
     expect(container.textContent).toContain("above the maximum that covers reimbursement");

@@ -44,8 +44,16 @@ const messages = defineMessages({
   review: { id: "outcomes.review", defaultMessage: "Review by people", description: "Section: operator review" },
   cases: { id: "outcomes.cases", defaultMessage: "Current cases", description: "Metric" },
   assessed: { id: "outcomes.assessed", defaultMessage: "Assessed by the policy", description: "Metric" },
-  reviewed: { id: "outcomes.reviewed", defaultMessage: "Decided by a person", description: "Metric" },
-  reviewTime: { id: "outcomes.reviewTime", defaultMessage: "Time from assessment to a decision", description: "Metric" },
+  reviewed: {
+    id: "outcomes.reviewed",
+    defaultMessage: "Acted on by a person (decision or information request)",
+    description: "Metric: cases with any recorded operator action",
+  },
+  reviewTime: {
+    id: "outcomes.reviewTime",
+    defaultMessage: "Time from assessment to the operator's action",
+    description: "Metric: includes information requests, not only financial decisions",
+  },
   deviations: {
     id: "outcomes.deviations",
     defaultMessage: "Decisions that differ from the policy's recommendation",
@@ -53,6 +61,12 @@ const messages = defineMessages({
   },
   humanReviews: { id: "outcomes.humanReviews", defaultMessage: "Second reviews requested by applicants", description: "Metric" },
   humanReviewsCompleted: { id: "outcomes.humanReviewsCompleted", defaultMessage: "Second reviews completed", description: "Metric" },
+  humanReviewStart: { id: "outcomes.humanReviewStart", defaultMessage: "Time until a second review started", description: "Metric" },
+  humanReviewCompletion: {
+    id: "outcomes.humanReviewCompletion",
+    defaultMessage: "Time until a second review was completed",
+    description: "Metric",
+  },
   corrections: { id: "outcomes.corrections", defaultMessage: "Corrections after a completed second review", description: "Metric" },
   reproducibility: {
     id: "outcomes.reproducibility",
@@ -265,6 +279,11 @@ function Report({ report }: { report: OutcomeReport }) {
         <Row label={intl.formatMessage(messages.deviations)} value={formatRate(intl, cases.operatorReview.deviations)} />
         <Row label={intl.formatMessage(messages.humanReviews)} value={intl.formatNumber(cases.humanReview.requests)} />
         <Row label={intl.formatMessage(messages.humanReviewsCompleted)} value={formatRate(intl, cases.humanReview.completed)} />
+        <Row label={intl.formatMessage(messages.humanReviewStart)} value={formatDuration(intl, cases.humanReview.requestToStart)} />
+        <Row
+          label={intl.formatMessage(messages.humanReviewCompletion)}
+          value={formatDuration(intl, cases.humanReview.requestToCompletion)}
+        />
         <Row label={intl.formatMessage(messages.corrections)} value={formatRate(intl, cases.humanReview.correctionsAfterCompletedReview)} />
         <Row
           label={intl.formatMessage(messages.reproducibility)}

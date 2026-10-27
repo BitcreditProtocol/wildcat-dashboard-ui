@@ -1,5 +1,5 @@
 import Big from "big.js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BaseDrawer } from "@/components/Drawers";
 import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm/GrossToNetDiscountForm";
 import type { InfoReply } from "@/generated/client/types.gen";
@@ -8,7 +8,7 @@ import { RequotePreview } from "@/pages/credit/RequotePreview";
 import { useRequotePreview } from "@/pages/mint-checks/api";
 import type { OperatorDecisionInput } from "@/pages/credit/record-operator-decision";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
-import type { FormEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 
 export interface OfferFormResult {
@@ -89,15 +89,14 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     return true;
   };
 
-  const handleNetInput = (event: FormEvent<HTMLDivElement>) => {
-    if (!(event.target instanceof HTMLInputElement) || event.target.id !== "netInput") return;
-    const digits = event.target.value.replace(/\D/g, "");
-    if (digits.length > 0) validateAmount(new Big(digits));
-    setProposedNet(digits.length > 0 && digits.length <= 15 ? String(Number(digits)) : null);
-  };
-  const isAdjustment = governedTerms !== null && previewedNet !== null && previewedNet !== governedTerms.discountedSat;
+  // Every change of the amount the form would submit, however it was made.
+  const handleNetChange = useCallback((net: string | null) => {
+    setProposedNet(net);
+  }, []);
+  const proposedAboveMaximum = proposedNet !== null && governedMaximum !== null && new Big(proposedNet).gt(governedMaximum);
+  const isAdjustment = governedTerms !== null && proposedNet !== null && proposedNet !== governedTerms.discountedSat;
   const preview = useRequotePreview(
-    isAdjustment && decisionCase !== undefined && previewedNet !== null
+    isAdjustment && decisionCase !== undefined && previewedNet !== null && previewedNet === proposedNet
       ? {
           billId: value.bill.id,
           caseId: decisionCase.snapshot.caseId,
@@ -106,8 +105,17 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
         }
       : null
   );
-  const previewRefuses = isAdjustment && preview.data?.outcome.ok === false;
-
+  // Only governed code's answer for exactly this amount and this result counts; a previous
+  // amount's answer shown while the next one loads does not.
+  const currentPreview =
+    isAdjustment &&
+    !preview.isPlaceholderData &&
+    preview.data?.decisionResultDigest === decisionCase?.resultDigest &&
+    (preview.data?.outcome.ok === true ? preview.data.outcome.terms.discountedSat === proposedNet : previewedNet === proposedNet)
+      ? preview.data
+      : undefined;
+  const previewAccepts = currentPreview?.outcome.ok === true;
+  const adjustmentBlocked = isAdjustment && !previewAccepts;
   const handleFormSubmit = (values: {
     days: number;
     discountRate: Big;
@@ -132,6 +140,8 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
 
     const offered = offeredValue.toFixed(0);
     const isGovernedAmount = offered === governedTerms.discountedSat;
+    // An adjustment needs governed code's acceptance of this exact amount first.
+    if (!isGovernedAmount && (offered !== proposedNet || !previewAccepts)) return;
     const result: OfferFormResult = {
       governance: {
         billId: value.bill.id,
@@ -243,8 +253,9 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
               />
             </p>
           </div>
-          <div onInput={handleNetInput}>
+          <div>
             <GrossToNetDiscountForm
+              onNetChange={handleNetChange}
               key={formKey}
               startDate={startDate}
               endDate={endDate}
@@ -252,19 +263,19 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
               onSubmit={handleFormSubmit}
               quoteId={value.id}
               suggestedNet={governedTerms.discountedSat}
-              confirmDisabled={writtenBasisLength < 20 || previewRefuses}
+              confirmDisabled={writtenBasisLength < 20 || adjustmentBlocked}
             />
           </div>
-          {isAdjustment && previewedNet !== null && (
+          {isAdjustment && proposedNet !== null && (
             <RequotePreview
-              amount={previewedNet}
-              isError={preview.isError}
+              amount={proposedNet}
+              isError={preview.isError && previewedNet === proposedNet}
               maxAnnualBps={decisionCase.policyPack.maximumEffectiveAnnualBps}
               maxFeeRatioBps={decisionCase.policyPack.maximumFeeRatioBps}
-              preview={preview.data}
+              preview={currentPreview}
             />
           )}
-          {!amountExceedsMaximum ? null : (
+          {!(amountExceedsMaximum || proposedAboveMaximum) ? null : (
             <p className="px-4 pb-3 text-sm text-destructive" role="alert">
               <FormattedMessage
                 id="credit.offer.amountAboveMaximum"

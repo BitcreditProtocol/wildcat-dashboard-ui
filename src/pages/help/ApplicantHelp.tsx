@@ -28,6 +28,11 @@ const messages = defineMessages({
     defaultMessage: "Applicant asked for help",
     description: "Heading of the help requests card on a quote",
   },
+  quoteCardUnavailable: {
+    id: "help.quoteCard.unavailable",
+    defaultMessage: "Help requests",
+    description: "Heading of the help card when the requests could not be read",
+  },
   asked: { id: "help.asked", defaultMessage: "Asked {time} · {step}", description: "When and at which step a help request was made" },
   quote: { id: "help.quoteLink", defaultMessage: "Open quote", description: "Link from a help request to its quote" },
   reply: { id: "help.reply", defaultMessage: "Reply", description: "Opens the reply field for a help request" },
@@ -130,6 +135,15 @@ export function ApplicantHelpCard({ billId }: { billId: string }) {
   const intl = useIntl();
   const query = useApplicantHelp();
   const requests = (query.data?.requests ?? []).filter((request) => request.billId === billId);
+  // Unavailable is not the same as "no questions": say so, so a waiting applicant is not missed.
+  if (query.error && query.data === undefined) {
+    return (
+      <section className="space-y-2 rounded-lg border border-border p-4">
+        <h3 className="font-medium">{intl.formatMessage(messages.quoteCardUnavailable)}</h3>
+        <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />
+      </section>
+    );
+  }
   if (requests.length === 0) return null;
   const ordered = [...requests.filter((one) => one.reply === null), ...requests.filter((one) => one.reply !== null)];
   return (

@@ -97,7 +97,8 @@ describe("Outcomes", () => {
     expect(text).toContain("Continued without the assistant1 of 4 (25%)");
     expect(text).toContain("Recourse if the payer does not pay0 of 2 (0%)");
     expect(text).toContain("Answered1 of 2 (50%)");
-    expect(text).toContain("Time from assessment to a decisionmedian 10 min");
+    expect(text).toContain("Time from assessment to the operator's actionmedian 10 min");
+    expect(text).toContain("Time until a second review startedno samples yet");
     expect(text).toContain("Seeded-error detection by reviewers · Cases carry no seeded-error ground truth.");
     expect(text).toContain("Approval percentage");
     expect(text).toContain("Synthetic demo data");
@@ -161,6 +162,13 @@ describe("Help requests", () => {
     await flush();
     expect(posted).toMatchObject({ action: "reply", requestId: view.requests[0]?.requestId, text: "La Mint puede reclamarle." });
     expect(page.textContent).toContain("Replied by operator democat");
+  });
+
+  it("tells the operator when help requests cannot be read on a quote", async () => {
+    vi.stubGlobal("fetch", routeFetch({ "/api/ai-credit/applicant-help": () => new Response(null, { status: 503 }) }));
+    const { page } = await renderWithProviders(<ApplicantHelpCard billId="bitcrtFincaVerdeGT" />, "/quotes/quote-1");
+    expect(page.textContent).toContain("Help requests");
+    expect(getByRole(page, "alert").textContent).toContain("The Mint cannot serve this data right");
   });
 
   it("shows only this bill's requests on a quote and nothing for others", async () => {

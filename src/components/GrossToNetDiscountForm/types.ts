@@ -33,6 +33,11 @@ export interface GrossToNetProps {
   quoteId?: string;
   /** Additional host-level condition that must be satisfied before confirmation. */
   confirmDisabled?: boolean;
+  /**
+   * The whole-unit net the form would submit, whenever it changes — typed, pasted, restored from a
+   * draft or recalculated from the rate — or null while it is incomplete.
+   */
+  onNetChange?: (net: string | null) => void;
 }
 
 export type LastEditedField = "rate" | "net" | null;

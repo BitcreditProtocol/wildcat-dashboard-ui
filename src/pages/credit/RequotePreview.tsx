@@ -33,9 +33,14 @@ const messages = defineMessages({
     defaultMessage: "The fee would be {observed} of the bill, above the policy ceiling of {ceiling}.",
     description: "A proposed amount whose fee is above the fee-ratio ceiling",
   },
+  pending: {
+    id: "credit.requote.pending",
+    defaultMessage: "Checking {amount} sat against the policy… Confirm waits for the result.",
+    description: "The governed recalculation of a proposed amount is still loading",
+  },
   unavailable: {
     id: "credit.requote.unavailable",
-    defaultMessage: "The recalculation is unavailable. The Mint still checks the amount when you confirm.",
+    defaultMessage: "The recalculation is unavailable, so this amount cannot be confirmed now. Retry, or offer the suggested amount.",
     description: "The governed recalculation could not be fetched",
   },
 });
@@ -68,7 +73,13 @@ export function RequotePreview({
       </p>
     );
   }
-  if (preview === null || preview === undefined) return null;
+  if (preview === null || preview === undefined) {
+    return (
+      <p className="px-4 pb-3 text-xs text-muted-foreground" role="status">
+        {intl.formatMessage(messages.pending, { amount: sat(amount) })}
+      </p>
+    );
+  }
   const outcome = preview.outcome;
   const text = outcome.ok
     ? intl.formatMessage(messages.within, {

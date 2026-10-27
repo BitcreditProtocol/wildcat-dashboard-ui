@@ -262,4 +262,39 @@ describe("GrossToNetDiscountForm", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0]?.[0].net.value.toFixed(0)).toBe("7735000");
   });
+  it("reports the net it would submit for the suggestion, a typed amount and a rate change", async () => {
+    const reported: (string | null)[] = [];
+    const page = renderWithProviders(
+      <GrossToNetDiscountForm
+        startDate={new Date("2026-08-20T00:00:00Z")}
+        endDate={new Date("2027-02-16T00:00:00Z")}
+        gross={{ value: new Big("8000000"), currency: "sat" }}
+        quoteId="quote-reported"
+        suggestedNet="7734000"
+        onSubmit={() => undefined}
+        onNetChange={(net) => reported.push(net)}
+      />
+    );
+    await flush();
+    expect(reported[reported.length - 1]).toBe("7734000");
+
+    const netInput = page.querySelector<HTMLInputElement>("#netInput");
+    act(() => {
+      if (!netInput) return;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(netInput, "7735000");
+      netInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await flush();
+    expect(reported[reported.length - 1]).toBe("7735000");
+
+    const rateInput = page.querySelector<HTMLInputElement>("#discountRateInput");
+    act(() => {
+      if (!rateInput) return;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(rateInput, "20");
+      rateInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await flush();
+    expect(reported[reported.length - 1]).not.toBe("7735000");
+    expect(Number(reported[reported.length - 1])).toBeLessThan(7_735_000);
+  });
 });
