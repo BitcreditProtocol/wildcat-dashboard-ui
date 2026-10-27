@@ -159,6 +159,7 @@
   "bills.toast.checkPayment.pending": "Checking payment...",
   "bills.toast.checkPayment.success": "Payment has been checked.",
   "cashflow.page.title": "CashFlow",
+  "currency.conversion.worth": "(worth {amount} {currency})",
   "deniedMeltRequests.count": "{count, plural, one {# denied request} other {# denied requests}}",
   "deniedMeltRequests.delete.ariaLabel": "Delete denied melt request",
   "deniedMeltRequests.delete.confirm": "Delete request",

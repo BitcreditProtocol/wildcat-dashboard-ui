@@ -332,13 +332,13 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("45,000.00");
     expect(page.textContent).toContain("42,000");
     // The e-IOU card is the mint's own collateral: 555 e-IOU at the fixed 0.067 euro-cent peg.
-    expect(page.textContent).toContain("555e-IOU0.37eur");
+    expect(page.textContent).toContain("555e-IOU(worth 0.37 eur)");
     // The foreign e-cash card is the settled credit e-cash held from other mints, valued like any crsat.
-    expect(page.textContent).toContain("300crsat0.27eur");
+    expect(page.textContent).toContain("300crsat(worth 0.27 eur)");
     // Value still waiting on an offline mint is named on its own line, never folded into the headline.
-    expect(page.textContent).toContain("Unsettled1,000crsat0.90eur");
+    expect(page.textContent).toContain("Unsettled1,000crsat(worth 0.90 eur)");
     // A crsat is worth exactly one sat, so it converts at the sat rate.
-    expect(page.textContent).toContain("777crsat0.70eur");
+    expect(page.textContent).toContain("777crsat(worth 0.70 eur)");
   });
 
   it("shows a dash rather than zero when the foreign balance endpoint fails", async () => {
