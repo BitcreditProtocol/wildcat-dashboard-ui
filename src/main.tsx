@@ -28,6 +28,8 @@ import FacilitiesPage from "@/pages/facilities/FacilitiesPage";
 import DirectoryPage from "@/pages/directory/DirectoryPage";
 import PolicyPage from "@/pages/policy/PolicyPage";
 import IntelligencePage from "@/pages/intelligence/IntelligencePage";
+import ApplicantHelpPage from "@/pages/help/ApplicantHelp";
+import OutcomesPage from "@/pages/outcomes/OutcomesPage";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { initSentry, sentryRootOptions } from "@/lib/sentry";
 
@@ -59,6 +61,8 @@ function App() {
             <Route path="directory" element={<DirectoryPage />} />
             <Route path="policy" element={<PolicyPage />} />
             <Route path="intelligence" element={<IntelligencePage />} />
+            <Route path="help-requests" element={<ApplicantHelpPage />} />
+            <Route path="outcomes" element={<OutcomesPage />} />
             {QUOTE_STATUS_ROUTES.map((route) => (
               <Route key={route.status} path={route.path} element={<StatusQuotePage status={route.status} />} />
             ))}

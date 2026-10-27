@@ -26,6 +26,7 @@ import { resolveDocumentMimeType } from "@/utils/document-preview";
 import { usesSyntheticData, type SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { BillParties } from "./components/BillParties";
+import { ApplicantHelpCard } from "@/pages/help/ApplicantHelp";
 import { BillSignerReviewPanel } from "./components/BillSignerReview";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { FacilityCoveragePanel, FacilityCoverageUnavailable } from "../facilities/FacilityCoveragePanel";
@@ -514,6 +515,8 @@ function PageBody({ id }: { id: string }) {
         </div>
 
         <div className="flex min-w-0 flex-col gap-4 @4xl:col-start-1 @4xl:row-start-2 print:hidden">
+          {/* A person asked for help: answered by a person, never part of the case. */}
+          <ApplicantHelpCard billId={bill.id} />
           {/* The rest of the Mint's book with this applicant and this payer: concentration is part of the decision. */}
           <PartyExposureCard
             applicant={billApplicant(bill)}

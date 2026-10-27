@@ -11,6 +11,14 @@ import {
   type MintIntelligenceCommand,
   type MintIntelligenceResponse,
   type ParticipantDirectoryResponse,
+  type ApplicantHelpReplyCommand,
+  type OperatorHelpView,
+  type OperatorRequotePreview,
+  type OperatorRequotePreviewRequest,
+  type OutcomeReport,
+  operatorHelpViewSchema,
+  operatorRequotePreviewSchema,
+  outcomeReportSchema,
 } from "@bitcredit/ai-credit-shared";
 import { authenticatedFetch } from "@/lib/api-client";
 
@@ -34,6 +42,10 @@ export const mintCheckKeys = {
     ["ai-credit", "facility-onboarding-checks", applicationId, revision] as const,
   creditPolicy: ["ai-credit", "credit-policy"] as const,
   intelligence: ["ai-credit", "mint-intelligence"] as const,
+  applicantHelp: ["ai-credit", "applicant-help"] as const,
+  outcomeReport: ["ai-credit", "outcome-report"] as const,
+  requotePreview: (request: OperatorRequotePreviewRequest) =>
+    ["ai-credit", "requote-preview", request.billId, request.decisionResultDigest, request.discountedSat] as const,
 };
 
 export const DIRECTORY_QUERY_MAX_LENGTH = 200;
@@ -123,5 +135,54 @@ export function useAddMintIntelligenceNote() {
       client.setQueryData(mintCheckKeys.intelligence, response);
       void client.invalidateQueries({ queryKey: mintCheckKeys.intelligence });
     },
+  });
+}
+
+export async function readApplicantHelp(): Promise<OperatorHelpView> {
+  return operatorHelpViewSchema.parse(await readJson("/api/ai-credit/applicant-help"));
+}
+
+export async function replyToApplicantHelp(command: ApplicantHelpReplyCommand): Promise<OperatorHelpView> {
+  return operatorHelpViewSchema.parse(await readJson("/api/ai-credit/applicant-help", command));
+}
+
+export async function readOutcomeReport(): Promise<OutcomeReport> {
+  return outcomeReportSchema.parse(await readJson("/api/ai-credit/outcome-report"));
+}
+
+export async function previewRequote(request: OperatorRequotePreviewRequest): Promise<OperatorRequotePreview> {
+  return operatorRequotePreviewSchema.parse(await readJson("/api/ai-credit/operator-requote-preview", request));
+}
+
+/** Help requests change no case; polled so a person sees new questions without reloading. */
+export function useApplicantHelp() {
+  return useQuery({ queryKey: mintCheckKeys.applicantHelp, queryFn: readApplicantHelp, refetchInterval: 30_000, retry: false });
+}
+
+export function useReplyToApplicantHelp() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: replyToApplicantHelp,
+    onSuccess: async (response) => {
+      await client.cancelQueries({ queryKey: mintCheckKeys.applicantHelp });
+      client.setQueryData(mintCheckKeys.applicantHelp, response);
+      void client.invalidateQueries({ queryKey: mintCheckKeys.applicantHelp });
+    },
+  });
+}
+
+export function useOutcomeReport() {
+  return useQuery({ queryKey: mintCheckKeys.outcomeReport, queryFn: readOutcomeReport, staleTime: 30_000, retry: false });
+}
+
+/** Governed code's recalculation of a proposed amount; disabled until the amount is a whole number. */
+export function useRequotePreview(request: OperatorRequotePreviewRequest | null) {
+  return useQuery({
+    queryKey: request === null ? ["ai-credit", "requote-preview", "none"] : mintCheckKeys.requotePreview(request),
+    queryFn: () => (request === null ? null : previewRequote(request)),
+    enabled: request !== null,
+    staleTime: 60_000,
+    retry: false,
+    placeholderData: keepPreviousData,
   });
 }

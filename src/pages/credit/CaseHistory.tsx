@@ -1,4 +1,4 @@
-import type { ServerInitialObservation } from "@bitcredit/ai-credit-shared";
+import { type ServerInitialObservation, STRUCTURED_INTERVIEW_PROMPT_VERSION } from "@bitcredit/ai-credit-shared";
 import { ChevronDown } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -75,6 +75,11 @@ const messages = defineMessages({
     description: "Provenance of a submitted transcript; applicant statements are not verified",
   },
   scripted: { id: "credit.history.scripted", defaultMessage: "Scripted interview", description: "Interview used a scripted model" },
+  structured: {
+    id: "credit.history.structured",
+    defaultMessage: "Submitted without the assistant · claims are the applicant's own answers, unverified",
+    description: "Provenance of a transcript the applicant completed on the structured route when inference was unavailable",
+  },
   noNewMessages: {
     id: "credit.history.noNewMessages",
     defaultMessage: "No new messages · earlier answers carried over",
@@ -603,7 +608,13 @@ function RoundRecord({
           )}
           <Step title={intl.formatMessage(messages.conversation)}>
             <p className="text-xs text-muted-foreground">
-              {intl.formatMessage(transcript.modelId.startsWith("scripted") ? messages.scripted : messages.submitted)}
+              {intl.formatMessage(
+                transcript.promptVersion === STRUCTURED_INTERVIEW_PROMPT_VERSION
+                  ? messages.structured
+                  : transcript.modelId.startsWith("scripted")
+                    ? messages.scripted
+                    : messages.submitted
+              )}
             </p>
             {round.newMessages.length === 0 ? (
               <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.noNewMessages)}</p>

@@ -2,11 +2,13 @@ import {
   AlignVerticalJustifyCenterIcon,
   Ban,
   Bitcoin,
+  ChartNoAxesColumn,
   BookUser,
   Globe,
   Home,
   Inbox,
   Key,
+  LifeBuoy,
   Lightbulb,
   ReceiptText,
   Scale,
@@ -48,6 +50,8 @@ const navMessages = defineMessages({
   },
   policy: { id: "nav.policy", defaultMessage: "Policy", description: "The Mint's reviewed credit programmes and policy packs, read-only" },
   directory: { id: "nav.directory", defaultMessage: "Directory", description: "Mint-local participant directory" },
+  helpRequests: { id: "nav.helpRequests", defaultMessage: "Help requests", description: "Applicants' questions to the Mint's people" },
+  outcomes: { id: "nav.outcomes", defaultMessage: "Outcomes", description: "PRD outcome measures over the current cases" },
   bills: { id: "nav.bills", defaultMessage: "Bills" },
   keysets: { id: "nav.keysets", defaultMessage: "Keysets" },
 });
@@ -75,6 +79,7 @@ const data = {
     // The Mint's knowledge of its environment and its policy sit right below Home on purpose.
     { title: navMessages.intelligence, url: "/intelligence", icon: Lightbulb },
     { title: navMessages.policy, url: "/policy", icon: Scale },
+    { title: navMessages.outcomes, url: "/outcomes", icon: ChartNoAxesColumn },
     {
       title: navMessages.balances,
       url: "/balances",
@@ -86,6 +91,7 @@ const data = {
       icon: Inbox,
     },
     { title: navMessages.facilities, url: "/facilities", icon: ReceiptText },
+    { title: navMessages.helpRequests, url: "/help-requests", icon: LifeBuoy },
     { title: navMessages.directory, url: "/directory", icon: BookUser },
     {
       title: navMessages.bills,

@@ -4,6 +4,8 @@ import { BaseDrawer } from "@/components/Drawers";
 import { GrossToNetDiscountForm } from "@/components/GrossToNetDiscountForm/GrossToNetDiscountForm";
 import type { InfoReply } from "@/generated/client/types.gen";
 import { GovernedOfferGuidance } from "@/pages/credit/GovernedOfferGuidance";
+import { RequotePreview } from "@/pages/credit/RequotePreview";
+import { useRequotePreview } from "@/pages/mint-checks/api";
 import type { OperatorDecisionInput } from "@/pages/credit/record-operator-decision";
 import { useCreditAssessmentForBill } from "@/pages/credit/use-credit-assessment";
 import type { FormEvent, ReactNode } from "react";
@@ -51,6 +53,17 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
   const [writtenBasis, setWrittenBasis] = useState("");
   const [showBasisError, setShowBasisError] = useState(false);
   const writtenBasisLength = writtenBasis.trim().length;
+  // What the operator would offer for the whole bill; governed code recalculates it before anything is recorded.
+  const [proposedNet, setProposedNet] = useState<string | null>(null);
+  const [previewedNet, setPreviewedNet] = useState<string | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPreviewedNet(proposedNet);
+    }, 300);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [proposedNet]);
   const governedMaximum = useMemo(() => {
     if (governedTerms === null) return null;
     try {
@@ -80,7 +93,20 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
     if (!(event.target instanceof HTMLInputElement) || event.target.id !== "netInput") return;
     const digits = event.target.value.replace(/\D/g, "");
     if (digits.length > 0) validateAmount(new Big(digits));
+    setProposedNet(digits.length > 0 && digits.length <= 15 ? String(Number(digits)) : null);
   };
+  const isAdjustment = governedTerms !== null && previewedNet !== null && previewedNet !== governedTerms.discountedSat;
+  const preview = useRequotePreview(
+    isAdjustment && decisionCase !== undefined && previewedNet !== null
+      ? {
+          billId: value.bill.id,
+          caseId: decisionCase.snapshot.caseId,
+          decisionResultDigest: decisionCase.resultDigest,
+          discountedSat: previewedNet,
+        }
+      : null
+  );
+  const previewRefuses = isAdjustment && preview.data?.outcome.ok === false;
 
   const handleFormSubmit = (values: {
     days: number;
@@ -133,6 +159,8 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
       setAmountExceedsMaximum(false);
       setWrittenBasis("");
       setShowBasisError(false);
+      setProposedNet(null);
+      setPreviewedNet(null);
     }
     prevOpenRef.current = open;
   }, [open]);
@@ -224,9 +252,18 @@ export function OfferFormDrawer({ title, description, value, open, onOpenChange,
               onSubmit={handleFormSubmit}
               quoteId={value.id}
               suggestedNet={governedTerms.discountedSat}
-              confirmDisabled={writtenBasisLength < 20}
+              confirmDisabled={writtenBasisLength < 20 || previewRefuses}
             />
           </div>
+          {isAdjustment && previewedNet !== null && (
+            <RequotePreview
+              amount={previewedNet}
+              isError={preview.isError}
+              maxAnnualBps={decisionCase.policyPack.maximumEffectiveAnnualBps}
+              maxFeeRatioBps={decisionCase.policyPack.maximumFeeRatioBps}
+              preview={preview.data}
+            />
+          )}
           {!amountExceedsMaximum ? null : (
             <p className="px-4 pb-3 text-sm text-destructive" role="alert">
               <FormattedMessage
