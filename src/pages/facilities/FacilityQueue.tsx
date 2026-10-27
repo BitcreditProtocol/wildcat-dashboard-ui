@@ -1,4 +1,4 @@
-import type { FacilityApplication } from "@bitcredit/ai-credit-shared";
+import { facilityApplicationReference, type FacilityApplication } from "@bitcredit/ai-credit-shared";
 import { Button, Search, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, cn } from "@bitcredit/ui-library";
 import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
 import { Link } from "react-router";
@@ -208,6 +208,7 @@ export function FacilityQueue({ applications, params, onParamsChange }: Facility
                     >
                       {app.applicantName}
                     </Link>
+                    <span className="ml-2 font-mono text-xs text-muted-foreground">{facilityApplicationReference(app.id)}</span>
                     {([app.profile?.country, app.profile?.industry].some(Boolean) ||
                       app.identityAssurance !== "ebill_identity_key_proof") && (
                       <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">

@@ -470,7 +470,10 @@ describe("operator assessment recovery", () => {
     const commands: unknown[] = [];
     vi.stubGlobal(
       "fetch",
-      vi.fn((_path: string, init?: RequestInit) => {
+      vi.fn((path: string, init?: RequestInit) => {
+        // Read-only onboarding and intelligence checks are not operator commands.
+        if (path !== "/api/ai-credit/facility-operator-command" && path !== "/api/ai-credit/facility-applications")
+          return Promise.resolve(new Response(null, { status: 404 }));
         if (init?.method === "POST") {
           if (typeof init.body !== "string") throw new Error("Expected JSON command body");
           commands.push(JSON.parse(init.body));
@@ -504,8 +507,9 @@ describe("operator assessment recovery", () => {
     expect(sessionStorage.length).toBe(0);
   });
   it("does not send an assessment when the exact retry record cannot be persisted", async () => {
-    const request = vi.fn((_path: string, init?: RequestInit) => {
-      if (init?.method === "POST") throw new Error("Must not transmit");
+    const command = "/api/ai-credit/facility-operator-command";
+    const request = vi.fn((path: string) => {
+      if (path === command) throw new Error("Must not transmit");
       return Promise.resolve(new Response(JSON.stringify({ applications: [facilityFixture()] })));
     });
     vi.stubGlobal("fetch", request);
@@ -517,7 +521,7 @@ describe("operator assessment recovery", () => {
     if (disclosure instanceof HTMLDetailsElement) disclosure.open = true;
     await click(getByRole(page, "button", { name: "Reassess current submission" }));
     expect(page.textContent).toContain("assessment request was not sent");
-    expect(request.mock.calls.every(([, init]) => init?.method !== "POST")).toBe(true);
+    expect(request.mock.calls.every(([path]) => path !== command)).toBe(true);
   });
 });
 

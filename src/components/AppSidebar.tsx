@@ -1,4 +1,17 @@
-import { AlignVerticalJustifyCenterIcon, Ban, Bitcoin, Globe, Home, Inbox, Key, ReceiptText, Wand2Icon } from "lucide-react";
+import {
+  AlignVerticalJustifyCenterIcon,
+  Ban,
+  Bitcoin,
+  BookUser,
+  Globe,
+  Home,
+  Inbox,
+  Key,
+  Lightbulb,
+  ReceiptText,
+  Scale,
+  Wand2Icon,
+} from "lucide-react";
 import { useContext, useState } from "react";
 import {
   AppIcon,
@@ -28,6 +41,13 @@ const navMessages = defineMessages({
   deniedMeltRequests: { id: "nav.deniedMeltRequests", defaultMessage: "Melt requests" },
   quotes: { id: "nav.quotes", defaultMessage: "Quotes" },
   facilities: { id: "nav.facilities", defaultMessage: "Facilities", description: "Pre-bill facility applications" },
+  intelligence: {
+    id: "nav.intelligence",
+    defaultMessage: "Intelligence",
+    description: "The Mint's own notes on its regions, industries and the macro economy",
+  },
+  policy: { id: "nav.policy", defaultMessage: "Policy", description: "The Mint's reviewed credit programmes and policy packs, read-only" },
+  directory: { id: "nav.directory", defaultMessage: "Directory", description: "Mint-local participant directory" },
   bills: { id: "nav.bills", defaultMessage: "Bills" },
   keysets: { id: "nav.keysets", defaultMessage: "Keysets" },
 });
@@ -52,6 +72,9 @@ const data = {
       url: "/",
       icon: Home,
     },
+    // The Mint's knowledge of its environment and its policy sit right below Home on purpose.
+    { title: navMessages.intelligence, url: "/intelligence", icon: Lightbulb },
+    { title: navMessages.policy, url: "/policy", icon: Scale },
     {
       title: navMessages.balances,
       url: "/balances",
@@ -63,6 +86,7 @@ const data = {
       icon: Inbox,
     },
     { title: navMessages.facilities, url: "/facilities", icon: ReceiptText },
+    { title: navMessages.directory, url: "/directory", icon: BookUser },
     {
       title: navMessages.bills,
       url: "/bills",

@@ -13,6 +13,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { createLogger } from "@/lib/logger";
 import { useRef } from "react";
 import { useIntl } from "react-intl";
+import { mintCheckKeys } from "@/pages/mint-checks/api";
 
 const logger = createLogger("sync-bill-chain");
 
@@ -80,7 +81,12 @@ export function useSyncBillChain({ quoteId, billId }: UseSyncBillChainArgs): Use
 
       const syncedQueryKeys = [
         ...(quoteId
-          ? [getQuoteOptions({ path: { qid: quoteId } }).queryKey, getSharedEbillHistoryOptions({ path: { qid: quoteId } }).queryKey]
+          ? [
+              getQuoteOptions({ path: { qid: quoteId } }).queryKey,
+              getSharedEbillHistoryOptions({ path: { qid: quoteId } }).queryKey,
+              // The signer review reads the same shared history.
+              mintCheckKeys.signerReview(quoteId),
+            ]
           : []),
         listEbillsOptions().queryKey,
         ...(billId

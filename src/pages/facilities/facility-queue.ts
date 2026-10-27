@@ -1,4 +1,4 @@
-import type { FacilityApplication } from "@bitcredit/ai-credit-shared";
+import { facilityApplicationReference, type FacilityApplication } from "@bitcredit/ai-credit-shared";
 import { facilityStatusKey, facilityStatusMessages } from "./facility-copy";
 
 export const FACILITY_PAGE_SIZE = 20;
@@ -34,7 +34,11 @@ export function selectFacilityQueue(
   const words = searchable(options.search.trim()).split(/\s+/u).filter(Boolean);
   const filtered = applications.filter((app) => {
     if (options.status !== "all" && facilityStatusKey(app, now) !== options.status) return false;
-    const text = searchable([app.applicantName, app.summary?.purpose, app.summary?.business, app.applicantRef, app.id].join(" "));
+    const text = searchable(
+      [app.applicantName, app.summary?.purpose, app.summary?.business, app.applicantRef, app.id, facilityApplicationReference(app.id)].join(
+        " "
+      )
+    );
     return words.every((word) => text.includes(word));
   });
   const collator = new Intl.Collator(locale, { sensitivity: "base", numeric: true });

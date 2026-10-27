@@ -26,6 +26,7 @@ import { resolveDocumentMimeType } from "@/utils/document-preview";
 import { usesSyntheticData, type SubmittedEvidence } from "@/pages/credit/decision-types";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { BillParties } from "./components/BillParties";
+import { BillSignerReviewPanel } from "./components/BillSignerReview";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { FacilityCoveragePanel, FacilityCoverageUnavailable } from "../facilities/FacilityCoveragePanel";
 import { useSyncBillChain } from "./components/useSyncBillChain";
@@ -572,6 +573,10 @@ function PageBody({ id }: { id: string }) {
                 <BillParties bill={bill} />
                 <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
               </div>
+            }
+            signers={
+              // Review signals on the same signers: reasons to look closer, never a gate or a decision.
+              <BillSignerReviewPanel quoteId={quote.id} />
             }
           />
           <QuoteDocumentViewer preview={documentPreview} onClose={handleClosePreview} />

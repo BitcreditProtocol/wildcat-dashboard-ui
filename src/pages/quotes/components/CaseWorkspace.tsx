@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bitcredit/ui-library"
 import { useEffect, useState, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 
-const panels = ["review", "history", "calculation", "record"] as const;
+const panels = ["review", "history", "calculation", "record", "signers"] as const;
 type Panel = (typeof panels)[number];
 const messages = defineMessages({
   workspace: { id: "quotes.workspace.label", defaultMessage: "Case details", description: "Accessible label for the case workspace tabs" },
@@ -27,6 +27,11 @@ const messages = defineMessages({
     description: "Deterministic assessment and calculation tab",
   },
   record: { id: "quotes.workspace.record", defaultMessage: "Bill record", description: "Bill history and endorsees tab" },
+  signers: {
+    id: "quotes.workspace.signers",
+    defaultMessage: "Signers",
+    description: "Tab with the deterministic review of every signer along the bill",
+  },
 });
 
 function panelForHash(hash: string): Panel | undefined {
@@ -41,11 +46,12 @@ function panelForHash(hash: string): Panel | undefined {
     return "history";
   if (hash === "#full-governed-assessment") return "calculation";
   if (hash === "#bill-record") return "record";
+  if (hash === "#bill-signers") return "signers";
   return undefined;
 }
 
 /** One workspace; inactive panels stay mounted so review drafts survive navigation. */
-export function CaseWorkspace(props: Record<Panel, ReactNode> & { reviewCount?: number }) {
+export function CaseWorkspace(props: Record<Exclude<Panel, "signers">, ReactNode> & { signers?: ReactNode; reviewCount?: number }) {
   const intl = useIntl();
   const [active, setActive] = useState<Panel>(() => panelForHash(window.location.hash) ?? "review");
   const [pendingAnchor, setPendingAnchor] = useState<string>();
@@ -85,12 +91,13 @@ export function CaseWorkspace(props: Record<Panel, ReactNode> & { reviewCount?: 
     return () => cancelAnimationFrame(frame);
   }, [pendingAnchor, props]);
   const reviewCount = props.reviewCount ?? 0;
+  const shown = panels.filter((panel) => panel !== "signers" || props.signers !== undefined);
 
   return (
     <Tabs
       value={active}
       onValueChange={(value) => {
-        const panel = panels.find((candidate) => candidate === value);
+        const panel = shown.find((candidate) => candidate === value);
         if (panel !== undefined) {
           setActive(panel);
           setPendingAnchor(undefined);
@@ -100,9 +107,9 @@ export function CaseWorkspace(props: Record<Panel, ReactNode> & { reviewCount?: 
     >
       <TabsList
         aria-label={intl.formatMessage(messages.workspace)}
-        className="grid h-auto w-full grid-cols-2 gap-1 rounded-none border-b border-border bg-transparent p-2 sm:grid-cols-4"
+        className={`grid h-auto w-full grid-cols-2 gap-1 rounded-none border-b border-border bg-transparent p-2 ${shown.length > 4 ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}
       >
-        {panels.map((panel) => (
+        {shown.map((panel) => (
           <TabsTrigger key={panel} value={panel} className="min-w-0 gap-2 px-2 py-2 text-sm">
             {intl.formatMessage(messages[panel])}
             {panel === "review" && reviewCount > 0 && (
@@ -116,7 +123,7 @@ export function CaseWorkspace(props: Record<Panel, ReactNode> & { reviewCount?: 
           </TabsTrigger>
         ))}
       </TabsList>
-      {panels.map((panel) => (
+      {shown.map((panel) => (
         <TabsContent
           key={panel}
           value={panel}

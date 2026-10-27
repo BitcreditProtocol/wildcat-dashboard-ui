@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import type { FacilityApplication, FacilityOperatorCommand } from "@bitcredit/ai-credit-shared";
+import { facilityApplicationReference, type FacilityApplication, type FacilityOperatorCommand } from "@bitcredit/ai-credit-shared";
 import { Button } from "@bitcredit/ui-library";
 import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
 import { FacilityActions } from "./FacilityActions";
 import { FacilityAllowance } from "./FacilityAllowance";
+import { FacilityOnboardingChecksSection, FacilityRequestSection } from "./FacilityOnboarding";
+import { RelevantIntelligence } from "@/pages/intelligence/RelevantIntelligence";
 import { CircleAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
 import {
   facilityActorMessages,
@@ -339,7 +341,10 @@ export function FacilityCase({ application: app, live, busy, onCommand }: Facili
   const operatorActs = app.progress.nextActor === "operator";
   const keyProof = app.identityAssurance === "ebill_identity_key_proof";
   const IdentityIcon = keyProof ? ShieldCheck : ShieldQuestion;
-  const profile = [app.profile?.country ?? latest?.profile?.country, app.profile?.industry ?? latest?.profile?.industry].filter(Boolean);
+  const country = app.profile?.country ?? latest?.profile?.country;
+  const industry = app.profile?.industry ?? latest?.profile?.industry;
+  const profile = [country, industry].filter(Boolean);
+  const request = app.request ?? latest?.request;
   const showAllowance =
     app.currentAgreement && app.allowance && (app.currentAgreement.terms.billRules !== undefined || app.allowance.entries.length > 0);
   const openSource = (id: string) => {
@@ -359,6 +364,14 @@ export function FacilityCase({ application: app, live, busy, onCommand }: Facili
             />
           </p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight">{app.applicantName}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            <FormattedMessage
+              id="facilities.reference"
+              defaultMessage="Reference {reference}"
+              values={{ reference: <span className="font-mono">{facilityApplicationReference(app.id)}</span> }}
+              description="Readable application reference shared with the applicant"
+            />
+          </p>
           <p
             className={`mt-3 inline-flex rounded-md border px-2 py-1 text-xs font-medium ${
               facilityStatusKey(app) === "operator_review" ? "border-primary/40 bg-primary/10" : "border-border bg-card"
@@ -555,6 +568,7 @@ export function FacilityCase({ application: app, live, busy, onCommand }: Facili
               </p>
             </section>
           )}
+          <FacilityOnboardingChecksSection application={app} />
           <section className="min-w-0 rounded-lg border border-border bg-card">
             <div
               className="flex gap-1 border-b border-border p-2"
@@ -593,6 +607,7 @@ export function FacilityCase({ application: app, live, busy, onCommand }: Facili
                 <SubmissionConversation application={app} target={target} />
               ) : (
                 <>
+                  {request && <FacilityRequestSection request={request} />}
                   <div>
                     <h3 className="text-sm font-medium">
                       <FormattedMessage
@@ -777,6 +792,7 @@ export function FacilityCase({ application: app, live, busy, onCommand }: Facili
               </details>
             </div>
           </section>
+          <RelevantIntelligence country={country} industry={industry} />
         </div>
       </div>
     </article>

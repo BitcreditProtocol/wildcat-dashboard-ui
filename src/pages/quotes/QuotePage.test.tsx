@@ -73,6 +73,11 @@ vi.mock("@/components/EndorsementChain", () => ({
   EndorsementChain: () => <div>EndorsementChainMock</div>,
 }));
 
+// The signer review fetches its own read-only check; its view has its own tests.
+vi.mock("./components/BillSignerReview", () => ({
+  BillSignerReviewPanel: () => <div>BillSignerReviewMock</div>,
+}));
+
 vi.mock("@/components/ParticipantsOverview", () => ({
   ParticipantsOverviewCard: () => <div>ParticipantsOverviewMock</div>,
   ParticipantDetail: () => <div>ParticipantDetailMock</div>,
@@ -751,7 +756,7 @@ describe("QuotePage", () => {
     const page = renderPage(`/quotes/${quoteId}`);
     // Tab labels without the Review tab's optional outstanding-work count.
     const tabs = Array.from(page.querySelectorAll('[role="tab"]')).map((tab) => tab.textContent?.replace(/\d+$/u, ""));
-    expect(tabs).toEqual(["Review", "Case history", "Calculation", "Bill record"]);
+    expect(tabs).toEqual(["Review", "Case history", "Calculation", "Bill record", "Signers"]);
     expect(page.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toMatch(/^Review\d*$/u);
     expect(page.textContent?.match(/QuoteActionsMock/g)).toHaveLength(1);
     const content = page.textContent ?? "";

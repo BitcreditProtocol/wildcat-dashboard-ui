@@ -23,6 +23,14 @@ describe("facility queue selection", () => {
     expect(applications.map((app) => app.id)).toEqual(initialOrder);
   });
 
+  it("finds an application by its readable reference", () => {
+    const queue = selectFacilityQueue(applications, new URLSearchParams({ q: "mob-00000000" }));
+    expect(queue.filteredTotal).toBe(300);
+    const one = selectFacilityQueue([facilityFixture()], new URLSearchParams({ q: "MOB-11111111" }));
+    expect(one.items.map((app) => app.applicantName)).toEqual(["Demo Dairy Farm"]);
+    expect(selectFacilityQueue([facilityFixture()], new URLSearchParams({ q: "MOB-22222222" })).filteredTotal).toBe(0);
+  });
+
   it("searches the whole dataset before paging, ignoring accents and case", () => {
     const items = [
       ...applications,
