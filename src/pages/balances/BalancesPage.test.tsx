@@ -359,6 +359,37 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("Bitcoin balance");
   });
 
+  it("raises no supply alert when each token supply equals its collateral", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it("alerts with the exact difference when token supply drifts from its collateral", async () => {
+    mockUseCoverageQuery.mockReturnValue({
+      data: {
+        onchain_collateral: 10_000,
+        ebill_collateral: 5_000,
+        eiou_collateral: 0,
+        credit_circulating_supply: 4_750,
+        debit_circulating_supply: 12_345,
+      },
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    const alert = page.querySelector('[role="alert"]');
+    expect(alert?.textContent).toContain("Token supply does not match collateral");
+    expect(alert?.textContent).toContain("Debit token balance exceeds Bitcoin balance by 2,345sat");
+    expect(alert?.textContent).toContain("Credit token balance is below e-bill collateral balance by 250crsat");
+  });
+
   it("breaks the foreign e-cash balance down by mint in its own card's drawer", async () => {
     mockUseCoverageQuery.mockReturnValue(zeroCoverage());
     mockUseForeignBalanceQuery.mockReturnValue({
