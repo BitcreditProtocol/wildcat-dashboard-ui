@@ -1,13 +1,16 @@
 import { PropsWithChildren, type ReactNode, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Card, CardContent, CardHeader, CardTitle, Heading, Skeleton, Text, cn } from "@bitcredit/ui-library";
+import { AppIcon, Button, Card, CardContent, CardHeader, CardTitle, Heading, Skeleton, Text, cn } from "@bitcredit/ui-library";
+import { AlertTriangle, ChartColumnIncreasingIcon } from "lucide-react";
+import { Link } from "react-router";
 import { getClowderLocalCoverageOptions, getForeignBalanceOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage } from "react-intl";
 import { Currency } from "@/components/Currency";
 import { isSourceCurrencyCode } from "@/lib/currency";
 import { foreignBalanceTotals } from "@/utils/foreign-balance";
+import { type SupplyMismatch, supplyMismatches } from "@/utils/supply-coverage";
 import { CollectFeesCard } from "./CollectFeesCard";
 import { AddReserveCard } from "./AddReserveCard";
 import { EiouDepositCard } from "./EiouDepositCard";
@@ -163,11 +166,76 @@ function useBalances() {
     },
   };
 
-  return { balances, foreignTotals, isForeignError, error, refetch };
+  const mismatches = coverage ? supplyMismatches(coverage) : [];
+
+  return { balances, foreignTotals, isForeignError, mismatches, error, refetch };
+}
+
+function MismatchLine({ mismatch }: { mismatch: SupplyMismatch }) {
+  const difference = (
+    <Currency
+      value={Math.abs(mismatch.difference)}
+      sourceCurrency={mismatch.token === "debit" ? "sat" : "crsat"}
+      amountClassName="font-semibold text-current"
+      currencyClassName="text-current"
+    />
+  );
+
+  if (mismatch.token === "debit") {
+    return mismatch.difference > 0 ? (
+      <FormattedMessage
+        id="balances.mismatch.debit.over"
+        defaultMessage="Debit token balance exceeds Bitcoin balance by {difference}"
+        values={{ difference }}
+      />
+    ) : (
+      <FormattedMessage
+        id="balances.mismatch.debit.under"
+        defaultMessage="Debit token balance is below Bitcoin balance by {difference}"
+        values={{ difference }}
+      />
+    );
+  }
+
+  return mismatch.difference > 0 ? (
+    <FormattedMessage
+      id="balances.mismatch.credit.over"
+      defaultMessage="Credit token balance exceeds e-bill collateral balance by {difference}"
+      values={{ difference }}
+    />
+  ) : (
+    <FormattedMessage
+      id="balances.mismatch.credit.under"
+      defaultMessage="Credit token balance is below e-bill collateral balance by {difference}"
+      values={{ difference }}
+    />
+  );
+}
+
+function SupplyMismatchAlert({ mismatches }: { mismatches: SupplyMismatch[] }) {
+  if (mismatches.length === 0) {
+    return null;
+  }
+
+  return (
+    <div role="alert" className="flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
+      <AppIcon icon={AlertTriangle} size="sm" className="mt-0.5 flex-shrink-0" />
+      <div className="flex flex-col gap-1">
+        <Text className="font-medium text-current">
+          <FormattedMessage id="balances.mismatch.title" defaultMessage="Token supply does not match collateral" />
+        </Text>
+        {mismatches.map((mismatch) => (
+          <Text key={mismatch.token} variant="caption" className="flex flex-wrap items-baseline gap-1 text-current">
+            <MismatchLine mismatch={mismatch} />
+          </Text>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function PageBodyWithDevSection() {
-  const { balances, foreignTotals, isForeignError, error } = useBalances();
+  const { balances, foreignTotals, isForeignError, mismatches, error } = useBalances();
 
   if (error) {
     return (
@@ -188,6 +256,7 @@ function PageBodyWithDevSection() {
   return (
     <>
       <div className="@container flex flex-col gap-4 my-2">
+        <SupplyMismatchAlert mismatches={mismatches} />
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 @min-[128rem]:grid-cols-6 gap-4">
           <BalanceCard
             title={<FormattedMessage id="balances.bitcoin" defaultMessage="Bitcoin balance" />}
@@ -267,9 +336,17 @@ export default function BalancesPage() {
       <Breadcrumbs>
         <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
       </Breadcrumbs>
-      <Heading as="h1" variant="page" className="mb-6 pt-4">
-        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
-      </Heading>
+      <div className="flex flex-col gap-3 mb-4 sm:mb-0 sm:flex-row sm:items-center sm:justify-between">
+        <Heading as="h1" variant="page" className="mb-2 sm:mb-6 pt-4">
+          <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
+        </Heading>
+        <Button asChild variant="outline" size="sm" className="inline-flex items-center gap-1 leading-none">
+          <Link to="/balances/cashflow">
+            <AppIcon icon={ChartColumnIncreasingIcon} weight="thin" className="h-4 w-4" />
+            <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
+          </Link>
+        </Button>
+      </div>
 
       <Suspense fallback={<Loader />}>
         <PageBodyWithDevSection />

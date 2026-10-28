@@ -103,6 +103,10 @@ function getApiSort(sortBy: SortBy): ListSort | undefined {
       return "submitted_asc";
     case "statusChange-desc":
       return "submitted_desc";
+    case "sum-asc":
+      return "amount_asc";
+    case "sum-desc":
+      return "amount_desc";
     default:
       return undefined;
   }

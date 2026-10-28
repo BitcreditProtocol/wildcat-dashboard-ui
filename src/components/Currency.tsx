@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react";
-import { useIntl } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
 import { HighlightText } from "@/components/ui/highlight-text";
 import { cn, useRates } from "@bitcredit/ui-library";
 import { QueryClientContext } from "@tanstack/react-query";
@@ -76,6 +76,16 @@ function CurrencyBody({
   const showSecondary =
     resolvedValue !== null && resolvedCurrency !== sourceCurrency && resolvedCurrency !== getAliasedCurrency(sourceCurrency);
 
+  const secondaryAmount = (
+    <span>
+      {secondarySign}
+      {formatted ? <HighlightText text={formatted} highlight={highlightQuery ?? ""} /> : null}
+    </span>
+  );
+  const secondaryCurrency = (
+    <span className={cn("text-xs font-normal leading-normal text-muted-foreground", currencyClassName)}>{resolvedCurrency}</span>
+  );
+
   return (
     <span className={cn("inline-flex items-baseline gap-2", className)}>
       <span className="inline-flex items-baseline gap-1">
@@ -90,10 +100,12 @@ function CurrencyBody({
       {showSecondary ? (
         <span className={cn("inline-flex items-baseline gap-1 text-sm text-muted-foreground", secondaryClassName)}>
           <span>
-            {secondarySign}
-            {formatted ? <HighlightText text={formatted} highlight={highlightQuery ?? ""} /> : null}
+            <FormattedMessage
+              id="currency.conversion.worth"
+              defaultMessage="(worth {amount} {currency})"
+              values={{ amount: secondaryAmount, currency: secondaryCurrency }}
+            />
           </span>
-          <span className={cn("text-xs font-normal leading-normal text-muted-foreground", currencyClassName)}>{resolvedCurrency}</span>
         </span>
       ) : null}
     </span>

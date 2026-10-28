@@ -1,5 +1,24 @@
 version: 2
 updates:
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:30"
+      timezone: "Europe/Vienna"
+    target-branch: "dev"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    ignore:
+      # Review Node.js major upgrades together with .nvmrc and package engines.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+    assignees:
+      - "JulianVIE"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     groups:

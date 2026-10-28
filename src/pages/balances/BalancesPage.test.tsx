@@ -332,13 +332,24 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("45,000.00");
     expect(page.textContent).toContain("42,000");
     // The e-IOU card is the mint's own collateral: 555 e-IOU at the fixed 0.067 euro-cent peg.
-    expect(page.textContent).toContain("555e-IOU0.37eur");
+    expect(page.textContent).toContain("555e-IOU(worth 0.37 eur)");
     // The foreign e-cash card is the settled credit e-cash held from other mints, valued like any crsat.
-    expect(page.textContent).toContain("300crsat0.27eur");
+    expect(page.textContent).toContain("300crsat(worth 0.27 eur)");
     // Value still waiting on an offline mint is named on its own line, never folded into the headline.
-    expect(page.textContent).toContain("Unsettled1,000crsat0.90eur");
+    expect(page.textContent).toContain("Unsettled1,000crsat(worth 0.90 eur)");
     // A crsat is worth exactly one sat, so it converts at the sat rate.
-    expect(page.textContent).toContain("777crsat0.70eur");
+    expect(page.textContent).toContain("777crsat(worth 0.70 eur)");
+  });
+
+  it("links to the cash flow page from the title row", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({ data: undefined, isPending: true, isError: false, error: null });
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    const link = page.querySelector('a[href="/balances/cashflow"]');
+    expect(link?.textContent).toBe("CashFlow");
   });
 
   it("shows a dash rather than zero when the foreign balance endpoint fails", async () => {
@@ -357,6 +368,37 @@ describe("BalancesPage", () => {
     expect(page.textContent).not.toContain("Unsettled");
     // Coverage still loaded, so the cards that do not depend on the treasury are unaffected.
     expect(page.textContent).toContain("Bitcoin balance");
+  });
+
+  it("raises no supply alert when each token supply equals its collateral", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    expect(page.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it("alerts with the exact difference when token supply drifts from its collateral", async () => {
+    mockUseCoverageQuery.mockReturnValue({
+      data: {
+        onchain_collateral: 10_000,
+        ebill_collateral: 5_000,
+        eiou_collateral: 0,
+        credit_circulating_supply: 4_750,
+        debit_circulating_supply: 12_345,
+      },
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    const alert = page.querySelector('[role="alert"]');
+    expect(alert?.textContent).toContain("Token supply does not match collateral");
+    expect(alert?.textContent).toContain("Debit token balance exceeds Bitcoin balance by 2,345sat");
+    expect(alert?.textContent).toContain("Credit token balance is below e-bill collateral balance by 250crsat");
   });
 
   it("breaks the foreign e-cash balance down by mint in its own card's drawer", async () => {
