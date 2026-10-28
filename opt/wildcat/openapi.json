@@ -3560,7 +3560,9 @@
           "bill_maturity_date_desc",
           "bill_maturity_date_asc",
           "submitted_desc",
-          "submitted_asc"
+          "submitted_asc",
+          "amount_desc",
+          "amount_asc"
         ]
       },
       "MintOperationStatus": {
