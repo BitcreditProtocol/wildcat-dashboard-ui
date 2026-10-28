@@ -17,7 +17,7 @@ function Harness({
   onChange,
   scope,
 }: {
-  billId: string;
+  billId: string | undefined;
   mintQuoteId: string;
   onChange: (state: CreditAssessmentState) => void;
   scope?: "bill" | "book";
@@ -30,7 +30,7 @@ function Harness({
 }
 
 async function renderHook(
-  billId = "bill-a",
+  billId: string | null = "bill-a",
   mintQuoteId = "quote-a",
   cached?: { cases: unknown[]; issues: unknown[]; applications?: unknown[] },
   scope?: "bill" | "book"
@@ -46,7 +46,7 @@ async function renderHook(
   act(() => {
     root?.render(
       <QueryClientProvider client={client}>
-        <Harness billId={billId} mintQuoteId={mintQuoteId} onChange={onChange} scope={scope} />
+        <Harness billId={billId ?? undefined} mintQuoteId={mintQuoteId} onChange={onChange} scope={scope} />
       </QueryClientProvider>
     );
   });
@@ -60,6 +60,14 @@ async function renderHook(
 }
 
 describe("useCreditAssessmentForBill", () => {
+  it("does not assess the entire book while quote metadata is still loading", async () => {
+    const read = vi.fn(() => new Promise<Response>(() => undefined));
+    vi.stubGlobal("fetch", read);
+    await renderHook(null);
+    expect(read).not.toHaveBeenCalled();
+    expect(queryClient?.getQueryCache().getAll()[0]?.state.fetchStatus).toBe("idle");
+  });
+
   it("shares the book read for quote-list badges instead of issuing one read per row", async () => {
     const read = vi.fn(() => new Promise<Response>(() => undefined));
     vi.stubGlobal("fetch", read);
