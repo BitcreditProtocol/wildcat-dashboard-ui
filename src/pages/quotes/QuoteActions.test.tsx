@@ -1105,6 +1105,91 @@ describe("QuoteActions", () => {
     expect(mockHandleOfferQuote).not.toHaveBeenCalled();
   });
 
+  it("delivers the signed offer when a poll observes the recorded decision before its response", async () => {
+    const prepared = {
+      schemaVersion: "case-preparation-v1" as const,
+      status: "prepared" as const,
+      approvable: true,
+      reasons: ["no_further_eligible_work" as const],
+      automaticRequests: {
+        policyVersion: "synthetic-agent-follow-up-v2" as const,
+        used: 0,
+        budget: 3 as const,
+        consent: "absent" as const,
+        enabled: false,
+      },
+      rounds: [],
+      openObjectives: [],
+    };
+    decisionCase = { ...governedOffer, casePreparation: prepared };
+    let complete: ((value: OperatorDecisionSuccess) => void) | undefined;
+    mockRecordOperatorDecision.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        })
+    );
+    renderComponent(pendingQuote);
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+    decisionCase = { ...governedOffer, casePreparation: { ...prepared, approvable: false, reasons: ["operator_decision_recorded"] } };
+    rerenderComponent(pendingQuote);
+    await act(async () => {
+      complete?.({ ok: true, signedAuthorization });
+      await Promise.resolve();
+    });
+    expect(mockHandleOfferQuote).toHaveBeenCalledWith(signedAuthorization);
+  });
+
+  it("replays a recorded offer after reload through the server and still refuses a changed signed amount", async () => {
+    decisionCase = {
+      ...governedOffer,
+      casePreparation: {
+        schemaVersion: "case-preparation-v1",
+        status: "prepared",
+        approvable: false,
+        reasons: ["operator_decision_recorded"],
+        automaticRequests: { policyVersion: "synthetic-agent-follow-up-v2", used: 0, budget: 3, consent: "absent", enabled: false },
+        rounds: [],
+        openObjectives: [],
+      },
+    };
+    const page = renderComponent(pendingQuote);
+    expect(page.textContent).toContain("Retry recorded offer");
+    mockRecordOperatorDecision.mockResolvedValueOnce({ ok: false, error: "A different recorded decision cannot be replayed" });
+    act(() => {
+      offerFormSubmit?.(offerData);
+    });
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+    mockRecordOperatorDecision.mockResolvedValueOnce({
+      ok: true,
+      signedAuthorization: {
+        ...signedAuthorization,
+        authorization: { ...signedAuthorization.authorization, terms: { ...signedAuthorization.authorization.terms, discountedSat: "94" } },
+      },
+    });
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+    expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+    mockRecordOperatorDecision.mockResolvedValueOnce({ ok: true, signedAuthorization });
+    await act(async () => {
+      offerConfirmationSubmit?.(offerData);
+      await Promise.resolve();
+    });
+    expect(mockHandleOfferQuote).toHaveBeenCalledWith(signedAuthorization);
+  });
+
   it("fails closed at final confirmation and lets the operator retry", async () => {
     decisionCase = governedOffer;
     mockRecordOperatorDecision

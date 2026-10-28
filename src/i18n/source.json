@@ -1792,6 +1792,8 @@
   "quotes.actions.more": "More actions",
   "quotes.actions.offer.button": "Offer",
   "quotes.actions.offer.description": "Make an offer to the current holder of this bill",
+  "quotes.actions.offer.retry": "Retry recorded offer",
+  "quotes.actions.offer.retryDescription": "Use the same terms and decision basis. The service permits only an exact replay of the recorded decision; the Mint verifies its signed authorization.",
   "quotes.actions.offer.title": "Offer quote",
   "quotes.actions.role.checking": "Checking operator authorization…",
   "quotes.actions.role.unavailable": "Your authenticated operator role cannot perform this action.",

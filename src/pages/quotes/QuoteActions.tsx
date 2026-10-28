@@ -195,10 +195,16 @@ export function QuoteActions({
   const [confirmedFacilityReview, setConfirmedFacilityReview] = useState<string | null>(null);
   const hasFacilityBlock =
     decisionCase && "facility" in decisionCase.snapshot && (!facilityCoverage || facilityCoverage.status === "blocked");
+  // A recorded decision cannot authorize a new judgement. Its exact command remains replayable
+  // on the server so a dropped response or failed Mint delivery can finish the original offer.
+  const isRecordedOfferRetry =
+    effectiveQuoteStatus === "Pending" &&
+    decisionCase?.casePreparation?.status === "prepared" &&
+    decisionCase.casePreparation.reasons.length === 1 &&
+    decisionCase.casePreparation.reasons[0] === "operator_decision_recorded";
+  const preparationBlocksOffer = casePreparationBlocksDecision(decisionCase) && !isRecordedOfferRetry;
   const hasIncompletePreparation =
-    casePreparationBlocksDecision(decisionCase) ||
-    !!hasFacilityBlock ||
-    (!!facilityCoverage && confirmedFacilityReview !== facilityReviewKey);
+    preparationBlocksOffer || !!hasFacilityBlock || (!!facilityCoverage && confirmedFacilityReview !== facilityReviewKey);
   const hasUnresolvedEvidenceQuestions = decisionCase?.casePreparation === undefined && pendingEvidenceQuestionCount(decisionCase) > 0;
   useEffect(() => {
     governanceGeneration.current += 1;
@@ -260,7 +266,7 @@ export function QuoteActions({
     !(governedOfferExpiresAt > Date.now());
   const showGovernedOffer =
     showPendingActions &&
-    !casePreparationBlocksDecision(decisionCase) &&
+    !preparationBlocksOffer &&
     !hasFacilityBlock &&
     hasQuoteBoundCreditProgram &&
     !isCreditAssessmentUnavailable &&
@@ -754,7 +760,16 @@ export function QuoteActions({
           {showGovernedOffer && (
             <OfferFormDrawer
               title={offerTitle}
-              description={offerDescription}
+              description={
+                isRecordedOfferRetry
+                  ? intl.formatMessage({
+                      id: "quotes.actions.offer.retryDescription",
+                      defaultMessage:
+                        "Use the same terms and decision basis. The service permits only an exact replay of the recorded decision; the Mint verifies its signed authorization.",
+                      description: "Recovery instructions for a recorded offer whose Mint delivery was interrupted",
+                    })
+                  : offerDescription
+              }
               value={value}
               open={offerFormDrawerOpen}
               onOpenChange={setOfferFormDrawerOpen}
@@ -779,7 +794,14 @@ export function QuoteActions({
                       : undefined
                 }
               >
-                {offerButtonLabel} {offerQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
+                {isRecordedOfferRetry
+                  ? intl.formatMessage({
+                      id: "quotes.actions.offer.retry",
+                      defaultMessage: "Retry recorded offer",
+                      description: "Deliver the existing recorded offer after an interrupted Mint command",
+                    })
+                  : offerButtonLabel}{" "}
+                {offerQuote.isPending && <AppIcon icon={LoaderIcon} weight="thin" className="animate-spin" />}
               </Button>
             </OfferFormDrawer>
           )}
