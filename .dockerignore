@@ -1,5 +1,11 @@
 node_modules/
 dist/
+coverage/
+.git
+.env
+.env.*
+!.env.example
+!.env.development
 .github/
 Dockerfile
 .dockerignore
