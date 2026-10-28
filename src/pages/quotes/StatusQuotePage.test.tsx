@@ -497,6 +497,16 @@ describe("StatusQuotePage", () => {
     expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_desc" });
   });
 
+  it("passes backend quote sort order for amount, so it spans every page", () => {
+    const page = renderPage();
+
+    clickFilterOption(page, "sum");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "amount_asc" });
+
+    clickFilterOption(page, "sum");
+    expect(lastQuotesQuery()).toMatchObject({ sort: "amount_desc" });
+  });
+
   it("puts quotes waiting on a decision first by default, the longest wait at the top", () => {
     mockUseInfiniteQuery.mockReturnValue({
       data: {
@@ -576,11 +586,8 @@ describe("StatusQuotePage", () => {
     expect(orderedQuoteIds(page)).toEqual(["quote-pending-old", "quote-pending-new", "quote-offered", "quote-accepted", "quote-denied"]);
   });
 
-  it("keeps amount and status sorting local, without a backend sort order", () => {
+  it("keeps status sorting local, without a backend sort order", () => {
     const page = renderPage();
-
-    clickButtonByText(page, "Amount");
-    expect(lastQuotesQuery()?.sort).toBeUndefined();
 
     clickButtonByText(page, "Status");
     expect(lastQuotesQuery()?.sort).toBeUndefined();

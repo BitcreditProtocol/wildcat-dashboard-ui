@@ -609,7 +609,7 @@ export type LightSignedBy = {
     signatory?: null | LightBillSignatory;
 };
 
-export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc' | 'submitted_desc' | 'submitted_asc';
+export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc' | 'submitted_desc' | 'submitted_asc' | 'amount_desc' | 'amount_asc';
 
 /**
  * --------------------------- Mint operation status
