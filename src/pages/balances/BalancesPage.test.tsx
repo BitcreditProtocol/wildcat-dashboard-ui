@@ -341,6 +341,17 @@ describe("BalancesPage", () => {
     expect(page.textContent).toContain("777crsat(worth 0.70 eur)");
   });
 
+  it("links to the cash flow page from the title row", async () => {
+    mockUseCoverageQuery.mockReturnValue(zeroCoverage());
+    mockUseForeignBalanceQuery.mockReturnValue({ data: undefined, isPending: true, isError: false, error: null });
+
+    const page = renderWithProviders(<BalancesPage />);
+    await flush();
+
+    const link = page.querySelector('a[href="/balances/cashflow"]');
+    expect(link?.textContent).toBe("CashFlow");
+  });
+
   it("shows a dash rather than zero when the foreign balance endpoint fails", async () => {
     mockUseCoverageQuery.mockReturnValue(zeroCoverage());
     mockUseForeignBalanceQuery.mockReturnValue({
