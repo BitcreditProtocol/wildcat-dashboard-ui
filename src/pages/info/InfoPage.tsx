@@ -1,3 +1,5 @@
+import { IdentityCard } from "@/pages/home/components/IdentityCard";
+import { MintInfoCard } from "@/pages/home/components/MintInfoCard";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Heading, Skeleton } from "@bitcredit/ui-library";
 import { fetchInfo } from "@/lib/api";
@@ -35,6 +37,10 @@ export default function InfoPage() {
       <Heading as="h1" variant="page" className="mb-6 pt-4">
         <FormattedMessage id="info.page.title" defaultMessage="Info" />
       </Heading>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <IdentityCard />
+        <MintInfoCard />
+      </div>
       <Suspense fallback={<Loader />}>
         <PageBody />
       </Suspense>

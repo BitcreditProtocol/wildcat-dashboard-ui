@@ -1,6 +1,7 @@
+import { useRevealAnchor } from "@/components/operator/use-reveal-anchor";
 import type { ApplicantHelpRequest, ApplicantHelpStep } from "@bitcredit/ai-credit-shared";
 import { Button } from "@bitcredit/ui-library";
-import { Info } from "lucide-react";
+import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import { useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { Link } from "react-router";
@@ -13,6 +14,11 @@ const messages = defineMessages({
     id: "help.description",
     defaultMessage: "Applicants' questions to a person at the Mint. Your reply is shown to the applicant on the bill's Mint page.",
     description: "What the help requests page shows",
+  },
+  boundarySummary: {
+    id: "help.boundarySummary",
+    defaultMessage: "Human help only. Replies change no decision or terms.",
+    description: "One-line help-request boundary; full required wording is disclosed",
   },
   boundary: {
     id: "help.boundary",
@@ -67,7 +73,7 @@ function HelpRequestItem({ request, showQuoteLink }: { request: ApplicantHelpReq
   const [commandId] = useState(() => crypto.randomUUID());
   const fieldId = `help-reply-${request.requestId}`;
   return (
-    <li className="space-y-2 rounded-lg border border-border p-3 text-sm">
+    <li id={`help-${request.requestId}`} className="scroll-mt-4 space-y-2 rounded-lg border border-border p-3 text-sm">
       <p className="whitespace-pre-wrap">{request.message}</p>
       <p className="text-xs text-muted-foreground">
         {intl.formatMessage(messages.asked, {
@@ -159,6 +165,7 @@ export function ApplicantHelpCard({ billId }: { billId: string }) {
 export default function ApplicantHelpPage() {
   const intl = useIntl();
   const query = useApplicantHelp();
+  useRevealAnchor(query.data);
   const requests = query.data?.requests ?? [];
   const open = requests.filter((request) => request.reply === null);
   const answered = requests.filter((request) => request.reply !== null);
@@ -168,10 +175,7 @@ export default function ApplicantHelpPage() {
         <h1 className="text-2xl font-semibold">{intl.formatMessage(messages.title)}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{intl.formatMessage(messages.description)}</p>
       </header>
-      <p className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm">
-        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        {intl.formatMessage(messages.boundary)}
-      </p>
+      <BoundaryNotice summary={intl.formatMessage(messages.boundarySummary)}>{intl.formatMessage(messages.boundary)}</BoundaryNotice>
       {query.error ? (
         <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />
       ) : query.data === undefined ? (

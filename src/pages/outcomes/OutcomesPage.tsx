@@ -1,11 +1,25 @@
 import type { DurationSummary, MetricRate, OutcomeReport } from "@bitcredit/ai-credit-shared";
-import { Info } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
+import { OutcomeFunnel } from "./OutcomeFunnel";
+import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import type { ReactNode } from "react";
 import { defineMessages, type IntlShape, type MessageDescriptor, useIntl } from "react-intl";
 import { useOutcomeReport } from "@/pages/mint-checks/api";
 import { CheckLoading, CheckUnavailable } from "@/pages/mint-checks/MintCheckParts";
 
 const messages = defineMessages({
+  attention: { id: "outcomes.attention", defaultMessage: "Needs attention", description: "Operator dashboard outcomes: attention" },
+  reviewWording: {
+    id: "outcomes.reviewWording",
+    defaultMessage:
+      "Review this explanation’s wording with a person before the next demo. No content or policy has been changed automatically.",
+    description: "Operator dashboard outcomes: reviewWording",
+  },
+  attentionRule: {
+    id: "outcomes.attentionRule",
+    defaultMessage: "Flagged when at least 5 people answer and fewer than half answer correctly.",
+    description: "Operator dashboard outcomes: attentionRule",
+  },
   title: { id: "outcomes.title", defaultMessage: "Outcomes", description: "Page title of the PRD outcome measures" },
   description: {
     id: "outcomes.description",
@@ -210,6 +224,9 @@ function Report({ report }: { report: OutcomeReport }) {
   const cases = report.cases;
   return (
     <div className="grid gap-4 @4xl:grid-cols-2">
+      <div className="@4xl:col-span-2">
+        <OutcomeFunnel report={report} />
+      </div>
       <Section title={intl.formatMessage(messages.applicants)}>
         <Row label={intl.formatMessage(messages.opened)} value={intl.formatNumber(journey.opened)} />
         <Row label={intl.formatMessage(messages.answered)} value={formatRate(intl, journey.answered)} />
@@ -241,9 +258,25 @@ function Report({ report }: { report: OutcomeReport }) {
                   key={topic}
                   label={intl.formatMessage(topicMessages[topic])}
                   value={
-                    result === undefined
-                      ? "–"
-                      : formatRate(intl, { numerator: result.correct, denominator: result.answered, ratio: result.ratio })
+                    result === undefined ? (
+                      "–"
+                    ) : (
+                      <div className="max-w-sm text-right">
+                        <span>{formatRate(intl, { numerator: result.correct, denominator: result.answered, ratio: result.ratio })}</span>
+                        {result.answered >= 5 && result.correct / result.answered < 0.5 && (
+                          <div className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-left">
+                            <strong className="flex items-center gap-1.5 text-xs text-amber-800 dark:text-amber-300">
+                              <TriangleAlert className="size-3.5" />
+                              {intl.formatMessage(messages.attention)}
+                            </strong>
+                            <p className="mt-1 text-xs font-normal">{intl.formatMessage(messages.reviewWording)}</p>
+                            <p className="mt-1 text-[11px] font-normal text-muted-foreground">
+                              {intl.formatMessage(messages.attentionRule)}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )
                   }
                 />
               );
@@ -329,12 +362,17 @@ export default function OutcomesPage() {
         <p className="mt-2 text-sm text-muted-foreground">{intl.formatMessage(messages.description)}</p>
       </header>
       {query.data && (
-        <p className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm">
-          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <BoundaryNotice
+          summary={intl.formatMessage({
+            id: "outcomes.shortBoundary",
+            defaultMessage: "Synthetic aggregates · sample sizes shown.",
+            description: "Operator dashboard outcomes: shortBoundary",
+          })}
+        >
           {intl.formatMessage(messages.synthetic, {
             time: intl.formatDate(query.data.generatedAt, { dateStyle: "medium", timeStyle: "short" }),
           })}
-        </p>
+        </BoundaryNotice>
       )}
       {query.error ? (
         <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />

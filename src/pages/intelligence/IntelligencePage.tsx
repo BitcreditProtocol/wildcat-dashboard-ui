@@ -1,6 +1,8 @@
+import { useRevealAnchor } from "@/components/operator/use-reveal-anchor";
 import type { MintIntelligenceNote, MintIntelligenceResponse, MintIntelligenceScope } from "@bitcredit/ai-credit-shared";
 import { Button } from "@bitcredit/ui-library";
-import { Info } from "lucide-react";
+import { AskTheMint } from "./AskTheMint";
+import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import { useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { useMintIntelligence } from "@/pages/mint-checks/api";
@@ -63,7 +65,7 @@ function IntelligenceGroups({
                 {notes.map((note) => {
                   const history = supersededChain(note, response.notes);
                   return (
-                    <li key={note.id} className="rounded-lg border border-border bg-card p-4">
+                    <li id={`note-${note.id}`} key={note.id} className="scroll-mt-5 rounded-lg border border-border bg-card p-4">
                       <IntelligenceNoteCard
                         note={note}
                         today={today}
@@ -102,6 +104,7 @@ function IntelligenceGroups({
 export default function IntelligencePage() {
   const intl = useIntl();
   const query = useMintIntelligence();
+  useRevealAnchor(query.data);
   const [form, setForm] = useState<{ supersedes?: MintIntelligenceNote } | null>(null);
   return (
     <div className="space-y-4 p-4 md:p-6">
@@ -112,10 +115,15 @@ export default function IntelligencePage() {
         </div>
         {form === null && query.data && <Button onClick={() => setForm({})}>{intl.formatMessage(messages.add)}</Button>}
       </header>
-      <p className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm">
-        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        {intl.formatMessage(intelligenceMessages.boundary)}
-      </p>
+      <BoundaryNotice summary={intl.formatMessage(intelligenceMessages.boundary)}>
+        {intl.formatMessage({
+          id: "intelligence.readOnlyPrompt",
+          defaultMessage:
+            "Notes may reach only Ask the Mint’s operator-only, read-only explanation prompt. They never enter applicant, assessment, pricing, gate or authorization prompts. Notes and explanations cannot change the reviewed policy.",
+          description: "Operator dashboard intelligence: readOnlyPrompt",
+        })}
+      </BoundaryNotice>
+      <AskTheMint />
       {form !== null && (
         <IntelligenceNoteForm key={form.supersedes?.id ?? "new"} supersedes={form.supersedes} onDone={() => setForm(null)} />
       )}

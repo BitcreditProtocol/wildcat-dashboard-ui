@@ -1,3 +1,4 @@
+import NetworkPage from "./pages/network/NetworkPage";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
@@ -71,6 +72,7 @@ function App() {
             <Route path="bills/:billId" element={<BillDetailPage />} />
             <Route path="keysets" element={<KeysetsPage />} />
             <Route path="keysets/:keysetId" element={<KeysetDetailPage />} />
+            <Route path="network" element={<NetworkPage />} />
             <Route path="info" element={<InfoPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

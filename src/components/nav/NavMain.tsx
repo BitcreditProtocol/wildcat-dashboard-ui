@@ -1,5 +1,5 @@
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { AppIcon, Heading, Separator, Text } from "@bitcredit/ui-library";
+import { AppIcon, Heading, Text } from "@bitcredit/ui-library";
 import { Fragment } from "react";
 import { NavLink } from "react-router";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -21,7 +21,9 @@ type NavMessageDescriptor = MessageDescriptor & { id: string };
 
 export function NavMain({
   items,
+  groupTitle,
 }: {
+  groupTitle?: NavMessageDescriptor;
   items: {
     title: NavMessageDescriptor;
     url: string;
@@ -42,14 +44,16 @@ export function NavMain({
     <SidebarGroup>
       <SidebarGroupLabel asChild>
         <Heading as="h2" variant="section">
-          {intl.formatMessage({
-            id: "nav.dashboard",
-            defaultMessage: "Dashboard",
-          })}
+          {intl.formatMessage(
+            groupTitle ?? {
+              id: "nav.dashboard",
+              defaultMessage: "Dashboard",
+            }
+          )}
         </Heading>
       </SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item, index) => {
+        {items.map((item) => {
           const title = intl.formatMessage(item.title);
 
           return (
@@ -134,7 +138,6 @@ export function NavMain({
                   </SidebarMenuItem>
                 </Collapsible>
               )}
-              {index < items.length - 1 ? <Separator className="bg-divider-75 my-1" /> : null}
             </Fragment>
           );
         })}

@@ -1,3 +1,5 @@
+// Decision brief owns its API checks and is covered by its own component tests.
+vi.mock("./DecisionBrief", () => ({ DecisionBrief: () => <div>DecisionBriefMock</div> }));
 import { firstRun } from "@/pages/credit/case-history.test-fixtures";
 import { act, type ReactElement } from "react";
 import { PreferencesProvider } from "@bitcredit/ui-library";

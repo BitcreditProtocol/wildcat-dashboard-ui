@@ -193,7 +193,7 @@ export function FraudControlsPanel({ decisionCase, capability }: { decisionCase:
     return label ? [{ code, label }] : [];
   });
   return (
-    <Card>
+    <Card id="fraud-controls" className="scroll-mt-5">
       <CardContent className="space-y-6 p-6">
         <p className="break-all text-xs text-muted-foreground">
           {decisionCase.policyPack.policyPackVersion} · {decisionCase.snapshot.snapshotDigest}

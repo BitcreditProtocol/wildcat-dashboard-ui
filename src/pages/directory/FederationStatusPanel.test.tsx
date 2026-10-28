@@ -7,6 +7,7 @@ import { FederationStatusPanel } from "./FederationStatusPanel";
 import { parseFederationStatus, readFederationStatus } from "./federation-status";
 import { federationStatusFixture } from "./federation-status-test-fixture";
 import DirectoryPage from "./DirectoryPage";
+import NetworkPage from "@/pages/network/NetworkPage";
 
 vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: RequestInit) => fetch(path, init) }));
 afterEach(() => {
@@ -73,6 +74,9 @@ describe("federation status through operator BFF", () => {
       })
     );
     await renderWithProviders(<DirectoryPage />, "/directory");
+    expect(screen.getByRole("link", { name: "Federation degraded" })).toHaveAttribute("href", "/network");
+    cleanup();
+    await renderWithProviders(<NetworkPage />, "/network");
     expect(screen.getByRole("region", { name: "Federation status" })).toHaveTextContent("Synthetic Mint B");
     expect(screen.getByRole("button", { name: "Refresh federation status" })).toBeEnabled();
   });

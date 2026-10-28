@@ -105,6 +105,21 @@ describe("Outcomes", () => {
   });
 });
 
+describe("Outcome attention thresholds", () => {
+  it("flags five samples below half correct, offers human review, and exposes funnel counts", async () => {
+    const value = report();
+    if (!value.applicantComprehension) throw new Error("Missing fixture");
+    value.applicantComprehension.byTopic.recourse = { answered: 5, correct: 0, ratio: 0 };
+    value.applicantComprehension.byTopic.fee = { answered: 6, correct: 3, ratio: 0.5 };
+    vi.stubGlobal("fetch", routeFetch({ "/api/ai-credit/outcome-report": () => json(value) }));
+    const { page } = await renderWithProviders(<OutcomesPage />);
+    expect(page.textContent?.match(/Needs attention/g)).toHaveLength(1);
+    expect(page.textContent).toContain("Review this explanation’s wording");
+    expect(page.textContent).toContain("0 of 5");
+    expect(getByRole(page, "img").getAttribute("aria-label")).toContain("Opened: 4");
+  });
+});
+
 describe("Help requests", () => {
   const view = {
     schemaVersion: "applicant-help-v1",

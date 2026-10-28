@@ -96,7 +96,7 @@ describe("IntelligencePage", () => {
         supersedes: null,
       }),
     ]);
-    expect(page.querySelector("form")).toBeNull();
+    expect(() => getByLabelText(page, "Title")).toThrow();
     expect(getByRole(page, "region", { name: "Macro" }).textContent).toContain("Inflation eased");
   });
 

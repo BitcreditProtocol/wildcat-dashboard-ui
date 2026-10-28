@@ -1,5 +1,7 @@
+import { policyAnchor } from "./policy-links";
+import { useRevealAnchor } from "@/components/operator/use-reveal-anchor";
+import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import type { CreditPolicyCatalogue, CreditProgram, SyntheticPolicyPack } from "@bitcredit/ai-credit-shared";
-import { Info } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl, type IntlShape } from "react-intl";
 import { useCreditPolicy } from "@/pages/mint-checks/api";
@@ -115,9 +117,9 @@ const messages = defineMessages({
   record: { id: "policy.record", defaultMessage: "Digests and versions", description: "Exact identity of programme and pack" },
 });
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
+function Row({ label, children, id }: { label: string; children: ReactNode; id?: string }) {
   return (
-    <div className="grid gap-1 py-2 @lg:grid-cols-[16rem_minmax(0,1fr)]">
+    <div id={id} className="scroll-mt-5 grid gap-1 py-2 @lg:grid-cols-[16rem_minmax(0,1fr)]">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="text-sm">{children}</dd>
     </div>
@@ -131,14 +133,18 @@ function PolicyPackDetails({ pack }: { pack: SyntheticPolicyPack }) {
   const permission = (allowed: boolean) => intl.formatMessage(allowed ? messages.allowed : messages.notAllowed);
   const components = pack.pricingComponents;
   return (
-    <div className="space-y-4">
+    <div id={policyAnchor(pack.policyPackVersion)} className="scroll-mt-5 space-y-4">
       <dl className="divide-y divide-border">
-        <Row label={intl.formatMessage(messages.tenor)}>
+        <Row id={policyAnchor(pack.policyPackVersion, "tenor")} label={intl.formatMessage(messages.tenor)}>
           {intl.formatMessage(messages.tenorRange, { min: pack.minimumTenorDays, max: pack.maximumTenorDays })}
         </Row>
-        <Row label={intl.formatMessage(messages.maximumBillSum)}>{sat(pack.maximumBillSumSat)}</Row>
+        <Row id={policyAnchor(pack.policyPackVersion, "maximumBillSumSat")} label={intl.formatMessage(messages.maximumBillSum)}>
+          {sat(pack.maximumBillSumSat)}
+        </Row>
         <Row label={intl.formatMessage(messages.minimumUseful)}>{sat(pack.minimumUsefulDiscountedSat)}</Row>
-        <Row label={intl.formatMessage(messages.operatingCost)}>{sat(pack.operatingCostSat)}</Row>
+        <Row id={policyAnchor(pack.policyPackVersion, "operatingCostSat")} label={intl.formatMessage(messages.operatingCost)}>
+          {sat(pack.operatingCostSat)}
+        </Row>
         <Row label={intl.formatMessage(messages.maximumAnnual)}>{bps(pack.maximumEffectiveAnnualBps)}</Row>
         <Row label={intl.formatMessage(messages.maximumFeeRatio)}>{bps(pack.maximumFeeRatioBps)}</Row>
         <Row label={intl.formatMessage(messages.offerValidity)}>{intl.formatMessage(messages.days, { days: pack.offerValidityDays })}</Row>
@@ -146,18 +152,24 @@ function PolicyPackDetails({ pack }: { pack: SyntheticPolicyPack }) {
       <section>
         <h5 className="text-sm font-medium">{intl.formatMessage(messages.pricing)}</h5>
         <dl className="divide-y divide-border">
-          <Row label={intl.formatMessage(messages.costOfFunds)}>{bps(components.costOfFundsBps)}</Row>
-          <Row label={intl.formatMessage(messages.marginCorroborated)}>
+          <Row id={policyAnchor(pack.policyPackVersion, "costOfFundsBps")} label={intl.formatMessage(messages.costOfFunds)}>
+            {bps(components.costOfFundsBps)}
+          </Row>
+          <Row id={policyAnchor(pack.policyPackVersion, "uncertaintyMarginBps")} label={intl.formatMessage(messages.marginCorroborated)}>
             {bps(components.uncertaintyMarginBpsByEvidenceState.corroborated)}
           </Row>
           <Row label={intl.formatMessage(messages.marginVerified)}>
             {bps(components.uncertaintyMarginBpsByEvidenceState.independently_verified)}
           </Row>
-          <Row label={intl.formatMessage(messages.returnObjective)}>{bps(components.returnObjectiveBps)}</Row>
-          <Row label={intl.formatMessage(messages.subsidy)}>{bps(components.subsidyBps)}</Row>
+          <Row id={policyAnchor(pack.policyPackVersion, "returnObjectiveBps")} label={intl.formatMessage(messages.returnObjective)}>
+            {bps(components.returnObjectiveBps)}
+          </Row>
+          <Row id={policyAnchor(pack.policyPackVersion, "subsidyBps")} label={intl.formatMessage(messages.subsidy)}>
+            {bps(components.subsidyBps)}
+          </Row>
         </dl>
       </section>
-      <section>
+      <section id={policyAnchor(pack.policyPackVersion, "expectedLossBps")} className="scroll-mt-5">
         <h5 className="text-sm font-medium">{intl.formatMessage(messages.evidence)}</h5>
         <dl className="divide-y divide-border">
           {Object.entries(pack.evidenceRules).map(([key, rule]) => (
@@ -183,7 +195,9 @@ function PolicyPackDetails({ pack }: { pack: SyntheticPolicyPack }) {
         <h5 className="text-sm font-medium">{intl.formatMessage(messages.gates)}</h5>
         <ol className="mt-2 list-decimal space-y-0.5 pl-5 font-mono text-xs">
           {pack.hardGatePrecedence.map((gate) => (
-            <li key={gate}>{gate}</li>
+            <li id={policyAnchor(pack.policyPackVersion, gate)} className="scroll-mt-5" key={gate}>
+              {gate}
+            </li>
           ))}
         </ol>
       </section>
@@ -239,7 +253,11 @@ function PolicyCatalogue({ catalogue }: { catalogue: CreditPolicyCatalogue }) {
     <div className="space-y-6">
       {programmes.length === 0 && <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.empty)}</p>}
       {programmes.map(({ program, pack }) => (
-        <section key={program.creditProgramDigest} className="@container space-y-4 rounded-lg border border-border bg-card p-5 md:p-6">
+        <section
+          id={policyAnchor(program.creditProgramVersion)}
+          key={program.creditProgramDigest}
+          className="@container space-y-4 rounded-lg border border-border bg-card p-5 md:p-6"
+        >
           <div>
             <p className="text-xs text-muted-foreground">
               {intl.formatMessage(messages.programme, { id: program.creditProgramId, version: program.creditProgramVersion })}
@@ -287,16 +305,22 @@ function PolicyCatalogue({ catalogue }: { catalogue: CreditPolicyCatalogue }) {
 export default function PolicyPage() {
   const intl = useIntl();
   const query = useCreditPolicy();
+  useRevealAnchor(query.data);
   return (
     <div className="space-y-4 p-4 md:p-6">
       <header className="max-w-3xl">
         <h1 className="text-2xl font-semibold">{intl.formatMessage(messages.title)}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{intl.formatMessage(messages.description)}</p>
       </header>
-      <p className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm">
-        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <BoundaryNotice
+        summary={intl.formatMessage({
+          id: "policy.shortBoundary",
+          defaultMessage: "Published policy · read-only.",
+          description: "Operator dashboard policy: shortBoundary",
+        })}
+      >
         {intl.formatMessage(messages.readOnly)}
-      </p>
+      </BoundaryNotice>
       {query.error ? (
         <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />
       ) : query.data ? (

@@ -1,3 +1,4 @@
+import { operatorSpanish } from "./operator-es";
 import source from "./source.json";
 import enUS from "./en-US/translation.json";
 import achUG from "./ach-UG/translation.json";
@@ -16,8 +17,8 @@ export const messagesByLocale: Record<string, Record<string, string>> = {
   "en-GB": enGB,
   "de-AT": deAT,
   "de-DE": deDE,
-  "es-AR": esAR,
-  "es-ES": esES,
+  "es-AR": { ...esAR, ...operatorSpanish },
+  "es-ES": { ...esES, ...operatorSpanish },
   "it-IT": itIT,
   "tr-TR": trTR,
   "zu-ZA": zuZA,

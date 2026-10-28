@@ -1,3 +1,4 @@
+import { DecisionBrief } from "./DecisionBrief";
 import { toast, AppIcon, cn } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { DownloadBillPdfButton } from "@/components/DownloadBillPdfButton";
@@ -421,13 +422,16 @@ function PageBody({ id }: { id: string }) {
   );
   const agentDiscussion =
     decisionCase?.snapshot.bill && !creditAssessment.isUnavailable && operatorCapability.capability ? (
-      <CaseAgentDiscussion key={decisionCase.snapshot.caseId} decisionCase={decisionCase} />
+      <div id="ask-about-case" className="scroll-mt-5">
+        <CaseAgentDiscussion key={decisionCase.snapshot.caseId} decisionCase={decisionCase} />
+      </div>
     ) : undefined;
 
   return (
     // The decision column sits beside the case once the page itself is wide enough (the sidebar takes
     // part of the viewport); otherwise it follows the summary.
-    <div className="@container mt-4">
+    <div className="@container mt-4 space-y-4">
+      <DecisionBrief quoteId={quote.id} bill={bill} decisionCase={creditAssessment.isUnavailable ? undefined : decisionCase} />
       <div className="grid gap-4 @4xl:grid-cols-[minmax(0,1fr)_22rem] @4xl:items-start @6xl:grid-cols-[minmax(0,1fr)_24rem]">
         <section className="flex min-w-0 flex-col gap-4 @4xl:col-start-1 @4xl:row-start-1" id="minting-summary">
           <div className="hidden print:block">

@@ -6,6 +6,9 @@ import {
   BookUser,
   Globe,
   Home,
+  Network,
+  Info,
+  TrendingUp,
   Inbox,
   Key,
   LifeBuoy,
@@ -38,14 +41,24 @@ import { defineMessages, useIntl } from "react-intl";
 import { LIVE_TRANSLATIONS_KEY } from "@/constants/storageKeys";
 
 const navMessages = defineMessages({
+  work: { id: "nav.work", defaultMessage: "Work", description: "Operator dashboard nav: work" },
+  reference: { id: "nav.reference", defaultMessage: "Reference", description: "Operator dashboard nav: reference" },
+  reports: { id: "nav.reports", defaultMessage: "Reports", description: "Operator dashboard nav: reports" },
+  system: { id: "nav.system", defaultMessage: "Mint / System", description: "Operator dashboard nav: system" },
+  network: { id: "nav.network", defaultMessage: "Network", description: "Operator dashboard nav: network" },
+  info: { id: "nav.info", defaultMessage: "Info", description: "Operator dashboard nav: info" },
+  earnings: { id: "nav.earnings", defaultMessage: "Earnings", description: "Operator dashboard nav: earnings" },
   home: { id: "nav.home", defaultMessage: "Home" },
   balances: { id: "nav.balances", defaultMessage: "Balances" },
-  deniedMeltRequests: { id: "nav.deniedMeltRequests", defaultMessage: "Melt requests" },
+  deniedMeltRequests: {
+    id: "nav.deniedMeltRequests",
+    defaultMessage: "Melt requests",
+  },
   quotes: { id: "nav.quotes", defaultMessage: "Quotes" },
   facilities: { id: "nav.facilities", defaultMessage: "Facilities", description: "Pre-bill facility applications" },
   intelligence: {
-    id: "nav.intelligence",
-    defaultMessage: "Intelligence",
+    id: "nav.intelligenceAsk",
+    defaultMessage: "Intelligence + Ask the Mint",
     description: "The Mint's own notes on its regions, industries and the macro economy",
   },
   policy: { id: "nav.policy", defaultMessage: "Policy", description: "The Mint's reviewed credit programmes and policy packs, read-only" },
@@ -71,6 +84,9 @@ const localeMessages = defineMessages({
 
 const data = {
   navMain: [
+    { title: navMessages.network, url: "/network", icon: Network },
+    { title: navMessages.info, url: "/info", icon: Info },
+    { title: navMessages.earnings, url: "/earnings", icon: TrendingUp },
     {
       title: navMessages.home,
       url: "/",
@@ -169,7 +185,18 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        {[
+          { title: navMessages.work, urls: ["/", "/quotes", "/facilities", "/help-requests"] },
+          { title: navMessages.reference, urls: ["/intelligence", "/policy", "/directory"] },
+          { title: navMessages.reports, urls: ["/outcomes"] },
+          { title: navMessages.system, urls: ["/balances", "/earnings", "/bills", "/keysets", "/melt-requests", "/network", "/info"] },
+        ].map((group) => (
+          <NavMain
+            key={group.title.id}
+            groupTitle={group.title}
+            items={group.urls.flatMap((url) => data.navMain.filter((item) => item.url === url))}
+          />
+        ))}
       </SidebarContent>
       <Separator className="bg-divider-75 w-auto mb-2" />
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">

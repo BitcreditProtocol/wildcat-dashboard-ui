@@ -16,7 +16,8 @@ import {
 } from "@/pages/mint-checks/MintCheckParts";
 
 import { PublicDirectoryResults } from "./PublicDirectoryPanels";
-import { FederationStatusPanel } from "./FederationStatusPanel";
+import { FederationHealth } from "@/pages/network/FederationHealth";
+import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import { publicDirectoryMessages } from "./public-directory-copy";
 
 const messages = defineMessages({
@@ -209,11 +210,6 @@ export default function DirectoryPage() {
         <h1 className="text-2xl font-semibold">{intl.formatMessage(messages.title)}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{intl.formatMessage(messages.description)}</p>
       </header>
-      <p className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm">
-        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        {intl.formatMessage(messages.local)}
-      </p>
-      <FederationStatusPanel />
       <Search
         value={input}
         size="sm"
@@ -221,6 +217,10 @@ export default function DirectoryPage() {
         onChange={(value) => setInput(value.slice(0, DIRECTORY_QUERY_MAX_LENGTH))}
         onSearch={search}
       />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <BoundaryNotice summary={intl.formatMessage(messages.title)}>{intl.formatMessage(messages.local)}</BoundaryNotice>
+        <FederationHealth />
+      </div>
       {directory.error ? (
         <CheckUnavailable error={directory.error} retrying={directory.isFetching} onRetry={() => void directory.refetch()} />
       ) : directory.data ? (
