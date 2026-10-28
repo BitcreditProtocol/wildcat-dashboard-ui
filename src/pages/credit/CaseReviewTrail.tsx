@@ -1,3 +1,4 @@
+import { fraudReason } from "./fraud-controls-copy";
 import { countCitedEvidenceClaims, operatorVisibleAxes, words } from "./decision-types";
 import type {
   ApplicantConfirmation,
@@ -851,7 +852,9 @@ export function CaseReviewTrail({
                       <li key={`${request.code}:${request.requiredItem}`} className="border-l-2 border-signal-alert pl-3">
                         <p className="text-sm">{request.requiredItem}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {intl.formatMessage(messages.requestedBecause, { reason: words(request.reasonCode) })}
+                          {intl.formatMessage(messages.requestedBecause, {
+                            reason: fraudReason(request.reasonCode, intl) ?? words(request.reasonCode),
+                          })}
                         </p>
                       </li>
                     ))}

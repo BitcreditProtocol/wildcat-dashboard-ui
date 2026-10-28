@@ -36,6 +36,7 @@ const invoiceAmountVsBill = (revision: AssessmentRevision) => {
   const invoice = revision.snapshot.invoice;
   const bill = revision.snapshot.bill;
   if (invoice === null || bill === null) return empty;
+  if (invoice.totalSat === null) return revision.snapshot.fraudControls?.taxAuthority.amountConsistency ?? "unknown";
   return invoice.totalSat === bill.faceValueSat ? "match" : "mismatch";
 };
 

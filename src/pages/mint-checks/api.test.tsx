@@ -1,3 +1,4 @@
+import { isCancelledError } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -144,10 +145,12 @@ describe("mint check hooks", () => {
     );
     let add: ReturnType<typeof useAddMintIntelligenceNote> | undefined;
     const { client } = await renderWithProviders(<Probe use={useAddMintIntelligenceNote} onChange={(value) => (add = value)} />);
-    void client.fetchQuery({
-      queryKey: mintCheckKeys.intelligence,
-      queryFn: () => fetch("/api/ai-credit/mint-intelligence").then((r) => r.json()),
-    });
+    const previousRead = client
+      .fetchQuery({
+        queryKey: mintCheckKeys.intelligence,
+        queryFn: () => fetch("/api/ai-credit/mint-intelligence").then((r) => r.json()),
+      })
+      .catch((error: unknown) => error);
     add?.mutate({
       action: "add_note",
       commandId: "99999999-9999-4999-8999-999999999999",
@@ -162,6 +165,7 @@ describe("mint check hooks", () => {
     await flush();
     releaseRead?.();
     await flush();
+    expect(isCancelledError(await previousRead)).toBe(true);
     expect(client.getQueryData(mintCheckKeys.intelligence)).toEqual(saved);
   });
 });

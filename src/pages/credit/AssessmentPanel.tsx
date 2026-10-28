@@ -1,4 +1,5 @@
 import { defineMessages, type IntlShape, useIntl } from "react-intl";
+import { fraudReason } from "./fraud-controls-copy";
 import { axisLabels, operatorVisibleAxes, percentFromBps, traceLine, words, type DecisionCase } from "./decision-types";
 
 const messages = defineMessages({
@@ -93,7 +94,7 @@ function operatorRuleLabel(code: string, intl: IntlShape): string {
     whole_bill_offer: messages.wholeBillOffer,
   };
   const label = labels[code];
-  return label === undefined ? words(code) : intl.formatMessage(label);
+  return fraudReason(code, intl) ?? (label === undefined ? words(code) : intl.formatMessage(label));
 }
 
 export interface AssessmentPanelProps {

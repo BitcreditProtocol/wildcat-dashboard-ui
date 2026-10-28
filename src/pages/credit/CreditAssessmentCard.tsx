@@ -1,3 +1,4 @@
+import { fraudReason } from "./fraud-controls-copy";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -25,6 +26,11 @@ const messages = defineMessages({
     id: "credit.verification.owner.mintOperations",
     defaultMessage: "Mint operations · refresh the Mint source",
     description: "Resolution owner and action for Mint operations verification",
+  },
+  ownerBuyerConfirmation: {
+    id: "credit.verification.owner.buyerConfirmation",
+    defaultMessage: "Mint operations · record buyer confirmation through an independent contact",
+    description: "Buyer confirmation resolution owner and action",
   },
   ownerSystem: {
     id: "credit.verification.owner.system",
@@ -279,7 +285,9 @@ function DecisionException({ decisionCase, formatSat }: { decisionCase: Decision
                       : request.owner === "mint_risk"
                         ? messages.ownerMintRisk
                         : request.owner === "mint_operations"
-                          ? messages.ownerMintOperations
+                          ? request.resolutionAction === "record_buyer_confirmation"
+                            ? messages.ownerBuyerConfirmation
+                            : messages.ownerMintOperations
                           : messages.ownerSystem
                   )}
                 </span>
@@ -305,7 +313,9 @@ export function NoFitExplanation({ decisionCase, formatSat }: { decisionCase: De
       <NoFitMath decisionCase={decisionCase} formatSat={formatSat} />
       <p className="text-muted-foreground">
         {decisionCase.result.reasonCodes.length > 0
-          ? intl.formatMessage(messages.noFitReasons, { reasons: decisionCase.result.reasonCodes.map(words).join("; ") })
+          ? intl.formatMessage(messages.noFitReasons, {
+              reasons: decisionCase.result.reasonCodes.map((code) => fraudReason(code, intl) ?? words(code)).join("; "),
+            })
           : intl.formatMessage({
               id: "credit.quote.noFitReasonMissing",
               defaultMessage: "Reason not recorded · review required",

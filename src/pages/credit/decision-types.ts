@@ -3,6 +3,7 @@
  * display helpers used by the Mint dashboard; it must not reimplement the wire validator.
  */
 import type {
+  FraudControls,
   FacilityBinding,
   FacilityCoverage,
   ApplicantConfirmationSummary,
@@ -59,7 +60,7 @@ export interface DecisionInvoice {
   transactionReference?: string;
   issueDate: string;
   currency?: string;
-  totalSat: string;
+  totalSat: string | null;
   plausibility: string;
   billAndClaimsConsistency: string;
   evidenceState: string;
@@ -127,7 +128,10 @@ export interface VerificationRequest {
   requiredItem: string;
   reasonCode: string;
   owner?: "applicant" | "mint_risk" | "mint_operations" | "system";
-  resolutionAction?: "request_applicant_information" | "record_acceptor_risk_assessment" | "refresh_mint_capacity" | "retry_system_check";
+  resolutionAction?: Extract<
+    OperatorWorkbenchDecisionCase["result"]["verificationRequests"][number],
+    { resolutionAction: string }
+  >["resolutionAction"];
 }
 
 export type CreditProgram = SharedCreditProgram;
@@ -143,6 +147,7 @@ export interface DecisionCase {
   policyFileName: string;
   snapshot: {
     schemaVersion: "decision-input-snapshot-v8" | "decision-input-snapshot-v9" | "decision-input-snapshot-v10";
+    fraudControls?: FraudControls;
     facility?: FacilityBinding;
     snapshotDigest: string;
     caseId: string;
@@ -182,6 +187,11 @@ export interface DecisionCase {
     product: string;
     country: string;
     industry: string;
+    maximumDraweeExposureSat?: string;
+    maximumDrawerExposureSat?: string;
+    buyerConfirmationRequiredAboveSat?: string;
+    invoiceToBillToleranceBps?: number;
+    maximumBillSumWithoutTaxDocumentSat?: string;
     maximumEffectiveAnnualBps: number;
     maximumFeeRatioBps: number;
     /** Optional in older projections; absent means adjustment is not shown as available. */

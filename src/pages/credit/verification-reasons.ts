@@ -1,4 +1,5 @@
 import { defineMessages, type IntlShape } from "react-intl";
+import { fraudReason } from "./fraud-controls-copy";
 import { axisLabels, words, type VerificationRequest } from "./decision-types";
 
 /** Operator wording for governed verification reason codes, shared by the overview and Claim coverage. */
@@ -56,6 +57,8 @@ export function requestReason(request: Pick<VerificationRequest, "reasonCode" | 
     verification_invoice_consistency_required: reasonMessages.reasonInvoiceConsistency,
     verification_recourse_acknowledgment_required: reasonMessages.reasonRecourse,
   };
+  const fraud = fraudReason(request.reasonCode, intl);
+  if (fraud !== undefined) return fraud;
   const reason = byCode[request.reasonCode];
   return reason === undefined ? (axisLabels[request.axis] ?? words(request.axis)) : intl.formatMessage(reason);
 }

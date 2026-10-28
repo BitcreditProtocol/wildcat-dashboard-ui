@@ -1,5 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  buyerConfirmationInputSchema,
+  type BuyerConfirmation,
   billSignerReviewSchema,
   creditPolicyCatalogueSchema,
   facilityOnboardingChecksSchema,
@@ -184,5 +186,46 @@ export function useRequotePreview(request: OperatorRequotePreviewRequest | null)
     staleTime: 60_000,
     retry: false,
     placeholderData: keepPreviousData,
+  });
+}
+
+export type BuyerConfirmationCommand = Pick<
+  BuyerConfirmation,
+  "billId" | "draweeNodeId" | "method" | "contactSource" | "contactReference" | "outcome" | "note" | "performedAt"
+> & {
+  action: "record_buyer_confirmation";
+  caseId: string;
+  decisionResultDigest: string;
+};
+
+/** The BFF supplies attribution; never send operator identity or role from the browser. */
+export async function recordBuyerConfirmation(command: BuyerConfirmationCommand): Promise<void> {
+  const { action, caseId, decisionResultDigest, ...input } = command;
+  const confirmation = buyerConfirmationInputSchema.parse(input);
+  const response = await authenticatedFetch("/api/ai-credit/operator-buyer-confirmations", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ...confirmation, action, caseId, decisionResultDigest }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    const message =
+      typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
+        ? body.error
+        : "Buyer confirmation request failed";
+    throw new Error(`${message} (${response.status})`);
+  }
+}
+
+export function useRecordBuyerConfirmation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: recordBuyerConfirmation,
+    onSuccess: async () => {
+      // Cancel older reads before fetching the new snapshot: stale data must not restore old authority.
+      await client.cancelQueries({ queryKey: ["ai-credit", "decisions"] });
+      await client.invalidateQueries({ queryKey: ["ai-credit", "decisions"] });
+    },
   });
 }
