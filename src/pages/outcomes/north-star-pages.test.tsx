@@ -171,6 +171,22 @@ describe("Help requests", () => {
     expect(getByRole(page, "alert").textContent).toContain("The Mint cannot serve this data right");
   });
 
+  it("keeps showing a failed refresh after an earlier empty read", async () => {
+    let fail = false;
+    vi.stubGlobal(
+      "fetch",
+      routeFetch({ "/api/ai-credit/applicant-help": () => (fail ? new Response(null, { status: 503 }) : json({ ...view, requests: [] })) })
+    );
+    const { page, client } = await renderWithProviders(<ApplicantHelpCard billId="bitcrtFincaVerdeGT" />, "/quotes/quote-1");
+    expect(page.querySelector("section")).toBeNull();
+    fail = true;
+    await act(async () => {
+      await client.refetchQueries({ queryKey: ["ai-credit", "applicant-help"] });
+    });
+    await flush();
+    expect(getByRole(page, "alert").textContent).toContain("The Mint cannot serve this data right");
+  });
+
   it("shows only this bill's requests on a quote and nothing for others", async () => {
     vi.stubGlobal("fetch", routeFetch({ "/api/ai-credit/applicant-help": () => json(view) }));
     const { page } = await renderWithProviders(<ApplicantHelpCard billId="bitcrtOtherBi11" />, "/quotes/quote-2");

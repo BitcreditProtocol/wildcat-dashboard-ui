@@ -83,6 +83,16 @@ const promptObjectives = defineMessages({
     defaultMessage: "Answer the Mint's evidence request",
     description: "Recorded objective for an exact governed Mint clarification request",
   },
+  "aiCredit.interview.useOfFunds": {
+    id: "credit.livePrompt.useCorrection",
+    defaultMessage: "Correct the use of proceeds",
+    description: "Recorded objective when an applicant without the assistant re-answers the use of proceeds",
+  },
+  "aiCredit.interview.correctionLimit": {
+    id: "credit.livePrompt.correctionLimit",
+    defaultMessage: "No room left to correct answers",
+    description: "Recorded objective when a correction round no longer fits the application's budgets",
+  },
 } satisfies Record<InterviewAssistantTemplate, { id: string; defaultMessage: string; description: string }>);
 
 const messages = defineMessages({

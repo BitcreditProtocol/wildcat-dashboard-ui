@@ -135,25 +135,23 @@ export function ApplicantHelpCard({ billId }: { billId: string }) {
   const intl = useIntl();
   const query = useApplicantHelp();
   const requests = (query.data?.requests ?? []).filter((request) => request.billId === billId);
-  // Unavailable is not the same as "no questions": say so, so a waiting applicant is not missed.
-  if (query.error && query.data === undefined) {
-    return (
-      <section className="space-y-2 rounded-lg border border-border p-4">
-        <h3 className="font-medium">{intl.formatMessage(messages.quoteCardUnavailable)}</h3>
-        <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />
-      </section>
-    );
-  }
-  if (requests.length === 0) return null;
+  // Unavailable is not the same as "no questions": a failed read or refresh is shown, with any
+  // requests already loaded, so a waiting applicant is not missed.
+  const unavailable =
+    query.error === null ? null : <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />;
+  if (requests.length === 0 && unavailable === null) return null;
   const ordered = [...requests.filter((one) => one.reply === null), ...requests.filter((one) => one.reply !== null)];
   return (
     <section className="space-y-3 rounded-lg border border-signal-alert/40 p-4">
-      <h3 className="font-medium">{intl.formatMessage(messages.quoteCardTitle)}</h3>
-      <ul className="space-y-3">
-        {ordered.map((request) => (
-          <HelpRequestItem key={request.requestId} request={request} showQuoteLink={false} />
-        ))}
-      </ul>
+      <h3 className="font-medium">{intl.formatMessage(requests.length === 0 ? messages.quoteCardUnavailable : messages.quoteCardTitle)}</h3>
+      {unavailable}
+      {ordered.length > 0 && (
+        <ul className="space-y-3">
+          {ordered.map((request) => (
+            <HelpRequestItem key={request.requestId} request={request} showQuoteLink={false} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
