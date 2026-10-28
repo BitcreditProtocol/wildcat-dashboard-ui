@@ -469,3 +469,13 @@ describe("signed offer binding", () => {
     expect(signedAuthorizationMatchesOffer(boundAuthorization, { ...expected, offerExpiresOn: "2026-08-24" })).toBe(false);
   });
 });
+
+describe("typed finance lock conflicts", () => {
+  it.each(["finance_lock_held_elsewhere", "finance_lock_check_incomplete"])(
+    "preserves code %s rather than upstream prose",
+    async (code) => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(false, 409, { code, error: "opaque upstream detail" })));
+      await expect(recordOperatorDecision(command, approver)).resolves.toEqual({ ok: false, error: code });
+    }
+  );
+});

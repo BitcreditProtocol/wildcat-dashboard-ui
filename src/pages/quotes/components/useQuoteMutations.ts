@@ -1,3 +1,4 @@
+import { FinanceLockConflictError, financeLockConflictCode } from "@/pages/credit/finance-lock-errors";
 import { toast } from "@bitcredit/ui-library";
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
@@ -121,7 +122,12 @@ export function useQuoteMutations(quoteId: string, billId: string) {
         method: "PUT",
         signal: AbortSignal.timeout(10_000),
       });
-      if (!response.ok) throw new Error(`Mint authorization command failed (${String(response.status)})`);
+      if (!response.ok) {
+        const body: unknown = await response.json().catch(() => null);
+        const lockCode = financeLockConflictCode(response.status, body);
+        if (lockCode) throw new FinanceLockConflictError(lockCode);
+        throw new Error(`Mint authorization command failed (${String(response.status)})`);
+      }
     },
     onSettled: () => {
       offerToastRef.current?.dismiss();
@@ -251,7 +257,8 @@ export function useQuoteMutations(quoteId: string, billId: string) {
     try {
       await offerQuote.mutateAsync(signedAuthorization);
       return true;
-    } catch {
+    } catch (error) {
+      if (error instanceof FinanceLockConflictError) return false;
       if (await reconcileQuoteUpdate(expected)) return true;
       return false;
     }

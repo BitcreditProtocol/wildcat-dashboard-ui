@@ -1,3 +1,5 @@
+import { PublicListingDetails, DirectoryCoveragePanel } from "@/pages/directory/PublicDirectoryPanels";
+import { publicDirectoryMessages } from "@/pages/directory/public-directory-copy";
 import type { BillSignerParty, BillSignerReview } from "@bitcredit/ai-credit-shared";
 import { Button } from "@bitcredit/ui-library";
 import { CircleAlert, Info } from "lucide-react";
@@ -136,6 +138,24 @@ function PartyCard({ party }: { party: BillSignerParty }) {
   const list = (items: string[]) => intl.formatList(items, { type: "conjunction" });
   return (
     <li className="space-y-3 px-4 py-4">
+      <div className="rounded border p-3">
+        {party.publicListing?.subjectNodeId === party.ref ? (
+          <PublicListingDetails listing={party.publicListing} />
+        ) : (
+          <>
+            <p className="break-all font-mono text-xs">{party.ref}</p>
+            <p className="text-xs">
+              {intl.formatMessage(
+                party.publicListing === undefined
+                  ? publicDirectoryMessages.notRecorded
+                  : party.publicListing === null
+                    ? publicDirectoryMessages.noListing
+                    : publicDirectoryMessages.identityMismatch
+              )}
+            </p>
+          </>
+        )}
+      </div>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="min-w-0 break-words text-sm font-medium">
           {name}
@@ -239,6 +259,8 @@ export function BillSignerReviewView({ review }: { review: BillSignerReview }) {
   const list = (items: string[]) => intl.formatList(items, { type: "conjunction" });
   return (
     <div className="space-y-5">
+      <p className="text-xs text-muted-foreground">{intl.formatMessage(publicDirectoryMessages.scope)}</p>
+      <DirectoryCoveragePanel coverage={review.publicCoverage} />
       {!review.historyAvailable && (
         <p role="status" className="flex items-start gap-2 rounded-lg border border-signal-alert/30 bg-signal-alert/5 p-3 text-sm">
           <CircleAlert className="mt-0.5 size-4 shrink-0 text-signal-alert" aria-hidden="true" />

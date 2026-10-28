@@ -234,6 +234,18 @@ export const fraudMessages = defineMessages({
 });
 
 export const fraudReasonMessages = defineMessages({
+  finance_lock_held_elsewhere: {
+    id: "credit.fraud.gate.lockHeld",
+    defaultMessage:
+      "Finance lock held elsewhere · hard gate; operators cannot override it. The holding Mint must release the lock or it must expire before a fresh check can permit an offer.",
+    description: "Non waivable finance lock gate and resolution",
+  },
+  finance_lock_check_incomplete: {
+    id: "credit.fraud.gate.lockIncomplete",
+    defaultMessage:
+      "Finance lock check incomplete · verification required. Restore followed-relay reachability and retry; missing coverage never establishes clearance.",
+    description: "Incomplete finance lock verification hold and retry",
+  },
   invoice_cancelled_at_tax_authority: {
     id: "credit.fraud.gate.cancelled",
     defaultMessage: "Invoice cancelled at tax authority · hard gate; operators cannot waive it",

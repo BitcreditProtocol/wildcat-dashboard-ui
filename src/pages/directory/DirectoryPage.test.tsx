@@ -23,7 +23,7 @@ describe("DirectoryPage", () => {
     expect(request.mock.calls[0]?.[0]).toBe("/api/ai-credit/participant-directory");
     expect(requestBody(request.mock.calls[0]?.[1])).toEqual({ query: "Finca Verde" });
     expect(page.querySelector("input")?.value).toBe("Finca Verde");
-    expect(page.textContent).toContain("never shared with or read from other Mints");
+    expect(page.textContent).toContain("Optional public listings are copied from observed relays");
     expect(page.textContent).toContain("Results for “Finca Verde”");
     expect(page.textContent).toContain("90% match");
     expect(page.textContent).toContain("Also named: Verde Finca S.A.");

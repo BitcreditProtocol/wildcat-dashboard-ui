@@ -40,6 +40,7 @@ interface MockQueryResult {
 const seenQueryOptions: MockQueryOptions[] = [];
 const mockUseQuery = vi.fn<(options: MockQueryOptions) => MockQueryResult>();
 const mockInvalidateQueries = vi.fn();
+const mockResetOffer = vi.fn();
 const mockRecordOperatorDecision =
   vi.fn<(input: OperatorDecisionInput) => Promise<OperatorDecisionSuccess | { ok: false; error: string }>>();
 const mockAskApplicant =
@@ -164,16 +165,21 @@ vi.mock("./components/MintRiskAssessmentDrawer", () => ({
   MintRiskAssessmentDrawer: ({ children }: { children: ReactNode }) => children,
 }));
 
+let offerConfirmationLockError: string | undefined;
+
 vi.mock("./components/OfferConfirmation", () => ({
   OfferConfirmation: ({
+    lockError,
     onSubmit,
     onOpenChange,
     open,
   }: {
+    lockError?: string;
     onSubmit: (data: OfferFormResult) => void;
     onOpenChange: (open: boolean) => void;
     open: boolean;
   }) => {
+    offerConfirmationLockError = lockError;
     offerConfirmationSubmit = onSubmit;
     offerConfirmationOpenChange = onOpenChange;
     offerConfirmationOpen = open;
@@ -194,7 +200,7 @@ vi.mock("./components/useQuoteMutations", () => ({
   },
   useQuoteMutations: () => ({
     denyQuote: { isPending: false },
-    offerQuote: { isPending: false },
+    offerQuote: { isPending: false, reset: mockResetOffer },
     requestToPayMutation: { isPending: false },
     handleDenyQuote: mockHandleDenyQuote,
     handleOfferQuote: mockHandleOfferQuote,
@@ -489,6 +495,7 @@ beforeEach(() => {
   offerFormSubmit = undefined;
   offerConfirmationSubmit = undefined;
   offerConfirmationOpen = false;
+  offerConfirmationLockError = undefined;
   offerConfirmationOpenChange = undefined;
   denySubmit = undefined;
   returnInfoSubmit = undefined;
@@ -1475,4 +1482,28 @@ describe("QuoteActions", () => {
     expect(mockHandleDenyQuote).not.toHaveBeenCalled();
     expect(page.textContent).toContain("Denial syncing with Mint");
   });
+});
+
+describe("finance lock conflicts during offer confirmation", () => {
+  it.each(["finance_lock_held_elsewhere", "finance_lock_check_incomplete"])(
+    "keeps typed %s in the offer drawer until fresh review",
+    async (code) => {
+      decisionCase = governedOffer;
+      mockRecordOperatorDecision.mockResolvedValue({ ok: false, error: code });
+      renderComponent(pendingQuote);
+      act(() => {
+        offerFormSubmit?.(offerData);
+      });
+      await act(async () => {
+        offerConfirmationSubmit?.(offerData);
+        await Promise.resolve();
+      });
+      expect(offerConfirmationLockError).toContain(code.endsWith("elsewhere") ? "operators cannot override it" : "verification required");
+      expect(mockHandleOfferQuote).not.toHaveBeenCalled();
+      expect(offerConfirmationOpen).toBe(true);
+      decisionCase = { ...governedOffer, resultDigest: `sha256:${"4".repeat(64)}` };
+      rerenderComponent(pendingQuote);
+      expect(offerConfirmationLockError).toBeUndefined();
+    }
+  );
 });

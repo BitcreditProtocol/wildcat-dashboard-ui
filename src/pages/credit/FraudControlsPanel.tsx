@@ -2,6 +2,7 @@ import type { InvoiceRecordV2 } from "@bitcredit/ai-credit-shared";
 import { Card, CardContent } from "@bitcredit/ui-library";
 import type { ReactNode } from "react";
 import { useIntl } from "react-intl";
+import { FinanceLocksPanel, BuyerRegistrationPanel, CrossMintEvidencePanel } from "./NetworkControlsPanels";
 import { BuyerConfirmationPanel } from "./BuyerConfirmationPanel";
 import type { DecisionCase } from "./decision-types";
 import { fraudMessages as m, fraudReason } from "./fraud-controls-copy";
@@ -211,7 +212,16 @@ export function FraudControlsPanel({ decisionCase, capability }: { decisionCase:
             ))}
           </ul>
         )}
-        <InvoiceTaxAuthorityPanel decisionCase={decisionCase} />
+        <div className="grid gap-5 lg:grid-cols-2">
+          <InvoiceTaxAuthorityPanel decisionCase={decisionCase} />
+          <BuyerRegistrationPanel decisionCase={decisionCase} />
+        </div>
+        <div className="border-t pt-5">
+          <FinanceLocksPanel decisionCase={decisionCase} capability={capability} />
+        </div>
+        <div className="border-t pt-5">
+          <CrossMintEvidencePanel decisionCase={decisionCase} />
+        </div>
         <div className="border-t pt-5">
           <CounterpartyExposurePanel decisionCase={decisionCase} />
         </div>

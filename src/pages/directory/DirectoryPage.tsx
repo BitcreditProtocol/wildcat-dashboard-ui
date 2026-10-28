@@ -15,6 +15,9 @@ import {
   ReviewSignalLabel,
 } from "@/pages/mint-checks/MintCheckParts";
 
+import { FederationStatusPanel, PublicDirectoryResults } from "./PublicDirectoryPanels";
+import { publicDirectoryMessages } from "./public-directory-copy";
+
 const messages = defineMessages({
   title: { id: "directory.title", defaultMessage: "Directory", description: "Mint-local participant directory page title" },
   description: {
@@ -25,7 +28,8 @@ const messages = defineMessages({
   },
   local: {
     id: "directory.local",
-    defaultMessage: "Mint-local: built from this Mint’s own records, never shared with or read from other Mints.",
+    defaultMessage:
+      "Local records come from this Mint. Optional public listings are copied from observed relays and shown with separate provenance.",
     description: "The directory is not a central registry",
   },
   search: {
@@ -110,6 +114,7 @@ function ParticipantCard({ participant, score }: { participant: DirectoryPartici
           <p>{intl.formatMessage(messages.registration, { numbers: participant.registrationNumbers.join(", ") })}</p>
         )}
       </div>
+      <span className="inline-block rounded border px-1.5 text-xs">{intl.formatMessage(publicDirectoryMessages.local)}</span>
       <ParticipantSourceList sources={participant.sources} />
       <p className="break-all font-mono text-[11px] text-muted-foreground">{participant.ref}</p>
     </li>
@@ -120,6 +125,8 @@ function DirectoryResults({ directory }: { directory: ParticipantDirectoryRespon
   const intl = useIntl();
   return (
     <div className="space-y-6">
+      <FederationStatusPanel directory={directory} />
+      <PublicDirectoryResults directory={directory} />
       <p className="text-sm text-muted-foreground" role="status">
         {intl.formatMessage(messages.size, {
           count: directory.size,

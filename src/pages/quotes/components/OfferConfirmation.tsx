@@ -7,6 +7,7 @@ import { useAmountFormatter } from "@/utils/amount-format";
 import { governedOfferTtl } from "./useQuoteMutations";
 
 interface OfferConfirmationProps {
+  lockError?: string;
   offerFormData?: OfferFormResult;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -14,7 +15,7 @@ interface OfferConfirmationProps {
   onSubmit: (data: OfferFormResult) => void;
 }
 
-export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending = false, onSubmit }: OfferConfirmationProps) {
+export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending = false, onSubmit, lockError }: OfferConfirmationProps) {
   const intl = useIntl();
   const { formatAmount } = useAmountFormatter();
 
@@ -44,15 +45,20 @@ export function OfferConfirmation({ offerFormData, open, onOpenChange, isPending
         onOpenChange(nextOpen);
       }}
       cancelButtonDisabled={isPending}
-      submitButtonDisabled={validTtl === null || isPending}
+      submitButtonDisabled={validTtl === null || isPending || lockError !== undefined}
       onSubmit={() => {
-        if (selectedOffer === undefined || validTtl === null) {
+        if (selectedOffer === undefined || validTtl === null || lockError !== undefined) {
           return;
         }
         onSubmit(selectedOffer);
       }}
     >
       <div className="flex flex-col gap-4 px-4 py-4">
+        {lockError && (
+          <p role="alert" className="text-sm text-destructive">
+            {lockError}
+          </p>
+        )}
         <div className="flex justify-between items-center">
           <Text variant="label" className="w-48">
             {intl.formatMessage({

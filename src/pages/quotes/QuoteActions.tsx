@@ -1,3 +1,5 @@
+import { financeLockCode, FinanceLockConflictError, type FinanceLockCode } from "@/pages/credit/finance-lock-errors";
+import { fraudReason } from "@/pages/credit/fraud-controls-copy";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, LoaderIcon } from "lucide-react";
@@ -135,6 +137,7 @@ export function QuoteActions({
   });
   const addressToPay: string | undefined = waitingPaymentData?.address_to_pay ?? historyRequest?.paymentAddress;
 
+  const [offerLockError, setOfferLockError] = useState<FinanceLockCode>();
   const [offerFormData, setOfferFormData] = useState<OfferFormResult>();
   const [offerFormDrawerOpen, setOfferFormDrawerOpen] = useState(false);
   const [offerConfirmDrawerOpen, setOfferConfirmDrawerOpen] = useState(false);
@@ -354,7 +357,14 @@ export function QuoteActions({
     !ebillPaidEff &&
     !requestedToPayEff;
   const { offerQuote, requestToPayMutation, handleOfferQuote, handleRequestToPay } = useQuoteMutations(value.id, billId);
+  const resetOffer = offerQuote.reset;
+  useEffect(() => {
+    setOfferLockError(undefined);
+    resetOffer();
+  }, [decisionCase?.resultDigest, value.id, resetOffer]);
   const governanceFailed = (error: string) => {
+    const lockCode = financeLockCode(error);
+    if (lockCode) setOfferLockError(lockCode);
     toast({
       title: intl.formatMessage(
         {
@@ -362,7 +372,7 @@ export function QuoteActions({
           defaultMessage: "Could not confirm the decision: {error}. Check the current status before retrying; your inputs were kept.",
           description: "Unconfirmed operator command outcome; a timeout does not prove that the command had no effect",
         },
-        { error }
+        { error: fraudReason(error, intl) ?? error }
       ),
       variant: "error",
     });
@@ -487,6 +497,7 @@ export function QuoteActions({
       });
       return;
     }
+    setOfferLockError(undefined);
     mintActionInFlight.current = true;
     try {
       const recorded = await recordGovernance(finalData.governance);
@@ -837,6 +848,10 @@ export function QuoteActions({
 
           {closeIsPrimary && closeAction}
           <OfferConfirmation
+            lockError={fraudReason(
+              offerLockError ?? (offerQuote.error instanceof FinanceLockConflictError ? offerQuote.error.code : ""),
+              intl
+            )}
             offerFormData={offerFormData}
             open={offerConfirmDrawerOpen}
             onOpenChange={(open) => {

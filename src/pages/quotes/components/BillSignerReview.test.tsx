@@ -1,3 +1,4 @@
+import { directoryNetworkFixture, publicListingFixture, publicNodeId } from "@/pages/credit/network-controls-test-fixtures";
 import { fireEvent, getByRole } from "@testing-library/dom";
 import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -86,5 +87,29 @@ describe("BillSignerReviewPanel", () => {
     expect(page.querySelector('[role="alert"]')).toBeNull();
     expect(page.textContent).toContain("Signers on the bill");
     expect(page.textContent).toContain("Finca Verde");
+  });
+});
+
+describe("signer public listing provenance", () => {
+  it("shows only the exact node listing for each party, with optional absence and coverage", async () => {
+    const review = signerReviewFixture();
+    review.parties[0].ref = publicNodeId;
+    review.parties[0].publicListing = publicListingFixture();
+    review.parties[1].publicListing = null;
+    review.publicCoverage = directoryNetworkFixture().publicCoverage;
+    const { page } = await renderWithProviders(<BillSignerReviewView review={review} />);
+    expect(page).toHaveTextContent(publicNodeId);
+    expect(page).toHaveTextContent("Public listing · self-declared");
+    expect(page).toHaveTextContent("BUYER-99");
+    expect(page).toHaveTextContent("No public listing observed for this exact node ID");
+    expect(page).toHaveTextContent("no adverse inference");
+    expect(page).toHaveTextContent("unreachable · query incomplete · capped");
+  });
+  it("does not show a listing for a similar name or a different node ID", async () => {
+    const review = signerReviewFixture();
+    review.parties[0].publicListing = { ...publicListingFixture(), name: "Mismatched identity listing" };
+    const { page } = await renderWithProviders(<BillSignerReviewView review={review} />);
+    expect(page).not.toHaveTextContent("Mismatched identity listing");
+    expect(page).toHaveTextContent("The returned public listing belongs to a different node ID");
   });
 });

@@ -1,3 +1,4 @@
+import { financeLockConflictCode } from "./finance-lock-errors";
 import { authenticatedFetch } from "@/lib/api-client";
 import { operatorQuestionTextSchema, type InformationNeedReview, type InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
 import type { MintQuoteDenialStatus, OperatorMaterialEvidenceSelection, SubmittedEvidence } from "./decision-types";
@@ -243,7 +244,7 @@ function safeMessage(value: unknown, fallback: string): string {
 async function responseError(response: Response): Promise<string> {
   const fallback = `${FALLBACK_ERROR} (${String(response.status)})`;
   const body: unknown = await response.json().catch(() => null);
-  return safeMessage(isRecord(body) ? body.error : undefined, fallback);
+  return financeLockConflictCode(response.status, body) ?? safeMessage(isRecord(body) ? body.error : undefined, fallback);
 }
 
 function isSignedOfferAuthorization(value: unknown): value is SignedOfferAuthorization {
