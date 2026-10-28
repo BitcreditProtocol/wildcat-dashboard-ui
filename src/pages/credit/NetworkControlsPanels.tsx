@@ -136,6 +136,23 @@ function AttestationCard({ evidence }: { evidence: NonNullable<FraudControls["cr
     const timer = window.setTimeout(() => setExpired(true), Math.min(delay, 2_147_483_647));
     return () => window.clearTimeout(timer);
   }, [a.validUntil]);
+  const revoked =
+    evidence.validity === "revoked" ||
+    (evidence.revocation !== undefined && evidence.revocation.state !== "none") ||
+    (evidence.revocation?.receipts.length ?? 0) > 0;
+  const validity = revoked
+    ? m.validityRevoked
+    : expired || evidence.validity === "expired"
+      ? m.validityExpired
+      : evidence.validity === "active"
+        ? m.validityActive
+        : m.validityUnknown;
+  const usability =
+    revoked || expired || evidence.validity === "expired" || evidence.usableForDecisions === false
+      ? m.notUsable
+      : evidence.usableForDecisions === true && evidence.validity === "active" && evidence.revocation?.state === "none"
+        ? m.usable
+        : m.usabilityUnknown;
   const time = (value: number | null) => (value === null ? intl.formatMessage(m.unspecified) : new Date(value * 1000).toISOString());
   return (
     <article className="space-y-2 rounded-md border p-3">
@@ -155,7 +172,37 @@ function AttestationCard({ evidence }: { evidence: NonNullable<FraudControls["cr
       <p className="text-xs">{intl.formatMessage(m.freshness, { asOf: time(a.asOf), until: time(a.validUntil) })}</p>
       <p className={expired ? "text-sm text-signal-alert" : "text-xs"}>{intl.formatMessage(expired ? m.expired : m.current)}</p>
       <p className="text-xs">{intl.formatMessage(m.signature)}</p>
-      <p className="text-xs">{intl.formatMessage(m.revocation)}</p>
+      <p className="text-xs">{intl.formatMessage(validity)}</p>
+      <p className="text-sm font-medium">{intl.formatMessage(usability)}</p>
+      <p className="text-xs">
+        {intl.formatMessage(
+          !evidence.revocation
+            ? m.revocation
+            : evidence.revocation.state === "none"
+              ? m.revocationNone
+              : evidence.revocation.state === "pending"
+                ? m.revocationPending
+                : m.revocationAcknowledged
+        )}
+      </p>
+      <div className="space-y-1 text-xs">
+        <h5 className="font-medium">{intl.formatMessage(m.receipts)}</h5>
+        {evidence.revocation?.receipts.length ? (
+          <ul className="space-y-1 break-all">
+            {evidence.revocation.receipts.map((receipt, i) => (
+              <li key={`${receipt.grantId}:${receipt.revokeDigest}:${i}`}>
+                {intl.formatMessage(m.receipt, {
+                  grant: receipt.grantId,
+                  digest: receipt.revokeDigest,
+                  status: intl.formatMessage(receipt.status === "revoked" ? m.receiptRevoked : m.receiptReleased),
+                })}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>{intl.formatMessage(m.noReceipts)}</p>
+        )}
+      </div>
       <p className="text-xs">
         {intl.formatMessage(m.observations, {
           acquired: intl.formatMessage(

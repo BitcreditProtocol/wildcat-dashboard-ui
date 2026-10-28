@@ -2,6 +2,7 @@ import { fireEvent, screen, within } from "@testing-library/dom";
 import { useQuery } from "@tanstack/react-query";
 import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { orientationFixture } from "./applicant-capacity-test-fixtures";
 import { BuyerConfirmationPanel } from "./BuyerConfirmationPanel";
 import { CounterpartyExposurePanel, FraudControlsPanel, InvoiceTaxAuthorityPanel } from "./FraudControlsPanel";
 import { cleanup, flush, json, renderWithProviders, requestBody, routeFetch } from "@/pages/mint-checks/mint-check-test-render";
@@ -36,6 +37,26 @@ async function fillForm(outcome: BuyerConfirmation["outcome"] = "confirmed_oblig
 }
 
 describe("invoice and tax authority panel", () => {
+  it("renders synthetic orientation money and the exact rate, snapshot provenance and sat-only boundary", async () => {
+    const one = fraudCaseFixture();
+    if (!one.snapshot.fraudControls) throw new Error("Missing fraud controls");
+    Object.assign(one.snapshot.fraudControls.taxAuthority, orientationFixture);
+    await renderWithProviders(<InvoiceTaxAuthorityPanel decisionCase={one} />);
+    const panel = screen.getByRole("region", { name: "Invoice and tax authority" });
+    for (const text of [
+      "Bill face orientation: 61600.00 GTQ",
+      "Rate: 1 BTC = 770000.00 GTQ",
+      "Synthetic · orientation-only",
+      "Quote, fee, authorization and settlement amounts remain in sat",
+      "synthetic-fx-v1",
+      "2026-10-28",
+      orientationFixture.fxRate.snapshotDigest,
+    ])
+      expect(panel).toHaveTextContent(text);
+    expect(panel).not.toHaveTextContent("orientation value unavailable");
+    expect(one.snapshot.bill?.faceValueSat).toBe("8000000");
+  });
+
   it("shows original currency amounts, register provenance and per-field evidence without inventing FX money", async () => {
     await renderWithProviders(<InvoiceTaxAuthorityPanel decisionCase={fraudCaseFixture()} />);
     const panel = screen.getByRole("region", { name: "Invoice and tax authority" });

@@ -136,6 +136,82 @@ describe("buyer registration comparison", () => {
 });
 
 describe("cross Mint evidence", () => {
+  it.each([
+    ["none", "active", true, "Usable for decisions in this snapshot"],
+    ["pending", "revoked", false, "Not usable for decisions"],
+    ["acknowledged", "revoked", false, "Not usable for decisions"],
+    ["none", "expired", false, "Not usable for decisions"],
+    ["none", "active", false, "Not usable for decisions"],
+    ["pending", "active", true, "Not usable for decisions"],
+    ["none", "revoked", true, "Not usable for decisions"],
+    ["none", "expired", true, "Not usable for decisions"],
+  ] as const)("shows %s revocation, %s validity and safe decision usability (%s)", async (state, validity, usableForDecisions, label) => {
+    const one = fraudCaseFixture();
+    const evidence = crossMintFixture();
+    evidence.revocation = { state, receipts: [] };
+    evidence.validity = validity;
+    evidence.usableForDecisions = usableForDecisions;
+    if (one.snapshot.fraudControls) one.snapshot.fraudControls.crossMint = [evidence];
+    await renderWithProviders(<CrossMintEvidencePanel decisionCase={one} />);
+    expect(screen.getByRole("article")).toHaveTextContent(label);
+    expect(screen.getByRole("article")).toHaveTextContent(
+      state === "none"
+        ? "Revocation: none recorded"
+        : state === "pending"
+          ? "Revocation: pending acknowledgement"
+          : "Revocation: acknowledged"
+    );
+    if (label === "Not usable for decisions")
+      expect(screen.getByRole("article")).not.toHaveTextContent("Usable for decisions in this snapshot");
+  });
+
+  it("retains verified receipts including already-released disclosure history", async () => {
+    const one = fraudCaseFixture();
+    const evidence = crossMintFixture();
+    evidence.revocation = {
+      state: "acknowledged",
+      receipts: [
+        { grantId: "synthetic-grant-1", revokeDigest: "d".repeat(64), status: "revoked" },
+        { grantId: "synthetic-grant-2", revokeDigest: "e".repeat(64), status: "already_released" },
+      ],
+    };
+    evidence.validity = "revoked";
+    evidence.usableForDecisions = false;
+    if (one.snapshot.fraudControls) one.snapshot.fraudControls.crossMint = [evidence];
+    await renderWithProviders(<CrossMintEvidencePanel decisionCase={one} />);
+    const article = screen.getByRole("article");
+    for (const text of [
+      "synthetic-grant-1",
+      "synthetic-grant-2",
+      "d".repeat(64),
+      "e".repeat(64),
+      "Validity: revoked",
+      "Revocation: acknowledged",
+      "already released · acknowledges revocation without erasing historical disclosure",
+      "Not usable for decisions",
+    ])
+      expect(article).toHaveTextContent(text);
+  });
+
+  it("turns an explicitly usable active assertion unusable when its validity period expires on screen", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const one = fraudCaseFixture();
+    const evidence = crossMintFixture();
+    evidence.revocation = { state: "none", receipts: [] };
+    evidence.validity = "active";
+    evidence.usableForDecisions = true;
+    evidence.attestation.validUntil = Math.floor(Date.now() / 1000) + 2;
+    if (one.snapshot.fraudControls) one.snapshot.fraudControls.crossMint = [evidence];
+    await renderWithProviders(<CrossMintEvidencePanel decisionCase={one} />);
+    expect(screen.getByRole("article")).toHaveTextContent("Usable for decisions in this snapshot");
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(screen.getByRole("article")).toHaveTextContent("Validity: expired");
+    expect(screen.getByRole("article")).toHaveTextContent("Not usable for decisions");
+    expect(screen.getByRole("article")).not.toHaveTextContent("Usable for decisions in this snapshot");
+  });
+
   it("attributes scoped observations and signature to the issuer without upgrading evidence or issued value", async () => {
     const one = fraudCaseFixture();
     const evidence = crossMintFixture();
@@ -151,7 +227,8 @@ describe("cross Mint evidence", () => {
       "valid until",
       "Within its stated validity period",
       "Signature verified by the service",
-      "Revocation status is not exposed",
+      "Revocation status is not exposed in this historical snapshot",
+      "Decision usability not recorded; do not rely on this historical assertion",
       "Acquisition recorded: no",
       "Issuance: unknown",
       "Repayment: unknown",

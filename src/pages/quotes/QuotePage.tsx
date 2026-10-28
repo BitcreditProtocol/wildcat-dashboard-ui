@@ -49,6 +49,7 @@ import { CaseAgentDiscussion } from "@/pages/credit/CaseAgentDiscussion";
 import { InformationNeedsPanel } from "@/pages/credit/InformationNeedsPanel";
 import { CaseHistory } from "@/pages/credit/CaseHistory";
 import { CasePreparationPanel } from "@/pages/credit/CasePreparationPanel";
+import { ApplicantCapacityPanel } from "@/pages/credit/ApplicantCapacityPanel";
 import { FraudControlsPanel } from "@/pages/credit/FraudControlsPanel";
 import { CaseDecisionPanel } from "@/pages/credit/CaseDecisionPanel";
 import { feeBreakdown } from "@/pages/credit/fee-breakdown";
@@ -528,6 +529,7 @@ function PageBody({ id }: { id: string }) {
           {decisionCase !== undefined && (
             <FraudControlsPanel key={decisionCase.resultDigest} decisionCase={decisionCase} capability={operatorCapability.capability} />
           )}
+          {decisionCase !== undefined && <ApplicantCapacityPanel decisionCase={decisionCase} />}
           {decisionCase?.facilityCoverage && <FacilityCoveragePanel coverage={decisionCase.facilityCoverage} quoteId={quote.id} />}
           {!decisionCase?.facilityCoverage && facilityUnderReview && <FacilityCoverageUnavailable binding={facilityUnderReview} />}
           <CaseWorkspace

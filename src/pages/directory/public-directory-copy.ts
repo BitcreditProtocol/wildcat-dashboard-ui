@@ -59,13 +59,6 @@ export const publicDirectoryMessages = defineMessages({
     defaultMessage: "{score, number, percent} similarity · ranking aid only",
     description: "Public directory deterministic similarity score",
   },
-  health: { id: "directory.federationHealth", defaultMessage: "Federation and directory health", description: "Federation status section" },
-  gap: {
-    id: "directory.federationGap",
-    defaultMessage:
-      "This Mint’s federation key, descriptor, followed Mints and inbox relay health are unavailable through the operator service. Directory relay observations below do not establish health across the federation.",
-    description: "Exact operator BFF API gap",
-  },
   networkUnknown: {
     id: "directory.networkUnknown",
     defaultMessage: "Network coverage: unknown. Local relay coverage never establishes network-wide clearance.",

@@ -123,15 +123,3 @@ export function DirectoryCoveragePanel({
     </div>
   );
 }
-
-export function FederationStatusPanel({ directory }: { directory: ParticipantDirectoryResponse }) {
-  const intl = useIntl();
-  const m = publicDirectoryMessages;
-  return (
-    <section aria-label={intl.formatMessage(m.health)} className="space-y-3 rounded-md border p-4">
-      <h2 className="text-lg font-semibold">{intl.formatMessage(m.health)}</h2>
-      <p className="text-sm text-signal-alert">{intl.formatMessage(m.gap)}</p>
-      <DirectoryCoveragePanel coverage={directory.publicCoverage} sync={directory.publicSync} />
-    </section>
-  );
-}

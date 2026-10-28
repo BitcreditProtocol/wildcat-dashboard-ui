@@ -52,13 +52,6 @@ export const fraudMessages = defineMessages({
   tax: { id: "credit.fraud.tax", defaultMessage: "Tax total", description: "Original invoice tax total" },
   lines: { id: "credit.fraud.lines", defaultMessage: "Invoice lines", description: "Invoice line items" },
   bill: { id: "credit.fraud.bill", defaultMessage: "This bill", description: "Bill face value included once" },
-  orientation: {
-    id: "credit.fraud.orientation",
-    defaultMessage:
-      "FX-converted orientation value unavailable for this snapshot. Conversion is for consistency only; quote amounts remain in sat.",
-    description: "No orientation money fabricated from an FX digest",
-  },
-  fx: { id: "credit.fraud.fx", defaultMessage: "FX snapshot", description: "Versioned FX provenance digest" },
   tolerance: {
     id: "credit.fraud.tolerance",
     defaultMessage: "Invoice / bill tolerance: {result} · policy {bps} bps",

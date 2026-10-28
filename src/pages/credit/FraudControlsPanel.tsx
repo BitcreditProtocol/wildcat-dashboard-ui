@@ -3,6 +3,7 @@ import { Card, CardContent } from "@bitcredit/ui-library";
 import type { ReactNode } from "react";
 import { useIntl } from "react-intl";
 import { FinanceLocksPanel, BuyerRegistrationPanel, CrossMintEvidencePanel } from "./NetworkControlsPanels";
+import { FxOrientation } from "./FxOrientation";
 import { BuyerConfirmationPanel } from "./BuyerConfirmationPanel";
 import type { DecisionCase } from "./decision-types";
 import { fraudMessages as m, fraudReason } from "./fraud-controls-copy";
@@ -116,14 +117,7 @@ export function InvoiceTaxAuthorityPanel({ decisionCase }: { decisionCase: Decis
           {intl.formatMessage(m.pdf, { result: tax ? intl.formatMessage(m[tax.pdfConsistency]) : intl.formatMessage(m.unavailable) })}
         </p>
       )}
-      {usesFx && (
-        <>
-          <p className="text-xs text-muted-foreground">{intl.formatMessage(m.orientation)}</p>
-          <dl>
-            <Fact label={intl.formatMessage(m.fx)}>{tax?.fxSnapshotDigest ?? missing}</Fact>
-          </dl>
-        </>
-      )}
+      {usesFx && <FxOrientation amount={tax?.billFaceOrientation} rate={tax?.fxRate} digest={tax?.fxSnapshotDigest} />}
       {document && <p className="text-xs text-muted-foreground">{intl.formatMessage(m.checkedAt, { time: document.checkedAt })}</p>}
       <p className="text-xs text-muted-foreground">{intl.formatMessage(m.scope)}</p>
     </section>

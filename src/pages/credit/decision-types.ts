@@ -4,6 +4,7 @@
  */
 import type {
   FraudControls,
+  ApplicantCapacity,
   FacilityBinding,
   FacilityCoverage,
   ApplicantConfirmationSummary,
@@ -148,6 +149,7 @@ export interface DecisionCase {
   snapshot: {
     schemaVersion: "decision-input-snapshot-v8" | "decision-input-snapshot-v9" | "decision-input-snapshot-v10";
     fraudControls?: FraudControls;
+    applicantCapacity?: ApplicantCapacity;
     facility?: FacilityBinding;
     snapshotDigest: string;
     caseId: string;

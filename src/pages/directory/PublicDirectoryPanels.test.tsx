@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { directoryNetworkFixture, publicNodeId } from "@/pages/credit/network-controls-test-fixtures";
 import { directoryFixture } from "@/pages/mint-checks/mint-check-test-fixtures";
 import { cleanup, json, renderWithProviders } from "@/pages/mint-checks/mint-check-test-render";
-import { DirectoryCoveragePanel, FederationStatusPanel, PublicDirectoryResults } from "./PublicDirectoryPanels";
+import { DirectoryCoveragePanel, PublicDirectoryResults } from "./PublicDirectoryPanels";
 import DirectoryPage from "./DirectoryPage";
 
 vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: RequestInit) => fetch(path, init) }));
@@ -15,7 +15,9 @@ afterEach(() => {
 describe("public directory and federation health", () => {
   it("keeps a similar name under a new identity visible alongside local records with separate provenance", async () => {
     const directory = { ...directoryFixture("Finca Verde"), ...directoryNetworkFixture() };
-    const fetch = vi.fn().mockResolvedValue(json(directory));
+    const fetch = vi.fn((path: string) =>
+      Promise.resolve(path === "/api/ai-credit/participant-directory" ? json(directory) : json({}, 503))
+    );
     vi.stubGlobal("fetch", fetch);
     const { page } = await renderWithProviders(<DirectoryPage />, "/directory?q=Finca%20Verde");
     const listings = screen.getByRole("region", { name: "Observed public listings" });
@@ -32,32 +34,10 @@ describe("public directory and federation health", () => {
       "A match is a reason to ask, never a finding",
     ])
       expect(listings).toHaveTextContent(text);
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch.mock.calls[0]?.[0]).toBe("/api/ai-credit/participant-directory");
+    expect(fetch.mock.calls.map(([path]) => path)).toEqual(
+      expect.arrayContaining(["/api/ai-credit/participant-directory", "/api/ai-credit/federation/status"])
+    );
     expect(page).not.toHaveTextContent("network clear");
-  });
-
-  it("exposes incomplete relay and bounded sync health and the exact BFF gap without a direct service call", async () => {
-    const fetch = vi.fn();
-    vi.stubGlobal("fetch", fetch);
-    const directory = { ...directoryFixture(), ...directoryNetworkFixture() };
-    await renderWithProviders(<FederationStatusPanel directory={directory} />);
-    const health = screen.getByRole("region", { name: "Federation and directory health" });
-    for (const text of [
-      "inbox relay health are unavailable through the operator service",
-      "Network coverage: unknown",
-      "unreachable",
-      "query incomplete",
-      "capped",
-      "relay_timeout",
-      "last successful sync",
-      "backfill window 3600 seconds",
-      "history before",
-      "skipped",
-      "capped; incomplete",
-    ])
-      expect(health).toHaveTextContent(text);
-    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("does not turn an empty public search into clearance or an unavailable lookup into no listing", async () => {

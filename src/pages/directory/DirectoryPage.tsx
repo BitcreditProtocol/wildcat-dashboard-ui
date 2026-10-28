@@ -15,7 +15,8 @@ import {
   ReviewSignalLabel,
 } from "@/pages/mint-checks/MintCheckParts";
 
-import { FederationStatusPanel, PublicDirectoryResults } from "./PublicDirectoryPanels";
+import { PublicDirectoryResults } from "./PublicDirectoryPanels";
+import { FederationStatusPanel } from "./FederationStatusPanel";
 import { publicDirectoryMessages } from "./public-directory-copy";
 
 const messages = defineMessages({
@@ -125,7 +126,6 @@ function DirectoryResults({ directory }: { directory: ParticipantDirectoryRespon
   const intl = useIntl();
   return (
     <div className="space-y-6">
-      <FederationStatusPanel directory={directory} />
       <PublicDirectoryResults directory={directory} />
       <p className="text-sm text-muted-foreground" role="status">
         {intl.formatMessage(messages.size, {
@@ -213,6 +213,7 @@ export default function DirectoryPage() {
         <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         {intl.formatMessage(messages.local)}
       </p>
+      <FederationStatusPanel />
       <Search
         value={input}
         size="sm"

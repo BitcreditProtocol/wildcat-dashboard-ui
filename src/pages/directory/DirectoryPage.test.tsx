@@ -15,13 +15,18 @@ afterEach(() => {
 describe("DirectoryPage", () => {
   it("searches the deep-linked query and shows participants and possible duplicates", async () => {
     const request = vi.fn((_path: string, init?: RequestInit) => {
+      if (_path === "/api/ai-credit/federation/status") return Promise.resolve(json({}, 503));
       const { query } = requestBody(init) as { query: string };
       return Promise.resolve(json(directoryFixture(query)));
     });
     vi.stubGlobal("fetch", request);
     const { page } = await renderWithProviders(<DirectoryPage />, "/directory?q=Finca%20Verde");
-    expect(request.mock.calls[0]?.[0]).toBe("/api/ai-credit/participant-directory");
-    expect(requestBody(request.mock.calls[0]?.[1])).toEqual({ query: "Finca Verde" });
+    expect(request.mock.calls.find(([path]) => path === "/api/ai-credit/participant-directory")?.[0]).toBe(
+      "/api/ai-credit/participant-directory"
+    );
+    expect(requestBody(request.mock.calls.find(([path]) => path === "/api/ai-credit/participant-directory")?.[1])).toEqual({
+      query: "Finca Verde",
+    });
     expect(page.querySelector("input")?.value).toBe("Finca Verde");
     expect(page.textContent).toContain("Optional public listings are copied from observed relays");
     expect(page.textContent).toContain("Results for “Finca Verde”");
@@ -43,12 +48,13 @@ describe("DirectoryPage", () => {
 
   it("follows a duplicate's link to a new search and fills the box with it", async () => {
     const request = vi.fn((_path: string, init?: RequestInit) => {
+      if (_path === "/api/ai-credit/federation/status") return Promise.resolve(json({}, 503));
       const { query } = requestBody(init) as { query: string };
       return Promise.resolve(json(directoryFixture(query)));
     });
     vi.stubGlobal("fetch", request);
     const { page } = await renderWithProviders(<DirectoryPage />, "/directory");
-    expect(requestBody(request.mock.calls[0]?.[1])).toEqual({ query: "" });
+    expect(requestBody(request.mock.calls.find(([path]) => path === "/api/ai-credit/participant-directory")?.[1])).toEqual({ query: "" });
     expect(page.textContent).toContain("Participants");
     act(() => {
       fireEvent.click(getByRole(page, "link", { name: "Look up Finca Verde S.A. in the directory" }));

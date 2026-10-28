@@ -1,6 +1,70 @@
 import { defineMessages } from "react-intl";
 
 export const networkMessages = defineMessages({
+  revocationNone: {
+    id: "credit.network.revocationNone",
+    defaultMessage: "Revocation: none recorded",
+    description: "Cross-Mint evidence: revocationNone",
+  },
+  revocationPending: {
+    id: "credit.network.revocationPending",
+    defaultMessage: "Revocation: pending acknowledgement",
+    description: "Cross-Mint evidence: revocationPending",
+  },
+  revocationAcknowledged: {
+    id: "credit.network.revocationAcknowledged",
+    defaultMessage: "Revocation: acknowledged",
+    description: "Cross-Mint evidence: revocationAcknowledged",
+  },
+  validityActive: {
+    id: "credit.network.validityActive",
+    defaultMessage: "Validity: active in this snapshot",
+    description: "Cross-Mint evidence: validityActive",
+  },
+  validityRevoked: {
+    id: "credit.network.validityRevoked",
+    defaultMessage: "Validity: revoked",
+    description: "Cross-Mint evidence: validityRevoked",
+  },
+  validityExpired: {
+    id: "credit.network.validityExpired",
+    defaultMessage: "Validity: expired",
+    description: "Cross-Mint evidence: validityExpired",
+  },
+  validityUnknown: {
+    id: "credit.network.validityUnknown",
+    defaultMessage: "Validity not recorded in this historical snapshot.",
+    description: "Cross-Mint evidence: validityUnknown",
+  },
+  usable: {
+    id: "credit.network.usable",
+    defaultMessage: "Usable for decisions in this snapshot \u00b7 attributed assertion only",
+    description: "Cross-Mint evidence: usable",
+  },
+  notUsable: { id: "credit.network.notUsable", defaultMessage: "Not usable for decisions", description: "Cross-Mint evidence: notUsable" },
+  usabilityUnknown: {
+    id: "credit.network.usabilityUnknown",
+    defaultMessage: "Decision usability not recorded; do not rely on this historical assertion.",
+    description: "Cross-Mint evidence: usabilityUnknown",
+  },
+  receipts: { id: "credit.network.receipts", defaultMessage: "Revocation receipts", description: "Cross-Mint evidence: receipts" },
+  noReceipts: {
+    id: "credit.network.noReceipts",
+    defaultMessage: "No revocation receipts recorded.",
+    description: "Cross-Mint evidence: noReceipts",
+  },
+  receipt: {
+    id: "credit.network.receipt",
+    defaultMessage: "Grant {grant} \u00b7 revocation digest {digest} \u00b7 {status}",
+    description: "Cross-Mint evidence: receipt",
+  },
+  receiptRevoked: { id: "credit.network.receiptRevoked", defaultMessage: "revoked", description: "Cross-Mint evidence: receiptRevoked" },
+  receiptReleased: {
+    id: "credit.network.receiptReleased",
+    defaultMessage: "already released \u00b7 acknowledges revocation without erasing historical disclosure",
+    description: "Cross-Mint evidence: receiptReleased",
+  },
+
   locks: { id: "credit.network.locks", defaultMessage: "Instrument finance locks", description: "Finance lock panel heading" },
   bill: { id: "credit.network.bill", defaultMessage: "Bill lock", description: "Bill instrument lock" },
   invoice: { id: "credit.network.invoice", defaultMessage: "Invoice lock", description: "Tax authority invoice instrument lock" },
@@ -147,9 +211,8 @@ export const networkMessages = defineMessages({
   },
   revocation: {
     id: "credit.network.revocation",
-    defaultMessage:
-      "Revocation status is not exposed in this snapshot. The service omits revoked or expired evidence from fresh case reads; this retained snapshot is not a live revocation check.",
-    description: "API does not expose attestation revocation state",
+    defaultMessage: "Revocation status is not exposed in this historical snapshot. This retained snapshot is not a live revocation check.",
+    description: "Older snapshots do not carry revocation display fields",
   },
   observations: {
     id: "credit.network.observations",
