@@ -11,7 +11,6 @@ import InfoPage from "./pages/info/InfoPage";
 import QuotePage from "./pages/quotes/QuotePage";
 import StatusQuotePage from "./pages/quotes/StatusQuotePage";
 import { QUOTE_STATUS_ROUTES } from "./pages/quotes/quote-status-routes";
-import EarningsPage from "./pages/balances/EarningsPage";
 import CashFlowPage from "./pages/balances/CashFlowPage";
 import { initKeycloak } from "./keycloak";
 import { client as apiClient } from "./lib/api-client";
@@ -43,8 +42,7 @@ function App() {
           <Route element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="balances" element={<BalancesPage />} />
-            <Route path="earnings" element={<EarningsPage />} />
-            <Route path="earnings/cashflow" element={<CashFlowPage />} />
+            <Route path="balances/cashflow" element={<CashFlowPage />} />
             <Route path="melt-requests" element={<MeltRequestsPage />} />
             <Route path="quotes" element={<StatusQuotePage />} />
             {QUOTE_STATUS_ROUTES.map((route) => (

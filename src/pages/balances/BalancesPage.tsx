@@ -1,8 +1,9 @@
 import { PropsWithChildren, type ReactNode, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { AppIcon, Card, CardContent, CardHeader, CardTitle, Heading, Skeleton, Text, cn } from "@bitcredit/ui-library";
-import { AlertTriangle } from "lucide-react";
+import { AppIcon, Button, Card, CardContent, CardHeader, CardTitle, Heading, Skeleton, Text, cn } from "@bitcredit/ui-library";
+import { AlertTriangle, ChartColumnIncreasingIcon } from "lucide-react";
+import { Link } from "react-router";
 import { getClowderLocalCoverageOptions, getForeignBalanceOptions } from "@/generated/client/@tanstack/react-query.gen";
 import type { Amount } from "@/generated/client/types.gen";
 import { FormattedMessage } from "react-intl";
@@ -335,9 +336,17 @@ export default function BalancesPage() {
       <Breadcrumbs>
         <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
       </Breadcrumbs>
-      <Heading as="h1" variant="page" className="mb-6 pt-4">
-        <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
-      </Heading>
+      <div className="flex flex-col gap-3 mb-4 sm:mb-0 sm:flex-row sm:items-center sm:justify-between">
+        <Heading as="h1" variant="page" className="mb-2 sm:mb-6 pt-4">
+          <FormattedMessage id="balances.page.title" defaultMessage="Balances" />
+        </Heading>
+        <Button asChild variant="outline" size="sm" className="inline-flex items-center gap-1 leading-none">
+          <Link to="/balances/cashflow">
+            <AppIcon icon={ChartColumnIncreasingIcon} weight="thin" className="h-4 w-4" />
+            <FormattedMessage id="cashflow.page.title" defaultMessage="CashFlow" />
+          </Link>
+        </Button>
+      </div>
 
       <Suspense fallback={<Loader />}>
         <PageBodyWithDevSection />
