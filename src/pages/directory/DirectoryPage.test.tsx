@@ -15,7 +15,7 @@ afterEach(() => {
 describe("DirectoryPage", () => {
   it("searches the deep-linked query and shows participants and possible duplicates", async () => {
     const request = vi.fn((_path: string, init?: RequestInit) => {
-      if (_path === "/api/ai-credit/federation/status") return Promise.resolve(json({}, 503));
+      if (_path === "/api/ai-credit/operator-federation-status") return Promise.resolve(json({}, 503));
       const { query } = requestBody(init) as { query: string };
       return Promise.resolve(json(directoryFixture(query)));
     });
@@ -48,7 +48,7 @@ describe("DirectoryPage", () => {
 
   it("follows a duplicate's link to a new search and fills the box with it", async () => {
     const request = vi.fn((_path: string, init?: RequestInit) => {
-      if (_path === "/api/ai-credit/federation/status") return Promise.resolve(json({}, 503));
+      if (_path === "/api/ai-credit/operator-federation-status") return Promise.resolve(json({}, 503));
       const { query } = requestBody(init) as { query: string };
       return Promise.resolve(json(directoryFixture(query)));
     });

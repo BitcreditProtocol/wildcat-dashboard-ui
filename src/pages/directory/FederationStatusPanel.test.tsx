@@ -16,11 +16,11 @@ afterEach(() => {
 
 describe("federation status through operator BFF", () => {
   it("reads only the authenticated GET route and renders public descriptor, followed Mints and separate inbox and sync health", async () => {
-    const fetch = vi.fn().mockResolvedValue(json({ ...federationStatusFixture(), privateKey: "must-never-render" }));
+    const fetch = vi.fn().mockResolvedValue(json(federationStatusFixture()));
     vi.stubGlobal("fetch", fetch);
     await renderWithProviders(<FederationStatusPanel />);
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toHaveBeenCalledWith("/api/ai-credit/federation/status", expect.anything());
+    expect(fetch).toHaveBeenCalledWith("/api/ai-credit/operator-federation-status", expect.anything());
     const panel = screen.getByRole("region", { name: "Federation status" });
     for (const text of [
       "This Mint’s federation descriptor",
@@ -68,7 +68,7 @@ describe("federation status through operator BFF", () => {
     vi.stubGlobal(
       "fetch",
       routeFetch({
-        "/api/ai-credit/federation/status": () => json(federationStatusFixture()),
+        "/api/ai-credit/operator-federation-status": () => json(federationStatusFixture()),
         "/api/ai-credit/participant-directory": () => json({}, 503),
       })
     );
@@ -79,6 +79,7 @@ describe("federation status through operator BFF", () => {
 
   it("rejects malformed status and credential-bearing relay URLs and never substitutes empty health", async () => {
     expect(() => parseFederationStatus({})).toThrow();
+    expect(() => parseFederationStatus({ ...federationStatusFixture(), privateKey: "must-never-render" })).toThrow();
     const status = federationStatusFixture();
     expect(() => parseFederationStatus({ ...status, inbox: [{ relay: "ws://bad.test" }] })).toThrow();
     expect(() =>

@@ -35,7 +35,7 @@ describe("public directory and federation health", () => {
     ])
       expect(listings).toHaveTextContent(text);
     expect(fetch.mock.calls.map(([path]) => path)).toEqual(
-      expect.arrayContaining(["/api/ai-credit/participant-directory", "/api/ai-credit/federation/status"])
+      expect.arrayContaining(["/api/ai-credit/participant-directory", "/api/ai-credit/operator-federation-status"])
     );
     expect(page).not.toHaveTextContent("network clear");
   });
