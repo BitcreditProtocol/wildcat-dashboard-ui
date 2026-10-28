@@ -85,8 +85,18 @@ export const cockpitMessages = defineMessages({
   drawee: { id: "cockpit.drawee", defaultMessage: "Drawee", description: "Operator dashboard cockpit: drawee" },
   maturities: {
     id: "cockpit.maturities",
-    defaultMessage: "Maturity ladder · next 90 days",
+    defaultMessage: "Maturity ladder · next {days} days",
     description: "Operator dashboard cockpit: maturities",
+  },
+  maturityHorizon: {
+    id: "cockpit.maturityHorizon",
+    defaultMessage: "Maturity horizon",
+    description: "Choose the maturity ladder's time range",
+  },
+  maturityRange: {
+    id: "cockpit.maturityRange",
+    defaultMessage: "Next {days} days",
+    description: "Maturity ladder time-range option",
   },
   days: { id: "cockpit.days", defaultMessage: "{from}–{to} days", description: "Operator dashboard cockpit: days" },
   maturityAxis: {

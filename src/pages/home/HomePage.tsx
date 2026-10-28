@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, Button } from "@bitcredit/ui-library";
 import { ArrowUpRight, Clock3, Inbox, MessageCircle, Building2, UserCheck, RefreshCw } from "lucide-react";
@@ -24,7 +25,20 @@ interface QueueAction {
 export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
   const intl = useIntl();
   const sat = (v: string) => intl.formatNumber(BigInt(v));
-  const buckets = maturityBuckets(summary);
+  const [horizon, setHorizon] = useState<90 | 365>(365);
+  const buckets = maturityBuckets(summary, Date.now(), horizon);
+  const maturityRanges =
+    horizon === 90
+      ? [
+          [0, 30],
+          [31, 60],
+          [61, 90],
+        ]
+      : [
+          [0, 90],
+          [91, 180],
+          [181, 365],
+        ];
   const paymentComplete = summary.coverage.complete && !summary.portfolio.quotes.some((q) => q.financed && q.paid === null);
   return (
     <section className="space-y-4">
@@ -92,17 +106,29 @@ export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
         <Card>
           <CardContent className="p-5">
             {paymentComplete ? (
-              <MaturityChart
-                title={intl.formatMessage(m.maturities)}
-                values={buckets.map(Number)}
-                displays={buckets.map((v) => intl.formatNumber(v, { notation: "compact" }))}
-                labels={[
-                  [0, 30],
-                  [31, 60],
-                  [61, 90],
-                ].map(([from, to]) => intl.formatMessage(m.days, { from, to }))}
-                axisLabel={intl.formatMessage(m.maturityAxis)}
-              />
+              <div className="space-y-4">
+                <label className="flex items-center justify-between gap-3 text-sm">
+                  {intl.formatMessage(m.maturityHorizon)}
+                  <select
+                    className="rounded-lg border border-divider-75 bg-background px-3 py-2"
+                    value={horizon}
+                    onChange={(event) => setHorizon(event.target.value === "90" ? 90 : 365)}
+                  >
+                    {[90, 365].map((days) => (
+                      <option key={days} value={days}>
+                        {intl.formatMessage(m.maturityRange, { days })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <MaturityChart
+                  title={intl.formatMessage(m.maturities, { days: horizon })}
+                  values={buckets.map(Number)}
+                  displays={buckets.map((v) => intl.formatNumber(v, { notation: "compact" }))}
+                  labels={maturityRanges.map(([from, to]) => intl.formatMessage(m.days, { from, to }))}
+                  axisLabel={intl.formatMessage(m.maturityAxis)}
+                />
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">{intl.formatMessage(m.maturityUnknown)}</p>
             )}

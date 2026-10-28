@@ -1,4 +1,4 @@
-import { getByRole, getAllByRole } from "@testing-library/dom";
+import { fireEvent, getByRole, getAllByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import HomePage, { PortfolioSnapshot } from "./HomePage";
 import { parseCapacity, parseMintSummary, type MintSummary } from "./operator-api";
@@ -87,6 +87,25 @@ describe("Today cockpit", () => {
     expect(page.textContent).toContain("Partial coverage");
     expect(page.textContent).toContain("Not reported");
     expect(page.textContent).toContain("ladder is unavailable");
+  });
+  it("lets operators inspect seasonal maturities beyond 90 days without counting paid or pending bills", async () => {
+    const book = summary();
+    const base = book.portfolio.quotes[0];
+    const today = Date.parse(new Date().toISOString().slice(0, 10));
+    book.portfolio.quotes = [90, 91, 180, 181, 365, 366].map((days) => ({
+      ...base,
+      maturity: new Date(today + days * 86400000).toISOString().slice(0, 10),
+      amountSat: "1",
+    }));
+    book.portfolio.quotes.push({ ...base, paid: true }, { ...base, financed: false });
+    expect(maturityBuckets(book, today, 365)).toEqual([1n, 2n, 2n]);
+    expect(maturityBuckets(book, today, 90)).toEqual([0n, 0n, 1n]);
+    const { page } = await renderWithProviders(<PortfolioSnapshot summary={book} />);
+    const selector = getByRole(page, "combobox", { name: "Maturity horizon" });
+    expect(selector).toHaveValue("365");
+    expect(page.textContent).toContain("Maturity ladder · next 365 days");
+    fireEvent.change(selector, { target: { value: "90" } });
+    expect(page.textContent).toContain("Maturity ladder · next 90 days");
   });
   it("buckets only unpaid accepted maturities, including exact UTC day boundaries", () => {
     const book = summary();
