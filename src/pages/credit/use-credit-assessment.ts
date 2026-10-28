@@ -10,11 +10,13 @@ import { selectQuoteCreditRecord } from "./quote-credit-record";
  * invokes no model; a submitted case may contain extraction produced earlier. A quote whose bill
  * has no decision simply has none — the hook returns undefined and the calling view renders nothing.
  */
-export function useCreditAssessments() {
+export function useCreditAssessments(billId?: string) {
   return useQuery({
-    queryKey: ["ai-credit", "decisions"],
+    queryKey: billId === undefined ? ["ai-credit", "decisions"] : ["ai-credit", "decisions", billId],
     queryFn: async (): Promise<DecisionCasesResponse> => {
-      const response = await authenticatedFetch("/api/ai-credit/workbench-decisions");
+      const response = await authenticatedFetch(
+        `/api/ai-credit/workbench-decisions${billId === undefined ? "" : `?billId=${encodeURIComponent(billId)}`}`
+      );
       if (!response.ok) throw new Error(`Credit adapter responded ${response.status}`);
       return parseDecisionCasesResponse(await response.json());
     },
@@ -58,7 +60,7 @@ export function useCreditAssessmentForBill(
   error: Error | null;
   updatesStatus: "live" | "reconnecting" | "unavailable" | undefined;
 } {
-  const { data, isLoading, error, fetchStatus, failureCount, isFetchedAfterMount } = useCreditAssessments();
+  const { data, isLoading, error, fetchStatus, failureCount, isFetchedAfterMount } = useCreditAssessments(billId);
   const { scopedIssue, decisionCase: recordedDecisionCase } = selectQuoteCreditRecord(data, billId, mintQuoteId);
   const state = (): CreditAssessmentForBillState => {
     if (isLoading) return { status: "loading" };

@@ -39,7 +39,7 @@ async function renderHook(
   root = createRoot(container);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   queryClient = client;
-  if (cached !== undefined) client.setQueryData(["ai-credit", "decisions"], cached, { updatedAt: 1 });
+  if (cached !== undefined) client.setQueryData(["ai-credit", "decisions", billId], cached, { updatedAt: 1 });
   act(() => {
     root?.render(
       <QueryClientProvider client={client}>
@@ -57,6 +57,14 @@ async function renderHook(
 }
 
 describe("useCreditAssessmentForBill", () => {
+  it("scopes quote reads and cache entries to the bill", async () => {
+    const read = vi.fn(() => new Promise<Response>(() => undefined));
+    vi.stubGlobal("fetch", read);
+    await renderHook("bill-a", "quote-a");
+    expect(read).toHaveBeenCalledWith("/api/ai-credit/workbench-decisions?billId=bill-a", undefined);
+    expect(queryClient?.getQueryCache().getAll()[0]?.queryKey).toEqual(["ai-credit", "decisions", "bill-a"]);
+  });
+
   it.each(["interviewing", "processing", "submitted"])(
     "shows %s initial applications by exact quote without granting assessment authority",
     async (status) => {
