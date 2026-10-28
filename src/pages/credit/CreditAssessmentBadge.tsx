@@ -67,7 +67,7 @@ export function CreditAssessmentBadge({
   quoteStatus?: "Pending" | "Denied";
 }) {
   const intl = useIntl();
-  const assessment = useCreditAssessmentForBill(billId, mintQuoteId);
+  const assessment = useCreditAssessmentForBill(billId, mintQuoteId, "book");
   const { decisionCase } = assessment;
 
   if (quoteStatus === "Denied") {

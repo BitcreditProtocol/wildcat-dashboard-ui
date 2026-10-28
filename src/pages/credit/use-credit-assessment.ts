@@ -48,7 +48,8 @@ export type CreditAssessmentForBillState =
 
 export function useCreditAssessmentForBill(
   billId: string | undefined,
-  mintQuoteId: string | undefined
+  mintQuoteId: string | undefined,
+  scope: "bill" | "book" = "bill"
 ): CreditAssessmentForBillState & {
   decisionCase?: DecisionCase;
   recordedDecisionCase?: DecisionCase;
@@ -60,7 +61,9 @@ export function useCreditAssessmentForBill(
   error: Error | null;
   updatesStatus: "live" | "reconnecting" | "unavailable" | undefined;
 } {
-  const { data, isLoading, error, fetchStatus, failureCount, isFetchedAfterMount } = useCreditAssessments(billId);
+  const { data, isLoading, error, fetchStatus, failureCount, isFetchedAfterMount } = useCreditAssessments(
+    scope === "book" ? undefined : billId
+  );
   const { scopedIssue, decisionCase: recordedDecisionCase } = selectQuoteCreditRecord(data, billId, mintQuoteId);
   const state = (): CreditAssessmentForBillState => {
     if (isLoading) return { status: "loading" };

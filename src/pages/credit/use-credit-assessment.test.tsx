@@ -15,12 +15,14 @@ function Harness({
   billId,
   mintQuoteId,
   onChange,
+  scope,
 }: {
   billId: string;
   mintQuoteId: string;
   onChange: (state: CreditAssessmentState) => void;
+  scope?: "bill" | "book";
 }) {
-  const state = useCreditAssessmentForBill(billId, mintQuoteId);
+  const state = useCreditAssessmentForBill(billId, mintQuoteId, scope);
   useEffect(() => {
     onChange(state);
   }, [onChange, state]);
@@ -30,7 +32,8 @@ function Harness({
 async function renderHook(
   billId = "bill-a",
   mintQuoteId = "quote-a",
-  cached?: { cases: unknown[]; issues: unknown[]; applications?: unknown[] }
+  cached?: { cases: unknown[]; issues: unknown[]; applications?: unknown[] },
+  scope?: "bill" | "book"
 ): Promise<() => CreditAssessmentState | undefined> {
   const states: CreditAssessmentState[] = [];
   const onChange = (state: CreditAssessmentState) => states.push(state);
@@ -43,7 +46,7 @@ async function renderHook(
   act(() => {
     root?.render(
       <QueryClientProvider client={client}>
-        <Harness billId={billId} mintQuoteId={mintQuoteId} onChange={onChange} />
+        <Harness billId={billId} mintQuoteId={mintQuoteId} onChange={onChange} scope={scope} />
       </QueryClientProvider>
     );
   });
@@ -57,6 +60,14 @@ async function renderHook(
 }
 
 describe("useCreditAssessmentForBill", () => {
+  it("shares the book read for quote-list badges instead of issuing one read per row", async () => {
+    const read = vi.fn(() => new Promise<Response>(() => undefined));
+    vi.stubGlobal("fetch", read);
+    await renderHook("bill-a", "quote-a", undefined, "book");
+    expect(read).toHaveBeenCalledWith("/api/ai-credit/workbench-decisions", undefined);
+    expect(queryClient?.getQueryCache().getAll()[0]?.queryKey).toEqual(["ai-credit", "decisions"]);
+  });
+
   it("scopes quote reads and cache entries to the bill", async () => {
     const read = vi.fn(() => new Promise<Response>(() => undefined));
     vi.stubGlobal("fetch", read);
