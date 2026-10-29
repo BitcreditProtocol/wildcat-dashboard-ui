@@ -1,7 +1,11 @@
+import { AgentStrip } from "./AgentStrip";
+import { NeedsCard } from "./NeedsCard";
+import { Concentration } from "./Concentration";
+import { cockpit } from "@/components/operator/cockpit-messages";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, Button } from "@bitcredit/ui-library";
-import { ArrowUpRight, Clock3, Inbox, MessageCircle, Building2, UserCheck, RefreshCw } from "lucide-react";
+import { ArrowUpRight, Inbox, MessageCircle, Building2, UserCheck, RefreshCw } from "lucide-react";
 import { useIntl } from "react-intl";
 import { Link } from "react-router";
 import { listQuotesOptions } from "@/generated/client/@tanstack/react-query.gen";
@@ -44,7 +48,7 @@ export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
         ];
   const paymentComplete = summary.coverage.complete && !summary.portfolio.quotes.some((q) => q.financed && q.paid === null);
   return (
-    <section className="space-y-4">
+    <section className="portfolio-snapshot space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-lg font-semibold">{intl.formatMessage(m.portfolio)}</h2>
         <p className="text-xs text-muted-foreground">
@@ -79,7 +83,7 @@ export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
           </Card>
         ))}
       </div>
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="portfolio-grid grid gap-3 xl:grid-cols-[1.3fr_1fr_0.8fr]">
         <Card>
           <CardContent className="p-5">
             <CounterpartyExposure summary={summary} />
@@ -114,6 +118,11 @@ export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
             ) : (
               <p className="text-sm text-muted-foreground">{intl.formatMessage(m.maturityUnknown)}</p>
             )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <Concentration summary={summary} />
           </CardContent>
         </Card>
       </div>
@@ -230,14 +239,14 @@ export default function HomePage() {
     return { ...item, label: label ? intl.formatMessage(label) : item.label, detail: detail ? intl.formatMessage(detail) : item.detail };
   });
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="today-cockpit space-y-4">
       <header className="flex flex-wrap justify-between items-start gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
             {intl.formatDate(Date.now(), { weekday: "long", month: "long", day: "numeric" })}
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">{intl.formatMessage(m.today)}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{intl.formatMessage(m.subtitle)}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{intl.formatMessage(cockpit.doctrine)}</p>
         </div>
         <div className="flex items-center gap-2">
           <FederationHealth />
@@ -246,37 +255,61 @@ export default function HomePage() {
           </Button>
         </div>
       </header>
-      <section id="action-queue" aria-label={intl.formatMessage(m.queue)} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {groups.map((g) => {
-          const items = actions.filter((a) => a.kind === g.kind);
-          const oldest = items.find((a) => a.since !== null)?.since;
-          const urgent = oldest !== undefined && oldest !== null && Date.now() - Date.parse(oldest) > 86400000;
-          return (
-            <Link
-              key={g.kind}
-              to={items[0]?.href ?? g.href}
-              className={`group rounded-xl border bg-card p-4 transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring ${urgent ? "border-amber-500/60" : "border-border"}`}
-            >
-              <div className="flex items-center justify-between">
-                <g.icon className={`size-5 ${urgent ? "text-amber-700 dark:text-amber-300" : "text-sky-700 dark:text-sky-400"}`} />
-                <ArrowUpRight className="size-4 text-muted-foreground group-hover:text-foreground" />
-              </div>
-              <p className="mt-4 text-3xl font-semibold tabular-nums">{g.error || g.loading ? "—" : intl.formatNumber(items.length)}</p>
-              <h2 className="mt-1 text-sm font-medium">{intl.formatMessage(m[g.kind])}</h2>
-              <p className={`mt-2 text-xs ${urgent ? "text-amber-800 dark:text-amber-300" : "text-muted-foreground"}`}>
-                {g.loading
-                  ? intl.formatMessage(m.loading)
-                  : g.error
-                    ? intl.formatMessage(m.unavailable)
-                    : oldest
-                      ? intl.formatMessage(m.oldest, { age: age(oldest) })
-                      : items.length
-                        ? intl.formatMessage(m.ageUnknown)
-                        : intl.formatMessage(m.empty)}
-              </p>
-            </Link>
-          );
-        })}
+      <AgentStrip
+        capacity={capacity.error ? undefined : capacity.data}
+        helpCount={help.error || help.isPending ? undefined : actions.filter((a) => a.kind === "help").length}
+      />
+      <section id="action-queue" aria-label={intl.formatMessage(m.queue)}>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold">
+            {intl.formatMessage(cockpit.needs)}{" "}
+            <span className="ml-2 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300">
+              {groups.some((g) => g.loading || g.error) ? "—" : new Set(actions.map((a) => a.quote?.quoteId ?? a.id)).size}
+            </span>
+          </h2>
+          <Link to="/quotes/pending" className="text-xs text-muted-foreground hover:underline">
+            {intl.formatMessage(cockpit.review)} ↗
+          </Link>
+        </div>
+        <div className="needs-grid grid gap-3 lg:grid-cols-3">
+          {actions
+            .filter((a) => a.kind === "quote" || a.kind === "buyer")
+            .filter((a, index, list) => list.findIndex((b) => (b.quote?.quoteId ?? b.id) === (a.quote?.quoteId ?? a.id)) === index)
+            .map((a) => (
+              <NeedsCard key={a.id} quote={a.quote} href={a.href} name={a.name} summary={book ?? undefined} />
+            ))}
+        </div>
+        <div className="attention-strip mt-3 grid grid-cols-2 gap-2 xl:grid-cols-4">
+          {groups.map((g) => {
+            const items = actions.filter((a) => a.kind === g.kind);
+            const oldest = items.find((a) => a.since)?.since;
+            return (
+              <Link
+                key={g.kind}
+                to={items[0]?.href ?? g.href}
+                className="attention-row flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-accent"
+              >
+                <g.icon className="size-4 text-muted-foreground" />
+                <span className="text-xs">
+                  {intl.formatMessage(m[g.kind])}
+                  <small className="mt-1 block text-[11px] text-muted-foreground">
+                    {g.loading
+                      ? intl.formatMessage(m.loading)
+                      : g.error
+                        ? intl.formatMessage(m.unavailable)
+                        : oldest
+                          ? intl.formatMessage(m.oldest, { age: age(oldest) })
+                          : items.length
+                            ? intl.formatMessage(m.ageUnknown)
+                            : intl.formatMessage(m.empty)}
+                  </small>
+                </span>
+                <strong className="ml-auto text-xl tabular-nums">{g.error || g.loading ? "—" : items.length}</strong>
+                <ArrowUpRight className="size-3.5 text-muted-foreground" />
+              </Link>
+            );
+          })}
+        </div>
       </section>
       {(book?.coverage.complete === false || (legacy.data !== undefined && legacy.data.total > legacy.data.data.length)) && (
         <p role="status" className="text-xs text-amber-800 dark:text-amber-300">
@@ -314,55 +347,13 @@ export default function HomePage() {
           {intl.formatMessage(m.unavailable)}
         </p>
       )}
-      {actions.length > 0 && (
-        <section className="rounded-xl border border-border bg-card">
-          <h2 className="px-4 pt-4 text-sm font-semibold">{intl.formatMessage(m.actionList)}</h2>
-          <ul className="mt-2 max-h-72 overflow-y-auto divide-y divide-border">
-            {actions.map((a) => (
-              <li key={a.id}>
-                <Link to={a.href} className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-accent">
-                  <span className="min-w-0">
-                    <span className="mr-2 text-xs font-medium text-sky-800 dark:text-sky-300">
-                      {intl.formatMessage(
-                        a.kind === "quote"
-                          ? m.decisionNeeded
-                          : a.kind === "buyer"
-                            ? m.buyerNeeded
-                            : a.kind === "help"
-                              ? m.helpNeeded
-                              : m.facilityNeeded
-                      )}
-                    </span>
-                    <span className="break-words font-medium">{a.name}</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      {a.quote
-                        ? intl.formatMessage(m.actionContext, {
-                            buyer: a.quote.drawee.name,
-                            amount: intl.formatNumber(BigInt(a.quote.amountSat)),
-                            maturity: intl.formatDate(`${a.quote.maturity}T00:00:00Z`, { dateStyle: "medium", timeZone: "UTC" }),
-                          })
-                        : intl.formatMessage(m.contextUnknown)}
-                    </span>
-                    <span className="mt-1 block text-[11px] text-muted-foreground">{a.quote?.quoteId ?? a.id}</span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                    <Clock3 className="size-3" />
-                    {a.since ? age(a.since) : "—"}
-                    <ArrowUpRight className="size-3.5" />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {capacity.data && !capacity.error && (
-        <section id="capacity" className="rounded-xl border border-border bg-card p-5">
+        <section id="capacity" className="capacity-section rounded-xl border border-border bg-card p-4">
           <h2 className="text-lg font-semibold">{intl.formatMessage(m.capacity)}</h2>
           {capacity.data.items.some((i) => i.status !== "ok") && (
             <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">{intl.formatMessage(m.capacityFull)}</p>
           )}
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {capacityItems.map((i) => (
               <div key={i.id}>
                 <CapacityMeter
@@ -376,7 +367,12 @@ export default function HomePage() {
                     status: intl.formatMessage(m[i.status]),
                   })}
                 />
-                {i.detail && <p className="mt-1.5 text-[11px] text-muted-foreground">{i.detail}</p>}
+                {i.detail && (
+                  <details className="mt-1 text-[11px] text-muted-foreground">
+                    <summary>{intl.formatMessage(m.capacity)}</summary>
+                    <p>{i.detail}</p>
+                  </details>
+                )}
               </div>
             ))}
           </div>

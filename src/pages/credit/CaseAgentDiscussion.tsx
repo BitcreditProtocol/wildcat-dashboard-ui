@@ -1,7 +1,9 @@
-import { BaseDrawer } from "@/components/Drawers";
+import { AskDrawer } from "@/components/operator/AskDrawer";
+import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
+import { cockpit as cockpitCopy } from "@/components/operator/cockpit-messages";
 import { Button } from "@bitcredit/ui-library";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import type { DecisionCase } from "./decision-types";
 
@@ -47,11 +49,29 @@ const messages = defineMessages({
   preparation: { id: "credit.agent.source.preparation", defaultMessage: "Preparation", description: "Source record link" },
 });
 
-export function CaseAgentDiscussion({ decisionCase }: { decisionCase: DecisionCase }) {
+export function CaseAgentDiscussion({ decisionCase, buyerName }: { decisionCase: DecisionCase; buyerName?: string }) {
   const intl = useIntl();
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
+  useEffect(() => {
+    const openCase = (event: Event) => {
+      event.preventDefault();
+      setOpen(true);
+    };
+    const linkCase = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest('a[href="#ask-about-case"]')) {
+        event.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener("mint-ask-case", openCase);
+    document.addEventListener("click", linkCase);
+    return () => {
+      window.removeEventListener("mint-ask-case", openCase);
+      document.removeEventListener("click", linkCase);
+    };
+  }, []);
   const retry = useRef<DiscussionAttempt | undefined>(undefined);
   const binding = { billId: decisionCase.snapshot.bill?.billId, caseId: decisionCase.snapshot.caseId };
   const queryKey = ["operator-discussion", binding.billId, binding.caseId];
@@ -78,65 +98,84 @@ export function CaseAgentDiscussion({ decisionCase }: { decisionCase: DecisionCa
   });
   const pending = mutation.isPending || (query.data?.some((record) => record.status === "pending") ?? false);
   return (
-    <BaseDrawer
-      open={open}
-      onOpenChange={setOpen}
-      title={intl.formatMessage(messages.ask)}
-      description={intl.formatMessage(messages.scope)}
-      trigger={<Button variant="outline">{intl.formatMessage(messages.ask)}</Button>}
-    >
-      <div className="space-y-4 px-4 pb-4">
-        <ol className="space-y-5" aria-live="polite">
-          {query.data?.map((record) => (
-            <li key={record.requestId} className="space-y-2 border-b border-border pb-4">
-              <p className="text-sm font-medium break-words">{record.question}</p>
-              <p className="text-xs text-muted-foreground">
-                {intl.formatMessage(messages.label)}
-                {record.resultDigest !== decisionCase.resultDigest && ` · ${intl.formatMessage(messages.previous)}`}
-              </p>
-              <p className="whitespace-pre-wrap break-words text-sm">
-                {record.answer?.answer ?? intl.formatMessage(record.status === "pending" ? messages.pending : messages.failed)}
-              </p>
-              {record.answer && record.resultDigest === decisionCase.resultDigest && (
-                <div className="flex flex-wrap gap-3">
-                  {record.answer.sources.map((source) => (
-                    <a key={source} href={sources[source]} onClick={() => setOpen(false)} className="text-xs text-primary underline">
-                      {intl.formatMessage(messages[source])}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </li>
-          ))}
-        </ol>
-        {(query.isError || mutation.isError) && (
-          <p role="alert" className="text-sm text-signal-alert">
-            {intl.formatMessage(messages.unavailable)}
-          </p>
-        )}
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!pending && question.trim()) mutation.mutate();
-          }}
-          className="space-y-3"
-        >
-          <label htmlFor="case-agent-question" className="block text-sm">
-            {intl.formatMessage(messages.input)}
-          </label>
-          <input
-            id="case-agent-question"
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            maxLength={500}
-            disabled={pending}
-            className="w-full rounded-md border border-input bg-background p-3 text-sm"
-          />
-          <Button type="submit" disabled={pending || query.isLoading || !question.trim()}>
-            {intl.formatMessage(pending ? messages.pending : messages.send)}
-          </Button>
-        </form>
-      </div>
-    </BaseDrawer>
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        {intl.formatMessage(messages.ask)}
+      </Button>
+      <AskDrawer open={open} onOpenChange={setOpen} caseScoped>
+        <div className="p-4 space-y-3">
+          <BoundaryNotice summary={intl.formatMessage(cockpitCopy.scope)}>{intl.formatMessage(messages.scope)}</BoundaryNotice>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              cockpitCopy.questionGates,
+              cockpitCopy.questionExposure,
+              ...(decisionCase.result.terms ? [cockpitCopy.questionPrice] : []),
+              cockpitCopy.questionEvidence,
+            ].map((q) => (
+              <button
+                type="button"
+                key={q.id}
+                className="rounded-lg border border-border p-3 text-left text-xs hover:bg-accent"
+                onClick={() => setQuestion(intl.formatMessage(q, { buyer: buyerName ?? decisionCase.snapshot.bill?.acceptorRef ?? "—" }))}
+              >
+                {intl.formatMessage(q, { buyer: buyerName ?? decisionCase.snapshot.bill?.acceptorRef ?? "—" })}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-4 px-4 pb-4">
+          <ol className="space-y-5" aria-live="polite">
+            {query.data?.map((record) => (
+              <li key={record.requestId} className="space-y-2 border-b border-border pb-4">
+                <p className="text-sm font-medium break-words">{record.question}</p>
+                <p className="text-xs text-muted-foreground">
+                  {intl.formatMessage(messages.label)}
+                  {record.resultDigest !== decisionCase.resultDigest && ` · ${intl.formatMessage(messages.previous)}`}
+                </p>
+                <p className="whitespace-pre-wrap break-words text-sm">
+                  {record.answer?.answer ?? intl.formatMessage(record.status === "pending" ? messages.pending : messages.failed)}
+                </p>
+                {record.answer && record.resultDigest === decisionCase.resultDigest && (
+                  <div className="flex flex-wrap gap-3">
+                    {record.answer.sources.map((source) => (
+                      <a key={source} href={sources[source]} onClick={() => setOpen(false)} className="text-xs text-primary underline">
+                        {intl.formatMessage(messages[source])}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+          {(query.isError || mutation.isError) && (
+            <p role="alert" className="text-sm text-signal-alert">
+              {intl.formatMessage(messages.unavailable)}
+            </p>
+          )}
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!pending && question.trim()) mutation.mutate();
+            }}
+            className="space-y-3"
+          >
+            <label htmlFor="case-agent-question" className="block text-sm">
+              {intl.formatMessage(messages.input)}
+            </label>
+            <input
+              id="case-agent-question"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              maxLength={500}
+              disabled={pending}
+              className="w-full rounded-md border border-input bg-background p-3 text-sm"
+            />
+            <Button type="submit" disabled={pending || query.isLoading || !question.trim()}>
+              {intl.formatMessage(pending ? messages.pending : messages.send)}
+            </Button>
+          </form>
+        </div>
+      </AskDrawer>
+    </>
   );
 }

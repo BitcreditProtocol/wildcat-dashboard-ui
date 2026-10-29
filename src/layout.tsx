@@ -1,6 +1,7 @@
 import { useTheme } from "@bitcredit/ui-library";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MintCommandBar } from "@/components/operator/MintCommandBar";
 import { Outlet } from "react-router";
 
 function ApplyTheme() {
@@ -23,9 +24,10 @@ export default function Layout() {
     <SidebarProvider className="h-svh">
       <ThemeWhileSidebarHidden />
       <AppSidebar />
-      <main className="flex-1 flex flex-col px-2 py-2 overflow-y-auto min-h-0">
+      <main className="cockpit-main flex-1 flex flex-col overflow-y-auto min-h-0">
+        <MintCommandBar />
         <SidebarTrigger className="cursor-pointer md:hidden" />
-        <div className="flex flex-col py-2">
+        <div className="cockpit-page flex flex-col">
           <Outlet />
         </div>
       </main>

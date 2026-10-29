@@ -1,3 +1,4 @@
+import { ApplicantText } from "@/components/operator/ApplicantText";
 import { type ServerInitialObservation, STRUCTURED_INTERVIEW_PROMPT_VERSION } from "@bitcredit/ai-credit-shared";
 import { ChevronDown } from "lucide-react";
 import { useId, type ReactNode } from "react";
@@ -341,7 +342,7 @@ function Quotes({ sources }: { sources: readonly { answerIndex: number; quote: s
     <>
       {sources.map((source) => (
         <blockquote key={`${String(source.answerIndex)}:${source.quote}`} className="mt-2 break-words border-l-2 border-border pl-3">
-          {source.quote}
+          {<ApplicantText>{source.quote}</ApplicantText>}
         </blockquote>
       ))}
     </>
@@ -461,7 +462,9 @@ function NeedRecord({ recorded, policyRequestIds }: { recorded: RecordedNeed; po
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.applicantAnswer)}</dt>
-          <dd className="mt-1 whitespace-pre-wrap break-words">{need.response ?? intl.formatMessage(messages.noResponse)}</dd>
+          <dd className="mt-1 whitespace-pre-wrap break-words">
+            {need.response ? <ApplicantText>{need.response}</ApplicantText> : intl.formatMessage(messages.noResponse)}
+          </dd>
         </div>
         {review !== undefined && (
           <div>
@@ -761,11 +764,11 @@ export function CaseHistory({
               <dl className="mt-3 divide-y divide-border rounded-md border border-border">
                 <div className="px-3 py-2.5">
                   <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.useOfFunds)}</dt>
-                  <dd className="mt-1 text-sm">{decisionCase.applicantConfirmation.useOfFunds}</dd>
+                  <dd className="mt-1 text-sm">{<ApplicantText>{decisionCase.applicantConfirmation.useOfFunds}</ApplicantText>}</dd>
                 </div>
                 <div className="px-3 py-2.5">
                   <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</dt>
-                  <dd className="mt-1 text-sm">{decisionCase.applicantConfirmation.repaymentSource}</dd>
+                  <dd className="mt-1 text-sm">{<ApplicantText>{decisionCase.applicantConfirmation.repaymentSource}</ApplicantText>}</dd>
                 </div>
               </dl>
             )}

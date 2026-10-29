@@ -176,5 +176,16 @@ describe("CaseDecisionPanel", () => {
 
     expect(page.querySelector("#case-decision-offer")).toBeNull();
     expect(page.querySelector("#case-decision-terms")?.textContent).toBe("Proposed minting fee");
+    const components = [...page.querySelectorAll("details")].find(
+      (detail) => detail.querySelector("summary")?.textContent === "Fee components"
+    );
+    expect(components?.open).toBe(false);
+    expect(components?.textContent).toContain("Discount for 180 days216,000sat");
+    const visibleRows = [...page.querySelectorAll("dl > div")].filter((row) => !row.closest("details")).map((row) => row.textContent);
+    expect(visibleRows).toEqual([
+      "Minting fee3.33% of the bill266,000sat",
+      "Payer pays at maturity8,000,000sat",
+      "Applicant liable if unpaid8,000,000sat",
+    ]);
   });
 });

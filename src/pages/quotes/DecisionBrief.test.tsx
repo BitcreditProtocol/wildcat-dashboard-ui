@@ -29,6 +29,8 @@ describe("quote decision brief", () => {
       drawee: { node_id: "buyer" },
     } as BillInfo;
     const { page } = await renderWithProviders(<DecisionBrief quoteId="quote-one" bill={bill} />);
+    const context = page.querySelector("details");
+    if (context) context.open = true;
     expect(page.textContent).toContain("10,000,000 sat");
     expect(page.textContent).toContain("No governed price");
     expect(getByRole(page, "link", { name: /Harvest season shifts/ }).getAttribute("href")).toContain("/intelligence#note-");

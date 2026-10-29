@@ -1,3 +1,5 @@
+import { ApplicantText } from "@/components/operator/ApplicantText";
+import { cockpit } from "@/components/operator/cockpit-messages";
 import { CircleAlert, CircleCheck, FileCheck2, MessageSquareQuote } from "lucide-react";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl, type MessageDescriptor } from "react-intl";
@@ -265,21 +267,30 @@ function Item({ item }: { item: CertaintyItem }) {
   const intl = useIntl();
   const { icon: Icon, className, label } = LEVELS[item.level];
   return (
-    <li className="flex gap-2.5">
-      <Icon className={`mt-0.5 size-4 shrink-0 ${className}`} aria-hidden="true" />
-      <span className="min-w-0">
-        <span className="sr-only">{intl.formatMessage(label)}: </span>
-        <span className="block text-sm">{item.text}</span>
-        <span className="block text-xs text-muted-foreground">
-          {item.href ? (
-            <a href={item.href} className="underline decoration-dotted underline-offset-2 hover:text-foreground hover:decoration-solid">
-              {item.source}
-            </a>
-          ) : (
-            item.source
-          )}
-        </span>
-      </span>
+    <li className="certainty-item">
+      <details>
+        <summary className="list-none flex cursor-pointer gap-2 text-xs">
+          <Icon className={`mt-0.5 size-3.5 shrink-0 ${className}`} aria-hidden="true" />
+          <span className="sr-only">{intl.formatMessage(label)}: </span>
+          <span data-certainty-text className="certainty-preview min-w-0 flex-1 truncate">
+            {item.text}
+          </span>
+          <span className="text-muted-foreground" aria-label={intl.formatMessage(cockpit.expand)}>
+            +
+          </span>
+        </summary>
+        <div className="certainty-detail mt-2 pl-5 text-xs leading-relaxed">
+          <p data-certainty-source className="mt-1 text-[11px] text-muted-foreground">
+            {item.href ? (
+              <a href={item.href} className="underline">
+                {item.source}
+              </a>
+            ) : (
+              item.source
+            )}
+          </p>
+        </div>
+      </details>
     </li>
   );
 }
@@ -451,7 +462,9 @@ export function CaseCertainty({
     const answered = Boolean(value?.trim());
     items.push({
       level: answered ? "stated" : "open",
-      text: intl.formatMessage(message, { answer: answered ? value : intl.formatMessage(messages.noAnswer) }),
+      text: intl.formatMessage(message, {
+        answer: answered && value ? <ApplicantText>{value}</ApplicantText> : intl.formatMessage(messages.noAnswer),
+      }),
       source: intl.formatMessage(messages.applicantSource),
       href: "#case-conversation",
     });
@@ -481,50 +494,48 @@ export function CaseCertainty({
   const established = items.filter((item) => item.level === "verified" || item.level === "checked");
   const stated = items.filter((item) => item.level === "stated");
   const open = items.filter((item) => item.level === "open");
-  const uncertain = [...open, ...stated];
 
   return (
-    <section aria-labelledby="case-certainty-title" className="border-b border-border px-6 py-5">
+    <section aria-labelledby="case-certainty-title" className="case-certainty border-b border-border px-4 py-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id="case-certainty-title" className="text-base font-semibold">
-          {intl.formatMessage(messages.title)}
+          {intl.formatMessage(cockpit.findings)}
         </h2>
         <p className="text-xs text-muted-foreground tabular-nums">
           {assessedOn !== undefined && `${intl.formatMessage(messages.assessedOn, { date: calendarDate(intl, assessedOn) })} · `}
           {intl.formatMessage(messages.summary, { established: established.length, stated: stated.length, open: open.length })}
         </p>
       </div>
-      <div className="@container mt-4">
-        <div className="grid gap-6 @xl:grid-cols-2">
-          <div>
-            <h3 className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {intl.formatMessage(messages.established)}
+      <div className="mt-3 grid gap-4 lg:grid-cols-3">
+        {[
+          { label: messages.established, items: established, tone: "text-emerald-700 dark:text-emerald-400" },
+          { label: cockpit.stated, items: stated, tone: "text-muted-foreground" },
+          { label: cockpit.open, items: open, tone: "text-amber-700 dark:text-amber-300" },
+        ].map((column) => (
+          <div key={column.label.id}>
+            <h3 className={`mb-2 flex items-center justify-between text-[11px] font-medium ${column.tone}`}>
+              {intl.formatMessage(column.label)}
+              <span className="font-mono">{column.items.length}</span>
             </h3>
-            {established.length > 0 ? (
-              <ul className="space-y-3">
-                {established.map((item, index) => (
-                  <Item key={index} item={item} />
+            {column.items.length ? (
+              <ul className="space-y-2">
+                {column.items.map((item, i) => (
+                  <Item key={i} item={item} />
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.nothingEstablished)}</p>
+              <p className="text-xs text-muted-foreground">
+                {intl.formatMessage(
+                  column.label === messages.established
+                    ? messages.nothingEstablished
+                    : column.label === cockpit.stated
+                      ? messages.nothingUncertain
+                      : cockpit.none
+                )}
+              </p>
             )}
           </div>
-          <div>
-            <h3 className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {intl.formatMessage(messages.uncertain)}
-            </h3>
-            {uncertain.length > 0 ? (
-              <ul className="space-y-3">
-                {uncertain.map((item, index) => (
-                  <Item key={index} item={item} />
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">{intl.formatMessage(messages.nothingUncertain)}</p>
-            )}
-          </div>
-        </div>
+        ))}
       </div>
     </section>
   );

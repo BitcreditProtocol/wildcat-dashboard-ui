@@ -91,6 +91,9 @@ vi.mock("@tanstack/react-query", async () => {
     ...actual,
     useQuery: (options: QueryOptions) => {
       const key: unknown = options.queryKey[0];
+      // The hero's optional portfolio context is an independent read-only query.
+      if (key === "ai-credit" && (options.queryKey as unknown[])[1] === "operator-mint-summary")
+        return { data: undefined, isLoading: false, error: null };
       return key === "operator-discussion" ? { data: [], isLoading: false, isError: false } : mockUseQuery(options);
     },
     useMutation: () => mockUseMutation(),

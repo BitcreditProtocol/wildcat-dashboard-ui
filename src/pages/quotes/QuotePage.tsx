@@ -1,3 +1,8 @@
+import { CaseHero } from "./CaseHero";
+import { ApplicantTextProvider } from "@/components/operator/ApplicantText";
+import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
+import { useRevealAnchor } from "@/components/operator/use-reveal-anchor";
+import { cockpit } from "@/components/operator/cockpit-messages";
 import { DecisionBrief } from "./DecisionBrief";
 import { toast, AppIcon, cn } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -136,6 +141,7 @@ function PageBody({ id }: { id: string }) {
   } = useQuoteDetail(id);
   const creditAssessment = useCreditAssessmentForBill(billId, id);
   const operatorCapability = useOperatorCapability();
+  useRevealAnchor(creditAssessment.decisionCase);
   const creditEvidence: CreditEvidenceState = creditAssessment.isLoading
     ? { status: "loading" }
     : creditAssessment.error !== null
@@ -423,179 +429,204 @@ function PageBody({ id }: { id: string }) {
   const agentDiscussion =
     decisionCase?.snapshot.bill && !creditAssessment.isUnavailable && operatorCapability.capability ? (
       <div id="ask-about-case" className="scroll-mt-5">
-        <CaseAgentDiscussion key={decisionCase.snapshot.caseId} decisionCase={decisionCase} />
+        <CaseAgentDiscussion key={decisionCase.snapshot.caseId} decisionCase={decisionCase} buyerName={bill.drawee.name} />
       </div>
     ) : undefined;
 
   return (
     // The decision column sits beside the case once the page itself is wide enough (the sidebar takes
     // part of the viewport); otherwise it follows the summary.
-    <div className="@container mt-4 space-y-4">
-      <DecisionBrief quoteId={quote.id} bill={bill} decisionCase={creditAssessment.isUnavailable ? undefined : decisionCase} />
-      <div className="grid gap-4 @4xl:grid-cols-[minmax(0,1fr)_22rem] @4xl:items-start @6xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <section className="flex min-w-0 flex-col gap-4 @4xl:col-start-1 @4xl:row-start-1" id="minting-summary">
-          <div className="hidden print:block">
-            <h1 className="text-2xl font-semibold">
-              {intl.formatMessage({ id: "quotes.summary.title", defaultMessage: "Executive summary" })}
-            </h1>
-            <p className="text-xs text-muted-foreground">{quote.id}</p>
-          </div>
-          <QuoteDetailCard
-            decisionPlacement="aside"
-            termsBeside={actionableTerms !== undefined}
-            assessmentUnavailable={creditAssessment.isUnavailable}
-            assessmentLoading={creditAssessment.isLoading}
-            noFitExplanation={
-              decisionCase?.result.recommendation === "no_current_product_fit" ? (
-                <NoFitExplanation decisionCase={decisionCase} formatSat={(value) => `${intl.formatNumber(Number(value))} sat`} />
-              ) : undefined
-            }
-            quote={quote}
-            effectiveQuoteStatus={effectiveQuoteStatus}
-            ebillPaid={ebillPaid}
-            isMintComplete={isMintComplete}
-            isMintCompleteLoading={isMintCompleteLoading}
-            showPayment={showPayment}
-            rejectedToPay={rejectedToPay}
-            isInMempool={isInMempool}
-            requestedToPay={requestedToPay}
-            signedAuthorizationReceipt={signedAuthorizationReceipt}
-            durableAuthorizationReceipt={durableAuthorizationReceipt}
-            mintOperationStatus={mintOperationStatus}
-            isMintOperationLoading={isMintOperationLoading}
-            decisionSummary={
-              decisionCase && caseBrief
-                ? {
-                    brief: caseBrief,
-                    assessmentCurrency: decisionCase.assessmentCurrency,
-                    synthetic: usesSyntheticData(decisionCase),
-                    useOfFunds: decisionCase.applicantConfirmation?.useOfFunds,
-                    repaymentSource: decisionCase.applicantConfirmation?.repaymentSource,
-                    billAcceptanceState: decisionCase.snapshot.bill?.acceptanceState,
-                    acceptorRisk: decisionCase.snapshot.acceptor,
-                    profile: { industry: decisionCase.snapshot.industry, country: decisionCase.snapshot.country },
-                    openPoints: effectiveQuoteStatus === "Pending" ? openPointCount(decisionCase) : 0,
-                    duplicateCheck: decisionCase.snapshot.duplicateCheck,
-                    alreadyFinanced: decisionCase.snapshot.bill?.alreadyFinanced,
-                    contradictions: decisionCase.snapshot.contradictions.map(({ code }) => code),
-                    recourseAcknowledged: decisionCase.snapshot.confirmedClaims?.wholeFaceRecourseAcknowledged,
-                    assessedOn: decisionCase.snapshot.asOfDate,
-                    ...(decisionCase.assessmentCurrency === "current" && decisionCase.result.terms
-                      ? {
-                          recommendedTerms: {
-                            mintingFee: Number(decisionCase.result.terms.effectiveFeeSat),
-                            amountAvailableForMinting: Number(decisionCase.result.terms.discountedSat),
-                            feeRatioBps: decisionCase.result.terms.feeRatioBps,
-                            tenorDays: decisionCase.result.terms.tenorDays,
-                            offerExpiresOn: decisionCase.result.terms.offerExpiresOn,
-                          },
-                        }
-                      : {}),
-                  }
-                : undefined
-            }
-          />
-        </section>
+    <ApplicantTextProvider records={creditAssessment.operatorText}>
+      <div className="case-cockpit @container mt-2 space-y-3">
+        <CaseHero
+          bill={bill}
+          decisionCase={decisionCase}
+          status={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
+          synthetic={decisionCase ? usesSyntheticData(decisionCase) : false}
+        />
+        <div className="case-authority">
+          <BoundaryNotice summary={intl.formatMessage(cockpit.actors)}>{intl.formatMessage(cockpit.authority)}</BoundaryNotice>
+        </div>
+        <div className="grid gap-4 @4xl:grid-cols-[minmax(0,1fr)_22rem] @4xl:items-start @6xl:grid-cols-[minmax(0,1fr)_24rem]">
+          <section className="flex min-w-0 flex-col gap-4 @4xl:col-start-1 @4xl:row-start-1" id="minting-summary">
+            <div className="hidden print:block">
+              <h1 className="text-2xl font-semibold">
+                {intl.formatMessage({ id: "quotes.summary.title", defaultMessage: "Executive summary" })}
+              </h1>
+              <p className="text-xs text-muted-foreground">{quote.id}</p>
+            </div>
+            <DecisionBrief quoteId={quote.id} bill={bill} decisionCase={creditAssessment.isUnavailable ? undefined : decisionCase} />
+            <QuoteDetailCard
+              compactSummary
+              decisionPlacement="aside"
+              termsBeside={actionableTerms !== undefined}
+              assessmentUnavailable={creditAssessment.isUnavailable}
+              assessmentLoading={creditAssessment.isLoading}
+              noFitExplanation={
+                decisionCase?.result.recommendation === "no_current_product_fit" ? (
+                  <NoFitExplanation decisionCase={decisionCase} formatSat={(value) => `${intl.formatNumber(Number(value))} sat`} />
+                ) : undefined
+              }
+              quote={quote}
+              effectiveQuoteStatus={effectiveQuoteStatus}
+              ebillPaid={ebillPaid}
+              isMintComplete={isMintComplete}
+              isMintCompleteLoading={isMintCompleteLoading}
+              showPayment={showPayment}
+              rejectedToPay={rejectedToPay}
+              isInMempool={isInMempool}
+              requestedToPay={requestedToPay}
+              signedAuthorizationReceipt={signedAuthorizationReceipt}
+              durableAuthorizationReceipt={durableAuthorizationReceipt}
+              mintOperationStatus={mintOperationStatus}
+              isMintOperationLoading={isMintOperationLoading}
+              decisionSummary={
+                decisionCase && caseBrief
+                  ? {
+                      brief: caseBrief,
+                      assessmentCurrency: decisionCase.assessmentCurrency,
+                      synthetic: usesSyntheticData(decisionCase),
+                      useOfFunds: decisionCase.applicantConfirmation?.useOfFunds,
+                      repaymentSource: decisionCase.applicantConfirmation?.repaymentSource,
+                      billAcceptanceState: decisionCase.snapshot.bill?.acceptanceState,
+                      acceptorRisk: decisionCase.snapshot.acceptor,
+                      profile: { industry: decisionCase.snapshot.industry, country: decisionCase.snapshot.country },
+                      openPoints: effectiveQuoteStatus === "Pending" ? openPointCount(decisionCase) : 0,
+                      duplicateCheck: decisionCase.snapshot.duplicateCheck,
+                      alreadyFinanced: decisionCase.snapshot.bill?.alreadyFinanced,
+                      contradictions: decisionCase.snapshot.contradictions.map(({ code }) => code),
+                      recourseAcknowledged: decisionCase.snapshot.confirmedClaims?.wholeFaceRecourseAcknowledged,
+                      assessedOn: decisionCase.snapshot.asOfDate,
+                      ...(decisionCase.assessmentCurrency === "current" && decisionCase.result.terms
+                        ? {
+                            recommendedTerms: {
+                              mintingFee: Number(decisionCase.result.terms.effectiveFeeSat),
+                              amountAvailableForMinting: Number(decisionCase.result.terms.discountedSat),
+                              feeRatioBps: decisionCase.result.terms.feeRatioBps,
+                              tenorDays: decisionCase.result.terms.tenorDays,
+                              offerExpiresOn: decisionCase.result.terms.offerExpiresOn,
+                            },
+                          }
+                        : {}),
+                    }
+                  : undefined
+              }
+            />
+          </section>
 
-        {/* Scrolls on its own and fits the screen even before the page scrolls (below the breadcrumb), so the
+          {/* Scrolls on its own and fits the screen even before the page scrolls (below the breadcrumb), so the
           pinned controls stay visible. */}
 
-        <div className="@4xl:sticky @4xl:top-2 @4xl:col-start-2 @4xl:row-span-2 @4xl:row-start-1 @4xl:max-h-[calc(100svh-4.5rem)] @4xl:self-start @4xl:overflow-y-auto @4xl:overscroll-contain">
-          <CaseDecisionPanel
-            brief={panelBrief}
-            recordedOffer={
-              effectiveQuoteStatus !== "Pending" && "discounted" in quote
-                ? {
-                    billSat: bill.sum,
-                    availableToMintSat: quote.discounted,
-                    expiresAt: effectiveQuoteStatus === "Offered" && quote.status === "Offered" ? quote.ttl : undefined,
-                  }
-                : undefined
-            }
-            statusLabel={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
-            actionableTerms={actionableTerms}
-            openPoints={openPointCount(decisionCase)}
-            actions={quoteActions}
-            footer={agentDiscussion}
-          />
-        </div>
+          <div className="@4xl:sticky @4xl:top-2 @4xl:col-start-2 @4xl:row-span-2 @4xl:row-start-1 @4xl:max-h-[calc(100svh-4.5rem)] @4xl:self-start @4xl:overflow-y-auto @4xl:overscroll-contain">
+            <div className="decision-rail-label">
+              <span className="status-dot" />
+              {intl.formatMessage(cockpit.human)}
+            </div>
+            <CaseDecisionPanel
+              brief={panelBrief}
+              recordedOffer={
+                effectiveQuoteStatus !== "Pending" && "discounted" in quote
+                  ? {
+                      billSat: bill.sum,
+                      availableToMintSat: quote.discounted,
+                      expiresAt: effectiveQuoteStatus === "Offered" && quote.status === "Offered" ? quote.ttl : undefined,
+                    }
+                  : undefined
+              }
+              statusLabel={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
+              actionableTerms={actionableTerms}
+              openPoints={openPointCount(decisionCase)}
+              actions={quoteActions}
+              footer={agentDiscussion}
+            />
+          </div>
 
-        <div className="flex min-w-0 flex-col gap-4 @4xl:col-start-1 @4xl:row-start-2 print:hidden">
-          {/* A person asked for help: answered by a person, never part of the case. */}
-          <ApplicantHelpCard billId={bill.id} />
-          {/* The rest of the Mint's book with this applicant and this payer: concentration is part of the decision. */}
-          <PartyExposureCard
-            applicant={billApplicant(bill)}
-            payer={billPayer(bill)}
-            quote={{ id: quote.id, status: quote.status, billId: bill.id, faceValueSat: bill.sum }}
-          />
-          {decisionCase !== undefined && effectiveQuoteStatus === "Pending" && <CaseOpenPoints decisionCase={decisionCase} />}
-          {decisionCase !== undefined && (
-            <FraudControlsPanel key={decisionCase.resultDigest} decisionCase={decisionCase} capability={operatorCapability.capability} />
-          )}
-          {decisionCase !== undefined && <ApplicantCapacityPanel decisionCase={decisionCase} />}
-          {decisionCase?.facilityCoverage && <FacilityCoveragePanel coverage={decisionCase.facilityCoverage} quoteId={quote.id} />}
-          {!decisionCase?.facilityCoverage && facilityUnderReview && <FacilityCoverageUnavailable binding={facilityUnderReview} />}
-          <CaseWorkspace
-            reviewCount={reviewCount}
-            review={
-              <div className="space-y-6">
-                {decisionCase?.casePreparation !== undefined && <CasePreparationPanel decisionCase={decisionCase} next={caseBrief?.next} />}
-                {decisionCase !== undefined && decisionCase.casePreparation === undefined && (
-                  <InformationNeedsPanel
-                    decisionCase={decisionCase}
-                    capability={creditAssessment.isUnavailable ? undefined : operatorCapability.capability}
-                  />
-                )}
-                <QuoteDocuments
-                  embedded
-                  showCaseRecord={false}
-                  showPublicResearch={false}
-                  billAttachments={billAttachmentDocuments}
-                  requestToMintFiles={requestToMintDocuments}
-                  creditEvidence={creditEvidence}
-                  openingDocumentHash={openingDocumentHash}
-                  openingEvidenceReference={openingEvidenceReference}
-                  reviewingEvidenceReference={reviewingEvidenceReference}
-                  onOpenDocument={handleOpenDocument}
-                  onOpenEvidence={handleOpenEvidence}
-                  onReviewInvoiceEvidence={operatorCapability.capability === undefined ? undefined : handleReviewInvoiceEvidence}
+          <details className="case-deep-details min-w-0 rounded-xl border border-border bg-card @4xl:col-start-1 @4xl:row-start-2 print:hidden">
+            <summary className="disclosure-row px-4 py-3 text-xs font-semibold">{intl.formatMessage(cockpit.details)}</summary>
+            <div className="flex min-w-0 flex-col gap-3 p-3">
+              {/* A person asked for help: answered by a person, never part of the case. */}
+              <ApplicantHelpCard billId={bill.id} />
+              {/* The rest of the Mint's book with this applicant and this payer: concentration is part of the decision. */}
+              <PartyExposureCard
+                applicant={billApplicant(bill)}
+                payer={billPayer(bill)}
+                quote={{ id: quote.id, status: quote.status, billId: bill.id, faceValueSat: bill.sum }}
+              />
+              {decisionCase !== undefined && effectiveQuoteStatus === "Pending" && <CaseOpenPoints decisionCase={decisionCase} />}
+              {decisionCase !== undefined && (
+                <FraudControlsPanel
+                  key={decisionCase.resultDigest}
+                  decisionCase={decisionCase}
+                  capability={operatorCapability.capability}
                 />
-              </div>
-            }
-            history={
-              // Read-only record grouped by submission; every control stays in the Review tab.
-              <CaseHistory
-                decisionCase={creditAssessment.recordedDecisionCase}
-                initialApplication={creditAssessment.recordedInitialApplication}
-                updatesStatus={creditAssessment.updatesStatus}
-                updatesUnavailable={creditAssessment.isUnavailable}
+              )}
+              {decisionCase !== undefined && <ApplicantCapacityPanel decisionCase={decisionCase} />}
+              {decisionCase?.facilityCoverage && <FacilityCoveragePanel coverage={decisionCase.facilityCoverage} quoteId={quote.id} />}
+              {!decisionCase?.facilityCoverage && facilityUnderReview && <FacilityCoverageUnavailable binding={facilityUnderReview} />}
+              <CaseWorkspace
+                reviewCount={reviewCount}
+                review={
+                  <div className="space-y-6">
+                    {decisionCase?.casePreparation !== undefined && (
+                      <CasePreparationPanel decisionCase={decisionCase} next={caseBrief?.next} />
+                    )}
+                    {decisionCase !== undefined && decisionCase.casePreparation === undefined && (
+                      <InformationNeedsPanel
+                        decisionCase={decisionCase}
+                        capability={creditAssessment.isUnavailable ? undefined : operatorCapability.capability}
+                      />
+                    )}
+                    <QuoteDocuments
+                      embedded
+                      showCaseRecord={false}
+                      showPublicResearch={false}
+                      billAttachments={billAttachmentDocuments}
+                      requestToMintFiles={requestToMintDocuments}
+                      creditEvidence={creditEvidence}
+                      openingDocumentHash={openingDocumentHash}
+                      openingEvidenceReference={openingEvidenceReference}
+                      reviewingEvidenceReference={reviewingEvidenceReference}
+                      onOpenDocument={handleOpenDocument}
+                      onOpenEvidence={handleOpenEvidence}
+                      onReviewInvoiceEvidence={operatorCapability.capability === undefined ? undefined : handleReviewInvoiceEvidence}
+                    />
+                  </div>
+                }
+                history={
+                  // Read-only record grouped by submission; every control stays in the Review tab.
+                  <CaseHistory
+                    decisionCase={creditAssessment.recordedDecisionCase}
+                    initialApplication={creditAssessment.recordedInitialApplication}
+                    updatesStatus={creditAssessment.updatesStatus}
+                    updatesUnavailable={creditAssessment.isUnavailable}
+                  />
+                }
+                calculation={
+                  <QuoteCreditAssessment
+                    embedded
+                    consolidatedRequirements={decisionCase !== undefined}
+                    billId={bill.id}
+                    mintQuoteId={quote.id}
+                  />
+                }
+                record={
+                  // The bill as signed: who it names, then what each of them signed.
+                  <div id="bill-record" className="@container scroll-mt-4 space-y-6">
+                    <BillParties bill={bill} />
+                    <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
+                  </div>
+                }
+                signers={
+                  // Review signals on the same signers: reasons to look closer, never a gate or a decision.
+                  <BillSignerReviewPanel quoteId={quote.id} />
+                }
               />
-            }
-            calculation={
-              <QuoteCreditAssessment
-                embedded
-                consolidatedRequirements={decisionCase !== undefined}
-                billId={bill.id}
-                mintQuoteId={quote.id}
-              />
-            }
-            record={
-              // The bill as signed: who it names, then what each of them signed.
-              <div id="bill-record" className="@container scroll-mt-4 space-y-6">
-                <BillParties bill={bill} />
-                <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
-              </div>
-            }
-            signers={
-              // Review signals on the same signers: reasons to look closer, never a gate or a decision.
-              <BillSignerReviewPanel quoteId={quote.id} />
-            }
-          />
-          <QuoteDocumentViewer preview={documentPreview} onClose={handleClosePreview} />
+              <QuoteDocumentViewer preview={documentPreview} onClose={handleClosePreview} />
+            </div>
+          </details>
         </div>
       </div>
-    </div>
+    </ApplicantTextProvider>
   );
 }
 
@@ -662,7 +693,7 @@ export default function QuotePage() {
         </span>
       </Breadcrumbs>
 
-      <div className="flex items-center justify-end gap-2 pt-2 print:hidden">
+      <div className="quote-tools flex items-center justify-end gap-2 pt-2 print:hidden">
         {hasKeysetId && <DownloadBillPdfButton billId={quoteData.bill.id} />}
 
         {hasSyncableBill && (

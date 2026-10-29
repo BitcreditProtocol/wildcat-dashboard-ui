@@ -1,3 +1,4 @@
+import { ApplicantText, ApplicantTextProvider } from "@/components/operator/ApplicantText";
 import { useRevealAnchor } from "@/components/operator/use-reveal-anchor";
 import type { ApplicantHelpRequest, ApplicantHelpStep } from "@bitcredit/ai-credit-shared";
 import { Button } from "@bitcredit/ui-library";
@@ -68,13 +69,18 @@ const stepMessages = defineMessages<ApplicantHelpStep>({
 function HelpRequestItem({ request, showQuoteLink }: { request: ApplicantHelpRequest; showQuoteLink: boolean }) {
   const intl = useIntl();
   const reply = useReplyToApplicantHelp();
+  const renderings = useApplicantHelp();
   const [isReplying, setIsReplying] = useState(false);
   const [text, setText] = useState("");
   const [commandId] = useState(() => crypto.randomUUID());
   const fieldId = `help-reply-${request.requestId}`;
   return (
     <li id={`help-${request.requestId}`} className="scroll-mt-4 space-y-2 rounded-lg border border-border p-3 text-sm">
-      <p className="whitespace-pre-wrap">{request.message}</p>
+      <p className="whitespace-pre-wrap">
+        <ApplicantTextProvider records={renderings.data?.operatorText}>
+          <ApplicantText>{request.message}</ApplicantText>
+        </ApplicantTextProvider>
+      </p>
       <p className="text-xs text-muted-foreground">
         {intl.formatMessage(messages.asked, {
           time: intl.formatDate(request.requestedAt, { dateStyle: "medium", timeStyle: "short" }),

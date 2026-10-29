@@ -1,3 +1,4 @@
+import { ApplicantText } from "@/components/operator/ApplicantText";
 import { useState } from "react";
 import { Button, toast } from "@bitcredit/ui-library";
 import { useQueryClient } from "@tanstack/react-query";
@@ -103,7 +104,7 @@ export function ApplicantHumanReviewCard({
         </span>
       </div>
 
-      <p className="mt-3 text-sm text-muted-foreground">{review.request.statement}</p>
+      <p className="mt-3 text-sm text-muted-foreground">{<ApplicantText>{review.request.statement}</ApplicantText>}</p>
 
       {review.status === "requested" ? (
         <div className="mt-4">

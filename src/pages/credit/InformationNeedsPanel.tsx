@@ -1,3 +1,4 @@
+import { ApplicantText } from "@/components/operator/ApplicantText";
 import { Button } from "@bitcredit/ui-library";
 import { useQueryClient } from "@tanstack/react-query";
 import { useId, useRef, useState } from "react";
@@ -168,7 +169,7 @@ function NeedRow({
       <div className="mt-3 space-y-3 text-sm">
         {need.objective.sources.map((source) => (
           <blockquote key={`${source.answerIndex}:${source.quote}`} className="border-l-2 border-border pl-3 text-muted-foreground">
-            {source.quote}
+            {<ApplicantText>{source.quote}</ApplicantText>}
           </blockquote>
         ))}
         {need.purpose !== undefined && (
@@ -199,7 +200,7 @@ function NeedRow({
         {need.response !== undefined && (
           <div>
             <p className="text-xs text-muted-foreground">{intl.formatMessage(messages.response)}</p>
-            <p className="mt-1 break-words">{need.response}</p>
+            <p className="mt-1 break-words">{<ApplicantText>{need.response}</ApplicantText>}</p>
           </div>
         )}
         {need.review !== undefined && (

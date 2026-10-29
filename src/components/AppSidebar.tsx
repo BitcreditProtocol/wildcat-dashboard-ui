@@ -1,4 +1,5 @@
 import {
+  Settings2,
   AlignVerticalJustifyCenterIcon,
   Ban,
   Bitcoin,
@@ -39,6 +40,8 @@ import { LanguageContext, CROWDIN_PSEUDO_LOCALE, DEFAULT_LOCALE_PROD, isInContex
 import { usePreferences } from "@/context/preferences/PreferencesContext";
 import { defineMessages, useIntl } from "react-intl";
 import { LIVE_TRANSLATIONS_KEY } from "@/constants/storageKeys";
+
+import { cockpit } from "@/components/operator/cockpit-messages";
 
 const navMessages = defineMessages({
   work: { id: "nav.work", defaultMessage: "Work", description: "Operator dashboard nav: work" },
@@ -203,44 +206,59 @@ export function AppSidebar() {
           { title: navMessages.reports, urls: ["/outcomes"] },
           { title: navMessages.system, urls: ["/balances", "/earnings", "/bills", "/keysets", "/melt-requests", "/network", "/info"] },
         ].map((group) => (
-          <NavMain
-            key={group.title.id}
-            groupTitle={group.title}
-            items={group.urls.flatMap((url) => data.navMain.filter((item) => item.url === url))}
-          />
+          <div key={group.title.id}>
+            {group.title === navMessages.system ? (
+              <details className="system-navigation">
+                <summary className="px-4 py-2 text-xs text-muted-foreground">{intl.formatMessage(group.title)}</summary>
+                <NavMain items={group.urls.flatMap((url) => data.navMain.filter((item) => item.url === url))} />
+              </details>
+            ) : (
+              <NavMain
+                key={group.title.id}
+                groupTitle={group.title}
+                items={group.urls.flatMap((url) => data.navMain.filter((item) => item.url === url))}
+              />
+            )}
+          </div>
         ))}
       </SidebarContent>
       <Separator className="bg-divider-75 w-auto mb-2" />
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">
-        <div className="flex flex-col gap-4">
-          <LanguageSelector />
-          <Separator className="bg-divider-75 w-auto" />
-          <DisplayCurrency />
-          <Separator className="bg-divider-75 w-auto" />
-          <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
-            <MenuOption
-              icon={<AppIcon icon={AlignVerticalJustifyCenterIcon} size="md" className="text-muted-foreground" />}
-              label={intl.formatMessage({
-                id: "settings.decimals",
-                defaultMessage: "Decimals",
-                description: "Sidebar number formatting setting",
-              })}
-              defaultValue={intl.formatMessage(decimalMessages[decimalFormat])}
-            />
-          </DecimalSeparator>
-          <Separator className="bg-divider-75 w-auto" />
-          <DateFormat />
-          <Separator className="bg-divider-75 w-auto" />
-          <TimeZonePreference />
-          <Separator className="bg-divider-75 w-auto" />
-          <Theme />
-          {isInContextToolAvailable && (
-            <>
-              <Separator className="bg-divider-75 w-auto" />
-              <LiveTranslationsToggle />
-            </>
-          )}
-        </div>
+        <details className="display-settings">
+          <summary className="disclosure-row flex gap-2 rounded-lg px-3 py-2 text-xs">
+            <Settings2 className="size-4" />
+            {intl.formatMessage(cockpit.settings)}
+          </summary>
+          <div className="flex flex-col gap-3 p-3">
+            <LanguageSelector />
+            <Separator className="bg-divider-75 w-auto" />
+            <DisplayCurrency />
+            <Separator className="bg-divider-75 w-auto" />
+            <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
+              <MenuOption
+                icon={<AppIcon icon={AlignVerticalJustifyCenterIcon} size="md" className="text-muted-foreground" />}
+                label={intl.formatMessage({
+                  id: "settings.decimals",
+                  defaultMessage: "Decimals",
+                  description: "Sidebar number formatting setting",
+                })}
+                defaultValue={intl.formatMessage(decimalMessages[decimalFormat])}
+              />
+            </DecimalSeparator>
+            <Separator className="bg-divider-75 w-auto" />
+            <DateFormat />
+            <Separator className="bg-divider-75 w-auto" />
+            <TimeZonePreference />
+            <Separator className="bg-divider-75 w-auto" />
+            <Theme />
+            {isInContextToolAvailable && (
+              <>
+                <Separator className="bg-divider-75 w-auto" />
+                <LiveTranslationsToggle />
+              </>
+            )}
+          </div>
+        </details>
       </SidebarFooter>
       {/* https://github.com/BitcreditProtocol/wildcat-dashboard-ui/issues/131
         <SidebarFooter>{!isLoading && user && <NavUser user={user} />}</SidebarFooter>

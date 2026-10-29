@@ -1,3 +1,4 @@
+import { operatorTextFromResponse, withoutOperatorText, type OperatorTextMap } from "@/components/operator/operator-text";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   buyerConfirmationInputSchema,
@@ -140,12 +141,16 @@ export function useAddMintIntelligenceNote() {
   });
 }
 
-export async function readApplicantHelp(): Promise<OperatorHelpView> {
-  return operatorHelpViewSchema.parse(await readJson("/api/ai-credit/applicant-help"));
+export async function readApplicantHelp(): Promise<OperatorHelpView & { operatorText?: OperatorTextMap }> {
+  const response = await readJson("/api/ai-credit/applicant-help");
+  return { ...operatorHelpViewSchema.parse(withoutOperatorText(response)), operatorText: operatorTextFromResponse(response) };
 }
 
-export async function replyToApplicantHelp(command: ApplicantHelpReplyCommand): Promise<OperatorHelpView> {
-  return operatorHelpViewSchema.parse(await readJson("/api/ai-credit/applicant-help", command));
+export async function replyToApplicantHelp(
+  command: ApplicantHelpReplyCommand
+): Promise<OperatorHelpView & { operatorText?: OperatorTextMap }> {
+  const response = await readJson("/api/ai-credit/applicant-help", command);
+  return { ...operatorHelpViewSchema.parse(withoutOperatorText(response)), operatorText: operatorTextFromResponse(response) };
 }
 
 export async function readOutcomeReport(): Promise<OutcomeReport> {

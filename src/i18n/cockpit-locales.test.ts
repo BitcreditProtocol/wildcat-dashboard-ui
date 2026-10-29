@@ -8,7 +8,7 @@ import { capacityLabels, capacityDetails } from "@/pages/home/capacity-copy";
 it("provides authored Spanish for every sidebar, cockpit, capacity and federation message", () => {
   const sourceMessages: Record<string, string> = source;
   const ids = [
-    ...Object.keys(source).filter((id) => id.startsWith("nav.")),
+    ...Object.keys(source).filter((id) => id.startsWith("nav.") || id.startsWith("agentic.")),
     "language.label",
     "settings.decimals",
     "ui.currencySelector.menuLabel",

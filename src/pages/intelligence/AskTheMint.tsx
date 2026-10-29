@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import { Button } from "@bitcredit/ui-library";
 import { ArrowUp, ArrowUpRight, BookOpen, LoaderCircle, MessageSquarePlus, Sparkles } from "lucide-react";
 import { useIntl } from "react-intl";
@@ -9,11 +9,17 @@ import { citationLocation, MintChatError, useAskMint, useMintDiscussion, type Mi
 import { MintMarkdown } from "./MintMarkdown";
 import { mintChatMessages as m } from "./mint-chat-copy";
 
+import { useMintSummary, useOperatorCapacity } from "@/pages/home/operator-api";
+import { cockpit } from "@/components/operator/cockpit-messages";
+
 export function AskTheMint() {
   const intl = useIntl();
+  const questionId = useId();
   const history = useMintDiscussion();
   const ask = useAskMint();
   const notes = useMintIntelligence();
+  const summary = useMintSummary();
+  const capacity = useOperatorCapacity();
   const [threadId, setThreadId] = useState<string>();
   const [draft, setDraft] = useState("");
   const [retry, setRetry] = useState<MintQuestion>();
@@ -33,7 +39,17 @@ export function AskTheMint() {
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
   }, [pending, pendingAt]);
-  const examples = [m.exampleMaturity, m.exampleExposure, m.exampleHarvest];
+  const topBuyer = summary.error
+    ? undefined
+    : summary.data?.portfolio.counterparties
+        .filter((p) => p.role === "drawee")
+        .sort((a, b) => (BigInt(a.usedSat) > BigInt(b.usedSat) ? -1 : 1))[0];
+  const examples = [
+    intl.formatMessage(m.exampleMaturity),
+    topBuyer ? intl.formatMessage(cockpit.questionBook, { buyer: topBuyer.name }) : intl.formatMessage(m.exampleExposure),
+    intl.formatMessage((summary.data?.queue.length ?? 0) > 0 ? cockpit.questionQueue : m.exampleHarvest),
+    ...(!capacity.error && capacity.data ? [intl.formatMessage(cockpit.questionCapacity)] : []),
+  ];
   const errorCode = ask.error instanceof MintChatError ? ask.error.code : "error";
   const errorMessage =
     errorCode === "daily_limit"
@@ -144,15 +160,15 @@ export function AskTheMint() {
             <div className="mt-5 grid gap-2 sm:grid-cols-3">
               {examples.map((q) => (
                 <button
-                  key={q.id}
+                  key={q}
                   type="button"
                   className="group flex min-h-24 flex-col justify-between gap-3 rounded-lg border border-border p-3 text-left text-xs leading-relaxed hover:border-sky-500 hover:bg-sky-500/5 focus-visible:outline-2 focus-visible:outline-ring"
                   onClick={() => {
-                    setDraft(intl.formatMessage(q));
+                    setDraft(q);
                     input.current?.focus();
                   }}
                 >
-                  <span>{intl.formatMessage(q)}</span>
+                  <span>{q}</span>
                   <ArrowUpRight className="size-3.5 text-muted-foreground group-hover:text-sky-600" />
                 </button>
               ))}
@@ -250,12 +266,12 @@ export function AskTheMint() {
           send(draft);
         }}
       >
-        <label className="sr-only" htmlFor="mint-question">
+        <label className="sr-only" htmlFor={questionId}>
           {intl.formatMessage(m.input)}
         </label>
         <div className="flex items-end gap-3 rounded-xl border border-input bg-background p-2 focus-within:ring-2 focus-within:ring-ring">
           <textarea
-            id="mint-question"
+            id={questionId}
             ref={input}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}

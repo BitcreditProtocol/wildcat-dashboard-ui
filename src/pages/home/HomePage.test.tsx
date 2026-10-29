@@ -138,10 +138,12 @@ describe("Today cockpit", () => {
     expect(page.textContent).toContain("Capacity needs attention");
     expect(getByRole(page, "meter", { name: "Synthetic storage" }).getAttribute("aria-valuenow")).toBe("90");
     expect(page.textContent).toContain("Cooperativa Synthetic");
-    const actions = getByRole(page, "heading", { name: "Next actions" }).closest("section");
+    const actions = getByRole(page, "heading", { name: /Needs you/ }).closest("section");
     expect(actions).toHaveTextContent("Decision needed");
-    expect(actions).toHaveTextContent("Buyer confirmation needed");
-    expect(actions).toHaveTextContent("Buyer: Cooperativa Synthetic · 900,000 sat · Maturity: Nov 1, 2026");
+    expect(getByRole(page, "link", { name: /Buyer confirmations due/ })).toHaveAttribute("href", "/quotes/quote-one#fraud-controls");
+    expect(actions).toHaveTextContent("Cooperativa Synthetic");
+    expect(actions).toHaveTextContent("900,000");
+    expect(actions).toHaveTextContent("Nov 1, 2026");
   });
   it("omits capacity on 404 and never interprets unavailable queues as empty", async () => {
     vi.stubGlobal("fetch", routeFetch({ "/api/ai-credit/operator-mint-summary": () => json(summary()) }));

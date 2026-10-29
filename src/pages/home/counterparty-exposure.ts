@@ -30,3 +30,17 @@ export function exposureIdentities(summary: MintSummary) {
     sameName: roles.some((p) => (names.get(p.name.normalize("NFKC").trim().toLocaleLowerCase("en"))?.size ?? 0) > 1),
   }));
 }
+
+/** Review signal over real named identities, including pending quotes without committed exposure. */
+export function partyNameSignal(summary: MintSummary, party: { ref: string; name: string }) {
+  const normalized = (name: string) => name.normalize("NFKC").trim().toLocaleLowerCase("en");
+  const stem = (name: string) => normalized(name).replace(/\s+r\.?\s*l\.?$/u, "");
+  const others = summary.portfolio.quotes
+    .flatMap((q) => [q.drawer, q.drawee])
+    .concat(summary.portfolio.counterparties)
+    .filter((p) => p.ref !== party.ref);
+  return {
+    sameName: others.some((p) => normalized(p.name) === normalized(party.name)),
+    similarName: others.some((p) => stem(p.name) === stem(party.name)),
+  };
+}

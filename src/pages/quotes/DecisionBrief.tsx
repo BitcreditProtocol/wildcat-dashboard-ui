@@ -1,6 +1,9 @@
-import { matchedBriefNotes, recordedGateStatus } from "./decision-brief-data";
+import { GateStrip } from "@/components/operator/GateStrip";
+import { BuyerExposure } from "./BuyerExposure";
+import { cockpit } from "@/components/operator/cockpit-messages";
+import { matchedBriefNotes } from "./decision-brief-data";
 import { Card, CardContent } from "@bitcredit/ui-library";
-import { CircleCheck, CircleHelp, OctagonAlert, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useIntl } from "react-intl";
 import { Link } from "react-router";
 import type { BillInfo } from "@/generated/client/types.gen";
@@ -63,8 +66,8 @@ export function DecisionBrief({ quoteId, bill, decisionCase }: { quoteId: string
     subsidy: "subsidyBps",
   };
   return (
-    <Card className="border-sky-700/25 dark:border-sky-400/25">
-      <CardContent className="space-y-4 p-5">
+    <Card className="verdict-block border-sky-700/25 dark:border-sky-400/25">
+      <CardContent className="space-y-3 p-4">
         <div className="flex flex-wrap justify-between gap-2">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">{intl.formatMessage(m.title)}</h2>
@@ -83,6 +86,30 @@ export function DecisionBrief({ quoteId, bill, decisionCase }: { quoteId: string
             </a>
           )}
         </div>
+        {decisionCase?.result.assessmentTrace
+          .filter((t) => t.outcome === "fail")
+          .map((t) => (
+            <Link
+              key={t.ruleId}
+              to={policyLocation(decisionCase.policyPack.policyPackVersion, t.ruleId)}
+              className="inline-flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-800 dark:text-amber-300"
+            >
+              {t.ruleId in m ? intl.formatMessage(m[t.ruleId as keyof typeof m]) : t.ruleId.replace(/_/g, " ")} ↗
+            </Link>
+          ))}
+        {lookalikes.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {lookalikes.map((p) => (
+              <Link
+                key={p.ref}
+                className="rounded-md border border-amber-500/30 bg-amber-500/5 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-300"
+                to={directoryLink(p.name ?? p.ref)}
+              >
+                {p.name ?? p.ref} · {p.directoryMatches.length} ↗
+              </Link>
+            ))}
+          </div>
+        )}
         <dl className="grid gap-3 rounded-lg bg-muted/40 p-3 sm:grid-cols-4">
           {[
             { label: m.amount, value: sat(bill.sum) },
@@ -98,38 +125,28 @@ export function DecisionBrief({ quoteId, bill, decisionCase }: { quoteId: string
         </dl>
         <div className="grid gap-5 lg:grid-cols-2">
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{intl.formatMessage(m.checks)}</h3>
-            {policy && decisionCase ? (
-              <ul className="mt-2 grid gap-x-3 gap-y-1 sm:grid-cols-2">
-                {policy.hardGatePrecedence.map((gate) => {
-                  const status = recordedGateStatus(decisionCase, gate);
-                  return (
-                    <li key={gate}>
-                      <Link
-                        to={policyLocation(policy.policyPackVersion, gate)}
-                        className="flex items-center gap-1.5 rounded py-1 text-[11px] hover:underline"
-                        title={gate}
-                      >
-                        {status === "pass" ? (
-                          <CircleCheck className="size-3.5 shrink-0 text-sky-700 dark:text-sky-400" />
-                        ) : status === "fail" ? (
-                          <OctagonAlert className="size-3.5 shrink-0 text-amber-700 dark:text-amber-300" />
-                        ) : (
-                          <CircleHelp className="size-3.5 shrink-0 text-muted-foreground" />
-                        )}
-                        <span>{gate in m ? intl.formatMessage(m[gate as keyof typeof m]) : gate}</span>
-                        <span className="ml-auto shrink-0 font-medium">{intl.formatMessage(m[status])}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="mt-2 text-xs text-muted-foreground">{intl.formatMessage(m.unknown)}</p>
-            )}
+            <GateStrip decisionCase={decisionCase} gates={policy?.hardGatePrecedence} version={policy?.policyPackVersion} />
             {breakdown && policy && (
               <div className="mt-3 border-t border-border pt-3">
                 <h3 className="mb-2 text-xs font-medium">{intl.formatMessage(m.components)}</h3>
+                <div
+                  className="mb-2 flex h-3 overflow-hidden rounded-full bg-muted"
+                  aria-label={intl.formatMessage(m.components)}
+                  role="img"
+                >
+                  {[...breakdown.parts, { key: "operating" as const, sat: breakdown.operatingCostSat }]
+                    .filter((p) => p.sat > 0)
+                    .map((part) => (
+                      <div
+                        key={part.key}
+                        className={`portfolio-segment price-${part.key}`}
+                        title={`${intl.formatMessage(m[part.key])} · ${sat(part.sat)}`}
+                        style={{
+                          width: `${(part.sat / ([...breakdown.parts].reduce((n, p) => n + Math.max(0, p.sat), 0) + breakdown.operatingCostSat)) * 100}%`,
+                        }}
+                      />
+                    ))}
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {breakdown.parts.map((part) => (
                     <Link
@@ -156,58 +173,61 @@ export function DecisionBrief({ quoteId, bill, decisionCase }: { quoteId: string
               </a>
             </div>
           </section>
-          <div className="space-y-4">
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{intl.formatMessage(m.intelligence)}</h3>
-              {notes.length ? (
-                <ul className="mt-2 space-y-2">
-                  {notes.slice(0, 3).map((note) => (
-                    <li key={note.id}>
-                      <Link to={`/intelligence#note-${note.id}`} className="flex items-center gap-1 text-xs font-medium hover:underline">
-                        {note.title}
-                        <ArrowUpRight className="size-3" />
-                      </Link>
-                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                        {note.body.length > 180 ? `${note.body.slice(0, 180)}…` : note.body}
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {intl.formatMessage(m.dates, {
-                          authored: intl.formatDate(note.authoredAt, { dateStyle: "medium" }),
-                          review: note.reviewBy
-                            ? intl.formatDate(note.reviewBy, { dateStyle: "medium", timeZone: "UTC" })
-                            : intl.formatMessage(m.undated),
-                        })}
-                        {note.reviewBy && note.reviewBy < new Date().toISOString().slice(0, 10) && (
-                          <strong className="ml-1 text-amber-800 dark:text-amber-300">· {intl.formatMessage(m.stale)}</strong>
-                        )}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {intl.formatMessage(intelligence.error || !intelligence.data ? m.notesUnknown : m.noNotes)}
-                </p>
-              )}
-            </section>
-            <section className="border-t border-border pt-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{intl.formatMessage(m.directory)}</h3>
-              {lookalikes.length ? (
-                <ul className="mt-2 space-y-1">
-                  {lookalikes.slice(0, 3).map((p) => (
-                    <li key={p.ref}>
-                      <Link className="text-xs text-primary hover:underline" to={directoryLink(p.name ?? p.ref)}>
-                        {p.name ?? p.ref} · {p.directoryMatches.length} ↗
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {intl.formatMessage(signers.error || !signers.data?.directoryComplete ? m.directoryUnknown : m.noMatches)}
-                </p>
-              )}
-            </section>
+          <div className="space-y-3">
+            <BuyerExposure buyerRef={bill.drawee.node_id} quoteId={quoteId} amount={bill.sum} />
+            <details className="rounded-lg border border-border px-3 py-2">
+              <summary className="disclosure-row text-xs font-medium">{intl.formatMessage(cockpit.context)}</summary>
+              <div className="mt-3 space-y-3">
+                <section>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {intl.formatMessage(m.intelligence)}
+                  </h3>
+                  {notes.length ? (
+                    <ul className="mt-2 space-y-2">
+                      {notes.slice(0, 3).map((note) => (
+                        <li key={note.id}>
+                          <Link
+                            to={`/intelligence#note-${note.id}`}
+                            className="flex items-center gap-1 text-xs font-medium hover:underline"
+                          >
+                            {note.title}
+                            <ArrowUpRight className="size-3" />
+                          </Link>
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            {note.body.length > 180 ? `${note.body.slice(0, 180)}…` : note.body}
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">
+                            {intl.formatMessage(m.dates, {
+                              authored: intl.formatDate(note.authoredAt, { dateStyle: "medium" }),
+                              review: note.reviewBy
+                                ? intl.formatDate(note.reviewBy, { dateStyle: "medium", timeZone: "UTC" })
+                                : intl.formatMessage(m.undated),
+                            })}
+                            {note.reviewBy && note.reviewBy < new Date().toISOString().slice(0, 10) && (
+                              <strong className="ml-1 text-amber-800 dark:text-amber-300">· {intl.formatMessage(m.stale)}</strong>
+                            )}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {intl.formatMessage(intelligence.error || !intelligence.data ? m.notesUnknown : m.noNotes)}
+                    </p>
+                  )}
+                </section>
+                <section className="border-t border-border pt-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{intl.formatMessage(m.directory)}</h3>
+                  {lookalikes.length ? (
+                    <p className="mt-2 text-xs text-muted-foreground">{intl.formatMessage(m.context)}</p>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {intl.formatMessage(signers.error || !signers.data?.directoryComplete ? m.directoryUnknown : m.noMatches)}
+                    </p>
+                  )}
+                </section>
+              </div>
+            </details>
           </div>
         </div>
         <BoundaryNotice summary={intl.formatMessage(m.context)}>{intl.formatMessage(m.contextFull)}</BoundaryNotice>

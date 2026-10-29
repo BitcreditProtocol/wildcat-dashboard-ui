@@ -1,3 +1,4 @@
+import { cockpit as cockpitCopy } from "@/components/operator/cockpit-messages";
 import { Badge } from "@/components/ui/badge";
 import { governedTermsExpired } from "@bitcredit/ai-credit-shared";
 import { Button, Card, CardContent } from "@bitcredit/ui-library";
@@ -18,6 +19,7 @@ import { countryName } from "@/utils/bill-participants";
 import { cn } from "@bitcredit/ui-library";
 
 interface QuoteDetailCardProps {
+  compactSummary?: boolean;
   actions?: ReactNode;
   /**
    * `aside`: the page renders the next step, the terms and the actions in its own decision column, so
@@ -164,6 +166,7 @@ function CaseReason({ full, onScreen }: { full: string; onScreen: string }) {
 }
 
 export function QuoteDetailCard({
+  compactSummary = false,
   actions,
   decisionPlacement = "header",
   termsBeside = false,
@@ -366,154 +369,163 @@ export function QuoteDetailCard({
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
-        <header className="relative border-b border-border bg-elevation-100 px-6 py-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              {/* The state of the case is a label; the company it is about leads. */}
-              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pr-10 text-xs">
-                <span
-                  data-case-headline=""
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                    headlineTone === "ready" && "bg-signal-success/15 text-signal-success",
-                    headlineTone === "alert" && "bg-signal-alert/15 text-signal-alert",
-                    headlineTone === "neutral" && "bg-elevation-250 text-foreground"
-                  )}
-                >
-                  {headline}
-                </span>
-                {decisionSummary?.synthetic === true && (
+        <details
+          className={compactSummary ? "case-overview" : "case-overview case-overview-expanded"}
+          open={compactSummary ? undefined : true}
+        >
+          <summary className="px-4 py-2 text-xs text-muted-foreground">
+            {intl.formatMessage({ id: "quotes.summary.title", defaultMessage: "Executive summary" })}
+          </summary>
+          <header className="relative border-b border-border bg-elevation-100 px-6 py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                {/* The state of the case is a label; the company it is about leads. */}
+                <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pr-10 text-xs">
                   <span
-                    data-synthetic-badge=""
-                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-signal-alert/60 px-2.5 py-0.5 font-medium text-signal-alert"
-                  >
-                    <FlaskConical className="size-3" aria-hidden="true" />
-                    {intl.formatMessage({
-                      id: "quotes.summary.synthetic",
-                      defaultMessage: "Synthetic test data",
-                      description: "The case's risk inputs or fee policy are synthetic, not real or calibrated",
-                    })}
-                  </span>
-                )}
-                {receivedAt !== undefined && (
-                  <span className="text-muted-foreground">
-                    {intl.formatMessage(
-                      {
-                        id: "quotes.summary.received",
-                        defaultMessage: "Received {when}",
-                        description: "When the Mint received the quote request",
-                      },
-                      { when: humanReadableDurationDays(intl.locale, new Date(receivedAt)) }
+                    data-case-headline=""
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                      headlineTone === "ready" && "bg-signal-success/15 text-signal-success",
+                      headlineTone === "alert" && "bg-signal-alert/15 text-signal-alert",
+                      headlineTone === "neutral" && "bg-elevation-250 text-foreground"
                     )}
+                  >
+                    {headline}
                   </span>
-                )}
-              </p>
-              <h1 className="mt-3 pr-8 text-3xl font-semibold tracking-tight">
-                {applicant === null || applicant.anonymous
-                  ? intl.formatMessage({
-                      id: "quotes.summary.anonymousHolder",
-                      defaultMessage: "Anonymous holder",
-                      description: "Heading when the bill holder is not identified by name",
-                    })
-                  : applicant.name}
-              </h1>
-              {applicant?.anonymous && <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">{applicant.nodeId}</p>}
-              {profileLine !== undefined && <p className="mt-0.5 text-sm text-muted-foreground">{profileLine}</p>}
-              <p className="mt-3 max-w-3xl text-base">
-                {intl.formatMessage(
-                  {
-                    id: "quotes.summary.caseSentencePayable",
-                    defaultMessage: "Asks to mint against a {amount} eBill payable by {payer} on {date}.",
-                    description:
-                      "One-sentence case summary from the bill's terms: amount, drawee and maturity; says nothing about acceptance",
-                  },
-                  {
-                    amount: `${intl.formatNumber(bill.sum)} sat`,
-                    payer: (
-                      <strong key="payer" className="font-semibold">
-                        {bill.drawee.name}
-                      </strong>
-                    ),
-                    date: intl.formatDate(bill.maturity_date, { dateStyle: "long", timeZone: "UTC" }),
-                  }
-                )}
-                {Boolean(bill.drawer.name) &&
-                  bill.drawer.node_id !== applicant?.nodeId &&
-                  ` ${intl.formatMessage(
+                  {decisionSummary?.synthetic === true && (
+                    <span
+                      data-synthetic-badge=""
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-signal-alert/60 px-2.5 py-0.5 font-medium text-signal-alert"
+                    >
+                      <FlaskConical className="size-3" aria-hidden="true" />
+                      {intl.formatMessage({
+                        id: "quotes.summary.synthetic",
+                        defaultMessage: "Synthetic test data",
+                        description: "The case's risk inputs or fee policy are synthetic, not real or calibrated",
+                      })}
+                    </span>
+                  )}
+                  {receivedAt !== undefined && (
+                    <span className="text-muted-foreground">
+                      {intl.formatMessage(
+                        {
+                          id: "quotes.summary.received",
+                          defaultMessage: "Received {when}",
+                          description: "When the Mint received the quote request",
+                        },
+                        { when: humanReadableDurationDays(intl.locale, new Date(receivedAt)) }
+                      )}
+                    </span>
+                  )}
+                </p>
+                <h1 className="mt-3 pr-8 text-3xl font-semibold tracking-tight">
+                  {applicant === null || applicant.anonymous
+                    ? intl.formatMessage({
+                        id: "quotes.summary.anonymousHolder",
+                        defaultMessage: "Anonymous holder",
+                        description: "Heading when the bill holder is not identified by name",
+                      })
+                    : applicant.name}
+                </h1>
+                {applicant?.anonymous && <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">{applicant.nodeId}</p>}
+                {profileLine !== undefined && <p className="mt-0.5 text-sm text-muted-foreground">{profileLine}</p>}
+                <p className="mt-3 max-w-3xl text-base">
+                  {intl.formatMessage(
                     {
-                      id: "quotes.summary.drawnBy",
-                      defaultMessage: "Drawn by {drawer}.",
-                      description: "The bill's drawer, when it is not the applicant",
+                      id: "quotes.summary.caseSentencePayable",
+                      defaultMessage: "Asks to mint against a {amount} eBill payable by {payer} on {date}.",
+                      description:
+                        "One-sentence case summary from the bill's terms: amount, drawee and maturity; says nothing about acceptance",
                     },
-                    { drawer: bill.drawer.name }
-                  )}`}
-              </p>
-              {showBrief ? (
-                noFitExplanation && (brief.next.kind === "confirm_no_fit" || (brief.next.kind === "not_actionable" && brief.next.noFit)) ? (
-                  <div className="mt-1 max-w-3xl text-sm text-muted-foreground">{noFitExplanation}</div>
+                    {
+                      amount: `${intl.formatNumber(bill.sum)} sat`,
+                      payer: (
+                        <strong key="payer" className="font-semibold">
+                          {bill.drawee.name}
+                        </strong>
+                      ),
+                      date: intl.formatDate(bill.maturity_date, { dateStyle: "long", timeZone: "UTC" }),
+                    }
+                  )}
+                  {Boolean(bill.drawer.name) &&
+                    bill.drawer.node_id !== applicant?.nodeId &&
+                    ` ${intl.formatMessage(
+                      {
+                        id: "quotes.summary.drawnBy",
+                        defaultMessage: "Drawn by {drawer}.",
+                        description: "The bill's drawer, when it is not the applicant",
+                      },
+                      { drawer: bill.drawer.name }
+                    )}`}
+                </p>
+                {showBrief ? (
+                  noFitExplanation &&
+                  (brief.next.kind === "confirm_no_fit" || (brief.next.kind === "not_actionable" && brief.next.noFit)) ? (
+                    <div className="mt-1 max-w-3xl text-sm text-muted-foreground">{noFitExplanation}</div>
+                  ) : (
+                    <CaseReason
+                      full={caseReason(intl, brief, bill.drawee.name)}
+                      onScreen={caseReason(intl, brief, bill.drawee.name, { termsBeside })}
+                    />
+                  )
                 ) : (
-                  <CaseReason
-                    full={caseReason(intl, brief, bill.drawee.name)}
-                    onScreen={caseReason(intl, brief, bill.drawee.name, { termsBeside })}
-                  />
-                )
-              ) : (
-                statusReason !== undefined && (
-                  <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{intl.formatMessage(statusReason)}</p>
-                )
-              )}
-              {showPaymentFacts ? (
-                // Payment is separate from the quote status; this signal says nothing about redemption.
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <Badge variant={paymentConfirmed ? "success" : rejectedToPay ? "destructive" : isInMempool ? "processing" : "info"}>
-                    {paymentConfirmed
-                      ? intl.formatMessage({ id: "quotes.payment.paid", defaultMessage: "Paid" })
-                      : rejectedToPay
-                        ? intl.formatMessage({ id: "quotes.summary.paymentRejected", defaultMessage: "Payment rejected" })
-                        : isInMempool
-                          ? intl.formatMessage({ id: "quotes.summary.paymentInMempool", defaultMessage: "Payment in mempool" })
-                          : intl.formatMessage({ id: "quotes.summary.paymentRequested", defaultMessage: "Payment requested" })}
-                  </Badge>
-                </div>
-              ) : null}
-              <a
-                href="#bill-record"
-                title={quote.bill.id}
-                className="mt-2 inline-block text-xs text-muted-foreground underline underline-offset-4"
-              >
-                {intl.formatMessage({
-                  id: "quotes.summary.viewBill",
-                  defaultMessage: "View eBill",
-                  description: "Open the linked eBill record",
-                })}
-              </a>
-              <span className="hidden font-mono text-xs break-all print:block">{quote.bill.id}</span>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xxs"
-              className="absolute top-5 right-5 size-8 p-0 print:hidden"
-              onClick={() => window.print()}
-              aria-label={intl.formatMessage({ id: "quotes.summary.print", defaultMessage: "Print summary" })}
-              title={intl.formatMessage({ id: "quotes.summary.print", defaultMessage: "Print summary" })}
-            >
-              <Printer className="size-4" aria-hidden="true" />
-            </Button>
-          </div>
-          {decisionPlacement === "aside" ? (
-            // The decision column is screen-only; the printed executive summary keeps the next step and blockers.
-            showBrief && (
-              <div className="hidden print:block">
-                <CaseNextStepPanel next={brief.next} brief={brief} />
+                  statusReason !== undefined && (
+                    <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{intl.formatMessage(statusReason)}</p>
+                  )
+                )}
+                {showPaymentFacts ? (
+                  // Payment is separate from the quote status; this signal says nothing about redemption.
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <Badge variant={paymentConfirmed ? "success" : rejectedToPay ? "destructive" : isInMempool ? "processing" : "info"}>
+                      {paymentConfirmed
+                        ? intl.formatMessage({ id: "quotes.payment.paid", defaultMessage: "Paid" })
+                        : rejectedToPay
+                          ? intl.formatMessage({ id: "quotes.summary.paymentRejected", defaultMessage: "Payment rejected" })
+                          : isInMempool
+                            ? intl.formatMessage({ id: "quotes.summary.paymentInMempool", defaultMessage: "Payment in mempool" })
+                            : intl.formatMessage({ id: "quotes.summary.paymentRequested", defaultMessage: "Payment requested" })}
+                    </Badge>
+                  </div>
+                ) : null}
+                <a
+                  href="#bill-record"
+                  title={quote.bill.id}
+                  className="mt-2 inline-block text-xs text-muted-foreground underline underline-offset-4"
+                >
+                  {intl.formatMessage({
+                    id: "quotes.summary.viewBill",
+                    defaultMessage: "View eBill",
+                    description: "Open the linked eBill record",
+                  })}
+                </a>
+                <span className="hidden font-mono text-xs break-all print:block">{quote.bill.id}</span>
               </div>
-            )
-          ) : showBrief ? (
-            <CaseNextStepPanel next={brief.next} brief={brief} actions={actions} />
-          ) : (
-            actions && <div className="mt-4 print:hidden">{actions}</div>
-          )}
-        </header>
+              <Button
+                type="button"
+                variant="ghost"
+                size="xxs"
+                className="absolute top-5 right-5 size-8 p-0 print:hidden"
+                onClick={() => window.print()}
+                aria-label={intl.formatMessage({ id: "quotes.summary.print", defaultMessage: "Print summary" })}
+                title={intl.formatMessage({ id: "quotes.summary.print", defaultMessage: "Print summary" })}
+              >
+                <Printer className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
+            {decisionPlacement === "aside" ? (
+              // The decision column is screen-only; the printed executive summary keeps the next step and blockers.
+              showBrief && (
+                <div className="hidden print:block">
+                  <CaseNextStepPanel next={brief.next} brief={brief} />
+                </div>
+              )
+            ) : showBrief ? (
+              <CaseNextStepPanel next={brief.next} brief={brief} actions={actions} />
+            ) : (
+              actions && <div className="mt-4 print:hidden">{actions}</div>
+            )}
+          </header>
+        </details>
 
         {/* Beside a decision column these figures are its terms; only the printed summary repeats them. */}
         <section
@@ -609,7 +621,12 @@ export function QuoteDetailCard({
               recourseAcknowledged={decisionSummary.recourseAcknowledged}
               assessedOn={decisionSummary.assessedOn}
             />
-            {showBrief && brief.next.kind !== "closed" && <CaseProgress work={brief.work} />}
+            {showBrief && brief.next.kind !== "closed" && (
+              <details className="px-4 py-2 text-xs text-muted-foreground">
+                <summary>{intl.formatMessage(cockpitCopy.agents)}</summary>
+                <CaseProgress work={brief.work} />
+              </details>
+            )}
           </>
         ) : (
           <p

@@ -1,3 +1,4 @@
+import { ApplicantText } from "@/components/operator/ApplicantText";
 import { informationNeedGuidance, type InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
 import { defineMessages, useIntl } from "react-intl";
 import { informationNeedResponseLabel } from "./information-need-response-labels";
@@ -85,7 +86,7 @@ export function ProposedFollowUps({
                   key={`${String(source.answerIndex)}:${source.quote}`}
                   className="mt-2 break-words border-l-2 border-border pl-3"
                 >
-                  {source.quote}
+                  {<ApplicantText>{source.quote}</ApplicantText>}
                 </blockquote>
               ))}
             </details>

@@ -1,3 +1,4 @@
+import { ApplicantText } from "@/components/operator/ApplicantText";
 import { fraudReason } from "./fraud-controls-copy";
 import { countCitedEvidenceClaims, operatorVisibleAxes, words } from "./decision-types";
 import type {
@@ -461,18 +462,20 @@ export function TranscriptMessages({
               <p
                 className={`whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm leading-5 ${message.role === "applicant" ? "border border-border bg-background" : "bg-muted/50"}`}
               >
-                {message.role === "applicant"
-                  ? message.text
-                  : live
-                    ? intl.formatMessage(
-                        {
-                          id: "credit.livePrompt.objective",
-                          defaultMessage: "Recorded prompt objective: {objective}",
-                          description: "Reviewed objective of an applicant-reported prompt, not a reconstructed transcript",
-                        },
-                        { objective: intl.formatMessage(promptObjectives[message.templateId]) }
-                      )
-                    : (message.text ?? intl.formatMessage(messages.questionUnavailable))}
+                {message.role === "applicant" ? (
+                  <ApplicantText>{message.text}</ApplicantText>
+                ) : live ? (
+                  intl.formatMessage(
+                    {
+                      id: "credit.livePrompt.objective",
+                      defaultMessage: "Recorded prompt objective: {objective}",
+                      description: "Reviewed objective of an applicant-reported prompt, not a reconstructed transcript",
+                    },
+                    { objective: intl.formatMessage(promptObjectives[message.templateId]) }
+                  )
+                ) : (
+                  (message.text ?? intl.formatMessage(messages.questionUnavailable))
+                )}
               </p>
               {message.role === "assistant" && message.followUp !== undefined && (
                 <details className="mt-1 px-3 text-xs text-muted-foreground">
@@ -482,7 +485,7 @@ export function TranscriptMessages({
                       key={`${source.answerIndex}:${source.quote}`}
                       className="mt-2 border-l-2 border-border pl-2 whitespace-pre-wrap break-words"
                     >
-                      {source.quote}
+                      {<ApplicantText>{source.quote}</ApplicantText>}
                     </blockquote>
                   ))}
                   <p className="mt-2">{intl.formatMessage(messages.questionUnverified)}</p>
@@ -786,11 +789,11 @@ export function CaseReviewTrail({
                 <dl className="mt-3 divide-y divide-border rounded-md border border-border">
                   <div className="px-3 py-2.5">
                     <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.useOfFunds)}</dt>
-                    <dd className="mt-1 text-sm">{applicantConfirmation.useOfFunds}</dd>
+                    <dd className="mt-1 text-sm">{<ApplicantText>{applicantConfirmation.useOfFunds}</ApplicantText>}</dd>
                   </div>
                   <div className="px-3 py-2.5">
                     <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.repayment)}</dt>
-                    <dd className="mt-1 text-sm">{applicantConfirmation.repaymentSource}</dd>
+                    <dd className="mt-1 text-sm">{<ApplicantText>{applicantConfirmation.repaymentSource}</ApplicantText>}</dd>
                   </div>
                 </dl>
               )}

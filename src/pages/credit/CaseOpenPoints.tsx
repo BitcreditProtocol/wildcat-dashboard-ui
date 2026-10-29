@@ -1,3 +1,4 @@
+import { ApplicantText } from "@/components/operator/ApplicantText";
 import { CircleAlert } from "lucide-react";
 import { defineMessages, useIntl } from "react-intl";
 import { preparationReason } from "./case-preparation-copy";
@@ -83,7 +84,7 @@ export function CaseOpenPoints({ decisionCase }: { decisionCase: DecisionCase })
             </div>
             {objective.sources.map((source) => (
               <blockquote key={`${String(source.answerIndex)}:${source.quote}`} className="mt-2 border-l-2 border-divider-200 pl-3">
-                <p className="text-sm break-words">“{source.quote}”</p>
+                <p className="text-sm break-words">“{<ApplicantText>{source.quote}</ApplicantText>}”</p>
                 <footer className="mt-0.5 text-xs text-muted-foreground">
                   {intl.formatMessage(messages.source, { index: source.answerIndex + 1 })}
                 </footer>

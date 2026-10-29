@@ -2,7 +2,10 @@ import { mintQuoteDenialStatusSchema, operatorWorkbenchDecisionsResponseSchema }
 import type { OperatorSubmittedCaseIssue, ServerInitialObservation } from "@bitcredit/ai-credit-shared";
 import type { DecisionCase, MintQuoteDenialStatus } from "./decision-types";
 
+import { operatorTextFromResponse, withoutOperatorText, type OperatorTextMap } from "@/components/operator/operator-text";
+
 export interface DecisionCasesResponse {
+  operatorText?: OperatorTextMap;
   cases: DecisionCase[];
   issues: OperatorSubmittedCaseIssue[];
   applications?: ServerInitialObservation[];
@@ -32,9 +35,11 @@ export function parseMintDenialStatus(
 }
 
 export function parseDecisionCasesResponse(value: unknown): DecisionCasesResponse {
-  const parsed = operatorWorkbenchDecisionsResponseSchema.safeParse(value);
+  const parsed = operatorWorkbenchDecisionsResponseSchema.safeParse(withoutOperatorText(value));
   if (!parsed.success) throw new Error("AI Credit returned an invalid governed decision response");
+  const operatorText = operatorTextFromResponse(value);
   return {
+    ...(operatorText.size > 0 ? { operatorText } : {}),
     cases: parsed.data.cases.map((oneCase) => ({
       ...oneCase,
       // Shared package revisions use different historical labels; neither grants current authority.

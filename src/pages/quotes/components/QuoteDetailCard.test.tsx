@@ -123,15 +123,20 @@ function caseBrief(next: CaseBrief["next"], work: CaseBrief["work"] = [], extra:
 
 type CardProps = Parameters<typeof QuoteDetailCard>[0];
 
-/** Each certainty column's facts, as "level: fact | source", in order: established first, then the applicant's word or open. */
+/** Preserve the detailed source/authority assertions across the three-column compact presentation. */
 function certainty(page: HTMLElement): string[][] {
   const section = page.querySelector('section[aria-labelledby="case-certainty-title"]');
-  return [...(section?.querySelectorAll("ul") ?? [])].map((list) =>
-    [...list.querySelectorAll("li")].map((item) => {
-      const [level, text, source] = [...item.querySelectorAll(":scope > span > span")].map((part) => part.textContent ?? "");
+  const columns = [...(section?.lastElementChild?.children ?? [])];
+  const facts = columns.map((column) =>
+    [...column.querySelectorAll("li")].map((item) => {
+      const level = item.querySelector(".sr-only")?.textContent ?? "";
+      const text = item.querySelector("[data-certainty-text]")?.textContent ?? "";
+      const source = item.querySelector("[data-certainty-source]")?.textContent ?? "";
       return `${level.replace(/: $/, "")}: ${text} | ${source}`;
     })
   );
+  // Existing checks compare all established facts, then all unresolved facts and applicant statements.
+  return [facts[0] ?? [], [...(facts[2] ?? []), ...(facts[1] ?? [])]];
 }
 
 function renderCard(props: Partial<CardProps>): HTMLDivElement {
@@ -491,7 +496,9 @@ describe("QuoteDetailCard", () => {
     expect(page.textContent).toContain("eBillAccepted");
     expect(page.textContent).toContain("ApplicantAccepted quote");
     expect(page.textContent).toContain("Mint operationUnavailable");
-    expect(page.querySelector("details")?.open).toBe(false);
+    expect(
+      [...page.querySelectorAll("details")].find((d) => d.querySelector("summary")?.textContent?.trim() === "Processing & audit")?.open
+    ).toBe(false);
     expect(page.querySelector('button[aria-label="Print summary"]')).not.toBeNull();
     // Party details sit with each party beside the case and in the bill record, not in processing & audit.
     expect(page.textContent).not.toContain("ParticipantDetailMock");
@@ -512,7 +519,7 @@ describe("QuoteDetailCard", () => {
 
     // A missing Mint record, a failed invoice check and an unknown acceptance are open, never established.
     expect(page.textContent).toContain("Nothing is established by a record or document yet.");
-    const [uncertain] = certainty(page);
+    const [, uncertain] = certainty(page);
     // A blank answer is a gap, not a statement.
     expect(uncertain).toEqual([
       "Open: Payer acceptance is not in this assessment | eBill record · acceptance, not ability to pay",

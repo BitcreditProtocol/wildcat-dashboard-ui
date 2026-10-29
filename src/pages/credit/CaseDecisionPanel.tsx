@@ -1,3 +1,4 @@
+import { cockpit } from "@/components/operator/cockpit-messages";
 import { cn } from "@bitcredit/ui-library";
 import { ChevronDown, CircleAlert, CircleCheck, FlaskConical } from "lucide-react";
 import type { ReactNode } from "react";
@@ -207,6 +208,7 @@ export function ProposedTerms({
   breakdown,
   synthetic,
   mayAdjust,
+  compact = false,
 }: {
   terms: DecisionTerms;
   policy: DecisionCase["policyPack"];
@@ -215,9 +217,27 @@ export function ProposedTerms({
   synthetic: boolean;
   /** The signed-in operator may requote and the policy pack permits adjustment. */
   mayAdjust: boolean;
+  compact?: boolean;
 }) {
   const intl = useIntl();
   const percent = (bps: number) => intl.formatNumber(bps / 10_000, { style: "percent", minimumFractionDigits: 2 });
+  const feeParts = (
+    <dl className="space-y-1.5">
+      <TermRow
+        label={intl.formatMessage(messages.discount, { days: terms.tenorDays })}
+        value={<Sat value={Number(terms.appliedDiscountSat)} />}
+      />
+      {/* The payer's figures and the evidence behind them are in "How sure we are"; here only what each part costs. */}
+      {breakdown?.parts.map((part) => (
+        <TermRow key={part.key} tone="part" label={intl.formatMessage(PART_MESSAGES[part.key])} value={<Sat value={part.sat} />} />
+      ))}
+      <TermRow
+        label={intl.formatMessage(messages.operatingCost)}
+        detail={intl.formatMessage(messages.operatingCostDetail)}
+        value={<Sat value={Number(terms.operatingCostSat)} />}
+      />
+    </dl>
+  );
   return (
     <section aria-labelledby="case-decision-terms" className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -246,20 +266,15 @@ export function ProposedTerms({
           })}
         </p>
       </div>
+      {compact ? (
+        <details className="rounded-md border border-border px-3 py-2 text-xs">
+          <summary className="cursor-pointer">{intl.formatMessage(cockpit.feeComponents)}</summary>
+          <div className="mt-2">{feeParts}</div>
+        </details>
+      ) : (
+        feeParts
+      )}
       <dl className="space-y-1.5">
-        <TermRow
-          label={intl.formatMessage(messages.discount, { days: terms.tenorDays })}
-          value={<Sat value={Number(terms.appliedDiscountSat)} />}
-        />
-        {/* The payer's figures and the evidence behind them are in "How sure we are"; here only what each part costs. */}
-        {breakdown?.parts.map((part) => (
-          <TermRow key={part.key} tone="part" label={intl.formatMessage(PART_MESSAGES[part.key])} value={<Sat value={part.sat} />} />
-        ))}
-        <TermRow
-          label={intl.formatMessage(messages.operatingCost)}
-          detail={intl.formatMessage(messages.operatingCostDetail)}
-          value={<Sat value={Number(terms.operatingCostSat)} />}
-        />
         <TermRow
           tone="total"
           label={intl.formatMessage(messages.mintingFee)}
@@ -392,6 +407,7 @@ export function CaseDecisionPanel({
             breakdown={actionableTerms.breakdown}
             synthetic={actionableTerms.synthetic}
             mayAdjust={actionableTerms.mayAdjust}
+            compact
           />
         </div>
       )}

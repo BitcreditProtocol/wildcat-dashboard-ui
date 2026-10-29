@@ -54,6 +54,7 @@ export function useCreditAssessmentForBill(
 ): CreditAssessmentForBillState & {
   decisionCase?: DecisionCase;
   recordedDecisionCase?: DecisionCase;
+  operatorText?: import("@/components/operator/operator-text").OperatorTextMap;
   /** Display-only authenticated conversation; never substitutes for a credit assessment. */
   recordedInitialApplication?: ServerInitialObservation;
   isLoading: boolean;
@@ -87,6 +88,7 @@ export function useCreditAssessmentForBill(
             (recordedDecisionCase === undefined ? one.mintQuoteId === mintQuoteId : one.caseId === recordedDecisionCase.snapshot.caseId)
         );
   return {
+    operatorText: data?.operatorText,
     decisionCase: undefined,
     recordedDecisionCase: assessment.status === "assessed" || assessment.status === "unavailable" ? recordedDecisionCase : undefined,
     recordedInitialApplication,
