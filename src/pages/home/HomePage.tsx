@@ -84,7 +84,7 @@ export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
                 title={intl.formatMessage(m.exposure)}
                 maximum={100}
                 axisLabel={intl.formatMessage(m.capAxis)}
-                data={summary.portfolio.counterparties.slice(0, 8).map((p) => ({
+                data={summary.portfolio.counterparties.map((p) => ({
                   id: `${p.role}:${p.ref}`,
                   label: `${p.name} · ${intl.formatMessage(m[p.role])}`,
                   value: p.capSat === null ? 0 : Number((BigInt(p.usedSat) * 10000n) / (BigInt(p.capSat) || 1n)) / 100,
