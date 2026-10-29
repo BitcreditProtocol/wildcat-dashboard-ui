@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { AskTheMint } from "./AskTheMint";
 import { parseMintChat, citationLocation, type MintChat } from "./mint-discussion-api";
+import { modelLabel, preferredModel } from "./chat/model-label";
 import { operatorSpanish } from "@/i18n/operator-es";
 import { cleanup, flush, json, renderWithProviders, requestBody, routeFetch } from "@/pages/mint-checks/mint-check-test-render";
 import { intelligenceFixture } from "@/pages/mint-checks/mint-check-test-fixtures";
@@ -123,6 +124,55 @@ describe("Ask the Mint", () => {
     expect(page.textContent).toContain("unavailable on this API");
     expect(queryByRole(page, "textbox")).not.toBeNull();
     expect(getByRole<HTMLButtonElement>(page, "button", { name: "Ask" }).disabled).toBe(true);
+  });
+  it("offers only the Mint's models, sends the remembered choice, and names the model that answered", async () => {
+    window.localStorage.setItem("ask-the-mint.model", "gpt-6.1-sol");
+    let submitted: unknown;
+    const state: MintChat = {
+      ...empty(),
+      models: { default: "gpt-5.6-luna", options: ["gpt-5.6-luna", "gpt-6.1-sol"] },
+      records: [
+        {
+          requestId: "11111111-1111-4111-8111-111111111111",
+          threadId: "22222222-2222-4222-8222-222222222222",
+          question: "¿Qué vence?",
+          status: "answered",
+          requestedAt: "2026-10-28T10:00:00.000Z",
+          answer: { answer: "Nada este mes.", citations: [], followUps: [] },
+        },
+      ],
+    };
+    vi.stubGlobal(
+      "fetch",
+      routeFetch({
+        "/api/ai-credit/mint-intelligence": () => json(intelligenceFixture()),
+        "/api/ai-credit/mint-discussion": (init) => {
+          if (init?.method !== "POST")
+            return json({ ...state, records: state.records.map((r) => ({ ...r, modelRoute: "codex-cli@0.147.0:gpt-6-sol:high:fast:x" })) });
+          submitted = requestBody(init);
+          return new Promise<Response>(() => undefined);
+        },
+      })
+    );
+    const { page } = await renderWithProviders(<AskTheMint />);
+    expect(page.textContent).toContain("GPT-6 Sol");
+    expect(getByRole(page, "button", { name: "Model: GPT-6.1 Sol" })).toBeDefined();
+    type(page, "¿Y el próximo?");
+    act(() => {
+      fireEvent.click(getByRole(page, "button", { name: "Ask" }));
+    });
+    await flush();
+    expect((submitted as { model?: string }).model).toBe("gpt-6.1-sol");
+    window.localStorage.removeItem("ask-the-mint.model");
+  });
+  it("labels models plainly, ignores a remembered model the Mint no longer offers, and rejects an unoffered default", () => {
+    expect(modelLabel("gpt-5.6-luna")).toBe("GPT-5.6 Luna");
+    expect(modelLabel("claude-sonnet-5-5")).toBe("Claude Sonnet 5.5");
+    expect(modelLabel("eins/claude-opus-5")).toBe("Claude Opus 5");
+    window.localStorage.setItem("ask-the-mint.model", "retired-model");
+    expect(preferredModel({ default: "gpt-5.6-luna", options: ["gpt-5.6-luna"] })).toBe("gpt-5.6-luna");
+    window.localStorage.removeItem("ask-the-mint.model");
+    expect(() => parseMintChat({ ...empty(), models: { default: "gpt-6.1-sol", options: ["gpt-5.6-luna"] } })).toThrow(/not offered/);
   });
   it("rejects foreign source kinds and maps only fixed application routes", () => {
     expect(() =>

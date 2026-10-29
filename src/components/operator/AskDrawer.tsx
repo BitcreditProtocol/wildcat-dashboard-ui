@@ -22,7 +22,17 @@ export function AskDrawer({
   const intl = useIntl();
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="ask-drawer w-full gap-0 overflow-y-auto sm:max-w-[640px]">
+      <SheetContent
+        className="ask-drawer flex w-full flex-col gap-0 sm:max-w-[640px]"
+        onOpenAutoFocus={(event) => {
+          // ⌘K means "ask": land in the question, not on the first control.
+          const question = (event.currentTarget as HTMLElement | null)?.querySelector("textarea");
+          if (question) {
+            event.preventDefault();
+            question.focus();
+          }
+        }}
+      >
         <SheetHeader className="border-b border-border p-5">
           <SheetTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-sky-500" />
@@ -30,7 +40,7 @@ export function AskDrawer({
           </SheetTitle>
           <SheetDescription>{intl.formatMessage(caseScoped ? m.caseScope : drawer.mint)}</SheetDescription>
         </SheetHeader>
-        {children}
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       </SheetContent>
     </Sheet>
   );

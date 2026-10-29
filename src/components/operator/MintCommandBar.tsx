@@ -54,7 +54,7 @@ export function MintCommandBar() {
               {intl.formatMessage(m.caseUnavailable)}
             </p>
           ) : (
-            <AskTheMint />
+            <AskTheMint variant="drawer" />
           ))}
       </AskDrawer>
     </>

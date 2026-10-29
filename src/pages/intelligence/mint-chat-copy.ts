@@ -20,7 +20,7 @@ export const mintChatMessages = defineMessages({
   input: { id: "mintChat.input", defaultMessage: "Your question to the Mint", description: "Operator dashboard mintChat: input" },
   placeholder: {
     id: "mintChat.placeholder",
-    defaultMessage: "Ask about maturities, exposure, policy or the coffee harvest…",
+    defaultMessage: "Ask about your cases, buyers or due dates…",
     description: "Operator dashboard mintChat: placeholder",
   },
   send: { id: "mintChat.send", defaultMessage: "Ask", description: "Operator dashboard mintChat: send" },
@@ -41,7 +41,7 @@ export const mintChatMessages = defineMessages({
   },
   emptyBody: {
     id: "mintChat.emptyBody",
-    defaultMessage: "Start with a question about this Mint, or ask in Spanish. Follow the sources back to the records.",
+    defaultMessage: "Ask about cases, buyers, due dates or the harvest, in English or Spanish. Every answer cites the records it used.",
     description: "Operator dashboard mintChat: emptyBody",
   },
   exampleMaturity: {
@@ -58,6 +58,22 @@ export const mintChatMessages = defineMessages({
     id: "mintChat.exampleHarvest",
     defaultMessage: "What matters about the Guatemalan coffee harvest for repayment?",
     description: "Operator dashboard mintChat: exampleHarvest",
+  },
+  model: { id: "mintChat.model", defaultMessage: "Model: {model}", description: "Accessible name of the model picker" },
+  modelMenu: { id: "mintChat.modelMenu", defaultMessage: "Answer with", description: "Heading of the model picker menu" },
+  modelDefault: { id: "mintChat.modelDefault", defaultMessage: "Default", description: "Marks the Mint's default model" },
+  modelFixed: {
+    id: "mintChat.modelFixed",
+    defaultMessage: "This Mint answers with one configured model",
+    description: "Tooltip when the Mint offers no model choice",
+  },
+  copy: { id: "mintChat.copy", defaultMessage: "Copy answer", description: "Copies one answer's text" },
+  copied: { id: "mintChat.copied", defaultMessage: "Copied", description: "Confirmation after copying an answer" },
+  conversations: { id: "mintChat.conversations", defaultMessage: "Earlier conversations", description: "Conversation menu heading" },
+  limitWhy: {
+    id: "mintChat.limitWhy",
+    defaultMessage: "One daily limit for the whole Mint, shared by every operator",
+    description: "Tooltip for the daily question count",
   },
   newThread: { id: "mintChat.newThread", defaultMessage: "New conversation", description: "Operator dashboard mintChat: newThread" },
   history: { id: "mintChat.history", defaultMessage: "Conversation", description: "Operator dashboard mintChat: history" },
@@ -113,7 +129,7 @@ export const mintChatMessages = defineMessages({
   elapsed: { id: "mintChat.elapsed", defaultMessage: "{seconds}s elapsed", description: "Elapsed time while the Mint prepares an answer" },
   limit: {
     id: "mintChat.limit",
-    defaultMessage: "{used} / {limit} questions today · Mint-wide",
+    defaultMessage: "{used} / {limit} questions today",
     description: "Operator dashboard mintChat: limit",
   },
   caseHint: {

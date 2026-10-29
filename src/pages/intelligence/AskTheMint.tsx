@@ -1,42 +1,165 @@
 import { useEffect, useRef, useState, useId } from "react";
-import { Button } from "@bitcredit/ui-library";
-import { ArrowUp, ArrowUpRight, BookOpen, LoaderCircle, MessageSquarePlus, Sparkles } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@bitcredit/ui-library";
+import {
+  BookOpen,
+  Check,
+  ChevronDown,
+  Copy,
+  CornerDownRight,
+  FileText,
+  Gauge,
+  Globe,
+  ListTodo,
+  MessageSquarePlus,
+  Network,
+  RotateCcw,
+  Scale,
+  Sparkles,
+  TrendingUp,
+  TriangleAlert,
+} from "lucide-react";
 import { useIntl } from "react-intl";
 import { Link } from "react-router";
 import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import { useMintIntelligence } from "@/pages/mint-checks/api";
-import { citationLocation, MintChatError, useAskMint, useMintDiscussion, type MintQuestion } from "./mint-discussion-api";
-import { MintMarkdown } from "./MintMarkdown";
-import { mintChatMessages as m } from "./mint-chat-copy";
-
 import { useMintSummary } from "@/pages/home/operator-api";
 import { cockpit } from "@/components/operator/cockpit-messages";
+import {
+  citationLocation,
+  MintChatError,
+  useAskMint,
+  useMintDiscussion,
+  type CitationKind,
+  type MintAnswer,
+  type MintQuestion,
+} from "./mint-discussion-api";
+import { MintMarkdown } from "./MintMarkdown";
+import { mintChatMessages as m } from "./mint-chat-copy";
+import { ChatComposer } from "./chat/ChatComposer";
+import { ModelPicker } from "./chat/ModelPicker";
+import { modelLabel, preferredModel, rememberModel } from "./chat/model-label";
 
-export function AskTheMint() {
+const sourceIcon: Record<CitationKind, typeof BookOpen> = {
+  "intelligence-note": BookOpen,
+  policy: Scale,
+  outcomes: TrendingUp,
+  portfolio: FileText,
+  queue: ListTodo,
+  federation: Network,
+  capacity: Gauge,
+  "general-knowledge": Globe,
+};
+
+function CopyAnswer({ text }: { text: string }) {
+  const intl = useIntl();
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className="chat-icon-button"
+      aria-label={intl.formatMessage(copied ? m.copied : m.copy)}
+      title={intl.formatMessage(copied ? m.copied : m.copy)}
+      onClick={() => {
+        void navigator.clipboard?.writeText(text).then(() => {
+          setCopied(true);
+          window.setTimeout(() => {
+            setCopied(false);
+          }, 1500);
+        });
+      }}
+    >
+      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+    </button>
+  );
+}
+
+function Answer({ answer, model }: { answer: MintAnswer; model?: string }) {
+  const intl = useIntl();
+  const notes = useMintIntelligence();
+  return (
+    <article className="chat-answer">
+      <MintMarkdown text={answer.answer} />
+      {answer.citations.some((c) => c.kind === "general-knowledge" && !c.label) && (
+        <p className="chat-general">{intl.formatMessage(m.general)}</p>
+      )}
+      {answer.citations.length > 0 && (
+        <ul aria-label={intl.formatMessage(m.sources)} className="chat-sources">
+          {answer.citations.map((c, i) => {
+            const href = citationLocation(c);
+            const note = c.kind === "intelligence-note" ? notes.data?.notes.find((n) => n.id === c.ref) : undefined;
+            const label = c.label ?? note?.title ?? intl.formatMessage(m[c.kind]);
+            const Icon = sourceIcon[c.kind];
+            return (
+              <li key={`${c.kind}:${c.ref ?? i}`}>
+                {href ? (
+                  <Link className="chat-source" to={href}>
+                    <Icon aria-hidden="true" />
+                    {label}
+                  </Link>
+                ) : (
+                  <span className="chat-source chat-source-static">
+                    <Icon aria-hidden="true" />
+                    {label}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="chat-answer-meta">
+        <CopyAnswer text={answer.answer} />
+        {model && <span>{modelLabel(model)}</span>}
+      </div>
+    </article>
+  );
+}
+
+/**
+ * Ask the Mint: a read-only explanation of this Mint's records. The page hosts it full height;
+ * the ⌘K drawer hosts the same conversation.
+ */
+export function AskTheMint({ variant = "page" }: { variant?: "page" | "drawer" }) {
   const intl = useIntl();
   const questionId = useId();
   const history = useMintDiscussion();
   const ask = useAskMint();
-  const notes = useMintIntelligence();
   const summary = useMintSummary();
   const [threadId, setThreadId] = useState<string>();
   const [draft, setDraft] = useState("");
   const [retry, setRetry] = useState<MintQuestion>();
+  const [model, setModel] = useState<string>();
   const [elapsed, setElapsed] = useState(0);
   const startedAt = useRef(Date.now());
   const input = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
-  const selected = threadId ?? history.data?.records[history.data.records.length - 1]?.threadId;
+  const models = history.data?.models;
+  const chosenModel = model !== undefined && models?.options.includes(model) ? model : preferredModel(models);
+  // Most recently active conversation first.
+  const threads = [...new Set([...(history.data?.records ?? [])].reverse().map((r) => r.threadId))];
+  const selected = threadId ?? threads[0];
   const records = history.data?.records.filter((r) => r.threadId === selected) ?? [];
   const pending = ask.isPending || records.some((r) => r.status === "pending");
   const lastAnswer = records[records.length - 1]?.answer;
   const pendingAt = records.find((r) => r.status === "pending")?.requestedAt;
+  const fixedModel = [...(history.data?.records ?? [])].reverse().find((r) => r.model)?.model;
   useEffect(() => {
     if (!pending) return;
     const start = pendingAt ? Date.parse(pendingAt) : startedAt.current;
-    const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)));
+    const tick = () => {
+      setElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)));
+    };
     const timer = window.setInterval(tick, 1000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+    };
   }, [pending, pendingAt]);
   const topBuyer = summary.error
     ? undefined
@@ -68,10 +191,16 @@ export function AskTheMint() {
   }, [ask.isSuccess, ask.isPending]);
   const send = (question: string) => {
     if (pending || !question.trim()) return;
-    const next =
+    const next: MintQuestion =
       retry?.question === question.trim()
         ? retry
-        : { threadId: selected ?? crypto.randomUUID(), requestId: crypto.randomUUID(), question: question.trim() };
+        : {
+            threadId: selected ?? crypto.randomUUID(),
+            requestId: crypto.randomUUID(),
+            question: question.trim(),
+            // Only a Mint that offers a choice is told one; older Mints reject unknown fields.
+            ...(models && chosenModel ? { model: chosenModel } : {}),
+          };
     startedAt.current = Date.now();
     setElapsed(0);
     setThreadId(next.threadId);
@@ -83,235 +212,222 @@ export function AskTheMint() {
       },
     });
   };
-  return (
-    <section
-      id="ask-the-mint"
-      aria-label={intl.formatMessage(m.title)}
-      className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
-    >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-2.5">
-        {/* The page or drawer around the chat already names it; the heading stays for screen readers. */}
-        <h2 className="sr-only">{intl.formatMessage(m.title)}</h2>
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Sparkles className="size-4 text-sky-600 dark:text-sky-400" aria-hidden="true" />
-          {intl.formatMessage(m.subtitle)}
-        </p>
-        <Button
-          variant="ghost"
-          size="sm"
+  const startNew = () => {
+    setThreadId(crypto.randomUUID());
+    setDraft("");
+    setRetry(undefined);
+    ask.reset();
+    input.current?.focus();
+  };
+  const pick = (question: string) => {
+    setDraft(question);
+    input.current?.focus();
+  };
+  const empty = records.length === 0 && !pending;
+  const others = threads.filter((id) => id !== selected);
+  const composer = (
+    <ChatComposer
+      id={questionId}
+      inputRef={input}
+      value={draft}
+      onChange={setDraft}
+      onSubmit={() => {
+        send(draft);
+      }}
+      label={intl.formatMessage(m.input)}
+      placeholder={intl.formatMessage(m.placeholder)}
+      sendLabel={intl.formatMessage(m.send)}
+      canSend={!pending && Boolean(draft.trim()) && !unavailable}
+      busy={pending}
+      disabled={pending}
+      toolbar={
+        <ModelPicker
+          value={chosenModel}
+          options={models?.options ?? []}
+          fallback={models?.default ?? fixedModel}
           disabled={pending}
-          onClick={() => {
-            setThreadId(crypto.randomUUID());
-            setDraft("");
-            setRetry(undefined);
-            ask.reset();
-            input.current?.focus();
+          onChange={(id) => {
+            setModel(id);
+            rememberModel(id);
           }}
-        >
-          <MessageSquarePlus className="mr-1.5 size-4" />
-          {intl.formatMessage(m.newThread)}
-        </Button>
-      </header>
-      <div className="px-5 pt-4">
-        <BoundaryNotice summary={intl.formatMessage(m.label)}>{intl.formatMessage(m.boundary)}</BoundaryNotice>
-      </div>
-      {history.data && new Set(history.data.records.map((r) => r.threadId)).size > 1 && (
-        <div className="px-5 pt-3">
-          <label className="text-xs text-muted-foreground">
-            {intl.formatMessage(m.history)}
-            <select
-              className="ml-2 max-w-full rounded border border-input bg-background p-1.5"
+        />
+      }
+      status={
+        history.data && (
+          <span className="chat-limit" title={intl.formatMessage(m.limitWhy)}>
+            {intl.formatMessage(m.limit, { used: history.data.limits.usedToday, limit: history.data.limits.daily })}
+          </span>
+        )
+      }
+    />
+  );
+  const notices = (
+    <>
+      {unavailable && (
+        <p role="status" className="chat-notice">
+          <TriangleAlert className="size-3.5 shrink-0" />
+          {intl.formatMessage(m.unavailable)}
+        </p>
+      )}
+      {ask.error && (
+        <div role="alert" className="chat-notice">
+          <TriangleAlert className="size-3.5 shrink-0" />
+          <p className="min-w-0 flex-1">{intl.formatMessage(errorMessage)}</p>
+          {retry && (
+            <button
+              type="button"
+              className="chat-notice-action"
               disabled={pending}
-              value={selected}
-              onChange={(event) => {
-                setThreadId(event.target.value);
-                setRetry(undefined);
-                ask.reset();
+              onClick={() => {
+                send(retry.question);
               }}
             >
-              {[...new Set(history.data.records.map((r) => r.threadId))].map((id) => (
-                <option key={id} value={id}>
-                  {history.data?.records.find((r) => r.threadId === id)?.question.slice(0, 80)}
-                </option>
-              ))}
-              {selected && !history.data.records.some((r) => r.threadId === selected) && (
-                <option value={selected}>{intl.formatMessage(m.newThread)}</option>
-              )}
-            </select>
-          </label>
+              <RotateCcw className="size-3" />
+              {intl.formatMessage(m.retry)}
+            </button>
+          )}
+        </div>
+      )}
+    </>
+  );
+  return (
+    <section id="ask-the-mint" aria-label={intl.formatMessage(m.title)} className={`mint-chat mint-chat-${variant}`}>
+      <h2 className="sr-only">{intl.formatMessage(m.title)}</h2>
+      {(others.length > 0 || !empty) && (
+        <div className="mint-chat-bar">
+          {others.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild disabled={pending}>
+                <button type="button" className="chat-control max-w-[min(28rem,70%)]" aria-label={intl.formatMessage(m.history)}>
+                  <span className="truncate">{records[0]?.question ?? intl.formatMessage(m.conversations)}</span>
+                  <ChevronDown className="chat-control-chevron" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-80">
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                  {intl.formatMessage(m.conversations)}
+                </DropdownMenuLabel>
+                {threads.map((id) => (
+                  <DropdownMenuItem
+                    key={id}
+                    onSelect={() => {
+                      setThreadId(id);
+                      setRetry(undefined);
+                      ask.reset();
+                    }}
+                    className={id === selected ? "font-medium" : ""}
+                  >
+                    <span className="truncate">{history.data?.records.find((r) => r.threadId === id)?.question}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={startNew}>
+                  <MessageSquarePlus className="size-4" />
+                  {intl.formatMessage(m.newThread)}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <span />
+          )}
+          {!empty && (
+            <button type="button" className="chat-control" disabled={pending} onClick={startNew}>
+              <MessageSquarePlus aria-hidden="true" />
+              {intl.formatMessage(m.newThread)}
+            </button>
+          )}
         </div>
       )}
       <div
-        className="max-h-[36rem] overflow-y-auto px-5 py-5"
+        className="mint-chat-scroll"
         role="log"
         aria-label={intl.formatMessage(m.history)}
         aria-live="polite"
         aria-relevant="additions text"
       >
-        {records.length === 0 && !pending && (
-          <div className="mx-auto max-w-2xl py-5">
-            <BookOpen className="mb-4 size-7 text-sky-700 dark:text-sky-400" aria-hidden="true" />
+        {empty ? (
+          <div className="mint-chat-empty">
+            <span className="mint-chat-glyph" aria-hidden="true">
+              <Sparkles className="size-5" />
+            </span>
             <h3 className="text-xl font-semibold tracking-tight">{intl.formatMessage(m.emptyTitle)}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{intl.formatMessage(m.emptyBody)}</p>
-            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            <p className="max-w-md text-sm leading-relaxed text-muted-foreground">{intl.formatMessage(m.emptyBody)}</p>
+            <div className="mint-chat-dock mt-4 w-full">
+              {notices}
+              {composer}
+            </div>
+            <div className="chat-suggestions">
               {examples.map((q) => (
                 <button
                   key={q}
                   type="button"
-                  className="group flex min-h-24 flex-col justify-between gap-3 rounded-lg border border-border p-3 text-left text-xs leading-relaxed hover:border-sky-500 hover:bg-sky-500/5 focus-visible:outline-2 focus-visible:outline-ring"
+                  className="chat-suggestion"
                   onClick={() => {
-                    setDraft(q);
-                    input.current?.focus();
+                    pick(q);
                   }}
                 >
-                  <span>{q}</span>
-                  <ArrowUpRight className="size-3.5 text-muted-foreground group-hover:text-sky-600" />
+                  {q}
                 </button>
               ))}
             </div>
+            {variant === "page" && <p className="mt-2 text-xs text-muted-foreground">{intl.formatMessage(m.caseHint)}</p>}
           </div>
-        )}
-        <ol className="space-y-6">
-          {records.map((r) => (
-            <li key={r.requestId} className="space-y-3">
-              <div className="ml-auto max-w-[90%] rounded-xl rounded-tr-sm bg-muted px-4 py-3">
-                <p className="mb-1 text-[11px] font-semibold text-muted-foreground">{intl.formatMessage(m.you)}</p>
-                <p className="whitespace-pre-wrap text-sm">{r.question}</p>
-              </div>
-              {r.answer ? (
-                <article className="max-w-3xl space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold">
-                    <Sparkles className="size-3.5 text-sky-700 dark:text-sky-400" />
-                    {intl.formatMessage(m.title)}
-                    <span className="font-normal text-muted-foreground">· {intl.formatMessage(m.label)}</span>
-                  </div>
-                  <MintMarkdown text={r.answer.answer} />
-                  {r.answer.citations.some((c) => c.kind === "general-knowledge" && !c.label) && (
-                    <p className="border-l-2 border-amber-500 pl-3 text-xs text-muted-foreground">{intl.formatMessage(m.general)}</p>
-                  )}
-                  <ul aria-label={intl.formatMessage(m.sources)} className="flex flex-wrap gap-2">
-                    {r.answer.citations.map((c, i) => {
-                      const href = citationLocation(c);
-                      const note = c.kind === "intelligence-note" ? notes.data?.notes.find((n) => n.id === c.ref) : undefined;
-                      const label = c.label ?? note?.title ?? intl.formatMessage(m[c.kind]);
-                      return (
-                        <li key={`${c.kind}:${c.ref ?? i}`}>
-                          {href ? (
-                            <Link
-                              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] hover:border-sky-500 hover:underline"
-                              to={href}
-                            >
-                              <BookOpen className="size-3" />
-                              {label}
-                              <ArrowUpRight className="size-3" />
-                            </Link>
-                          ) : (
-                            <span className="inline-flex rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground">
-                              {label}
-                            </span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </article>
-              ) : r.status === "failed" ? (
-                <p className="text-xs text-amber-800 dark:text-amber-300">{intl.formatMessage(m.failed)}</p>
-              ) : null}
-            </li>
-          ))}
-        </ol>
-        {pending && (
-          <div role="status" className="mt-5 rounded-lg border border-sky-500/25 bg-sky-500/5 p-4">
-            <p className="flex items-center gap-2 text-sm">
-              <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none text-sky-700 dark:text-sky-400" />
-              {intl.formatMessage(m.pending)}
-            </p>
-            <p className="mt-1 pl-6 text-xs text-muted-foreground">{intl.formatMessage(m.pendingDetail)}</p>
-            <p aria-live="off" className="mt-2 pl-6 text-xs tabular-nums text-muted-foreground">
-              {intl.formatMessage(m.elapsed, { seconds: elapsed })}
-            </p>
-          </div>
+        ) : (
+          <ol className="mint-chat-thread">
+            {records.map((r) => (
+              <li key={r.requestId} className="flex flex-col gap-4">
+                <p className="chat-question">{r.question}</p>
+                {r.answer ? (
+                  <Answer answer={r.answer} model={r.model} />
+                ) : r.status === "failed" ? (
+                  <p className="chat-failed">
+                    <TriangleAlert className="size-3.5 shrink-0" />
+                    {intl.formatMessage(m.failed)}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+            {pending && (
+              <li role="status" className="chat-pending">
+                <span className="chat-shimmer">{intl.formatMessage(m.pending)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {intl.formatMessage(m.pendingDetail)}{" "}
+                  <span aria-live="off" className="tabular-nums">
+                    {intl.formatMessage(m.elapsed, { seconds: elapsed })}
+                  </span>
+                </span>
+              </li>
+            )}
+            {lastAnswer && !pending && lastAnswer.followUps.length > 0 && (
+              <li className="chat-follow-ups" aria-label={intl.formatMessage(m.followUps)}>
+                {lastAnswer.followUps.slice(0, 3).map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    className="chat-follow-up"
+                    onClick={() => {
+                      pick(q);
+                    }}
+                  >
+                    <CornerDownRight className="size-3.5 shrink-0" aria-hidden="true" />
+                    {q}
+                  </button>
+                ))}
+              </li>
+            )}
+          </ol>
         )}
         <div ref={end} />
       </div>
-      {lastAnswer && !pending && (
-        <div className="px-5 pb-4">
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{intl.formatMessage(m.followUps)}</p>
-          <div className="flex flex-wrap gap-2">
-            {lastAnswer.followUps.slice(0, 3).map((q) => (
-              <button
-                key={q}
-                type="button"
-                className="rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
-                onClick={() => {
-                  setDraft(q);
-                  input.current?.focus();
-                }}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
+      {!empty && (
+        <div className="mint-chat-dock">
+          {notices}
+          {composer}
         </div>
       )}
-      <form
-        className="border-t border-border bg-muted/20 p-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          send(draft);
-        }}
-      >
-        <label className="sr-only" htmlFor={questionId}>
-          {intl.formatMessage(m.input)}
-        </label>
-        <div className="flex items-end gap-3 rounded-xl border border-input bg-background p-2 focus-within:ring-2 focus-within:ring-ring">
-          <textarea
-            id={questionId}
-            ref={input}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            maxLength={1000}
-            rows={2}
-            className="min-h-14 w-full resize-y bg-transparent p-2 text-sm outline-none"
-            placeholder={intl.formatMessage(m.placeholder)}
-            disabled={pending}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-                event.preventDefault();
-                send(draft);
-              }
-            }}
-          />
-          <Button
-            type="submit"
-            disabled={pending || !draft.trim() || unavailable}
-            className="mb-1 shrink-0"
-            aria-label={intl.formatMessage(m.send)}
-          >
-            <ArrowUp className="size-4" />
-          </Button>
-        </div>
-        {unavailable && (
-          <p role="status" className="mt-2 text-xs text-amber-800 dark:text-amber-300">
-            {intl.formatMessage(m.unavailable)}
-          </p>
-        )}
-        {ask.error && (
-          <div role="alert" className="mt-2 text-xs text-amber-800 dark:text-amber-300">
-            <p>{intl.formatMessage(errorMessage)}</p>
-            {retry && (
-              <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => send(retry.question)}>
-                {intl.formatMessage(m.retry)}
-              </Button>
-            )}
-          </div>
-        )}
-        <div className="mt-2 flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground">
-          <p>{intl.formatMessage(m.caseHint)}</p>
-          {history.data && <p>{intl.formatMessage(m.limit, { used: history.data.limits.usedToday, limit: history.data.limits.daily })}</p>}
-        </div>
-      </form>
+      <div className="mint-chat-boundary">
+        <BoundaryNotice summary={intl.formatMessage(m.label)}>{intl.formatMessage(m.boundary)}</BoundaryNotice>
+      </div>
     </section>
   );
 }

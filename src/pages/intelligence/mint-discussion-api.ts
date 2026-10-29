@@ -27,16 +27,45 @@ export interface MintChatRecord {
   status: "pending" | "answered" | "failed";
   requestedAt: string;
   answer?: MintAnswer;
+  /** The model that answered, when the Mint records it. */
+  model?: string;
+}
+/** The deployment's model allowlist; absent on Mints that offer one fixed model. */
+export interface MintChatModels {
+  default: string;
+  options: string[];
 }
 export interface MintChat {
   schema: "mint-discussion-v1";
   records: MintChatRecord[];
   limits: { daily: number; usedToday: number };
+  models?: MintChatModels;
 }
 export interface MintQuestion {
   requestId: string;
   threadId: string;
   question: string;
+  model?: string;
+}
+const modelId = (value: unknown) => {
+  const id = string(value);
+  if (!/^[a-z0-9][a-z0-9._/-]{0,79}$/u.test(id)) throw new Error("Invalid model");
+  return id;
+};
+/** `modelRoute` is "runner@version:model:effort:…"; only its model segment is shown. */
+function recordModel(r: Record<string, unknown>): string | undefined {
+  if (r.model !== undefined) return modelId(r.model);
+  if (typeof r.modelRoute !== "string") return undefined;
+  const segment = r.modelRoute.split(":")[1];
+  return segment && /^[a-z0-9][a-z0-9._/-]{0,79}$/u.test(segment) ? segment : undefined;
+}
+function parseModels(value: unknown): MintChatModels | undefined {
+  if (value === undefined) return undefined;
+  const v = object(value);
+  const options = array(v.options).map(modelId).slice(0, 8);
+  const fallback = modelId(v.default);
+  if (!options.includes(fallback)) throw new Error("Default model is not offered");
+  return { default: fallback, options };
 }
 const kinds: readonly string[] = [
   "intelligence-note",
@@ -56,9 +85,11 @@ export function parseMintChat(value: unknown): MintChat {
   const v = object(value);
   if (v.schema !== "mint-discussion-v1") throw new Error("Unknown chat version");
   const limits = object(v.limits);
+  const models = parseModels(v.models);
   return {
     schema: v.schema,
     limits: { daily: number(limits.daily), usedToday: number(limits.usedToday) },
+    ...(models ? { models } : {}),
     records: array(v.records).map((value) => {
       const r = object(value);
       if (r.status !== "pending" && r.status !== "answered" && r.status !== "failed") throw new Error("Invalid chat state");
@@ -69,6 +100,8 @@ export function parseMintChat(value: unknown): MintChat {
         status: r.status,
         requestedAt: string(r.requestedAt),
       };
+      const model = recordModel(r);
+      if (model) record.model = model;
       if (r.status === "answered") {
         const a = object(r.answer);
         record.answer = {

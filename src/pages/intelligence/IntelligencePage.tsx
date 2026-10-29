@@ -1,9 +1,9 @@
 import { useRevealAnchor } from "@/components/operator/use-reveal-anchor";
 import type { MintIntelligenceNote, MintIntelligenceResponse, MintIntelligenceScope } from "@bitcredit/ai-credit-shared";
-import { Button } from "@bitcredit/ui-library";
 import { AskTheMint } from "./AskTheMint";
 import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { defineMessages, useIntl } from "react-intl";
 import { useMintIntelligence } from "@/pages/mint-checks/api";
 import { intelligenceScopeMessages } from "@/pages/mint-checks/mint-checks-copy";
@@ -14,11 +14,6 @@ import { IntelligenceNoteForm } from "./IntelligenceNoteForm";
 
 const plain = defineMessages({
   title: { id: "agentic.intel.title", defaultMessage: "Ask the Mint", description: "Page title" },
-  subtitle: {
-    id: "agentic.intel.subtitle",
-    defaultMessage: "Ask about your cases, buyers, due dates or the market. Answers cite your records.",
-    description: "What the page is for",
-  },
   notes: { id: "agentic.intel.notes", defaultMessage: "Team notes", description: "Notes panel title" },
   notesWhy: {
     id: "agentic.intel.notesWhy",
@@ -152,49 +147,46 @@ export default function IntelligencePage() {
   useRevealAnchor(query.data);
   const [form, setForm] = useState<{ supersedes?: MintIntelligenceNote } | null>(null);
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold">{intl.formatMessage(plain.title)}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{intl.formatMessage(plain.subtitle)}</p>
-      </header>
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <AskTheMint />
-        <aside className="home-panel" aria-label={intl.formatMessage(plain.notes)}>
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold">{intl.formatMessage(plain.notes)}</h2>
-            {form === null && query.data && (
-              <Button size="sm" variant="outline" onClick={() => setForm({})}>
-                {intl.formatMessage(messages.add)}
-              </Button>
-            )}
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(plain.notesWhy)}</p>
-          {form !== null && (
-            <div className="mt-3">
-              <IntelligenceNoteForm key={form.supersedes?.id ?? "new"} supersedes={form.supersedes} onDone={() => setForm(null)} />
-            </div>
+    <div className="ask-page">
+      {/* The conversation names itself; the page title stays for assistive technology. */}
+      <h1 className="sr-only">{intl.formatMessage(plain.title)}</h1>
+      <AskTheMint variant="page" />
+      <aside className="ask-page-notes home-panel" aria-label={intl.formatMessage(plain.notes)}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold">{intl.formatMessage(plain.notes)}</h2>
+          {form === null && query.data && (
+            <button type="button" className="chat-control" onClick={() => setForm({})}>
+              <Plus aria-hidden="true" />
+              {intl.formatMessage(messages.add)}
+            </button>
           )}
-          <div className="mt-2">
-            {query.error ? (
-              <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />
-            ) : query.data ? (
-              <IntelligenceGroups response={query.data} onUpdate={(note) => setForm({ supersedes: note })} />
-            ) : (
-              <CheckLoading />
-            )}
-          </div>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(plain.notesWhy)}</p>
+        {form !== null && (
           <div className="mt-3">
-            <BoundaryNotice summary={intl.formatMessage(intelligenceMessages.boundary)}>
-              {intl.formatMessage({
-                id: "intelligence.readOnlyPrompt",
-                defaultMessage:
-                  "Notes may reach only Ask the Mint’s operator-only, read-only explanation prompt. They never enter applicant, assessment, pricing, gate or authorization prompts. Notes and explanations cannot change the reviewed policy.",
-                description: "Operator dashboard intelligence: readOnlyPrompt",
-              })}
-            </BoundaryNotice>
+            <IntelligenceNoteForm key={form.supersedes?.id ?? "new"} supersedes={form.supersedes} onDone={() => setForm(null)} />
           </div>
-        </aside>
-      </div>
+        )}
+        <div className="mt-2">
+          {query.error ? (
+            <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />
+          ) : query.data ? (
+            <IntelligenceGroups response={query.data} onUpdate={(note) => setForm({ supersedes: note })} />
+          ) : (
+            <CheckLoading />
+          )}
+        </div>
+        <div className="mt-3">
+          <BoundaryNotice summary={intl.formatMessage(intelligenceMessages.boundary)}>
+            {intl.formatMessage({
+              id: "intelligence.readOnlyPrompt",
+              defaultMessage:
+                "Notes may reach only Ask the Mint’s operator-only, read-only explanation prompt. They never enter applicant, assessment, pricing, gate or authorization prompts. Notes and explanations cannot change the reviewed policy.",
+              description: "Operator dashboard intelligence: readOnlyPrompt",
+            })}
+          </BoundaryNotice>
+        </div>
+      </aside>
     </div>
   );
 }
