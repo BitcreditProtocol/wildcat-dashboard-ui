@@ -173,6 +173,10 @@ describe("Ask the Mint", () => {
     expect(preferredModel({ default: "gpt-5.6-luna", options: ["gpt-5.6-luna"] })).toBe("gpt-5.6-luna");
     window.localStorage.removeItem("ask-the-mint.model");
     expect(() => parseMintChat({ ...empty(), models: { default: "gpt-6.1-sol", options: ["gpt-5.6-luna"] } })).toThrow(/not offered/);
+    // The Mint allows mixed-case ids up to 128 characters; the dashboard must not reject what the Mint accepts.
+    expect(parseMintChat({ ...empty(), models: { default: "Custom-Model.1", options: ["Custom-Model.1"] } }).models?.default).toBe(
+      "Custom-Model.1"
+    );
   });
   it("rejects foreign source kinds and maps only fixed application routes", () => {
     expect(() =>

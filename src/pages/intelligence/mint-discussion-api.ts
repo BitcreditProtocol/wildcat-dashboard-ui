@@ -49,7 +49,7 @@ export interface MintQuestion {
 }
 const modelId = (value: unknown) => {
   const id = string(value);
-  if (!/^[a-z0-9][a-z0-9._/-]{0,79}$/u.test(id)) throw new Error("Invalid model");
+  if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/u.test(id)) throw new Error("Invalid model");
   return id;
 };
 /** `modelRoute` is "runner@version:model:effort:…"; only its model segment is shown. */
@@ -57,7 +57,7 @@ function recordModel(r: Record<string, unknown>): string | undefined {
   if (r.model !== undefined) return modelId(r.model);
   if (typeof r.modelRoute !== "string") return undefined;
   const segment = r.modelRoute.split(":")[1];
-  return segment && /^[a-z0-9][a-z0-9._/-]{0,79}$/u.test(segment) ? segment : undefined;
+  return segment && /^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/u.test(segment) ? segment : undefined;
 }
 function parseModels(value: unknown): MintChatModels | undefined {
   if (value === undefined) return undefined;
