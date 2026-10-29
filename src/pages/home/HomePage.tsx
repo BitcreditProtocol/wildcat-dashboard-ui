@@ -213,7 +213,14 @@ export default function HomePage() {
     refetchInterval: (q) => facilityRefetchInterval(q.state.data),
     retry: false,
   });
-  const book = summary.error ? undefined : (summary.data ?? undefined);
+  // A failed background refresh keeps the last complete records on screen, marked with their time;
+  // only a source that has never been read counts as a gap.
+  const book = summary.data ?? undefined;
+  const sources = [summary, help, facilities];
+  const queueGaps = sources.some((q) => q.isError && q.data === undefined);
+  const staleSince = sources.some((q) => q.isError && q.data !== undefined)
+    ? Math.min(...sources.filter((q) => q.data !== undefined).map((q) => q.dataUpdatedAt))
+    : null;
   useRevealAnchor(book ?? help.data ?? facilities.data);
   const quoteOf = (quoteId: string) => book?.portfolio.quotes.find((p) => p.quoteId === quoteId);
   // One card per quote: a buyer confirmation and an offer decision on the same case are one piece of work.
@@ -225,22 +232,16 @@ export default function HomePage() {
       quote: quoteOf(q.quoteId),
       since: q.since,
     }));
-  const helpCards = help.error
-    ? []
-    : (help.data?.requests ?? [])
-        .filter((r) => r.reply === null)
-        .map((r) => ({
-          request: r,
-          name:
-            book?.portfolio.quotes.find((p) => p.quoteId === r.mintQuoteId || p.billId === r.billId)?.drawer.name ??
-            intl.formatMessage(m.reply),
-        }));
-  const facilityCards = facilities.error
-    ? []
-    : (facilities.data ?? []).filter((r) => r.status === "operator_review" || r.status === "submitted");
+  const helpCards = (help.data?.requests ?? [])
+    .filter((r) => r.reply === null)
+    .map((r) => ({
+      request: r,
+      name:
+        book?.portfolio.quotes.find((p) => p.quoteId === r.mintQuoteId || p.billId === r.billId)?.drawer.name ??
+        intl.formatMessage(m.reply),
+    }));
+  const facilityCards = (facilities.data ?? []).filter((r) => r.status === "operator_review" || r.status === "submitted");
   const needs = caseCards.length + helpCards.length + facilityCards.length;
-  // A queue that could not be read is unknown, never empty.
-  const queueGaps = Boolean(summary.error ?? help.error ?? facilities.error);
   // Only limits that would stop new applications reach Home; the rest live on the Info page.
   const storageAlert =
     !capacity.error &&
@@ -269,6 +270,11 @@ export default function HomePage() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {staleSince !== null && (
+            <span className="text-xs text-muted-foreground" title={intl.formatMessage(m.staleWhy)}>
+              {intl.formatMessage(m.stale, { time: intl.formatTime(staleSince) })}
+            </span>
+          )}
           <FederationHealth />
           <Button size="sm" variant="outline" onClick={refresh} aria-label={intl.formatMessage(cockpitMessages.refresh)}>
             <RefreshCw className={`size-4 ${summary.isFetching ? "animate-spin" : ""}`} />

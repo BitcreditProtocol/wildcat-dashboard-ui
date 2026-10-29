@@ -95,6 +95,8 @@
   "agentic.home.portfolio": "Portfolio",
   "agentic.home.queueGaps": "Some queues could not be read",
   "agentic.home.reply": "Reply",
+  "agentic.home.stale": "Last updated {time}",
+  "agentic.home.staleWhy": "The latest refresh didn’t finish. These are the last complete records; the page keeps retrying.",
   "agentic.home.storage": "Case storage is nearly full. New applications will pause at the limit.",
   "agentic.home.summary": "{needs, plural, =0 {Nothing needs you right now} one {# item needs you} other {# items need you}} · {accepted} sat accepted across {bills, plural, one {# bill} other {# bills}}",
   "agentic.human": "Your decision",

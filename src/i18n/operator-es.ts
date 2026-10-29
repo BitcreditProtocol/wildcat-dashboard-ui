@@ -466,6 +466,8 @@ export const operatorSpanish: Record<string, string> = {
   "agentic.network.unreachable": "No responde",
   "agentic.network.via": "vía {relays}",
   "agentic.home.queueGaps": "No se pudieron leer algunas colas",
+  "agentic.home.stale": "Actualizado a las {time}",
+  "agentic.home.staleWhy": "La última actualización no terminó. Estos son los últimos registros completos; la página sigue reintentando.",
   "agentic.questionLimit": "¿Qué comprador está más cerca de su límite?",
   "agentic.ask.title": "Pregúntale al Mint",
   "agentic.ask.mint": "Sobre todo tu Mint",

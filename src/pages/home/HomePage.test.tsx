@@ -1,5 +1,6 @@
 import { creditPolicyCatalogueSchema, fraudReasonCodes } from "@bitcredit/ai-credit-shared";
 import { getByRole, getAllByRole, waitFor } from "@testing-library/dom";
+import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import HomePage, { PortfolioSnapshot } from "./HomePage";
 import { parseCapacity, parseMintSummary, type MintSummary } from "./operator-api";
@@ -165,6 +166,29 @@ describe("Today cockpit", () => {
     const { page } = await renderWithProviders(<HomePage />);
     await waitFor(() => expect(page.textContent).toContain("Case storage is nearly full"));
     expect(page.textContent).not.toContain("110");
+  });
+  it("keeps the last complete records on screen, with their time, when a background refresh fails", async () => {
+    let failing = false;
+    const fail = () => Promise.reject(new Error("timeout"));
+    vi.stubGlobal(
+      "fetch",
+      routeFetch({
+        "/api/ai-credit/operator-mint-summary": () => (failing ? fail() : json(summary())),
+        "/api/ai-credit/applicant-help": () => (failing ? fail() : json({ schemaVersion: "applicant-help-v1", requests: [] })),
+        "/api/ai-credit/facility-applications": () => (failing ? fail() : json({ applications: [] })),
+      })
+    );
+    const { page, client } = await renderWithProviders(<HomePage />);
+    const queue = getByRole(page, "region", { name: "Action queue" });
+    await waitFor(() => expect(queue).toHaveTextContent("Cooperativa Synthetic"));
+    failing = true;
+    await act(async () => {
+      await client.refetchQueries();
+    });
+    await waitFor(() => expect(page.textContent).toContain("Last updated"));
+    expect(queue).toHaveTextContent("Cooperativa Synthetic");
+    expect(page.textContent).not.toContain("Unavailable");
+    expect(page.textContent).not.toContain("Some queues could not be read");
   });
   it("omits capacity on 404 and never interprets unavailable queues as empty", async () => {
     vi.stubGlobal("fetch", routeFetch({ "/api/ai-credit/operator-mint-summary": () => json(summary()) }));

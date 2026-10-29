@@ -14,7 +14,13 @@ export function FederationHealth() {
     >
       {good ? <Activity className="size-3.5" /> : <TriangleAlert className="size-3.5" />}
       {intl.formatMessage(
-        q.phase === "checking" ? networkMessages.checking : q.phase === "healthy" ? networkMessages.healthy : networkMessages.degraded
+        q.phase === "checking"
+          ? networkMessages.checking
+          : q.phase === "healthy"
+            ? networkMessages.healthy
+            : q.phase === "unknown"
+              ? networkMessages.unknown
+              : networkMessages.degraded
       )}
       {q.phase !== "healthy" && (
         <span>

@@ -26,8 +26,9 @@ export function NeedsCard({
   const intl = useIntl();
   const credit = useCreditAssessmentForBill(quote?.billId, quote?.quoteId, "book");
   const policy = useCreditPolicy();
-  const one = credit.isUnavailable ? undefined : credit.decisionCase;
-  const pack = policy.error ? undefined : policy.data?.policyPacks.find((p) => p.policyPackDigest === one?.policyPack.policyPackDigest);
+  // A card points to work; it is not where decisions are made. A failed refresh keeps the last recorded case on it.
+  const one = credit.recordedDecisionCase;
+  const pack = policy.data?.policyPacks.find((p) => p.policyPackDigest === one?.policyPack.policyPackDigest);
   const terms = one?.assessmentCurrency === "current" ? one.result.terms : undefined;
   const lookalike = summary && quote ? partyNameSignal(summary, quote.drawee) : undefined;
   return (

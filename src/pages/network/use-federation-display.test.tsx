@@ -30,7 +30,7 @@ it("retries one incomplete read quietly, showing checking, and recovers without 
   await waitFor(() => expect(getByRole(page, "link")).toHaveTextContent("Connected to other Mints"));
   expect(fetch).toHaveBeenCalledTimes(2);
 });
-it("announces only persistent incomplete reads, keeps the last-good time, and recovers on a subsequent read", async () => {
+it("keeps the last answer during a background refresh, announces only persistent incomplete reads, and recovers", async () => {
   const fetch = vi.fn().mockImplementation(() => Promise.resolve(json(healthyStatus())));
   vi.stubGlobal("fetch", fetch);
   const { page, client } = await renderWithProviders(<FederationHealth />);
@@ -40,7 +40,8 @@ it("announces only persistent incomplete reads, keeps the last-good time, and re
   act(() => {
     void client.refetchQueries({ queryKey: ["ai-credit", "federation-display"] });
   });
-  await waitFor(() => expect(getByRole(page, "link")).toHaveTextContent("Checking…"));
+  expect(getByRole(page, "link")).toHaveTextContent("Connected to other Mints");
+  expect(page).not.toHaveTextContent("Checking…");
   await waitFor(() => expect(getByRole(page, "link")).toHaveTextContent("Some Mints not reachable"));
   expect(getByRole(page, "link")).toHaveTextContent("Last good:");
   expect(client.getQueryState(["ai-credit", "federation-display"])?.dataUpdatedAt).toBe(goodAt);
@@ -51,11 +52,12 @@ it("announces only persistent incomplete reads, keeps the last-good time, and re
   });
   await waitFor(() => expect(getByRole(page, "link")).toHaveTextContent("Connected to other Mints"));
 });
-it("also retries transport failure once and never invents a last-good observation", async () => {
+it("retries a failed read once, reports it as unknown rather than unreachable, and never invents a last-good observation", async () => {
   const fetch = vi.fn().mockRejectedValue(new Error("timeout"));
   vi.stubGlobal("fetch", fetch);
   const { page } = await renderWithProviders(<FederationHealth />);
-  await waitFor(() => expect(getByRole(page, "link")).toHaveTextContent("Some Mints not reachable"));
+  await waitFor(() => expect(getByRole(page, "link")).toHaveTextContent("Network status unknown"));
+  expect(page).not.toHaveTextContent("Some Mints not reachable");
   expect(page).toHaveTextContent("No complete read yet");
   expect(fetch).toHaveBeenCalledTimes(2);
 });

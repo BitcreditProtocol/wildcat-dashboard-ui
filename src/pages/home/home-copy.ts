@@ -25,6 +25,16 @@ export const homeMessages = defineMessages({
     defaultMessage: "Nothing waits for you. The agents will bring new cases here.",
     description: "Empty queue",
   },
+  stale: {
+    id: "agentic.home.stale",
+    defaultMessage: "Last updated {time}",
+    description: "Home keeps showing the last complete records while a background refresh did not finish",
+  },
+  staleWhy: {
+    id: "agentic.home.staleWhy",
+    defaultMessage: "The latest refresh didn’t finish. These are the last complete records; the page keeps retrying.",
+    description: "Tooltip explaining why Home shows records from an earlier time",
+  },
   queueGaps: {
     id: "agentic.home.queueGaps",
     defaultMessage: "Some queues could not be read",

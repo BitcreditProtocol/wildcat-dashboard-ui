@@ -20,9 +20,18 @@ export function useFederationDisplay() {
     refetchInterval: 30_000,
     staleTime: 15_000,
   });
+  // Only a read in which the Mint reports a peer problem is "degraded". A read that did not finish
+  // says nothing about other Mints, and a routine background refresh keeps the last answer on screen.
+  const phase: "checking" | "healthy" | "degraded" | "unknown" = query.isPending
+    ? "checking"
+    : query.error instanceof IncompleteFederationRead
+      ? "degraded"
+      : query.error
+        ? "unknown"
+        : "healthy";
   return {
     observation: query.error instanceof IncompleteFederationRead ? query.error.observation : query.data,
-    phase: query.isFetching || query.isPending ? "checking" : query.error ? "degraded" : "healthy",
+    phase,
     lastGoodAt: query.dataUpdatedAt || null,
   } as const;
 }
