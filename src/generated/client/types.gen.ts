@@ -54,6 +54,18 @@ export type BillAnonParticipant = {
     nostr_relays: Array<string>;
 };
 
+export type BillBalanceEntry = {
+    id: string;
+    issue_date: string;
+    maturity_date: string;
+    sum: string;
+    paid: boolean;
+};
+
+export type BillBalanceResponse = {
+    bills: Array<BillBalanceEntry>;
+};
+
 export type BillCallerPayment = {
     Sell: {
         buyer: BillParticipant;
@@ -252,6 +264,10 @@ export type BitcreditBill = {
     current_waiting_state?: null | BillCurrentWaitingState;
 };
 
+export type CheckBillPaymentPayload = {
+    bill_id: string;
+};
+
 /**
  * --------------------------- Clowder Node Information
  */
@@ -320,6 +336,61 @@ export type DeniedMeltOperations = {
     ops: Array<DeniedMeltOp>;
 };
 
+/**
+ * --------------------------- e-iou deposits
+ */
+export type EiouDepositRequest = {
+    request_id: string;
+    /**
+     * Whole brc-20 tokens, not sats: the eIOU ticker is deployed with `dec = 0`.
+     */
+    amount: number;
+};
+
+export type EiouDepositResponse = {
+    request_id: string;
+    address: string;
+    /**
+     * The declared amount — what gets credited as collateral.
+     */
+    amount: number;
+    status: EiouDepositStatus;
+};
+
+export type EiouDepositStatus = 'Pending' | {
+    Completed: {
+        /**
+         * The indexer's tip watermark when the credit was observed.
+         */
+        block_height: number;
+    };
+};
+
+export type EiouOperation = {
+    op_type: EiouOperationType;
+    /**
+     * Whole brc-20 tokens, not sats: the eIOU ticker is deployed with `dec = 0`.
+     */
+    amount: number;
+    /**
+     * The bitcoin block the credit landed in, as recorded on the ledger entry.
+     */
+    block_height: number;
+    /**
+     * Unix seconds, from that block's header.
+     */
+    timestamp: number;
+};
+
+export type EiouOperationType = {
+    request_id: string;
+    type: 'Deposit';
+};
+
+export type EiouOperationsResponse = {
+    operations: Array<EiouOperation>;
+};
+
 export type EnableMintingResponse = {
     [key: string]: unknown;
 };
@@ -340,6 +411,19 @@ export type File = {
     name: string;
     hash: string;
     nostr_hash: string;
+};
+
+/**
+ * --------------------------- foreign eCash balance
+ */
+export type ForeignBalanceEntry = {
+    mint_id: string;
+    settled: number;
+    unsettled: number;
+};
+
+export type ForeignBalanceResponse = {
+    balances: Array<ForeignBalanceEntry>;
 };
 
 /**
@@ -480,6 +564,19 @@ export type KeySetInfo = {
  */
 export type KeySetVersion = 'Version00' | 'Version01';
 
+/**
+ * --------------------------- per-keyset outstanding eCash balance
+ */
+export type KeysetBalance = {
+    keyset_id: string;
+    expiry: number;
+    balance: number;
+};
+
+export type KeysetsBalanceResponse = {
+    balances: Array<KeysetBalance>;
+};
+
 export type LightBillAnonParticipant = {
     node_id: string;
 };
@@ -512,13 +609,13 @@ export type LightSignedBy = {
     signatory?: null | LightBillSignatory;
 };
 
-export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc' | 'submitted_desc' | 'submitted_asc';
+export type ListSort = 'bill_maturity_date_desc' | 'bill_maturity_date_asc' | 'submitted_desc' | 'submitted_asc' | 'amount_desc' | 'amount_asc';
 
 /**
  * --------------------------- Mint operation status
  */
 export type MintOperationStatus = {
-    kid: Id;
+    kid: string;
     quote_id: string;
     target: Amount;
     current: Amount;
@@ -541,6 +638,43 @@ export type Notification = {
 };
 
 export type NotificationType = 'General' | 'Company' | 'Bill' | 'Contact';
+
+export type OnChainOperation = {
+    op_type: OnChainOperationType;
+    /**
+     * The txids of the onchain transactions that are part of this operation. For example, a mint operation may have multiple txids if the mint was funded by multiple transactions.
+     */
+    txids: Array<string>;
+    /**
+     * The amount of the operation in satoshis. For example, for a mint operation, this would be the amount of satoshis that were minted.
+     */
+    amount: number;
+    /**
+     * The timestamp of the operation in Unix seconds. This is the time when the operation was completed onchain.
+     */
+    timestamp: number;
+};
+
+/**
+ * --------------------------- Onchain transaction history
+ */
+export type OnChainOperationType = {
+    quote_id: string;
+    type: 'Mint';
+} | {
+    quote_id: string;
+    type: 'Melt';
+} | {
+    bill_id: string;
+    type: 'EbillPayment';
+} | {
+    reserve_id: string;
+    type: 'AddReserve';
+};
+
+export type OnchainOperationsResponse = {
+    operations: Array<OnChainOperation>;
+};
 
 export type OptionalPostalAddress = {
     country?: string | null;
@@ -596,6 +730,17 @@ export type PaymentStatus = {
 };
 
 /**
+ * One outage as the alpha's Betas collectively hold it against the alpha.
+ */
+export type PendingOutage = {
+    evidence_digest: Array<number>;
+    substitute?: string | null;
+    betas_holding: number;
+    pending_exchanges: number;
+    pending_amount: number;
+};
+
+/**
  * Reflects what the majority of Beta mints think about the current Alpha mint
  */
 export type PerceivedState = {
@@ -605,6 +750,10 @@ export type PerceivedState = {
      * Earliest beta-reported offline onset, Unix seconds; `Some` iff `alpha_state != Online`.
      */
     offline_since?: number | null;
+    /**
+     * Outages the Betas still hold against this alpha; empty once it is online.
+     */
+    pending_outages?: Array<PendingOutage>;
 };
 
 export type PostalAddress = {
@@ -1103,6 +1252,43 @@ export type ListEbillsResponses = {
 
 export type ListEbillsResponse = ListEbillsResponses[keyof ListEbillsResponses];
 
+export type GetBillsBalanceHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/ebill/balance';
+};
+
+export type GetBillsBalanceHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: BillBalanceResponse;
+};
+
+export type GetBillsBalanceHistoryResponse = GetBillsBalanceHistoryResponses[keyof GetBillsBalanceHistoryResponses];
+
+export type CheckBillPaymentData = {
+    body: CheckBillPaymentPayload;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/ebill/check_payment';
+};
+
+export type CheckBillPaymentErrors = {
+    /**
+     * bill-id not found
+     */
+    404: unknown;
+};
+
+export type CheckBillPaymentResponses = {
+    /**
+     * Successful response
+     */
+    200: unknown;
+};
+
 export type GetEbillEndorsementsData = {
     body?: never;
     path: {
@@ -1469,6 +1655,98 @@ export type PostAddReserveResponses = {
 
 export type PostAddReserveResponse = PostAddReserveResponses[keyof PostAddReserveResponses];
 
+export type GetEiouDepositStatusData = {
+    body?: never;
+    path: {
+        /**
+         * the eiou deposit request id
+         */
+        rid: string;
+    };
+    query?: never;
+    url: '/v1/admin/clowder/eiou_deposit/{rid}';
+};
+
+export type GetEiouDepositStatusErrors = {
+    /**
+     * eiou deposit id not found
+     */
+    404: unknown;
+};
+
+export type GetEiouDepositStatusResponses = {
+    /**
+     * Successful response
+     */
+    200: EiouDepositResponse;
+};
+
+export type GetEiouDepositStatusResponse = GetEiouDepositStatusResponses[keyof GetEiouDepositStatusResponses];
+
+export type PostEiouDepositData = {
+    body: EiouDepositRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/eiou_deposit';
+};
+
+export type PostEiouDepositResponses = {
+    /**
+     * Successful response
+     */
+    200: EiouDepositResponse;
+};
+
+export type PostEiouDepositResponse = PostEiouDepositResponses[keyof PostEiouDepositResponses];
+
+export type GetOnchainHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/history/onchain';
+};
+
+export type GetOnchainHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: OnchainOperationsResponse;
+};
+
+export type GetOnchainHistoryResponse = GetOnchainHistoryResponses[keyof GetOnchainHistoryResponses];
+
+export type GetEiouHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/history/eiou';
+};
+
+export type GetEiouHistoryResponses = {
+    /**
+     * Successful response
+     */
+    200: EiouOperationsResponse;
+};
+
+export type GetEiouHistoryResponse = GetEiouHistoryResponses[keyof GetEiouHistoryResponses];
+
+export type GetKeysetsBalanceData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/clowder/history/keysets';
+};
+
+export type GetKeysetsBalanceResponses = {
+    /**
+     * Successful response
+     */
+    200: KeysetsBalanceResponse;
+};
+
+export type GetKeysetsBalanceResponse = GetKeysetsBalanceResponses[keyof GetKeysetsBalanceResponses];
+
 export type PostEbillReqtopayData = {
     body: RequestToPayFromEBillRequest;
     path?: never;
@@ -1549,3 +1827,19 @@ export type CollectFeesTokenResponses = {
 };
 
 export type CollectFeesTokenResponse = CollectFeesTokenResponses[keyof CollectFeesTokenResponses];
+
+export type GetForeignBalanceData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/treasury/foreign/balance';
+};
+
+export type GetForeignBalanceResponses = {
+    /**
+     * Successful response
+     */
+    200: ForeignBalanceResponse;
+};
+
+export type GetForeignBalanceResponse = GetForeignBalanceResponses[keyof GetForeignBalanceResponses];

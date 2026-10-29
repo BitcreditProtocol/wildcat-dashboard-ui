@@ -1,30 +1,51 @@
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router";
+import type { FilterGroup } from "@/components/ListFilters";
 
+interface KeysetPage {
+  data: unknown[];
+  total: number;
+}
 interface QueryOptions {
-  queryKey: { _id: string }[];
+  queryKey: { _id: string; query?: { limit?: number } }[];
 }
-interface QueryResult {
-  data: unknown;
+interface InfiniteQueryResult {
+  data: { pages: KeysetPage[] } | undefined;
   isLoading: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  fetchNextPage: () => Promise<unknown>;
 }
 
-const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
+const mockUseInfiniteQuery = vi.fn<(options: QueryOptions) => InfiniteQueryResult>();
+const fetchNextPageSpy = vi.fn<() => Promise<unknown>>();
 let nextSearchQuery = "";
+
+function mockKeysetPages(pages: KeysetPage[], options: { hasNextPage?: boolean } = {}) {
+  mockUseInfiniteQuery.mockReturnValue({
+    data: { pages },
+    isLoading: false,
+    hasNextPage: options.hasNextPage ?? false,
+    isFetchingNextPage: false,
+    fetchNextPage: fetchNextPageSpy,
+  });
+}
 
 vi.mock("@tanstack/react-query", async () => {
   const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
   return {
     ...actual,
-    useQuery: (options: QueryOptions) => mockUseQuery(options),
+    useInfiniteQuery: (options: QueryOptions) => mockUseInfiniteQuery(options),
   };
 });
 
 vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
-  listKeysetInfosOptions: () => ({ queryKey: [{ _id: "listKeysetInfos" }] }),
+  listKeysetInfosInfiniteOptions: (options: { query?: { limit?: number } }) => ({
+    queryKey: [{ _id: "listKeysetInfos", query: options.query }],
+  }),
 }));
 
 vi.mock("@bitcredit/ui-library", async () => {
@@ -72,23 +93,39 @@ vi.mock("@bitcredit/ui-library", async () => {
   };
 });
 
-vi.mock("@/components/SortButtons", () => ({
-  SortButtons: ({
-    options,
-    onSortChange,
-  }: {
-    options: { field: "maturity" | "status" | "currency"; label: string }[];
-    onSortChange: (field: "maturity" | "status" | "currency") => void;
-  }) => (
-    <div>
-      {options.map((option) => (
-        <button key={option.field} onClick={() => onSortChange(option.field)} type="button">
-          {`sort-${option.field}`}
-        </button>
-      ))}
-    </div>
-  ),
-}));
+// The real panel lives in a drawer; the groups it is given are what the page wires up,
+// so the mock renders them flat and keeps the drawer itself out of the test.
+vi.mock("@/components/ListFilters", async () => {
+  const actual = await vi.importActual<typeof import("@/components/ListFilters")>("@/components/ListFilters");
+  return {
+    ...actual,
+    ListFilters: ({ groups, onReset }: { groups: FilterGroup[]; onReset?: () => void }) => (
+      <div>
+        {groups.map((group) => (
+          <div key={group.id} data-filter-group={group.id} data-filter-value={group.value}>
+            {group.options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                data-filter-option={option.value}
+                onClick={() => {
+                  group.onSelect(option.value);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ))}
+        {onReset && (
+          <button type="button" onClick={onReset}>
+            Reset all
+          </button>
+        )}
+      </div>
+    ),
+  };
+});
 
 import KeysetsPage from "./KeysetsPage";
 
@@ -125,11 +162,11 @@ function clickButtonByText(page: HTMLDivElement, label: string) {
   });
 }
 
-function clickSelectItem(page: HTMLDivElement, value: string) {
-  const button = page.querySelector(`[data-select-item="${value}"]`);
+function clickFilterOption(page: HTMLDivElement, value: string) {
+  const button = page.querySelector(`[data-filter-option="${value}"]`);
   expect(button).not.toBeNull();
   if (!(button instanceof HTMLButtonElement)) {
-    throw new Error(`Missing select item: ${value}`);
+    throw new Error(`Missing filter option: ${value}`);
   }
   act(() => {
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -147,12 +184,9 @@ function orderedKeysetHrefs(page: HTMLDivElement): string[] {
   return unique;
 }
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.useFakeTimers();
-  vi.setSystemTime(new Date("2026-02-20T00:00:00.000Z"));
-  nextSearchQuery = "";
-
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
   if (root && container) {
     act(() => {
       root?.unmount();
@@ -163,20 +197,25 @@ beforeEach(() => {
   }
 });
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-02-20T00:00:00.000Z"));
+  nextSearchQuery = "";
+  fetchNextPageSpy.mockResolvedValue(undefined);
+});
+
 describe("KeysetsPage", () => {
   it("shows empty state when no keysets are returned", () => {
-    mockUseQuery.mockReturnValue({
-      data: { data: [], total: 0 },
-      isLoading: false,
-    });
+    mockKeysetPages([{ data: [], total: 0 }]);
 
     const page = renderPage();
     expect(page.textContent).toContain("No keysets found");
   });
 
   it("renders inactive keyset without expiry", () => {
-    mockUseQuery.mockReturnValue({
-      data: {
+    mockKeysetPages([
+      {
         data: [
           {
             id: "keyset-no-expiry",
@@ -187,8 +226,7 @@ describe("KeysetsPage", () => {
         ],
         total: 1,
       },
-      isLoading: false,
-    });
+    ]);
 
     const page = renderPage();
     expect(page.textContent).toContain("Inactive");
@@ -197,8 +235,8 @@ describe("KeysetsPage", () => {
   });
 
   it("filters out all rows and shows no-match state from search", () => {
-    mockUseQuery.mockReturnValue({
-      data: {
+    mockKeysetPages([
+      {
         data: [
           {
             id: "keyset-aaa",
@@ -215,8 +253,7 @@ describe("KeysetsPage", () => {
         ],
         total: 2,
       },
-      isLoading: false,
-    });
+    ]);
     nextSearchQuery = "definitely-missing";
 
     const page = renderPage();
@@ -226,8 +263,8 @@ describe("KeysetsPage", () => {
   });
 
   it("sorts by maturity, then currency, then status via sort controls", () => {
-    mockUseQuery.mockReturnValue({
-      data: {
+    mockKeysetPages([
+      {
         data: [
           {
             id: "keyset-expired",
@@ -250,8 +287,7 @@ describe("KeysetsPage", () => {
         ],
         total: 3,
       },
-      isLoading: false,
-    });
+    ]);
 
     const page = renderPage();
 
@@ -259,17 +295,17 @@ describe("KeysetsPage", () => {
     expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-expired", "/keysets/keyset-future", "/keysets/keyset-no-expiry"]);
 
     // Currency-asc: eur, sat, usd.
-    clickButtonByText(page, "sort-currency");
+    clickFilterOption(page, "currency");
     expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-no-expiry", "/keysets/keyset-expired", "/keysets/keyset-future"]);
 
     // Status-asc in this implementation sorts active first.
-    clickButtonByText(page, "sort-status");
+    clickFilterOption(page, "status");
     expect(orderedKeysetHrefs(page)[0]).toBe("/keysets/keyset-expired");
   });
 
-  it("filters keysets through the dropdown", () => {
-    mockUseQuery.mockReturnValue({
-      data: {
+  it("filters keysets through the filters panel", () => {
+    mockKeysetPages([
+      {
         data: [
           {
             id: "keyset-active",
@@ -286,12 +322,106 @@ describe("KeysetsPage", () => {
         ],
         total: 2,
       },
-      isLoading: false,
-    });
+    ]);
 
     const page = renderPage();
-    clickSelectItem(page, "inactive");
+    clickFilterOption(page, "inactive");
 
     expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-inactive"]);
+  });
+
+  it("clears the filter when the active one is picked again, and resets everything", () => {
+    mockKeysetPages([
+      {
+        data: [
+          { id: "keyset-active", active: true, final_expiry: 1798761600, unit: "sat" },
+          { id: "keyset-inactive", active: false, final_expiry: null, unit: { Custom: "usd" } },
+        ],
+        total: 2,
+      },
+    ]);
+
+    const page = renderPage();
+
+    clickFilterOption(page, "inactive");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-inactive"]);
+
+    // Picking the active filter again clears it, as on the quotes page.
+    clickFilterOption(page, "inactive");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-active", "/keysets/keyset-inactive"]);
+
+    clickFilterOption(page, "inactive");
+    clickFilterOption(page, "currency");
+    clickButtonByText(page, "Reset all");
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-active", "/keysets/keyset-inactive"]);
+  });
+
+  it("searches keysets that live on a later page", () => {
+    mockKeysetPages([
+      {
+        data: [
+          {
+            id: "keyset-first-page",
+            active: true,
+            final_expiry: 1798761600,
+            unit: "sat",
+          },
+        ],
+        total: 2,
+      },
+      {
+        data: [
+          {
+            id: "keyset-second-page",
+            active: true,
+            final_expiry: 1798761600,
+            unit: { Custom: "usd" },
+          },
+        ],
+        total: 2,
+      },
+    ]);
+    nextSearchQuery = "keyset-second-page";
+
+    const page = renderPage();
+    clickButtonByText(page, "SearchMock");
+
+    expect(orderedKeysetHrefs(page)).toEqual(["/keysets/keyset-second-page"]);
+  });
+
+  it("keeps loading keyset pages while the mint has more of them", () => {
+    mockKeysetPages(
+      [
+        {
+          data: [
+            {
+              id: "keyset-first-page",
+              active: true,
+              final_expiry: 1798761600,
+              unit: "sat",
+            },
+          ],
+          total: 2,
+        },
+      ],
+      { hasNextPage: true }
+    );
+    nextSearchQuery = "keyset-second-page";
+
+    const page = renderPage();
+    clickButtonByText(page, "SearchMock");
+
+    expect(fetchNextPageSpy).toHaveBeenCalled();
+    expect(page.textContent).toContain("Loading all keysets...");
+    // The no-match state would be wrong while pages are still on their way in.
+    expect(page.textContent).not.toContain("No keysets match your search criteria");
+  });
+
+  it("requests keysets in pages", () => {
+    mockKeysetPages([{ data: [], total: 0 }]);
+
+    renderPage();
+
+    expect(mockUseInfiniteQuery.mock.calls[0]?.[0]?.queryKey?.[0]?.query).toMatchObject({ limit: 100 });
   });
 });

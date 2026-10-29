@@ -25,6 +25,10 @@ export function statusKind(state?: SimpleAlphaState): StatusKind {
   return "unknown";
 }
 
+export function hasSubstituteRole(kind: StatusKind): boolean {
+  return kind === "offline" || kind === "interim";
+}
+
 export function statusTimestamp(state?: SimpleAlphaState): number | undefined {
   if (!state) return undefined;
   if ("Online" in state) return state.Online;
@@ -49,7 +53,13 @@ export const statusMessages = defineMessages({
   unknown: { id: "home.clowderPeers.status.unknown", defaultMessage: "Unknown" },
 });
 
-export const substituteMessages = defineMessages({
+export const substituteMessages = defineMessages<{
+  label: { mint: string };
+  loading: Record<string, never>;
+  noSubstitute: Record<string, never>;
+  unknownNode: Record<string, never>;
+  unavailable: Record<string, never>;
+}>({
   label: { id: "home.clowderPeers.substitute.label", defaultMessage: "Substitute: {mint}" },
   loading: { id: "home.clowderPeers.substitute.loading", defaultMessage: "Loading substitute..." },
   noSubstitute: { id: "home.clowderPeers.substitute.noSubstitute", defaultMessage: "No substitute elected" },

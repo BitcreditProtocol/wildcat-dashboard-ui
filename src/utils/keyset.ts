@@ -1,23 +1,54 @@
-import type { Id, IdBytes, KeySetVersion } from "@/generated/client/types.gen";
+import type { Id, InfoReply, InfoReplyDiscriminants } from "@/generated/client/types.gen";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("keyset");
 
 /**
- * Check if a bill's maturity date matches a keyset's final expiry date.
- * @param keysetFinalExpiry - Keyset final expiry timestamp (seconds since epoch)
- * @param billMaturityDate - Bill maturity date string (YYYY-MM-DD)
- * @returns true if dates match (year, month, day)
+ * Quote statuses whose `InfoReply` carries a `keyset_id`. A quote only gets a keyset
+ * once it has been offered, so quotes in any other status belong to no keyset at all
+ * and never need their details fetched when resolving a keyset's quotes.
  */
-export function doesBillMatchKeysetMaturity(keysetFinalExpiry: number, billMaturityDate: string): boolean {
-  const keysetDate = new Date(keysetFinalExpiry * 1000);
-  const billDate = new Date(billMaturityDate);
+const KEYSET_BEARING_QUOTE_STATUSES = new Set<InfoReplyDiscriminants>(["Offered", "Accepted", "MintingEnabled", "FailedEbillValidation"]);
 
-  return (
-    keysetDate.getFullYear() === billDate.getFullYear() &&
-    keysetDate.getMonth() === billDate.getMonth() &&
-    keysetDate.getDate() === billDate.getDate()
-  );
+export function canQuoteHaveKeyset(status: InfoReplyDiscriminants): boolean {
+  return KEYSET_BEARING_QUOTE_STATUSES.has(status);
+}
+
+/** The two kinds of eCash the mint issues: credit against e-bills, debit against its own reserves. */
+export type TokenKind = "credit" | "debit";
+
+/**
+ * Which token a keyset issues, read from the expiry it runs to — the balance endpoint reports no
+ * unit, and the expiry separates the two on its own: credit eCash runs against an e-bill that has
+ * not matured yet, so its keyset expires ahead of now, while a keyset whose expiry has passed is
+ * debit eCash.
+ */
+export function keysetTokenKind(expiry: number, nowSeconds: number): TokenKind {
+  return expiry <= nowSeconds ? "debit" : "credit";
+}
+
+/**
+ * Serialized id of the keyset a quote was offered under, or null when it has none yet.
+ */
+export function getQuoteKeysetId(quoteDetails: InfoReply | undefined): string | null {
+  if (!quoteDetails || !("keyset_id" in quoteDetails)) {
+    return null;
+  }
+
+  const serializedId = serializeKeysetId(quoteDetails.keyset_id);
+
+  return serializedId === "" ? null : serializedId;
+}
+
+/**
+ * Whether a quote was offered under the given keyset. This is the authoritative link
+ * between the two — never infer it from the bill maturity date, which only coincides
+ * with the keyset expiry and is not a join key.
+ */
+export function doesQuoteBelongToKeyset(quoteDetails: InfoReply | undefined, keysetId: string): boolean {
+  const quoteKeysetId = getQuoteKeysetId(quoteDetails);
+
+  return quoteKeysetId !== null && quoteKeysetId.toLowerCase() === keysetId.toLowerCase();
 }
 
 /**
@@ -55,39 +86,4 @@ export function serializeKeysetId(id: Id | string): string {
   const versionPrefix = id.version === "Version00" ? "00" : "01";
 
   return `${versionPrefix}${hexString}`;
-}
-
-export function deserializeKeysetId(serializedId: string): Id | null {
-  if (serializedId.length < 4 || serializedId.length % 2 !== 0) {
-    return null;
-  }
-
-  const versionByPrefix: Record<string, KeySetVersion> = {
-    "00": "Version00",
-    "01": "Version01",
-  };
-  const version = versionByPrefix[serializedId.slice(0, 2)];
-
-  if (!version) {
-    return null;
-  }
-
-  const hexBytes = serializedId.slice(2);
-  const bytes: number[] = [];
-
-  const validHexByte = /^[0-9a-fA-F]{2}$/;
-
-  for (let index = 0; index < hexBytes.length; index += 2) {
-    const chunk = hexBytes.slice(index, index + 2);
-
-    if (!validHexByte.test(chunk)) {
-      return null;
-    }
-
-    bytes.push(Number.parseInt(chunk, 16));
-  }
-
-  const id: IdBytes = version === "Version00" ? { V1: bytes } : { V2: bytes };
-
-  return { version, id };
 }

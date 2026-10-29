@@ -1,7 +1,7 @@
 import { act, type ReactElement } from "react";
 import { PreferencesProvider } from "@bitcredit/ui-library";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter, Route, Routes } from "react-router";
 import QuotePage from "./QuotePage";
@@ -21,7 +21,7 @@ interface QueryResult {
   error: Error | null;
 }
 interface MutationResult {
-  mutate: (value: { body: { token: string } }) => void;
+  mutate: (value: { body: Record<string, unknown> }) => void;
   isPending: boolean;
   isSuccess: boolean;
   isError: boolean;
@@ -33,8 +33,11 @@ const { mockGetEbillAttachment, mockGetEbillFileFromRequestToMint } = vi.hoisted
   mockGetEbillFileFromRequestToMint: vi.fn(),
 }));
 
+const mockWindowOpen = vi.fn();
+const mockRevokeObjectURL = vi.fn<(url: string) => void>();
 const mockUseQuery = vi.fn<(options: QueryOptions) => QueryResult>();
 const mockUseMutation = vi.fn<() => MutationResult>();
+const mutateSpy = vi.fn<(value: { body: Record<string, unknown> }) => void>();
 
 vi.mock("@bitcredit/ui-library", async () => {
   const actual = await vi.importActual<typeof import("@bitcredit/ui-library")>("@bitcredit/ui-library");
@@ -98,6 +101,11 @@ vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
   getEbillOptions: ({ path }: { path: { bid: string } }) => ({
     queryKey: [{ _id: "getEbill", path }],
   }),
+  syncEbillChainMutation: () => ({ mutationKey: [{ _id: "syncEbillChain" }] }),
+  checkBillPaymentMutation: () => ({ mutationKey: [{ _id: "checkBillPayment" }] }),
+  getEbillPaymentstatusOptions: ({ path }: { path: { bid: string } }) => ({
+    queryKey: [{ _id: "getEbillPaymentstatus", path }],
+  }),
 }));
 
 let root: Root | null = null;
@@ -132,8 +140,21 @@ function renderPage(entry: string | { pathname: string; state?: Record<string, u
   );
 }
 
-beforeEach(() => {
-  vi.clearAllMocks();
+function findButtonByText(page: HTMLDivElement, text: string): HTMLButtonElement | undefined {
+  return Array.from(page.querySelectorAll("button")).find((button) => button.textContent?.trim() === text);
+}
+
+function clickButtonByText(page: HTMLDivElement, text: string) {
+  const button = findButtonByText(page, text);
+  expect(button).not.toBeUndefined();
+  act(() => {
+    button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
+
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
   if (root && container) {
     act(() => {
       root?.unmount();
@@ -142,9 +163,13 @@ beforeEach(() => {
     root = null;
     container = null;
   }
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
 
   mockUseMutation.mockReturnValue({
-    mutate: vi.fn<(value: { body: { token: string } }) => void>(),
+    mutate: mutateSpy,
     isPending: false,
     isSuccess: false,
     isError: false,
@@ -154,12 +179,9 @@ beforeEach(() => {
   mockGetEbillFileFromRequestToMint.mockReset();
   mockGetEbillAttachment.mockResolvedValue(new Blob(["attachment"]));
   mockGetEbillFileFromRequestToMint.mockResolvedValue(new Blob(["request-to-mint"]));
-  vi.stubGlobal(
-    "open",
-    vi.fn(() => ({ closed: false }) as Window)
-  );
+  vi.stubGlobal("open", mockWindowOpen);
   globalThis.URL.createObjectURL = vi.fn(() => "blob:test-url");
-  globalThis.URL.revokeObjectURL = vi.fn();
+  globalThis.URL.revokeObjectURL = mockRevokeObjectURL;
 
   mockUseQuery.mockImplementation((opts: QueryOptions) => {
     const id = opts.queryKey[0]._id;
@@ -322,6 +344,19 @@ describe("QuotePage", () => {
     expect(keysetLink).toBeNull();
   });
 
+  // The payment check moved into the payment request box, which QuoteActions owns; it is
+  // covered by QuoteActions.test.tsx, and this page mocks QuoteActions away.
+  it("keeps the payment check out of the page's action row", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    expect(Array.from(page.querySelectorAll("button")).some((button) => button.textContent?.includes("Check payment"))).toBe(false);
+  });
+
+  it("links the bill id to the bill's own page", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    expect(page.querySelector('a[href="/bills/bill-1"]')).not.toBeNull();
+  });
+
   it("shows a collapsible documents section", () => {
     const page = renderPage(`/quotes/${quoteId}`);
     expect(page.textContent).toContain("Documents");
@@ -430,6 +465,139 @@ describe("QuotePage", () => {
       parseAs: "blob",
     });
     expect(mockGetEbillAttachment).not.toHaveBeenCalled();
+  });
+
+  it("previews the document in the app instead of handing a blob url to a new window", async () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+
+    act(() => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const viewButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "View");
+
+    await act(async () => {
+      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    // A standalone PWA has no tab to hand a blob: URL to, so nothing may leave the app.
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+
+    const frame = document.body.querySelector("iframe");
+    expect(frame?.getAttribute("src")).toBe("blob:test-url");
+    expect(frame?.getAttribute("title")).toBe("invoice.pdf");
+
+    const downloadLink = document.body.querySelector("a[download]");
+    expect(downloadLink?.getAttribute("download")).toBe("invoice.pdf");
+    expect(downloadLink?.getAttribute("href")).toBe("blob:test-url");
+  });
+
+  it("releases the object url when the preview is closed", async () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+    const toggleButton = page.querySelector('button[aria-expanded="false"]');
+
+    act(() => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const viewButton = Array.from(page.querySelectorAll("button")).find((button) => button.textContent === "View");
+
+    await act(async () => {
+      viewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    const closeButton = Array.from(document.body.querySelectorAll("button")).find((button) => button.textContent === "Close");
+
+    await act(async () => {
+      closeButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mockRevokeObjectURL).toHaveBeenCalledWith("blob:test-url");
+    expect(document.body.querySelector("iframe")).toBeNull();
+  });
+
+  it("re-syncs the bill chain from nostr when refresh is clicked", () => {
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    clickButtonByText(page, "Refresh bill");
+
+    expect(mutateSpy).toHaveBeenCalledWith({
+      body: { bill_id: "bill-1", from_nostr: true },
+    });
+  });
+
+  it("disables refresh while a sync is in flight", () => {
+    mockUseMutation.mockReturnValue({
+      mutate: mutateSpy,
+      isPending: true,
+      isSuccess: false,
+      isError: false,
+      data: undefined,
+    });
+
+    const page = renderPage(`/quotes/${quoteId}`);
+    const refreshButton = findButtonByText(page, "Refresh bill");
+
+    expect(refreshButton?.disabled).toBe(true);
+
+    act(() => {
+      refreshButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(mutateSpy).not.toHaveBeenCalled();
+  });
+
+  it("hides refresh until the bill id is known", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => ({
+      data: opts.queryKey[0]._id === "getQuote" ? { id: quoteId, status: "Pending" } : undefined,
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    }));
+
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    expect(findButtonByText(page, "Refresh bill")).toBeUndefined();
+  });
+
+  it("hides refresh while the bill has not reached the mint", () => {
+    mockUseQuery.mockImplementation((opts: QueryOptions) => {
+      if (opts.queryKey[0]._id === "getQuote") {
+        return {
+          data: {
+            id: quoteId,
+            status: "Pending",
+            bill: {
+              id: "bill-not-here-yet",
+              sum: 100,
+              maturity_date: "2026-03-01",
+              drawee: {},
+              drawer: {},
+              payee: {},
+              endorsees: [],
+            },
+          },
+          isLoading: false,
+          isFetching: false,
+          error: null,
+        };
+      }
+
+      // The mint holds other bills, just not the one this quote was requested for.
+      if (opts.queryKey[0]._id === "listEbills") {
+        return { data: [{ id: "bill-1" }], isLoading: false, error: null };
+      }
+
+      return { data: undefined, isLoading: false, isFetching: false, error: null };
+    });
+
+    const page = renderPage(`/quotes/${quoteId}`);
+
+    expect(findButtonByText(page, "Refresh bill")).toBeUndefined();
   });
 
   it("shows not found for malformed quote ids", () => {

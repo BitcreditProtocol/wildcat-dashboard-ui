@@ -22,9 +22,9 @@ on:
         required: true
   pull_request:
     paths:
-      - '.github/workflows/nightly.yml'
-      - '.github/workflows/build-image.yml'
-      - '.github/scripts/test_nightly.py'
+      - ".github/workflows/nightly.yml"
+      - ".github/workflows/build-image.yml"
+      - ".github/scripts/test_nightly.py"
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.candidate_run_id || github.ref }}

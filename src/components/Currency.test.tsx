@@ -2,7 +2,7 @@ import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IntlProvider } from "react-intl";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import { Currency } from "./Currency";
 
@@ -42,6 +42,19 @@ async function flush() {
   }
 }
 
+afterEach(() => {
+  // React keeps timers running until the tree unmounts, and vitest tears the jsdom
+  // environment down right after the last test — unmount here so nothing fires after it.
+  if (root && container) {
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
+    root = null;
+    container = null;
+  }
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   storageData = {};
@@ -61,14 +74,6 @@ beforeEach(() => {
     },
   });
   vi.useRealTimers();
-  if (root && container) {
-    act(() => {
-      root?.unmount();
-    });
-    container.remove();
-    root = null;
-    container = null;
-  }
 });
 
 describe("Currency", () => {
@@ -105,6 +110,17 @@ describe("Currency", () => {
     expect(page.textContent).toContain("sat");
     expect(page.textContent).toContain("1.00000000");
     expect(page.textContent).toContain("btc");
+  });
+
+  it("labels the converted amount as a conversion, not a second balance", async () => {
+    window.localStorage.setItem("user-preferences", JSON.stringify({ theme: "system", currency: "eur", decimalFormat: "comma" }));
+
+    // e-IOU is pegged to the euro, so no rates are needed: 1,000 e-IOU at 0.067 euro cent each.
+    const page = renderWithProviders(<Currency value={1_000} sourceCurrency="eiou" />);
+
+    await flush();
+
+    expect(page.textContent).toBe("1,000e-IOU(worth 0.67 eur)");
   });
 
   it("renders only the primary amount when preferred currency matches source", async () => {

@@ -1,28 +1,54 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { useQuery } from "@tanstack/react-query";
-import { listKeysetInfosOptions } from "@/generated/client/@tanstack/react-query.gen";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { listKeysetInfosInfiniteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { FormattedMessage, useIntl } from "react-intl";
-import { Heading, Search as SearchComponent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
-import { SortButtons } from "@/components/SortButtons";
+import { Heading, Search as SearchComponent } from "@bitcredit/ui-library";
+import { FilterChipRow } from "@/components/FilterChipRow";
+import { ListFilters, type FilterGroup } from "@/components/ListFilters";
+import { createSortGroup } from "@/components/sort-filter-group";
+import { filterGroupMessages } from "@/i18n/descriptors";
 import { KeysetLoader } from "@/pages/keysets/components/KeysetLoader";
 import { KeysetCard } from "@/pages/keysets/components/KeysetCard";
 import { useKeysetFiltering } from "@/hooks/use-keyset-filtering";
+import { getNextKeysetPageOffset, getPageKeysets } from "@/utils/keyset-pages";
+import * as React from "react";
 
 const KEYSETS_POLL_INTERVAL_MS = 10_000;
+const KEYSETS_PAGE_SIZE = 100;
 
 function PageBody() {
   const intl = useIntl();
-  const { data: keysetsResponse, isLoading: keysetsLoading } = useQuery({
-    ...listKeysetInfosOptions(),
+  const {
+    data,
+    isLoading: keysetsLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    ...listKeysetInfosInfiniteOptions({ query: { limit: KEYSETS_PAGE_SIZE } }),
     refetchInterval: KEYSETS_POLL_INTERVAL_MS,
+    initialPageParam: 0,
+    getNextPageParam: getNextKeysetPageOffset,
   });
-  const keysets = keysetsResponse?.data ?? [];
+
+  const keysets = React.useMemo(() => data?.pages.flatMap((page) => getPageKeysets(page)) ?? [], [data]);
+  const isLoadingAllPages = hasNextPage || isFetchingNextPage;
+
+  React.useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const {
     searchQuery,
     setSearchQuery,
     keysetFilter,
-    setKeysetFilter,
+    toggleKeysetFilter,
+    hasNonDefaultFilters,
+    resetFilters,
     sortBy,
     toggleSort,
     sortedKeysets,
@@ -43,43 +69,64 @@ function PageBody() {
     );
   }
 
+  const filterGroups: FilterGroup[] = [
+    {
+      id: "show",
+      title: intl.formatMessage(filterGroupMessages.show),
+      value: keysetFilter,
+      options: filterOptions.map((option) => ({ value: option.value, label: option.label })),
+      onSelect: (value) => {
+        toggleKeysetFilter(value as typeof keysetFilter);
+      },
+    },
+    createSortGroup({
+      title: intl.formatMessage(filterGroupMessages.sortBy),
+      sortBy,
+      options: sortOptions,
+      onSortChange: toggleSort,
+    }),
+  ];
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-          <SearchComponent
-            value={searchQuery}
-            className="flex-1 max-w-md"
-            placeholder={intl.formatMessage({
-              id: "keysets.search.placeholder",
-              defaultMessage: "Search by keyset ID, currency, maturity date, or status...",
-            })}
-            onSearch={setSearchQuery}
-            onChange={setSearchQuery}
-            size="sm"
-          />
-          <Select value={keysetFilter} onValueChange={(value) => setKeysetFilter(value as typeof keysetFilter)}>
-            <SelectTrigger className="h-11 w-full sm:min-w-0 sm:max-w-64" label="">
-              <SelectValue
-                placeholder={intl.formatMessage({
-                  id: "keysets.filter.label",
-                  defaultMessage: "Filter",
-                })}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {filterOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <SortButtons sortBy={sortBy} onSortChange={toggleSort} options={sortOptions} />
+      <div className="flex items-center gap-3">
+        <SearchComponent
+          value={searchQuery}
+          className="flex-1 max-w-md"
+          placeholder={intl.formatMessage({
+            id: "keysets.search.placeholder",
+            defaultMessage: "Search by keyset ID, currency, maturity date, or status...",
+          })}
+          onSearch={setSearchQuery}
+          onChange={setSearchQuery}
+          size="sm"
+        />
+        <ListFilters
+          groups={filterGroups}
+          hasActiveFilters={hasNonDefaultFilters}
+          onReset={resetFilters}
+          canReset={hasNonDefaultFilters}
+          className="lg:hidden"
+        />
       </div>
 
-      {sortedKeysets.length === 0 ? (
+      <div className="flex flex-col gap-2">
+        {filterGroups.map((group) => (
+          <FilterChipRow key={group.id} group={group} withLabel={group.id !== "show"} className="hidden lg:flex" />
+        ))}
+      </div>
+
+      {isLoadingAllPages && (
+        <div className="text-center text-sm text-muted-foreground">
+          <FormattedMessage
+            id="keysets.pagination.loadingAll"
+            defaultMessage="Loading all keysets..."
+            description="Shown while the remaining keyset pages are loaded so search and filters cover every keyset"
+          />
+        </div>
+      )}
+
+      {sortedKeysets.length === 0 && !isLoadingAllPages ? (
         <div className="p-4 text-muted-foreground text-center">
           <FormattedMessage id="keysets.search.noMatch" defaultMessage="No keysets match your search criteria" />
         </div>

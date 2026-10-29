@@ -12,6 +12,12 @@ export const quoteStatusMessages = defineMessages({
   MintingEnabled: { id: "quote.status.MintingEnabled", defaultMessage: "Minting enabled" },
 });
 
+export const filterGroupMessages = defineMessages({
+  show: { id: "listFilters.group.show", defaultMessage: "Show" },
+  sortBy: { id: "listFilters.group.sortBy", defaultMessage: "Sort by" },
+  rowsPerPage: { id: "listFilters.group.rowsPerPage", defaultMessage: "Rows per page" },
+});
+
 export const participantRoleMessages = defineMessages({
   drawee: { id: "participants.role.drawee", defaultMessage: "Drawee" },
   drawer: { id: "participants.role.drawer", defaultMessage: "Drawer" },
@@ -20,6 +26,16 @@ export const participantRoleMessages = defineMessages({
   bearer: { id: "participants.role.bearer", defaultMessage: "Bearer" },
 });
 
+export const contactTypeMessages = defineMessages({
+  Person: { id: "participants.type.person", defaultMessage: "Person" },
+  Company: { id: "participants.type.company", defaultMessage: "Company" },
+  Anon: { id: "participants.type.anon", defaultMessage: "Anonymous" },
+});
+
 export function getQuoteStatusMessage(status: string) {
   return quoteStatusMessages[status as keyof typeof quoteStatusMessages] ?? quoteStatusMessages.Pending;
+}
+
+export function getContactTypeMessage(type: string | undefined) {
+  return contactTypeMessages[type as keyof typeof contactTypeMessages];
 }

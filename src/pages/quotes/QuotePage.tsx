@@ -1,8 +1,10 @@
-import { toast, Heading } from "@bitcredit/ui-library";
+import { toast, Heading, AppIcon, cn } from "@bitcredit/ui-library";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { DownloadBillPdfButton } from "@/components/DownloadBillPdfButton";
 import { Button } from "@bitcredit/ui-library";
 import { Skeleton } from "@bitcredit/ui-library";
 import { TruncatedTextPopover } from "@bitcredit/ui-library";
+import { RefreshCwIcon } from "lucide-react";
 import { getQuoteOptions } from "@/generated/client/@tanstack/react-query.gen";
 import { getEbillAttachment, getEbillFileFromRequestToMint } from "@/generated/client/sdk.gen";
 import { useQuery } from "@tanstack/react-query";
@@ -13,12 +15,15 @@ import { truncateString } from "@/utils/strings";
 import { EndorsementChain } from "@/components/EndorsementChain";
 import { serializeKeysetId } from "@/utils/keyset";
 import { useIntl } from "react-intl";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { QuoteDocuments } from "./QuoteDocuments";
+import { type QuoteDocumentPreview, QuoteDocumentViewer } from "./QuoteDocumentViewer";
+import { resolveDocumentMimeType } from "@/utils/document-preview";
 import { type QuoteDocument, useQuoteDetail } from "@/hooks/use-quote-detail";
 import { QuoteDetailCard } from "./components/QuoteDetailCard";
 import { EndorseeList } from "./components/EndorseeList";
+import { useSyncBillChain } from "./components/useSyncBillChain";
 import type { InfoReply } from "@/generated/client/types.gen";
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -50,16 +55,23 @@ const QUOTE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 function PageBody({ id }: { id: string }) {
   const intl = useIntl();
   const [openingDocumentHash, setOpeningDocumentHash] = useState<string | null>(null);
+  const [documentPreview, setDocumentPreview] = useState<QuoteDocumentPreview | null>(null);
 
-  const blobUrlTimerRef = useRef<number | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (blobUrlTimerRef.current !== null) {
-        clearTimeout(blobUrlTimerRef.current);
-      }
-    };
+  const releasePreviewUrl = useCallback(() => {
+    if (previewUrlRef.current !== null) {
+      window.URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
   }, []);
+
+  useEffect(() => releasePreviewUrl, [releasePreviewUrl]);
+
+  const handleClosePreview = useCallback(() => {
+    setDocumentPreview(null);
+    releasePreviewUrl();
+  }, [releasePreviewUrl]);
 
   const {
     quoteData,
@@ -174,24 +186,15 @@ function PageBody({ id }: { id: string }) {
         );
       }
 
+      releasePreviewUrl();
       const blobUrl = window.URL.createObjectURL(resolvedAttachment);
-      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      previewUrlRef.current = blobUrl;
 
-      if (!openedWindow) {
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.click();
-      }
-
-      if (blobUrlTimerRef.current !== null) {
-        clearTimeout(blobUrlTimerRef.current);
-      }
-      blobUrlTimerRef.current = window.setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl);
-        blobUrlTimerRef.current = null;
-      }, 60_000);
+      setDocumentPreview({
+        name: documentFile.name,
+        url: blobUrl,
+        mimeType: resolveDocumentMimeType(resolvedAttachment.type, documentFile.name),
+      });
     } catch (error) {
       toast({
         title: intl.formatMessage({
@@ -239,14 +242,21 @@ function PageBody({ id }: { id: string }) {
         requestedToPay={requestedToPay}
         paymentDeadlineTs={paymentDeadlineTs}
         timeOfRequestToPay={timeOfRequestToPay}
+        historyBlocks={historyBlocks}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-        <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <QuoteDocuments documents={documentFiles} openingDocumentHash={openingDocumentHash} onOpenDocument={handleOpenDocument} />
 
-        <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
+          <QuoteDocumentViewer preview={documentPreview} onClose={handleClosePreview} />
 
-        <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
+          <EndorseeList payee={bill.payee} endorsees={bill.endorsees} />
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <EndorsementChain historyBlocks={historyBlocks} isLoading={isHistoryLoading} maturityDate={bill.maturity_date} />
+        </div>
       </div>
     </div>
   );
@@ -285,6 +295,10 @@ export default function QuotePage() {
     enabled: validQuoteId,
   });
 
+  const { syncBillChain, isSyncing, canSync, hasSyncableBill } = useSyncBillChain({
+    quoteId,
+    billId: quoteData?.bill?.id,
+  });
   if (!validQuoteId) {
     return <NotFoundPage path={`/quotes/${quoteId}`} />;
   }
@@ -321,41 +335,64 @@ export default function QuotePage() {
             <TruncatedTextPopover text={quoteId} maxLength={16} className="inline font-mono" as="span" />
           </span>
         </Heading>
-        {fromKeyset && keysetIdFromState ? (
-          <Button variant="outline" size="sm" asChild>
-            <Link
-              to={`/keysets/${keysetIdFromState}`}
-              state={{ from: `/quotes/${quoteId}` }}
+        <div className="flex items-center gap-2">
+          {hasKeysetId && <DownloadBillPdfButton billId={quoteData.bill.id} />}
+
+          {hasSyncableBill && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={syncBillChain}
+              disabled={!canSync}
               className="inline-flex items-center gap-1 leading-none"
             >
+              <AppIcon icon={RefreshCwIcon} weight="thin" className={cn("h-4 w-4", { "animate-spin": isSyncing })} />
               <span className="relative top-px leading-none">
                 {intl.formatMessage({
-                  id: "quotes.detail.backToKeyset",
-                  defaultMessage: "Back to keyset",
+                  id: "quotes.detail.refreshBill",
+                  defaultMessage: "Refresh bill",
+                  description: "Re-fetches the bill chain from nostr and reloads the bill view",
                 })}
               </span>
-              <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
-            </Link>
-          </Button>
-        ) : hasKeysetId ? (
-          <Button variant="outline" size="sm" asChild>
-            <Link
-              to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
-              state={{ from: `/quotes/${quoteId}` }}
-              className="inline-flex items-center gap-1 leading-none"
-            >
-              <span className="relative top-px leading-none">
-                {intl.formatMessage({
-                  id: "quotes.detail.goToKeyset",
-                  defaultMessage: "Go to keyset",
-                })}
-              </span>
-              <span className="inline-flex items-center font-mono leading-none">
-                {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
-              </span>
-            </Link>
-          </Button>
-        ) : null}
+            </Button>
+          )}
+
+          {fromKeyset && keysetIdFromState ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                to={`/keysets/${keysetIdFromState}`}
+                state={{ from: `/quotes/${quoteId}` }}
+                className="inline-flex items-center gap-1 leading-none"
+              >
+                <span className="relative top-px leading-none">
+                  {intl.formatMessage({
+                    id: "quotes.detail.backToKeyset",
+                    defaultMessage: "Back to keyset",
+                  })}
+                </span>
+                <span className="inline-flex items-center font-mono leading-none">{truncateString(keysetIdFromState, 16)}</span>
+              </Link>
+            </Button>
+          ) : hasKeysetId ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                to={`/keysets/${serializeKeysetId(quoteData.keyset_id)}`}
+                state={{ from: `/quotes/${quoteId}` }}
+                className="inline-flex items-center gap-1 leading-none"
+              >
+                <span className="relative top-px leading-none">
+                  {intl.formatMessage({
+                    id: "quotes.detail.goToKeyset",
+                    defaultMessage: "Go to keyset",
+                  })}
+                </span>
+                <span className="inline-flex items-center font-mono leading-none">
+                  {truncateString(serializeKeysetId(quoteData.keyset_id), 16)}
+                </span>
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
       <PageBody id={quoteId} />
     </>

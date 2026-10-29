@@ -7,6 +7,8 @@ import { getQuoteStatusMessage } from "@/i18n/descriptors";
 import { humanReadableDurationDays } from "@/utils/dates";
 import type { InfoReply } from "@/generated/client/types.gen";
 import { useIntl } from "react-intl";
+import { Link } from "react-router";
+import { useDateDisplay } from "@/hooks/use-date-display";
 
 interface QuoteDetailCardProps {
   quote: InfoReply;
@@ -38,6 +40,7 @@ export function QuoteDetailCard({
   requestedToPay,
 }: QuoteDetailCardProps) {
   const intl = useIntl();
+  const { formatCalendarDate } = useDateDisplay();
   const bill = quote.bill;
 
   const maturityDate = bill.maturity_date ? new Date(bill.maturity_date) : null;
@@ -71,9 +74,11 @@ export function QuoteDetailCard({
                   defaultMessage: "Bill ID:",
                 })}
               </Text>
-              <Text variant="mono" monoSize="sm" className="min-w-0 break-all">
-                {quote.bill.id}
-              </Text>
+              <Link to={`/bills/${quote.bill.id}`} className="min-w-0">
+                <Text variant="mono" monoSize="sm" className="break-all underline underline-offset-4">
+                  {quote.bill.id}
+                </Text>
+              </Link>
             </div>
             <div className="flex items-center gap-2">
               <Text variant="label" className="w-32">
@@ -230,7 +235,7 @@ export function QuoteDetailCard({
               })}
             </Text>
             <Text variant="caption">
-              {bill.maturity_date} ({maturityLabel})
+              {formatCalendarDate(bill.maturity_date)} ({maturityLabel})
             </Text>
           </div>
           <div className="flex items-center gap-2">

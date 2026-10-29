@@ -12,18 +12,17 @@ permissions:
 jobs:
   validate:
     name: Validate (style, lint, test, build)
+    timeout-minutes: 15
     runs-on: ubuntu-latest
-    env:
-      NODE_VERSION: 25
 
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Node.js (${{ env.NODE_VERSION }})
+      - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -42,14 +41,43 @@ jobs:
         run: npm run build
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
 
       - name: Upload test results to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/junit.xml
           report_type: test_results
+
+  container:
+    name: Validate container (build, nginx)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check Node versions match
+        run: test "$(cat .nvmrc)" = "$(sed -nE 's/^FROM node:([0-9]+).*/\1/p' Dockerfile)"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Build test image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          pull: true
+          load: true
+          push: false
+          tags: wildcat-dashboard-ui:ci
+          cache-from: type=gha,scope=dashboard-ci
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=dashboard-ci' || '' }}
+
+      - name: Validate entrypoint and nginx configuration
+        run: docker run --rm wildcat-dashboard-ui:ci nginx -t
