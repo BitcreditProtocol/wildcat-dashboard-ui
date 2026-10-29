@@ -14,6 +14,7 @@ export function useFormPersistence({
   hasSetInitialDays,
   isSat,
   localStorageKey,
+  lastEdited,
   netInput,
   setHasSetInitialDays,
   setLastEdited,
@@ -29,6 +30,7 @@ export function useFormPersistence({
   hasSetInitialDays: boolean;
   isSat: boolean;
   localStorageKey: string | null;
+  lastEdited: LastEditedField;
   netInput?: string;
   setHasSetInitialDays: (value: boolean) => void;
   setLastEdited: (value: LastEditedField) => void;
@@ -47,6 +49,7 @@ export function useFormPersistence({
         daysInput: string;
         discountRateInput: string;
         netInput?: string;
+        lastEdited?: LastEditedField;
       }>(localStorageKey);
       if (savedData) {
         const hasSavedDiscountRate = Boolean(savedData.discountRateInput);
@@ -58,7 +61,7 @@ export function useFormPersistence({
             shouldValidate: true,
           });
         }
-        if (savedData.netInput && !hasSavedDiscountRate) {
+        if (savedData.netInput && (savedData.lastEdited === "net" || !hasSavedDiscountRate)) {
           const savedNetInput = isSat ? parseDigitsToInt(savedData.netInput) : savedData.netInput;
           setValue("netInput", savedNetInput, { shouldValidate: true });
           if (isSat) {
@@ -114,7 +117,8 @@ export function useFormPersistence({
         daysInput: daysInput ?? "",
         discountRateInput: discountRateInput ?? "",
         netInput: netInput ?? "",
+        lastEdited,
       });
     }
-  }, [localStorageKey, daysInput, discountRateInput, netInput, hasSetInitialDays]);
+  }, [localStorageKey, daysInput, discountRateInput, netInput, hasSetInitialDays, lastEdited]);
 }

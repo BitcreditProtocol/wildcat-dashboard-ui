@@ -199,6 +199,7 @@ const GrossToNetDiscountForm = ({
     hasSetInitialDays,
     isSat,
     localStorageKey,
+    lastEdited,
     netInput,
     setHasSetInitialDays,
     setLastEdited,

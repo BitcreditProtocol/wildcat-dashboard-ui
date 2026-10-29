@@ -2,6 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Resolve the saved preference before styles or React can paint a light frame.
+      (() => {
+        let theme = "system";
+        try {
+          theme = localStorage.getItem("theme") ?? "system";
+        } catch {}
+        const dark = theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      })();
+    </script>
+    <style>
+      html { background: #fefbf1; color-scheme: light; }
+      html.dark { background: #0b0600; color-scheme: dark; }
+    </style>
     <link
       rel="icon"
       type="image/svg+xml"

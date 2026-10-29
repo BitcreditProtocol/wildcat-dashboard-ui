@@ -199,6 +199,33 @@ describe("GrossToNetDiscountForm", () => {
     expect(page.querySelector<HTMLInputElement>("#netInput")?.value).toBe("996");
   });
 
+  it("reopens a suggested net draft without losing a satoshi through its rounded rate", async () => {
+    const onSubmit = vi.fn<(result: FormResult) => void>();
+    const form = (
+      <GrossToNetDiscountForm
+        startDate={new Date("2026-10-29T00:00:00Z")}
+        endDate={new Date("2027-05-12T00:00:00Z")}
+        gross={{ value: new Big("10000000"), currency: "sat" }}
+        quoteId="quote-retry-exact"
+        suggestedNet="9603333"
+        onSubmit={onSubmit}
+      />
+    );
+    renderWithProviders(form);
+    await flush();
+    expect((JSON.parse(storageData["offer-form-quote-retry-exact"]) as { lastEdited: string }).lastEdited).toBe("net");
+    act(() => root?.unmount());
+    container?.remove();
+    const page = renderWithProviders(form);
+    await flush();
+    const confirm = [...page.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Confirm");
+    expect(confirm?.disabled).toBe(false);
+    act(() => confirm?.click());
+    await flush();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0]?.[0].net.value.toFixed(0)).toBe("9603333");
+  });
+
   it("uses a decimal text input for fee rate and normalizes comma input", async () => {
     const page = renderWithProviders(
       <GrossToNetDiscountForm
