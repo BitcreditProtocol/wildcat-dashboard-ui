@@ -1666,6 +1666,7 @@
   "mintChat.busy": "Another model call is active. Try again shortly.",
   "mintChat.caseHint": "For evidence or a decision on one bill, open its quote and use “Ask about this case”.",
   "mintChat.dailyLimit": "Today’s question limit has been reached. You can still read the history and all Mint records.",
+  "mintChat.elapsed": "{seconds}s elapsed",
   "mintChat.emptyBody": "Start with a question about this Mint, or ask in Spanish. Follow the sources back to the records.",
   "mintChat.emptyTitle": "What would you like to understand?",
   "mintChat.error": "The answer could not be retrieved. Retry with the same request ID before sending a new question.",

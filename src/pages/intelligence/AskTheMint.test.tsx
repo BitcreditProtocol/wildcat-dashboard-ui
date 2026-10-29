@@ -44,6 +44,7 @@ describe("Ask the Mint", () => {
     });
     await flush();
     expect(page.textContent).toContain("Reading the Mint’s records");
+    expect(page.textContent).toContain("0s elapsed");
     expect(getByRole<HTMLButtonElement>(page, "button", { name: "Ask" }).disabled).toBe(true);
     const request = submitted as { requestId: string; threadId: string; question: string };
     expect(Object.keys(request).sort()).toEqual(["question", "requestId", "threadId"]);
@@ -57,7 +58,11 @@ describe("Ask the Mint", () => {
           requestedAt: "2026-10-28T10:00:00.000Z",
           answer: {
             answer: "Una letra vence en noviembre.",
-            citations: [{ kind: "portfolio", ref: "quote-a" }, { kind: "policy", ref: "policy-v13" }, { kind: "general-knowledge" }],
+            citations: [
+              { kind: "portfolio", ref: "quote-a" },
+              { kind: "policy", ref: "policy-v13", label: "Policy · policy-v13" },
+              { kind: "general-knowledge" },
+            ],
             followUps: ["¿Quién paga?", "¿Cuánta exposición tenemos?"],
           },
         },

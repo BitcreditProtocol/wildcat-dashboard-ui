@@ -13,6 +13,7 @@ export type CitationKind =
 export interface MintCitation {
   kind: CitationKind;
   ref?: string;
+  label?: string;
 }
 export interface MintAnswer {
   answer: string;
@@ -75,7 +76,11 @@ export function parseMintChat(value: unknown): MintChat {
           followUps: array(a.followUps).map(string),
           citations: array(a.citations).map((value) => {
             const c = object(value);
-            return { kind: citationKind(c.kind), ...(c.ref === undefined ? {} : { ref: string(c.ref) }) };
+            return {
+              kind: citationKind(c.kind),
+              ...(c.ref === undefined ? {} : { ref: string(c.ref) }),
+              ...(c.label === undefined ? {} : { label: string(c.label) }),
+            };
           }),
         };
       }

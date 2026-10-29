@@ -110,6 +110,7 @@ export const mintChatMessages = defineMessages({
     defaultMessage: "General knowledge — not from this Mint’s records, undated, may be out of date.",
     description: "Operator dashboard mintChat: general",
   },
+  elapsed: { id: "mintChat.elapsed", defaultMessage: "{seconds}s elapsed", description: "Elapsed time while the Mint prepares an answer" },
   limit: {
     id: "mintChat.limit",
     defaultMessage: "{used} / {limit} questions today · Mint-wide",

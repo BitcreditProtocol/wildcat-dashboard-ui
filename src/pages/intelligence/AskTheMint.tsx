@@ -6,6 +6,7 @@ import { Link } from "react-router";
 import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import { useMintIntelligence } from "@/pages/mint-checks/api";
 import { citationLocation, MintChatError, useAskMint, useMintDiscussion, type MintQuestion } from "./mint-discussion-api";
+import { MintMarkdown } from "./MintMarkdown";
 import { mintChatMessages as m } from "./mint-chat-copy";
 
 export function AskTheMint() {
@@ -16,12 +17,22 @@ export function AskTheMint() {
   const [threadId, setThreadId] = useState<string>();
   const [draft, setDraft] = useState("");
   const [retry, setRetry] = useState<MintQuestion>();
+  const [elapsed, setElapsed] = useState(0);
+  const startedAt = useRef(Date.now());
   const input = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
   const selected = threadId ?? history.data?.records[history.data.records.length - 1]?.threadId;
   const records = history.data?.records.filter((r) => r.threadId === selected) ?? [];
   const pending = ask.isPending || records.some((r) => r.status === "pending");
   const lastAnswer = records[records.length - 1]?.answer;
+  const pendingAt = records.find((r) => r.status === "pending")?.requestedAt;
+  useEffect(() => {
+    if (!pending) return;
+    const start = pendingAt ? Date.parse(pendingAt) : startedAt.current;
+    const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)));
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [pending, pendingAt]);
   const examples = [m.exampleMaturity, m.exampleExposure, m.exampleHarvest];
   const errorCode = ask.error instanceof MintChatError ? ask.error.code : "error";
   const errorMessage =
@@ -46,6 +57,8 @@ export function AskTheMint() {
       retry?.question === question.trim()
         ? retry
         : { threadId: selected ?? crypto.randomUUID(), requestId: crypto.randomUUID(), question: question.trim() };
+    startedAt.current = Date.now();
+    setElapsed(0);
     setThreadId(next.threadId);
     setRetry(next);
     ask.mutate(next, {
@@ -160,17 +173,15 @@ export function AskTheMint() {
                     {intl.formatMessage(m.title)}
                     <span className="font-normal text-muted-foreground">· {intl.formatMessage(m.label)}</span>
                   </div>
-                  <p className="whitespace-pre-wrap text-sm leading-7">{r.answer.answer}</p>
-                  {r.answer.citations.some((c) => c.kind === "general-knowledge") && (
+                  <MintMarkdown text={r.answer.answer} />
+                  {r.answer.citations.some((c) => c.kind === "general-knowledge" && !c.label) && (
                     <p className="border-l-2 border-amber-500 pl-3 text-xs text-muted-foreground">{intl.formatMessage(m.general)}</p>
                   )}
                   <ul aria-label={intl.formatMessage(m.sources)} className="flex flex-wrap gap-2">
                     {r.answer.citations.map((c, i) => {
                       const href = citationLocation(c);
                       const note = c.kind === "intelligence-note" ? notes.data?.notes.find((n) => n.id === c.ref) : undefined;
-                      const label =
-                        note?.title ??
-                        `${intl.formatMessage(m[c.kind])}${c.ref && c.ref !== "current" && c.ref !== "summary" ? ` · ${c.ref.slice(0, 36)}` : ""}`;
+                      const label = c.label ?? note?.title ?? intl.formatMessage(m[c.kind]);
                       return (
                         <li key={`${c.kind}:${c.ref ?? i}`}>
                           {href ? (
@@ -205,6 +216,9 @@ export function AskTheMint() {
               {intl.formatMessage(m.pending)}
             </p>
             <p className="mt-1 pl-6 text-xs text-muted-foreground">{intl.formatMessage(m.pendingDetail)}</p>
+            <p aria-live="off" className="mt-2 pl-6 text-xs tabular-nums text-muted-foreground">
+              {intl.formatMessage(m.elapsed, { seconds: elapsed })}
+            </p>
           </div>
         )}
         <div ref={end} />

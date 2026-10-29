@@ -1,5 +1,6 @@
 /** Authored Spanish UI copy for the owner-directed operator extension. Crowdin-owned downloads stay generated. */
 export const operatorSpanish: Record<string, string> = {
+  "mintChat.elapsed": "{seconds} s transcurridos",
   "help.boundarySummary": "Ayuda humana. Las respuestas no cambian decisiones ni condiciones.",
   "operator.boundary.why": "¿Por qué?",
   "nav.work": "Trabajo",
