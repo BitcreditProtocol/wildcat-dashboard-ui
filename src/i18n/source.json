@@ -18,6 +18,8 @@
   "agentic.after": "Including this bill",
   "agentic.agents": "Agents & processes",
   "agentic.applicant": "Applicant",
+  "agentic.ask.mint": "Across your whole Mint",
+  "agentic.ask.title": "Ask the Mint",
   "agentic.assessed": "Cases assessed",
   "agentic.authority": "Hard gates cannot be overridden. Model output is not verification. Notes change no rule. Signed means authentic, not true. Accepted / MintingEnabled do not establish issued or spendable value. An offer requires a human-written basis and confirmation.",
   "agentic.before": "Before this bill",

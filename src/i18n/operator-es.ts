@@ -467,4 +467,6 @@ export const operatorSpanish: Record<string, string> = {
   "agentic.network.via": "vía {relays}",
   "agentic.home.queueGaps": "No se pudieron leer algunas colas",
   "agentic.questionLimit": "¿Qué comprador está más cerca de su límite?",
+  "agentic.ask.title": "Pregúntale al Mint",
+  "agentic.ask.mint": "Sobre todo tu Mint",
 };
