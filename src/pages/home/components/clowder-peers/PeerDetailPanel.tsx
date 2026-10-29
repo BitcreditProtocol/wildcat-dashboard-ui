@@ -4,7 +4,9 @@ import { Heading, Text } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
 import type { ConnectedMintResponse, SimpleAlphaState } from "@/generated/client/types.gen";
 import { ClowderForeignSubstituteError } from "@/lib/clowder-foreign-status";
+import { useDateDisplay } from "@/hooks/use-date-display";
 import {
+  hasSubstituteRole,
   mintLabel,
   peerMessages,
   statusDetail,
@@ -57,6 +59,7 @@ export function PeerDetailPanel({
   showsSubstitute,
 }: PeerDetailPanelProps) {
   const intl = useIntl();
+  const { formatDateTimeFromSeconds } = useDateDisplay();
   const kind = isLoading || isError ? "unknown" : statusKind(state);
   const timestamp = statusTimestamp(state);
   const detail = statusDetail(state);
@@ -98,15 +101,12 @@ export function PeerDetailPanel({
           <PeerDetailField label={intl.formatMessage(peerMessages.nodeId)} value={peer.node_id} title={peer.node_id} />
           <PeerDetailField label={intl.formatMessage(peerMessages.status)} value={intl.formatMessage(statusMessages[kind])} />
           {timestamp !== undefined && (
-            <PeerDetailField
-              label={intl.formatMessage(peerMessages.updatedAt)}
-              value={new Date(timestamp * 1000).toLocaleString(undefined, { timeZone: "UTC" })}
-            />
+            <PeerDetailField label={intl.formatMessage(peerMessages.updatedAt)} value={formatDateTimeFromSeconds(timestamp)} />
           )}
           {detail && <PeerDetailField label={intl.formatMessage(peerMessages.statusDetail)} value={detail} title={detail} />}
         </div>
 
-        {showsSubstitute && (
+        {showsSubstitute && hasSubstituteRole(kind) && (
           <div className="flex flex-col gap-3 border-t pt-4">
             <Heading as="h5" variant="sub">
               {intl.formatMessage(peerMessages.substituteInformation)}

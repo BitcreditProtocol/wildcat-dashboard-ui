@@ -3,6 +3,7 @@ import { FormattedMessage } from "react-intl";
 import { IdentityCard } from "@/pages/home/components/IdentityCard";
 import { ClowderPeersCard } from "@/pages/home/components/clowder-peers/ClowderPeersCard";
 import { MintInfoCard } from "@/pages/home/components/MintInfoCard";
+import { PendingOutagesCard } from "@/pages/home/components/PendingOutagesCard";
 
 export default function HomePage() {
   return (
@@ -15,6 +16,7 @@ export default function HomePage() {
           <IdentityCard />
           <MintInfoCard />
         </div>
+        <PendingOutagesCard />
         <ClowderPeersCard />
       </div>
     </>

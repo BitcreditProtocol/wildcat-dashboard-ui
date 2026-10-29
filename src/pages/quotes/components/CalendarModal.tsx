@@ -2,10 +2,11 @@ import { useState } from "react";
 import { AppIcon, Calendar, Text, YearPicker, MonthPicker } from "@bitcredit/ui-library";
 import { Button } from "@bitcredit/ui-library";
 import { CalendarIcon } from "lucide-react";
-import { addDays, isAfter, isBefore, isSameDay } from "date-fns";
+import { isAfter, isBefore, isSameDay } from "date-fns";
 import { cn } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
-import { useUtcDateFormatters } from "@/hooks/use-utc-date-formatters";
+import { useDateDisplay } from "@/hooks/use-date-display";
+import { addUtcDays, calendarDayToUtc, toUtcDateKey, utcToCalendarDay } from "@/utils/dates";
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -20,10 +21,6 @@ interface CalendarModalProps {
   onCancel: () => void;
 }
 
-const toUtcStartOfDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
-
-const toUtcEndOfDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
-
 export function CalendarModal({
   isOpen,
   selectedDate,
@@ -37,15 +34,16 @@ export function CalendarModal({
   onCancel,
 }: CalendarModalProps) {
   const intl = useIntl();
-  const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale);
+  const { formatCalendarDate } = useDateDisplay();
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [month, setMonth] = useState<Date>(draftDate ?? selectedDate ?? minDate ?? new Date());
+  const [month, setMonth] = useState<Date>(utcToCalendarDay(draftDate ?? selectedDate ?? minDate ?? new Date()));
 
-  const fallbackMin = addDays(new Date(Date.now()), 1);
-  const minDay = toUtcStartOfDay(minDate ?? fallbackMin);
-  const maxDay = maxDate ? toUtcEndOfDay(maxDate) : null;
+  const fallbackMin = addUtcDays(new Date(Date.now()), 1);
+  const minDay = utcToCalendarDay(minDate ?? fallbackMin);
+  const maxDay = maxDate ? utcToCalendarDay(maxDate) : null;
   const disabled = (date: Date) => isBefore(date, minDay) || (maxDay ? isAfter(date, maxDay) : false);
+  const activeDate = draftDate ?? selectedDate;
 
   return (
     <>
@@ -70,7 +68,7 @@ export function CalendarModal({
           <div className="flex flex-col gap-4 min-h-full">
             <div className="text-xs text-text-200">{title}</div>
             <Text as="div" variant="body">
-              {draftDate ? formatDateMmmDdYyyy(draftDate) : "-"}
+              {draftDate ? formatCalendarDate(toUtcDateKey(draftDate)) : "-"}
             </Text>
 
             {showYearPicker ? (
@@ -96,17 +94,17 @@ export function CalendarModal({
               <Calendar
                 mode="single"
                 month={month}
-                selected={{ from: draftDate ?? selectedDate }}
+                selected={{ from: activeDate ? utcToCalendarDay(activeDate) : undefined }}
                 onCaptionLabelClicked={() => setShowYearPicker(true)}
                 onSelect={(_range, selectedDay) => {
                   if (selectedDay) {
-                    onDateChange(selectedDay);
+                    onDateChange(calendarDayToUtc(selectedDay));
                   }
                 }}
                 disabled={disabled}
                 isFutureNavigationDisabled={false}
                 modifiers={{
-                  saved: (d) => !!selectedDate && isSameDay(d, selectedDate),
+                  saved: (d) => !!selectedDate && isSameDay(d, utcToCalendarDay(selectedDate)),
                 }}
                 modifiersClassNames={{
                   saved:
@@ -143,7 +141,7 @@ interface DatePickerButtonProps {
 
 export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
   const intl = useIntl();
-  const { formatDateMmmDdYyyy } = useUtcDateFormatters(intl.locale);
+  const { formatCalendarDate } = useDateDisplay();
 
   return (
     <button
@@ -154,7 +152,7 @@ export function DatePickerButton({ date, onClick }: DatePickerButtonProps) {
       <AppIcon icon={CalendarIcon} size="md" weight="default" className="text-gray-500 dark:text-gray-400" />
       <span className="text-gray-900 dark:text-gray-100">
         {date
-          ? formatDateMmmDdYyyy(date)
+          ? formatCalendarDate(toUtcDateKey(date))
           : intl.formatMessage({
               id: "quotes.calendar.selectDate",
               defaultMessage: "Select date",

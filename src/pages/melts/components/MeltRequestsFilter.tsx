@@ -1,6 +1,8 @@
-import { Search as SearchComponent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bitcredit/ui-library";
+import { Search as SearchComponent } from "@bitcredit/ui-library";
 import { useIntl } from "react-intl";
-import { SortButtons } from "@/components/SortButtons";
+import { ListFilters, type FilterGroup } from "@/components/ListFilters";
+import { createSortGroup } from "@/components/sort-filter-group";
+import { filterGroupMessages } from "@/i18n/descriptors";
 import type { MeltRequestsFilter, MeltRequestsSortField } from "../types";
 
 interface MeltRequestsControlsProps {
@@ -26,39 +28,38 @@ export function MeltRequestsFilter({
 }: MeltRequestsControlsProps) {
   const intl = useIntl();
 
+  const filterGroups: FilterGroup[] = [
+    {
+      id: "show",
+      title: intl.formatMessage(filterGroupMessages.show),
+      value: requestFilter,
+      options: filterOptions.map((option) => ({ value: option.value, label: option.label })),
+      onSelect: (value) => {
+        onRequestFilterChange(value as MeltRequestsFilter);
+      },
+    },
+    createSortGroup({
+      title: intl.formatMessage(filterGroupMessages.sortBy),
+      sortBy,
+      options: sortOptions,
+      onSortChange,
+    }),
+  ];
+
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-        <SearchComponent
-          value={searchQuery}
-          className="flex-1 max-w-md"
-          placeholder={intl.formatMessage({
-            id: "deniedMeltRequests.search.placeholder",
-            defaultMessage: "Search by request ID, amount, or created date...",
-          })}
-          onSearch={onSearchQueryChange}
-          onChange={onSearchQueryChange}
-          size="sm"
-        />
-        <Select value={requestFilter} onValueChange={(value) => onRequestFilterChange(value as MeltRequestsFilter)}>
-          <SelectTrigger className="h-11 w-full sm:min-w-0 sm:max-w-64" label="">
-            <SelectValue
-              placeholder={intl.formatMessage({
-                id: "deniedMeltRequests.filter.label",
-                defaultMessage: "Filter",
-              })}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {filterOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <SortButtons sortBy={sortBy} onSortChange={onSortChange} options={sortOptions} />
+    <div className="flex items-center gap-3">
+      <SearchComponent
+        value={searchQuery}
+        className="flex-1 max-w-md"
+        placeholder={intl.formatMessage({
+          id: "deniedMeltRequests.search.placeholder",
+          defaultMessage: "Search by request ID, amount, or created date...",
+        })}
+        onSearch={onSearchQueryChange}
+        onChange={onSearchQueryChange}
+        size="sm"
+      />
+      <ListFilters groups={filterGroups} hasActiveFilters={requestFilter !== "all"} />
     </div>
   );
 }

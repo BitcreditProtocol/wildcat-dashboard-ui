@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { useIntl } from "react-intl";
+import { useDateDisplay } from "@/hooks/use-date-display";
 import type { DeniedMeltOp } from "@/generated/client/types.gen";
 import { getSearchableContent, matchesRequestFilter, parseCreatedTime } from "./utils";
 import type { MeltRequestsFilter, MeltRequestsSortDirection, MeltRequestsSortField, MeltRequestsSortBy } from "./types";
 
 export function useMeltRequestsList(operations: DeniedMeltOp[]) {
   const intl = useIntl();
+  const { formatDateTime } = useDateDisplay();
   const [searchQuery, setSearchQuery] = useState("");
   const [requestFilter, setRequestFilter] = useState<MeltRequestsFilter>("all");
   const [sortBy, setSortBy] = useState<MeltRequestsSortBy>("created-desc");
@@ -26,9 +28,9 @@ export function useMeltRequestsList(operations: DeniedMeltOp[]) {
         return true;
       }
 
-      return getSearchableContent(operation, intl.locale).includes(normalizedSearchQuery);
+      return getSearchableContent(operation, formatDateTime).includes(normalizedSearchQuery);
     });
-  }, [intl.locale, normalizedSearchQuery, operations, requestFilter, utcDayBucket]);
+  }, [formatDateTime, normalizedSearchQuery, operations, requestFilter, utcDayBucket]);
 
   const sortedOperations = useMemo(
     () =>

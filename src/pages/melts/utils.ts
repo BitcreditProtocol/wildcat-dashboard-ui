@@ -1,5 +1,5 @@
 import type { DeniedMeltOp } from "@/generated/client/types.gen";
-import { MS_PER_DAY, UTC_TIME_ZONE } from "./constants";
+import { MS_PER_DAY } from "./constants";
 import type { MeltRequestsFilter } from "./types";
 
 export function parseCreatedTime(value: string): number {
@@ -26,28 +26,23 @@ export function matchesRequestFilter(operation: DeniedMeltOp, filter: MeltReques
   }
 }
 
-export function formatCreatedAt(value: string, locale: string): string {
+export function formatCreatedAt(value: string, formatDateTime: (date: Date) => string): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: UTC_TIME_ZONE,
-  }).format(date);
+  return formatDateTime(date);
 }
 
-export function getSearchableContent(operation: DeniedMeltOp, locale: string): string {
+export function getSearchableContent(operation: DeniedMeltOp, formatDateTime: (date: Date) => string): string {
   return [
     operation.id,
     operation.amount.toString(),
     `${operation.amount} sat`,
     operation.created,
-    formatCreatedAt(operation.created, locale),
-    UTC_TIME_ZONE,
+    formatCreatedAt(operation.created, formatDateTime),
   ]
     .join(" ")
     .toLowerCase();

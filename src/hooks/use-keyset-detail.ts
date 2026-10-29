@@ -1,23 +1,32 @@
-import { useMemo } from "react";
-import { useQuery, useQueries, type UseQueryResult } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useInfiniteQuery, useQuery, useQueries, type UseQueryResult } from "@tanstack/react-query";
 import {
   listKeysetInfosOptions,
-  listQuotesOptions,
+  listQuotesInfiniteOptions,
   getQuoteOptions,
   listEbillsOptions,
 } from "@/generated/client/@tanstack/react-query.gen";
-import type { BitcreditBill, InfoReply } from "@/generated/client/types.gen";
+import type { BitcreditBill, InfoReply, LightInfo } from "@/generated/client/types.gen";
 import { getEbillMintCompleteQueryOptions, type EbillMintComplete } from "@/lib/ebill-mint-complete";
-import { doesBillMatchKeysetMaturity } from "@/utils/keyset";
+import { canQuoteHaveKeyset, doesQuoteBelongToKeyset } from "@/utils/keyset";
+import { getNextQuotePageOffset, getPageQuotes } from "@/utils/quote-pages";
 
 const KEYSET_DETAIL_POLL_INTERVAL_MS = 10_000;
 const MINT_COMPLETE_POLL_INTERVAL_MS = 60_000;
 const MINT_COMPLETE_RETRY_COUNT = 3;
 const MINT_COMPLETE_RETRY_DELAY_MS = 30_000;
+const QUOTE_PAGE_SIZE = 250;
 
 const QUOTE_POLLING_TERMINAL_STATUSES = new Set(["Denied", "Rejected", "Canceled", "MintingEnabled"]);
 type QuoteDetailQueryResult = UseQueryResult<InfoReply>;
 type MintCompleteQueryResult = UseQueryResult<EbillMintComplete>;
+
+export interface KeysetQuoteRow {
+  quote: LightInfo;
+  quoteDetails: InfoReply;
+  ebill: BitcreditBill | null;
+  mintCompleteQuery: MintCompleteQueryResult | null;
+}
 
 export function useKeysetDetail(keysetId: string) {
   const { data: keysets, isLoading: keysetsLoading } = useQuery({
@@ -26,13 +35,27 @@ export function useKeysetDetail(keysetId: string) {
     refetchIntervalInBackground: true,
   });
 
-  const { data: allQuotesData, isLoading: quotesLoading } = useQuery({
-    ...listQuotesOptions(),
+  const {
+    data: quotePages,
+    isLoading: quotesLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    ...listQuotesInfiniteOptions({ query: { limit: QUOTE_PAGE_SIZE } }),
     refetchInterval: KEYSET_DETAIL_POLL_INTERVAL_MS,
     refetchIntervalInBackground: true,
+    initialPageParam: 0,
+    getNextPageParam: getNextQuotePageOffset,
   });
 
-  const allQuotes = useMemo(() => allQuotesData?.data ?? [], [allQuotesData?.data]);
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const allQuotes = useMemo(() => quotePages?.pages.flatMap((page) => getPageQuotes(page)) ?? [], [quotePages]);
 
   const { data: ebills } = useQuery({
     ...listEbillsOptions(),
@@ -41,10 +64,10 @@ export function useKeysetDetail(keysetId: string) {
   });
 
   const keyset = keysets?.data.find((k) => k.id === keysetId);
-  const keysetFinalExpiry = keyset?.final_expiry;
+  const candidateQuotes = useMemo(() => allQuotes.filter((quote) => canQuoteHaveKeyset(quote.status)), [allQuotes]);
 
   const quoteDetailsQueries = useQueries({
-    queries: allQuotes.map((quote) => ({
+    queries: candidateQuotes.map((quote) => ({
       ...getQuoteOptions({
         path: { qid: quote.id },
       }),
@@ -57,26 +80,14 @@ export function useKeysetDetail(keysetId: string) {
     combine: (results) => results as QuoteDetailQueryResult[],
   });
 
-  const quoteDetailsLoading = quoteDetailsQueries.some((q) => q.isLoading);
+  const quoteDetailsLoading = quoteDetailsQueries.some((query) => query.isLoading);
+  const unresolvedQuoteCount = quoteDetailsQueries.filter((query) => query.isError).length;
 
-  const quoteBillSummaries = quoteDetailsQueries.map((query) => ({
-    billId: query.data?.bill?.id,
-    maturityDate: query.data?.bill?.maturity_date,
-  }));
+  const matchedQuotes = candidateQuotes
+    .map((quote, index) => ({ quote, quoteDetails: quoteDetailsQueries[index]?.data }))
+    .filter((entry): entry is { quote: LightInfo; quoteDetails: InfoReply } => doesQuoteBelongToKeyset(entry.quoteDetails, keysetId));
 
-  const matchingBillIds: string[] = [];
-
-  if (keysetFinalExpiry && !quoteDetailsLoading) {
-    quoteBillSummaries.forEach(({ billId, maturityDate }) => {
-      if (!maturityDate || !billId) {
-        return;
-      }
-
-      if (doesBillMatchKeysetMaturity(keysetFinalExpiry, maturityDate)) {
-        matchingBillIds.push(billId);
-      }
-    });
-  }
+  const matchingBillIds = [...new Set(matchedQuotes.map((entry) => entry.quoteDetails.bill.id))];
 
   const mintCompleteQueries = useQueries({
     queries: matchingBillIds.map((billId) => ({
@@ -102,27 +113,24 @@ export function useKeysetDetail(keysetId: string) {
     return map;
   }, [ebills]);
 
-  const matchingQuotes = allQuotes.filter((_quote, index) => {
-    const quoteDetails = quoteDetailsQueries[index]?.data;
-    const billMaturityDate = quoteDetails?.bill?.maturity_date;
+  const mintCompleteByBillId = new Map(matchingBillIds.map((billId, index) => [billId, mintCompleteQueries[index] ?? null]));
 
-    if (!keyset?.final_expiry || !billMaturityDate) {
-      return false;
-    }
+  const quoteRows: KeysetQuoteRow[] = matchedQuotes.map(({ quote, quoteDetails }) => {
+    const billId = quoteDetails.bill.id;
 
-    return doesBillMatchKeysetMaturity(keyset.final_expiry, billMaturityDate);
+    return {
+      quote,
+      quoteDetails,
+      ebill: billIdToEbillMap.get(billId) ?? null,
+      mintCompleteQuery: mintCompleteByBillId.get(billId) ?? null,
+    };
   });
 
   return {
     keyset,
-    allQuotes,
-    quoteDetailsQueries,
-    matchingBillIds,
-    mintCompleteQueries,
-    matchingQuotes,
-    billIdToEbillMap,
+    quoteRows,
     keysetsLoading,
-    quotesLoading,
-    quoteDetailsLoading,
+    quotesLoading: quotesLoading || hasNextPage || isFetchingNextPage || quoteDetailsLoading,
+    unresolvedQuoteCount,
   };
 }
