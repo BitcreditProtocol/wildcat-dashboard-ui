@@ -451,7 +451,8 @@ export async function recordOperatorDecision(
       }),
       headers: { "content-type": "application/json" },
       method: "POST",
-      signal: AbortSignal.timeout(10_000),
+      // Recording, reservation and signing can outlast a simple read on encrypted stores.
+      signal: AbortSignal.timeout(60_000),
     });
     if (!response.ok) return { ok: false, error: await responseError(response) };
     const body: unknown = await response.json().catch(() => null);

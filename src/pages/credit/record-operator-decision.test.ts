@@ -336,6 +336,48 @@ describe("durable authorization receipt", () => {
 });
 
 describe("recordOperatorDecision", () => {
+  it("waits for a slow durable decision and still enforces a finite command deadline", async () => {
+    vi.useFakeTimers();
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation((delay) => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), delay);
+      return controller.signal;
+    });
+    try {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(
+          (_path: string, init: RequestInit) =>
+            new Promise<Response>((resolve, reject) => {
+              init.signal?.addEventListener("abort", () => reject(new Error("timeout")));
+              setTimeout(
+                () => resolve(response(true, 200, { schemaVersion: "ai-credit-operator-decision-response-v1", signedAuthorization })),
+                12000
+              );
+            })
+        )
+      );
+      const slow = recordOperatorDecision(command, approver);
+      await vi.advanceTimersByTimeAsync(12000);
+      await expect(slow).resolves.toEqual({ ok: true, signedAuthorization });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(
+          (_path: string, init: RequestInit) =>
+            new Promise<Response>((_resolve, reject) => {
+              init.signal?.addEventListener("abort", () => reject(new Error("timeout")));
+            })
+        )
+      );
+      const stalled = recordOperatorDecision(command, approver);
+      await vi.advanceTimersByTimeAsync(60000);
+      await expect(stalled).resolves.toMatchObject({ ok: false });
+    } finally {
+      timeout.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it("does not call the service without a ready capability", async () => {
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
