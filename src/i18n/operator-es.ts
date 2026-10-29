@@ -466,4 +466,5 @@ export const operatorSpanish: Record<string, string> = {
   "agentic.network.unreachable": "No responde",
   "agentic.network.via": "vía {relays}",
   "agentic.home.queueGaps": "No se pudieron leer algunas colas",
+  "agentic.questionLimit": "¿Qué comprador está más cerca de su límite?",
 };

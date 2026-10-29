@@ -70,7 +70,7 @@ export function DecisionBrief({ quoteId, bill, decisionCase }: { quoteId: string
     : [];
   const partsTotal = parts.reduce((n, p) => n + p.sat, 0);
   return (
-    <Card className="verdict-block">
+    <Card className="verdict-block border-border">
       <CardContent className="space-y-4 p-4">
         {decisionCase?.assessmentCurrency === "historical" && (
           <p className="text-xs text-amber-800 dark:text-amber-300">{intl.formatMessage(m.historical)}</p>

@@ -70,6 +70,11 @@ export const cockpit = defineMessages({
     description: "Portfolio-state suggested question",
   },
   questionQueue: { id: "agentic.questionQueue", defaultMessage: "What needs a person now?", description: "Queue-state suggested question" },
+  questionLimit: {
+    id: "agentic.questionLimit",
+    defaultMessage: "Which buyer is closest to its limit?",
+    description: "Suggested Ask the Mint question about exposure caps",
+  },
   questionCapacity: {
     id: "agentic.questionCapacity",
     defaultMessage: "How much operating capacity remains?",

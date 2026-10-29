@@ -125,6 +125,7 @@
   "agentic.questionEvidence": "What is established and what is only the applicant’s word?",
   "agentic.questionExposure": "What happens to {buyer}’s cap if we finance this?",
   "agentic.questionGates": "Which recorded checks need attention?",
+  "agentic.questionLimit": "Which buyer is closest to its limit?",
   "agentic.questionPrice": "Explain the fee and what the applicant receives.",
   "agentic.questionQueue": "What needs a person now?",
   "agentic.register": "Register checks recorded",

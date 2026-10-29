@@ -9,7 +9,7 @@ import { citationLocation, MintChatError, useAskMint, useMintDiscussion, type Mi
 import { MintMarkdown } from "./MintMarkdown";
 import { mintChatMessages as m } from "./mint-chat-copy";
 
-import { useMintSummary, useOperatorCapacity } from "@/pages/home/operator-api";
+import { useMintSummary } from "@/pages/home/operator-api";
 import { cockpit } from "@/components/operator/cockpit-messages";
 
 export function AskTheMint() {
@@ -19,7 +19,6 @@ export function AskTheMint() {
   const ask = useAskMint();
   const notes = useMintIntelligence();
   const summary = useMintSummary();
-  const capacity = useOperatorCapacity();
   const [threadId, setThreadId] = useState<string>();
   const [draft, setDraft] = useState("");
   const [retry, setRetry] = useState<MintQuestion>();
@@ -48,7 +47,7 @@ export function AskTheMint() {
     intl.formatMessage(m.exampleMaturity),
     topBuyer ? intl.formatMessage(cockpit.questionBook, { buyer: topBuyer.name }) : intl.formatMessage(m.exampleExposure),
     intl.formatMessage((summary.data?.queue.length ?? 0) > 0 ? cockpit.questionQueue : m.exampleHarvest),
-    ...(!capacity.error && capacity.data ? [intl.formatMessage(cockpit.questionCapacity)] : []),
+    ...(topBuyer?.capSat ? [intl.formatMessage(cockpit.questionLimit)] : []),
   ];
   const errorCode = ask.error instanceof MintChatError ? ask.error.code : "error";
   const errorMessage =
@@ -90,16 +89,13 @@ export function AskTheMint() {
       aria-label={intl.formatMessage(m.title)}
       className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
     >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div className="flex items-center gap-3">
-          <span className="rounded-lg bg-sky-500/10 p-2">
-            <Sparkles className="size-5 text-sky-700 dark:text-sky-400" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="font-semibold">{intl.formatMessage(m.title)}</h2>
-            <p className="text-xs text-muted-foreground">{intl.formatMessage(m.subtitle)}</p>
-          </div>
-        </div>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-2.5">
+        {/* The page or drawer around the chat already names it; the heading stays for screen readers. */}
+        <h2 className="sr-only">{intl.formatMessage(m.title)}</h2>
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Sparkles className="size-4 text-sky-600 dark:text-sky-400" aria-hidden="true" />
+          {intl.formatMessage(m.subtitle)}
+        </p>
         <Button
           variant="ghost"
           size="sm"
