@@ -2,7 +2,7 @@ import { financeLockCode, FinanceLockConflictError, type FinanceLockCode } from 
 import { fraudReason } from "@/pages/credit/fraud-controls-copy";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, LoaderIcon } from "lucide-react";
+import { ChevronDown, LoaderIcon, Lock } from "lucide-react";
 import { AppIcon, Button, toast } from "@bitcredit/ui-library";
 import { Badge } from "@/components/ui/badge";
 import type { InvestigationNeedSelection } from "@bitcredit/ai-credit-shared";
@@ -658,6 +658,15 @@ export function QuoteActions({
     }
   };
 
+  // An offer is otherwise ready but needs one more finished AI review, and only an applicant reply grants
+  // one: show the locked offer and put that question first instead of leaving Deny as the only decision.
+  const offerLockedByReview =
+    showPendingActions &&
+    preparationBlocksOffer &&
+    decisionCase?.casePreparation?.reasons.includes("agent_review_limit_reached") === true &&
+    decisionCase.result.assessmentStatus === "ready_for_decision" &&
+    decisionCase.result.recommendation === "offer_available" &&
+    !offerTermsExpired;
   const requestAction = showApplicantQuestion ? (
     <RequestInformationDrawer
       open={returnInfoDrawerOpen}
@@ -671,7 +680,7 @@ export function QuoteActions({
         className="min-w-24"
         disabled={isFetching || isGovernancePending || !mayAskApplicant}
         title={mayAskApplicant ? undefined : roleUnavailableReason}
-        variant="outline"
+        variant={offerLockedByReview ? "default" : "outline"}
       >
         {intl.formatMessage({
           id: "quotes.askApplicant.action",
@@ -708,7 +717,7 @@ export function QuoteActions({
   const caseNext = decisionCase === undefined ? undefined : buildCaseBrief(decisionCase, { quoteId: value.id, now: Date.now() }).next.kind;
   const closeIsPrimary = closeAction !== null && caseNext === "decide_unresolved";
   const exceptionActions = [
-    requestAction && <Fragment key="ask">{requestAction}</Fragment>,
+    !offerLockedByReview && requestAction && <Fragment key="ask">{requestAction}</Fragment>,
     !closeIsPrimary && closeAction && <Fragment key="close">{closeAction}</Fragment>,
   ].filter((action) => action !== null && action !== false);
   const stacked = layout === "stacked";
@@ -757,6 +766,21 @@ export function QuoteActions({
       )}
       {showPendingActions || showRequestToPayAction ? (
         <div className={stacked ? "grid gap-2 [&_button]:w-full" : "flex flex-wrap items-center gap-2"}>
+          {offerLockedByReview && (
+            <Button
+              className="min-w-24 gap-1.5"
+              disabled
+              title={intl.formatMessage({
+                id: "quotes.actions.offer.lockedByReview",
+                defaultMessage: "Locked until the AI review of the applicant's current answers finishes",
+                description: "Why the offer button is disabled when the case used all its agent review runs",
+              })}
+            >
+              <Lock className="size-3.5" aria-hidden="true" />
+              {offerButtonLabel}
+            </Button>
+          )}
+          {offerLockedByReview && requestAction}
           {showGovernedOffer && (
             <OfferFormDrawer
               title={offerTitle}

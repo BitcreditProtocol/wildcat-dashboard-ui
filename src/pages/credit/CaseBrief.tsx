@@ -132,6 +132,16 @@ const messages = defineMessages({
     defaultMessage: "Check why preparation stopped. You can ask an additional question under More actions.",
     description: "Preparation exception, with optional manual information gathering rather than a financial decision",
   },
+  reviewLimitTitle: {
+    id: "quotes.brief.step.reviewLimit.title",
+    defaultMessage: "Offer locked: the AI review ran out of attempts",
+    description: "The case is otherwise offerable but needs one more completed agent review of the current answers",
+  },
+  reviewLimitBody: {
+    id: "quotes.brief.step.reviewLimit.body",
+    defaultMessage: "Ask the applicant a question. Their reply allows one more review; if it passes, the offer unlocks.",
+    description: "How to unlock an offer after the agent review limit; there is no bypass",
+  },
   reviewEvidence: {
     id: "quotes.brief.step.reviewEvidence",
     defaultMessage: "Check each reply against the submitted documents and record whether it is supported.",
@@ -439,14 +449,26 @@ export function CaseNextStepPanel({
         </span>
         {!operator && <span className="text-xs text-muted-foreground">{intl.formatMessage(messages.noActionFromYou)}</span>}
       </h2>
-      <p className="mt-1 text-sm">
-        {intl.formatMessage(stepCopy[next.kind])}
-        {link !== undefined && (
-          <a className="ml-2 text-sm font-medium text-primary hover:underline print:hidden" href={link.href}>
-            {intl.formatMessage(link.label)}
-          </a>
-        )}
-      </p>
+      {next.kind === "preparation_attention" && next.reasons.includes("agent_review_limit_reached") ? (
+        <>
+          <p className="mt-1 text-sm font-medium">{intl.formatMessage(messages.reviewLimitTitle)}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {intl.formatMessage(messages.reviewLimitBody)}
+            <a className="ml-2 text-sm font-medium text-primary hover:underline print:hidden" href="#case-preparation">
+              {intl.formatMessage(messages.details)}
+            </a>
+          </p>
+        </>
+      ) : (
+        <p className="mt-1 text-sm">
+          {intl.formatMessage(stepCopy[next.kind])}
+          {link !== undefined && (
+            <a className="ml-2 text-sm font-medium text-primary hover:underline print:hidden" href={link.href}>
+              {intl.formatMessage(link.label)}
+            </a>
+          )}
+        </p>
+      )}
       {next.kind === "decide_offer" && openPoints > 0 && (
         <a
           href="#case-open-points"

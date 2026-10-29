@@ -1146,6 +1146,30 @@ describe("QuoteActions", () => {
     expect(mockHandleOfferQuote).toHaveBeenCalledWith(signedAuthorization);
   });
 
+  it("shows an offer locked by a spent review budget, with the unlocking question first and Deny beside it", () => {
+    decisionCase = {
+      ...governedOffer,
+      casePreparation: {
+        schemaVersion: "case-preparation-v1",
+        status: "attention",
+        approvable: false,
+        reasons: ["agent_review_limit_reached"],
+        automaticRequests: { policyVersion: "synthetic-agent-follow-up-v2", used: 0, budget: 3, consent: "absent", enabled: false },
+        rounds: [],
+        openObjectives: [],
+      },
+    };
+    const page = renderComponent(pendingQuote);
+    const button = (label: string) =>
+      Array.from(page.querySelectorAll("button")).find((candidate) => candidate.textContent?.trim().startsWith(label));
+    // No bypass: the offer stays locked, but the operator sees it and why.
+    expect(button("Offer")?.disabled).toBe(true);
+    expect(button("Offer")?.title).toContain("Locked until the AI review");
+    // An applicant reply grants one more review, so asking is the primary path, not a hidden exception.
+    expect(button("Ask the applicant")?.closest("details")).toBeNull();
+    expect(button("Deny")).toBeDefined();
+  });
+
   it("replays a recorded offer after reload through the server and still refuses a changed signed amount", async () => {
     decisionCase = {
       ...governedOffer,

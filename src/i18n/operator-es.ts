@@ -473,6 +473,10 @@ export const operatorSpanish: Record<string, string> = {
   "agentic.network.unreachable": "No responde",
   "agentic.network.via": "vía {relays}",
   "agentic.home.queueGaps": "No se pudieron leer algunas colas",
+  "quotes.brief.step.reviewLimit.title": "Oferta bloqueada: la revisión de IA agotó sus intentos",
+  "quotes.brief.step.reviewLimit.body":
+    "Hazle una pregunta al solicitante. Su respuesta permite una revisión más; si la supera, la oferta se desbloquea.",
+  "quotes.actions.offer.lockedByReview": "Bloqueada hasta que termine la revisión de IA de las respuestas actuales del solicitante",
   "agentic.home.stale": "Actualizado a las {time}",
   "agentic.home.staleWhy": "La última actualización no terminó. Estos son los últimos registros completos; la página sigue reintentando.",
   "agentic.questionLimit": "¿Qué comprador está más cerca de su límite?",
