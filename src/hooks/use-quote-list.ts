@@ -314,7 +314,7 @@ export function useQuoteList(status?: QuoteStatus) {
     return searchableContent.includes(normalizedSearchQuery);
   });
 
-  const sortsLocally = apiSort === undefined || sortBy.startsWith("priority-");
+  const sortsLocally = apiSort === undefined || (sortBy.startsWith("priority-") && status === undefined);
   const preserveBackendOrder = !usesLegacyFallback && !sortsLocally;
 
   const compareQuotes = (a: LightInfo, b: LightInfo) => {
@@ -396,7 +396,7 @@ export function useQuoteList(status?: QuoteStatus) {
     setItemsPerPage(PAGE_SIZE);
   };
 
-  const sortOptions = [
+  const allSortOptions = [
     {
       field: "sum" as const,
       label: intl.formatMessage({
@@ -426,6 +426,7 @@ export function useQuoteList(status?: QuoteStatus) {
       }),
     },
   ];
+  const sortOptions = status ? allSortOptions.filter((option) => option.field !== "status") : allSortOptions;
 
   const hasActiveFilters = normalizedSearchQuery.length > 0 || quickFilter !== "all";
 

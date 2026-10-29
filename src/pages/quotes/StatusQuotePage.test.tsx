@@ -593,6 +593,74 @@ describe("StatusQuotePage", () => {
     expect(lastQuotesQuery()?.sort).toBeUndefined();
   });
 
+  it("does not offer status as a sort field on a single-status page", () => {
+    const page = renderPage("Pending");
+
+    expect(page.querySelector('[data-filter-option="status"]')).toBeNull();
+    expect(Array.from(page.querySelectorAll('[role="group"][aria-label="Sort by"] button')).map((chip) => chip.textContent)).toEqual([
+      "Amount",
+      "Maturity",
+      "Last status change",
+    ]);
+  });
+
+  it("keeps the backend order for priority on a single-status page, so it holds across pages", () => {
+    mockUseInfiniteQuery.mockReturnValue({
+      data: {
+        pages: [
+          {
+            data: [
+              { id: "quote-pending-new", status: "Pending", sum: 200 },
+              { id: "quote-pending-old", status: "Pending", sum: 400 },
+            ],
+            total: 2,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: fetchNextPageSpy,
+      error: null,
+    });
+
+    // Local timestamps that disagree with the backend order: a local sort would swap them.
+    const submitted: Record<string, string> = {
+      "quote-pending-new": "2026-02-18T10:00:00.000Z",
+      "quote-pending-old": "2026-02-10T10:00:00.000Z",
+    };
+
+    mockUseQueries.mockImplementation(({ queries }: UseQueriesArgs) =>
+      queries.map((query) => {
+        const firstKey = query.queryKey?.[0] as QueryKeyEntry | undefined;
+        const qid = firstKey?.path?.qid ?? "x";
+
+        return {
+          data: {
+            id: qid,
+            status: "Pending",
+            submitted: submitted[qid],
+            bill: {
+              id: `bill-${qid}`,
+              maturity_date: "2026-02-20",
+              drawee: { name: "Alice", node_id: "drawee-node" },
+              drawer: { name: "Bob", node_id: "drawer-node" },
+              payee: { Ident: { name: "Charlie", node_id: "payee-node" } },
+              endorsees: [],
+            },
+          },
+          isLoading: false,
+        };
+      })
+    );
+
+    const page = renderPage("Pending");
+
+    expect(lastQuotesQuery()).toMatchObject({ sort: "submitted_asc", status: "Pending" });
+    expect(orderedQuoteIds(page)).toEqual(["quote-pending-new", "quote-pending-old"]);
+  });
+
   it("filters cards by status", () => {
     const page = renderPage("Accepted");
     expect(page.textContent).toContain("Accepted quotes");
