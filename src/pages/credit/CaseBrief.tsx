@@ -420,9 +420,14 @@ export function CaseNextStepPanel({
           <h3 className="text-xs text-muted-foreground">{intl.formatMessage(messages.blockers)}</h3>
           <ul className="mt-2 space-y-2">
             {brief?.outstanding?.map(({ item, action }) => (
-              <li key={`${action}:${item}`} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-sm">
-                <span className="min-w-0 flex-1 break-words">{item}</span>
-                <span className="text-xs text-muted-foreground">{intl.formatMessage(blockerAction[action])}</span>
+              <li
+                key={`${action}:${item}`}
+                className={
+                  variant === "panel" ? "space-y-1 text-sm" : "flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-sm"
+                }
+              >
+                <span className="block min-w-0 flex-1 break-words">{item}</span>
+                <span className="block text-xs text-muted-foreground">{intl.formatMessage(blockerAction[action])}</span>
               </li>
             ))}
           </ul>
