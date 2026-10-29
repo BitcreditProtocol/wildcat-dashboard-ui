@@ -382,7 +382,7 @@ export function CaseDecisionPanel({
     // `overflow-clip` rounds the corners without becoming a scroll container, so the actions can stick.
     <aside aria-labelledby="case-decision-title" className="overflow-clip rounded-lg border border-border bg-card print:hidden">
       <header className="border-b border-border bg-elevation-100 px-5 py-4">
-        <h2 id="case-decision-title" className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <h2 id="case-decision-title" className="text-sm font-semibold">
           {intl.formatMessage(messages.title)}
         </h2>
         {/* The case summary states the status and why; the panel adds only who acts next. */}

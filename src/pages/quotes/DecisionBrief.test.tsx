@@ -61,7 +61,8 @@ describe("quote decision brief", () => {
       drawee: { node_id: "buyer-node" },
     } as BillInfo;
     const { page } = await renderWithProviders(<DecisionBrief quoteId="quote-a" bill={bill} decisionCase={one} />);
-    const gate = getByRole(page, "link", { name: /Accepted bill.*Failed/ });
+    // A failed gate reads as what went wrong, in plain words, and still links to its exact rule.
+    const gate = getByRole(page, "link", { name: "Buyer hasn’t accepted the bill" });
     expect(gate.getAttribute("href")).toBe(`/policy#policy-${pack.policyPackVersion}--bill_not_accepted`);
     expect(recordedGateStatus(one, "tenor_outside_policy")).toBe("unknown");
     expect(recordedGateStatus(one, "bill_not_accepted")).toBe("fail");

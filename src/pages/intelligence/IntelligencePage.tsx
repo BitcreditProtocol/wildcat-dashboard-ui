@@ -8,9 +8,26 @@ import { defineMessages, useIntl } from "react-intl";
 import { useMintIntelligence } from "@/pages/mint-checks/api";
 import { intelligenceScopeMessages } from "@/pages/mint-checks/mint-checks-copy";
 import { CheckLoading, CheckUnavailable } from "@/pages/mint-checks/MintCheckParts";
-import { intelligenceMessages, supersededChain, todayIsoDate } from "./intelligence-copy";
+import { intelligenceMessages, intelligenceReviewOverdue, supersededChain, todayIsoDate } from "./intelligence-copy";
 import { IntelligenceNoteCard } from "./IntelligenceNote";
 import { IntelligenceNoteForm } from "./IntelligenceNoteForm";
+
+const plain = defineMessages({
+  title: { id: "agentic.intel.title", defaultMessage: "Ask the Mint", description: "Page title" },
+  subtitle: {
+    id: "agentic.intel.subtitle",
+    defaultMessage: "Ask about your cases, buyers, due dates or the market. Answers cite your records.",
+    description: "What the page is for",
+  },
+  notes: { id: "agentic.intel.notes", defaultMessage: "Team notes", description: "Notes panel title" },
+  notesWhy: {
+    id: "agentic.intel.notesWhy",
+    defaultMessage:
+      "What your team knows about regions, crops and the economy. Shown on matching cases and used by Ask the Mint. Never changes prices or rules.",
+    description: "What team notes do",
+  },
+  edit: { id: "agentic.intel.edit", defaultMessage: "Edit", description: "Writes a newer version of a note" },
+});
 
 const messages = defineMessages({
   title: { id: "intelligence.title", defaultMessage: "Mint Intelligence", description: "Page title" },
@@ -47,40 +64,68 @@ function IntelligenceGroups({
   const today = todayIsoDate();
   const current = new Set(response.current);
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {scopes.map((scope) => {
         const notes = response.notes
           .filter((note) => note.scope === scope && current.has(note.id))
           .sort((a, b) => a.subject.localeCompare(b.subject, intl.locale) || b.authoredAt.localeCompare(a.authoredAt));
         const label = intl.formatMessage(intelligenceScopeMessages[scope]);
         return (
-          <section key={scope} aria-label={label} className="space-y-3">
-            <h2 className="text-lg font-semibold">{label}</h2>
+          <section key={scope} aria-label={label}>
+            <h3 className="text-xs font-medium text-muted-foreground">{label}</h3>
             {notes.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {intl.formatMessage(messages.empty, { scope: label.toLocaleLowerCase(intl.locale) })}
               </p>
             ) : (
-              <ul className="space-y-3">
+              <ul className="divide-y divide-border">
                 {notes.map((note) => {
                   const history = supersededChain(note, response.notes);
                   return (
-                    <li id={`note-${note.id}`} key={note.id} className="scroll-mt-5 rounded-lg border border-border bg-card p-4">
-                      <IntelligenceNoteCard
-                        note={note}
-                        today={today}
-                        actions={
-                          <Button variant="outline" size="sm" onClick={() => onUpdate(note)}>
-                            {intl.formatMessage(messages.update)}
-                          </Button>
-                        }
-                      />
+                    <li id={`note-${note.id}`} key={note.id} className="scroll-mt-5 py-2.5">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <h4 className="text-sm font-medium">
+                          {note.title}
+                          <span className="ml-2 text-[11px] font-normal text-muted-foreground">{note.subject}</span>
+                          {intelligenceReviewOverdue(note, today) && (
+                            <span className="ml-2 text-[11px] font-normal text-amber-600 dark:text-amber-300">
+                              {intl.formatMessage(intelligenceMessages.overdue)}
+                            </span>
+                          )}
+                        </h4>
+                        <button
+                          type="button"
+                          className="shrink-0 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                          onClick={() => onUpdate(note)}
+                        >
+                          {intl.formatMessage(plain.edit)}
+                        </button>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground" title={note.body}>
+                        {note.body}
+                      </p>
+                      {note.sources.length > 0 && (
+                        <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                          {note.sources.map((source, index) => (
+                            <span key={`${index}-${source.label}`}>
+                              {index > 0 && " · "}
+                              {source.url ? (
+                                <a href={source.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                  {source.label}
+                                </a>
+                              ) : (
+                                source.label
+                              )}
+                            </span>
+                          ))}
+                        </p>
+                      )}
                       {history.length > 0 && (
-                        <details className="mt-3 border-t border-border pt-3 text-sm">
-                          <summary className="cursor-pointer text-xs text-muted-foreground">
+                        <details className="mt-1 text-xs">
+                          <summary className="cursor-pointer text-muted-foreground">
                             {intl.formatMessage(messages.history, { count: history.length })}
                           </summary>
-                          <ol className="mt-3 space-y-3">
+                          <ol className="mt-2 space-y-2">
                             {history.map((older) => (
                               <li key={older.id} className="rounded-md bg-muted p-3">
                                 <IntelligenceNoteCard note={older} today={today} />
@@ -107,33 +152,49 @@ export default function IntelligencePage() {
   useRevealAnchor(query.data);
   const [form, setForm] = useState<{ supersedes?: MintIntelligenceNote } | null>(null);
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold">{intl.formatMessage(messages.title)}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{intl.formatMessage(messages.description)}</p>
-        </div>
-        {form === null && query.data && <Button onClick={() => setForm({})}>{intl.formatMessage(messages.add)}</Button>}
+    <div className="space-y-4">
+      <header>
+        <h1 className="text-2xl font-semibold">{intl.formatMessage(plain.title)}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{intl.formatMessage(plain.subtitle)}</p>
       </header>
-      <BoundaryNotice summary={intl.formatMessage(intelligenceMessages.boundary)}>
-        {intl.formatMessage({
-          id: "intelligence.readOnlyPrompt",
-          defaultMessage:
-            "Notes may reach only Ask the Mint’s operator-only, read-only explanation prompt. They never enter applicant, assessment, pricing, gate or authorization prompts. Notes and explanations cannot change the reviewed policy.",
-          description: "Operator dashboard intelligence: readOnlyPrompt",
-        })}
-      </BoundaryNotice>
-      <AskTheMint />
-      {form !== null && (
-        <IntelligenceNoteForm key={form.supersedes?.id ?? "new"} supersedes={form.supersedes} onDone={() => setForm(null)} />
-      )}
-      {query.error ? (
-        <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />
-      ) : query.data ? (
-        <IntelligenceGroups response={query.data} onUpdate={(note) => setForm({ supersedes: note })} />
-      ) : (
-        <CheckLoading />
-      )}
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <AskTheMint />
+        <aside className="home-panel" aria-label={intl.formatMessage(plain.notes)}>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-semibold">{intl.formatMessage(plain.notes)}</h2>
+            {form === null && query.data && (
+              <Button size="sm" variant="outline" onClick={() => setForm({})}>
+                {intl.formatMessage(messages.add)}
+              </Button>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(plain.notesWhy)}</p>
+          {form !== null && (
+            <div className="mt-3">
+              <IntelligenceNoteForm key={form.supersedes?.id ?? "new"} supersedes={form.supersedes} onDone={() => setForm(null)} />
+            </div>
+          )}
+          <div className="mt-2">
+            {query.error ? (
+              <CheckUnavailable error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} />
+            ) : query.data ? (
+              <IntelligenceGroups response={query.data} onUpdate={(note) => setForm({ supersedes: note })} />
+            ) : (
+              <CheckLoading />
+            )}
+          </div>
+          <div className="mt-3">
+            <BoundaryNotice summary={intl.formatMessage(intelligenceMessages.boundary)}>
+              {intl.formatMessage({
+                id: "intelligence.readOnlyPrompt",
+                defaultMessage:
+                  "Notes may reach only Ask the Mint’s operator-only, read-only explanation prompt. They never enter applicant, assessment, pricing, gate or authorization prompts. Notes and explanations cannot change the reviewed policy.",
+                description: "Operator dashboard intelligence: readOnlyPrompt",
+              })}
+            </BoundaryNotice>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

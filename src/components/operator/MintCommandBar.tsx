@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router";
-import { Sparkles, ShieldCheck, UserRound, Command } from "lucide-react";
+import { Sparkles, Command } from "lucide-react";
 import { useIntl } from "react-intl";
 import { AskTheMint } from "@/pages/intelligence/AskTheMint";
 import { AskDrawer } from "./AskDrawer";
@@ -33,12 +33,6 @@ export function MintCommandBar() {
   return (
     <>
       <header className="mint-command-bar">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="status-dot" />
-          <span className="font-semibold tracking-widest">WILDCAT</span>
-          <span className="hidden lg:inline">/</span>
-          <span className="hidden lg:inline">{intl.formatMessage(m.actors)}</span>
-        </div>
         <button
           type="button"
           className="mint-command"
@@ -52,17 +46,6 @@ export function MintCommandBar() {
             <Command className="size-3" />K
           </kbd>
         </button>
-        <div className="hidden items-center gap-3 text-muted-foreground xl:flex" aria-label={intl.formatMessage(m.actors)}>
-          <span title={intl.formatMessage(m.proposed)}>
-            <Sparkles className="size-4" aria-label={intl.formatMessage(m.proposed)} />
-          </span>
-          <span title={intl.formatMessage(m.gates)}>
-            <ShieldCheck className="size-4" aria-label={intl.formatMessage(m.gates)} />
-          </span>
-          <span title={intl.formatMessage(m.human)}>
-            <UserRound className="size-4" aria-label={intl.formatMessage(m.human)} />
-          </span>
-        </div>
       </header>
       <AskDrawer open={open} onOpenChange={setOpen} caseScoped={caseScoped}>
         {open &&

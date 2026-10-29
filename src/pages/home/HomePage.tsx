@@ -1,134 +1,207 @@
-import { AgentStrip } from "./AgentStrip";
 import { NeedsCard } from "./NeedsCard";
-import { Concentration } from "./Concentration";
-import { cockpit } from "@/components/operator/cockpit-messages";
-import { useState } from "react";
+import { ActivityFeed } from "./ActivityFeed";
+import { useAge } from "./use-age";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, Button } from "@bitcredit/ui-library";
-import { ArrowUpRight, Inbox, MessageCircle, Building2, UserCheck, RefreshCw } from "lucide-react";
+import { Button } from "@bitcredit/ui-library";
+import { ArrowRight, Building2, Info, MessageCircle, RefreshCw, Sprout, TriangleAlert } from "lucide-react";
 import { useIntl } from "react-intl";
 import { Link } from "react-router";
-import { listQuotesOptions } from "@/generated/client/@tanstack/react-query.gen";
-import { useApplicantHelp } from "@/pages/mint-checks/api";
+import { useApplicantHelp, useCreditPolicy } from "@/pages/mint-checks/api";
+import { policyAnchor } from "@/pages/policy/policy-links";
 import { facilityQueryKey, readFacilityApplications, facilityRefetchInterval } from "@/pages/facilities/facility-api";
 import { useRevealAnchor } from "@/components/operator/use-reveal-anchor";
-import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
-import { MaturityChart, CapacityMeter } from "@/components/operator/Charts";
+import { ApplicantText, ApplicantTextProvider } from "@/components/operator/ApplicantText";
 import { FederationHealth } from "@/pages/network/FederationHealth";
 import { useMintSummary, useOperatorCapacity, type MintSummary } from "./operator-api";
-import { capacityLabels, capacityDetails } from "./capacity-copy";
-import { CounterpartyExposure } from "./CounterpartyExposure";
-import { maturityBuckets } from "./portfolio-maturity";
-import { cockpitMessages as m } from "./cockpit-copy";
+import { exposureIdentities } from "./counterparty-exposure";
+import { monthlyMaturities } from "./portfolio-maturity";
+import { cockpitMessages } from "./cockpit-copy";
+import { cockpit } from "@/components/operator/cockpit-messages";
+import { homeMessages as m } from "./home-copy";
 
-interface QueueAction {
-  kind: "quote" | "buyer" | "help" | "facility";
-  id: string;
-  href: string;
-  since: string | null;
-  name: string;
-  quote?: MintSummary["portfolio"]["quotes"][number];
-}
-export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
+const compact = (intl: ReturnType<typeof useIntl>, sat: bigint | string) =>
+  intl.formatNumber(BigInt(sat), { notation: "compact", maximumFractionDigits: 1 });
+
+/** Exposure per identity and role against its published limit, fullest first. Identities never merge by name. */
+function ExposureList({ summary }: { summary: MintSummary }) {
   const intl = useIntl();
-  const sat = (v: string) => intl.formatNumber(BigInt(v));
-  const [horizon, setHorizon] = useState<90 | 365>(365);
-  const buckets = maturityBuckets(summary, Date.now(), horizon);
-  const maturityRanges =
-    horizon === 90
-      ? [
-          [0, 30],
-          [31, 60],
-          [61, 90],
-        ]
-      : [
-          [0, 90],
-          [91, 180],
-          [181, 365],
-        ];
-  const paymentComplete = summary.coverage.complete && !summary.portfolio.quotes.some((q) => q.financed && q.paid === null);
+  const policy = useCreditPolicy();
+  const rows = exposureIdentities(summary)
+    .flatMap((identity) =>
+      identity.roles.map((party) => ({ ...party, sameName: identity.sameName, flagged: identity.sameName || identity.similarName }))
+    )
+    .map((party) => ({
+      ...party,
+      share: party.capSat === null ? 0 : Number((BigInt(party.usedSat) * 1000n) / (BigInt(party.capSat) || 1n)) / 10,
+    }))
+    .sort((a, b) => b.share - a.share);
+  if (!rows.length) return <p className="text-sm text-muted-foreground">{intl.formatMessage(cockpitMessages.noExposure)}</p>;
   return (
-    <section className="portfolio-snapshot space-y-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-semibold">{intl.formatMessage(m.portfolio)}</h2>
-        <p className="text-xs text-muted-foreground">
-          {intl.formatMessage(m.coverage, {
-            scanned: summary.coverage.scanned,
-            listed: summary.coverage.listed,
-            time: intl.formatTime(summary.observedAt),
-          })}
-        </p>
-      </div>
-      {!summary.coverage.complete && (
-        <p role="status" className="text-xs text-amber-800 dark:text-amber-300">
-          {intl.formatMessage(m.incomplete)}
-        </p>
-      )}
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          { label: m.financed, value: summary.portfolio.financedSat },
-          { label: m.outstanding, value: summary.portfolio.outstandingSat },
-          { label: m.committed, value: summary.portfolio.committedSat },
-        ].map((item) => (
-          <Card key={item.label.id}>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">{intl.formatMessage(item.label)}</p>
-              <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
-                {item.value === null ? "—" : sat(item.value)}
-                <span className="ml-1 text-xs font-normal text-muted-foreground">
-                  {item.value === null ? intl.formatMessage(m.unknown) : "sat"}
-                </span>
-              </p>
-            </CardContent>
-          </Card>
+    <ul className="space-y-3">
+      {rows.map((party) => {
+        const RoleIcon = party.role === "drawee" ? Building2 : Sprout;
+        return (
+          <li key={`${party.ref}-${party.role}`}>
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="flex min-w-0 items-center gap-2">
+                <RoleIcon
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                  aria-label={intl.formatMessage(party.role === "drawee" ? m.buyer : m.farm)}
+                />
+                <Link className="truncate hover:underline" title={party.ref} to={`/directory?q=${encodeURIComponent(party.ref)}`}>
+                  {party.name}
+                </Link>
+                {party.flagged && (
+                  <Link
+                    className="lookalike-tag"
+                    title={intl.formatMessage(party.sameName ? cockpitMessages.sameName : cockpitMessages.similarName)}
+                    to={`/directory?q=${encodeURIComponent(party.name)}`}
+                  >
+                    {intl.formatMessage(m.lookalike)}
+                  </Link>
+                )}
+              </span>
+              {(() => {
+                const text =
+                  party.capSat === null
+                    ? intl.formatMessage(m.noLimit, { used: compact(intl, party.usedSat) })
+                    : intl.formatMessage(m.ofLimit, { used: compact(intl, party.usedSat), cap: compact(intl, party.capSat) });
+                // Where the limit comes from stays one hover away: the published policy whose cap matches.
+                const pack = policy.error
+                  ? undefined
+                  : policy.data?.policyPacks.find(
+                      (p) =>
+                        "maximumDraweeExposureSat" in p &&
+                        (party.role === "drawee" ? p.maximumDraweeExposureSat : p.maximumDrawerExposureSat) === party.capSat
+                    );
+                return pack ? (
+                  <Link
+                    className="shrink-0 text-xs text-muted-foreground tabular-nums hover:underline"
+                    title={`${intl.formatMessage(cockpitMessages.capSource)} ${pack.policyPackVersion}`}
+                    to={`/policy#${policyAnchor(pack.policyPackVersion)}`}
+                  >
+                    {text}
+                  </Link>
+                ) : (
+                  <span
+                    className="shrink-0 text-xs text-muted-foreground tabular-nums"
+                    title={
+                      party.capSat === null
+                        ? undefined
+                        : `${intl.formatMessage(cockpitMessages.capSource)} ${intl.formatMessage(cockpitMessages.capSourceUnknown)}`
+                    }
+                  >
+                    {text}
+                  </span>
+                );
+              })()}
+            </div>
+            <div className="exposure-track mt-1.5" role="img" aria-label={`${party.name}: ${party.share}%`}>
+              <div className={`exposure-fill ${party.share >= 75 ? "is-high" : ""}`} style={{ width: `${Math.min(100, party.share)}%` }} />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function DueDates({ summary }: { summary: MintSummary }) {
+  const intl = useIntl();
+  // Unknown payment state would understate what is still due; say so instead of drawing a short ladder.
+  if (!summary.coverage.complete || summary.portfolio.quotes.some((q) => q.financed && q.paid === null))
+    return (
+      <figure>
+        <figcaption className="mb-3 text-sm font-medium">{intl.formatMessage(m.maturities)}</figcaption>
+        <p className="text-xs text-muted-foreground">{intl.formatMessage(cockpitMessages.maturityUnknown)}</p>
+      </figure>
+    );
+  const months = monthlyMaturities(summary);
+  const max = months.reduce((n, r) => (r.sat > n ? r.sat : n), 1n);
+  return (
+    <figure>
+      <figcaption className="mb-3 text-sm font-medium">{intl.formatMessage(m.maturities)}</figcaption>
+      <div className="due-chart" role="img" aria-label={months.map((r) => `${r.month}: ${r.sat} sat`).join("; ")}>
+        {months.map((r) => (
+          <div key={r.month} className="due-column">
+            <span className="due-value tabular-nums">{r.sat > 0n ? compact(intl, r.sat) : ""}</span>
+            <div className="due-bar" style={{ height: `${r.sat > 0n ? Math.max(4, Number((r.sat * 100n) / max)) : 0}%` }} />
+            <span className="due-label">{intl.formatDate(`${r.month}-01T00:00:00Z`, { month: "short", timeZone: "UTC" })}</span>
+          </div>
         ))}
       </div>
-      <div className="portfolio-grid grid gap-3 xl:grid-cols-[1.3fr_1fr_0.8fr]">
-        <Card>
-          <CardContent className="p-5">
-            <CounterpartyExposure summary={summary} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            {paymentComplete ? (
-              <div className="space-y-4">
-                <label className="flex items-center justify-between gap-3 text-sm">
-                  {intl.formatMessage(m.maturityHorizon)}
-                  <select
-                    className="rounded-lg border border-divider-75 bg-background px-3 py-2"
-                    value={horizon}
-                    onChange={(event) => setHorizon(event.target.value === "90" ? 90 : 365)}
-                  >
-                    {[90, 365].map((days) => (
-                      <option key={days} value={days}>
-                        {intl.formatMessage(m.maturityRange, { days })}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <MaturityChart
-                  title={intl.formatMessage(m.maturities, { days: horizon })}
-                  values={buckets.map(Number)}
-                  displays={buckets.map((v) => intl.formatNumber(v, { notation: "compact" }))}
-                  labels={maturityRanges.map(([from, to]) => intl.formatMessage(m.days, { from, to }))}
-                  axisLabel={intl.formatMessage(m.maturityAxis)}
-                />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{intl.formatMessage(m.maturityUnknown)}</p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <Concentration summary={summary} />
-          </CardContent>
-        </Card>
+    </figure>
+  );
+}
+
+export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
+  const intl = useIntl();
+  const accepted = BigInt(summary.portfolio.financedSat);
+  const offered = BigInt(summary.portfolio.committedSat) - accepted;
+  return (
+    <section className="home-panel" data-testid="home-portfolio" aria-label={intl.formatMessage(m.portfolio)}>
+      <h2 className="home-panel-title">{intl.formatMessage(m.portfolio)}</h2>
+      {!summary.coverage.complete && (
+        <p role="status" className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+          {intl.formatMessage(m.partial)}
+        </p>
+      )}
+      <dl className="kpis">
+        <div title={intl.formatMessage(m.acceptedWhy)}>
+          <dt>
+            {intl.formatMessage(m.accepted)}
+            <Info className="ml-1 inline size-3 text-muted-foreground" aria-label={intl.formatMessage(m.acceptedWhy)} />
+          </dt>
+          <dd>
+            {intl.formatNumber(accepted)} <small>sat</small>
+          </dd>
+        </div>
+        <div>
+          <dt>{intl.formatMessage(m.offered)}</dt>
+          <dd>
+            {intl.formatNumber(offered > 0n ? offered : 0n)} <small>sat</small>
+          </dd>
+        </div>
+        <div>
+          <dt>{intl.formatMessage(m.bills)}</dt>
+          <dd>{summary.portfolio.quotes.length}</dd>
+        </div>
+      </dl>
+      <div className="mt-5 grid gap-6 xl:grid-cols-2">
+        <section>
+          <h3 className="mb-3 text-sm font-medium">{intl.formatMessage(m.exposure)}</h3>
+          <ExposureList summary={summary} />
+        </section>
+        <DueDates summary={summary} />
       </div>
     </section>
   );
 }
+
+function HelpCard({ name, message, href, since }: { name: string; message: string; href: string; since: string }) {
+  const intl = useIntl();
+  const age = useAge();
+  return (
+    <article className="needs-card">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="truncate text-base font-semibold tracking-tight">{name}</h3>
+        <span className="needs-tag needs-help">{intl.formatMessage(m.reply)}</span>
+      </div>
+      <p className="mt-3 line-clamp-3 flex gap-2 text-sm">
+        <MessageCircle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+        <span>
+          <ApplicantText>{message}</ApplicantText>
+        </span>
+      </p>
+      <p className="mt-2 text-xs text-muted-foreground">{intl.formatMessage(m.asked, { age: age(since) })}</p>
+      <Link className="needs-action" to={href}>
+        {intl.formatMessage(m.answer)}
+        <ArrowRight className="size-3.5" />
+      </Link>
+    </article>
+  );
+}
+
 export default function HomePage() {
   const intl = useIntl();
   const summary = useMintSummary();
@@ -140,250 +213,142 @@ export default function HomePage() {
     refetchInterval: (q) => facilityRefetchInterval(q.state.data),
     retry: false,
   });
-  const legacy = useQuery({
-    ...listQuotesOptions({ query: { limit: 128 } }),
-    enabled: summary.data === null,
-    refetchInterval: 30_000,
-    retry: false,
-  });
-  const book = summary.error ? undefined : summary.data;
-  useRevealAnchor(book ?? capacity.data ?? legacy.data ?? help.data ?? facilities.data);
-  const actions: QueueAction[] = [
-    ...(book?.queue ?? []).map(
-      (q): QueueAction => ({
-        kind: q.kind === "quote" ? "quote" : "buyer",
-        id: `${q.kind}:${q.quoteId}`,
-        href: `/quotes/${encodeURIComponent(q.quoteId)}${q.kind === "buyer-confirmation" ? "#fraud-controls" : ""}`,
-        since: q.since,
-        name: book?.portfolio.quotes.find((p) => p.quoteId === q.quoteId)?.drawer.name ?? q.quoteId,
-        quote: book?.portfolio.quotes.find((p) => p.quoteId === q.quoteId),
-      })
-    ),
-    ...(summary.data === null && !legacy.error
-      ? (legacy.data?.data ?? [])
-          .filter((q) => q.status === "Pending")
-          .map((q): QueueAction => ({ kind: "quote", id: q.id, href: `/quotes/${encodeURIComponent(q.id)}`, since: null, name: q.id }))
-      : []),
-    ...(!help.error
-      ? (help.data?.requests ?? [])
-          .filter((r) => r.reply === null)
-          .map(
-            (r): QueueAction => ({
-              kind: "help",
-              id: r.requestId,
-              href: `/help-requests#help-${r.requestId}`,
-              since: r.requestedAt,
-              name: book?.portfolio.quotes.find((p) => p.quoteId === r.mintQuoteId || p.billId === r.billId)?.drawer.name ?? r.holderRef,
-              quote: book?.portfolio.quotes.find((p) => p.quoteId === r.mintQuoteId || p.billId === r.billId),
-            })
-          )
-      : []),
-    ...(!facilities.error
-      ? (facilities.data ?? [])
-          .filter((r) => r.status === "operator_review" || r.status === "submitted")
-          .map(
-            (r): QueueAction => ({
-              kind: "facility",
-              id: r.id,
-              href: `/facilities?application=${encodeURIComponent(r.id)}`,
-              since: r.updatedAt,
-              name: r.applicantName,
-            })
-          )
-      : []),
-  ];
-  actions.sort((a, b) => (a.since ?? "9999").localeCompare(b.since ?? "9999"));
-  const groups = [
-    {
-      kind: "quote",
-      icon: Inbox,
-      href: "/quotes/pending",
-      error: summary.error ?? legacy.error,
-      loading: summary.isPending || (summary.data === null && legacy.isPending),
-    },
-    {
-      kind: "buyer",
-      icon: UserCheck,
-      href: "/quotes/pending",
-      error: summary.error !== null || summary.data === null,
-      loading: summary.isPending,
-    },
-    { kind: "help", icon: MessageCircle, href: "/help-requests", error: help.error, loading: help.isPending },
-    {
-      kind: "facility",
-      icon: Building2,
-      href: "/facilities?status=operator_review",
-      error: facilities.error,
-      loading: facilities.isPending,
-    },
-  ] as const;
-  const age = (since: string) => {
-    const hours = Math.max(0, (Date.now() - Date.parse(since)) / 3600000);
-    return intl.formatNumber(hours < 24 ? hours : hours / 24, {
-      style: "unit",
-      unit: hours < 24 ? "hour" : "day",
-      unitDisplay: "short",
-      maximumFractionDigits: 0,
-    });
-  };
+  const book = summary.error ? undefined : (summary.data ?? undefined);
+  useRevealAnchor(book ?? help.data ?? facilities.data);
+  const quoteOf = (quoteId: string) => book?.portfolio.quotes.find((p) => p.quoteId === quoteId);
+  // One card per quote: a buyer confirmation and an offer decision on the same case are one piece of work.
+  const caseCards = (book?.queue ?? [])
+    .filter((q, i, all) => all.findIndex((o) => o.quoteId === q.quoteId) === i)
+    .map((q): { quoteId: string; kind: "buyer" | "quote"; quote: ReturnType<typeof quoteOf>; since: string | null } => ({
+      quoteId: q.quoteId,
+      kind: book?.queue.some((o) => o.quoteId === q.quoteId && o.kind === "buyer-confirmation") ? "buyer" : "quote",
+      quote: quoteOf(q.quoteId),
+      since: q.since,
+    }));
+  const helpCards = help.error
+    ? []
+    : (help.data?.requests ?? [])
+        .filter((r) => r.reply === null)
+        .map((r) => ({
+          request: r,
+          name:
+            book?.portfolio.quotes.find((p) => p.quoteId === r.mintQuoteId || p.billId === r.billId)?.drawer.name ??
+            intl.formatMessage(m.reply),
+        }));
+  const facilityCards = facilities.error
+    ? []
+    : (facilities.data ?? []).filter((r) => r.status === "operator_review" || r.status === "submitted");
+  const needs = caseCards.length + helpCards.length + facilityCards.length;
+  // A queue that could not be read is unknown, never empty.
+  const queueGaps = Boolean(summary.error ?? help.error ?? facilities.error);
+  // Only limits that would stop new applications reach Home; the rest live on the Info page.
+  const storageAlert =
+    !capacity.error &&
+    capacity.data?.items.some(
+      (i) => ["initial-interviews", "case-cabinet-revisions", "case-cabinet-history-bytes"].includes(i.id) && i.status !== "ok"
+    );
   const refresh = () => {
     void summary.refetch();
     void capacity.refetch();
     void help.refetch();
     void facilities.refetch();
-    if (summary.data === null) void legacy.refetch();
   };
-  const capacityItems = (capacity.data?.items ?? []).map((item) => {
-    const label = Object.entries(capacityLabels).find(([id]) => id === item.id)?.[1];
-    const detail = Object.values(capacityDetails).find((message) => message.defaultMessage === item.detail);
-    return { ...item, label: label ? intl.formatMessage(label) : item.label, detail: detail ? intl.formatMessage(detail) : item.detail };
-  });
   return (
-    <div className="today-cockpit space-y-4">
-      <header className="flex flex-wrap justify-between items-start gap-3">
+    <div className="today-cockpit">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            {intl.formatDate(Date.now(), { weekday: "long", month: "long", day: "numeric" })}
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">{intl.formatMessage(m.today)}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{intl.formatMessage(cockpit.doctrine)}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{intl.formatMessage(cockpitMessages.today)}</h1>
+          {book && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {intl.formatMessage(m.summary, {
+                needs,
+                accepted: intl.formatNumber(BigInt(book.portfolio.financedSat)),
+                bills: book.portfolio.quotes.filter((q) => q.financed).length,
+              })}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <FederationHealth />
-          <Button size="sm" variant="outline" onClick={refresh} aria-label={intl.formatMessage(m.refresh)}>
+          <Button size="sm" variant="outline" onClick={refresh} aria-label={intl.formatMessage(cockpitMessages.refresh)}>
             <RefreshCw className={`size-4 ${summary.isFetching ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </header>
-      <AgentStrip
-        capacity={capacity.error ? undefined : capacity.data}
-        helpCount={help.error || help.isPending ? undefined : actions.filter((a) => a.kind === "help").length}
-      />
-      <section id="action-queue" aria-label={intl.formatMessage(m.queue)}>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-semibold">
-            {intl.formatMessage(cockpit.needs)}{" "}
-            <span className="ml-2 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300">
-              {groups.some((g) => g.loading || g.error) ? "—" : new Set(actions.map((a) => a.quote?.quoteId ?? a.id)).size}
-            </span>
-          </h2>
-          <Link to="/quotes/pending" className="text-xs text-muted-foreground hover:underline">
-            {intl.formatMessage(cockpit.review)} ↗
-          </Link>
-        </div>
-        <div className="needs-grid grid gap-3 lg:grid-cols-3">
-          {actions
-            .filter((a) => a.kind === "quote" || a.kind === "buyer")
-            .filter((a, index, list) => list.findIndex((b) => (b.quote?.quoteId ?? b.id) === (a.quote?.quoteId ?? a.id)) === index)
-            .map((a) => (
-              <NeedsCard key={a.id} quote={a.quote} href={a.href} name={a.name} summary={book ?? undefined} />
-            ))}
-        </div>
-        <div className="attention-strip mt-3 grid grid-cols-2 gap-2 xl:grid-cols-4">
-          {groups.map((g) => {
-            const items = actions.filter((a) => a.kind === g.kind);
-            const oldest = items.find((a) => a.since)?.since;
-            return (
-              <Link
-                key={g.kind}
-                to={items[0]?.href ?? g.href}
-                className="attention-row flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-accent"
-              >
-                <g.icon className="size-4 text-muted-foreground" />
-                <span className="text-xs">
-                  {intl.formatMessage(m[g.kind])}
-                  <small className="mt-1 block text-[11px] text-muted-foreground">
-                    {g.loading
-                      ? intl.formatMessage(m.loading)
-                      : g.error
-                        ? intl.formatMessage(m.unavailable)
-                        : oldest
-                          ? intl.formatMessage(m.oldest, { age: age(oldest) })
-                          : items.length
-                            ? intl.formatMessage(m.ageUnknown)
-                            : intl.formatMessage(m.empty)}
-                  </small>
-                </span>
-                <strong className="ml-auto text-xl tabular-nums">{g.error || g.loading ? "—" : items.length}</strong>
-                <ArrowUpRight className="size-3.5 text-muted-foreground" />
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-      {(book?.coverage.complete === false || (legacy.data !== undefined && legacy.data.total > legacy.data.data.length)) && (
-        <p role="status" className="text-xs text-amber-800 dark:text-amber-300">
-          {intl.formatMessage(m.incomplete)}
-        </p>
+      {storageAlert && (
+        <Link to="/info#capacity" role="status" className="storage-alert">
+          <TriangleAlert className="size-4 shrink-0" />
+          {intl.formatMessage(m.storage)}
+        </Link>
       )}
-      {book ? (
-        <PortfolioSnapshot summary={book} />
-      ) : summary.data === null ? (
-        <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">{intl.formatMessage(m.legacy)}</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              { label: m.financed, states: ["Accepted", "MintingEnabled"] },
-              { label: m.committed, states: ["Offered", "Accepted", "MintingEnabled"] },
-            ].map((g) => (
-              <Card key={g.label.id}>
-                <CardContent className="p-4">
-                  <h2 className="text-xs text-muted-foreground">{intl.formatMessage(g.label)}</h2>
-                  <p className="mt-2 text-2xl font-semibold">
-                    {legacy.error || !legacy.data
-                      ? "—"
-                      : intl.formatNumber(
-                          (legacy.data?.data ?? []).filter((q) => g.states.includes(q.status)).reduce((n, q) => n + BigInt(q.sum), 0n)
-                        )}
-                    <span className="ml-1 text-xs font-normal text-muted-foreground">sat</span>
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <p role="status" className="text-sm text-muted-foreground">
-          {intl.formatMessage(m.unavailable)}
-        </p>
-      )}
-      {capacity.data && !capacity.error && (
-        <section id="capacity" className="capacity-section rounded-xl border border-border bg-card p-4">
-          <h2 className="text-lg font-semibold">{intl.formatMessage(m.capacity)}</h2>
-          {capacity.data.items.some((i) => i.status !== "ok") && (
-            <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">{intl.formatMessage(m.capacityFull)}</p>
-          )}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {capacityItems.map((i) => (
-              <div key={i.id}>
-                <CapacityMeter
-                  label={i.label}
-                  used={i.used}
-                  limit={i.limit}
-                  status={i.status}
-                  value={intl.formatMessage(i.unit === "bytes" ? m.capacityBytes : m.capacityValue, {
-                    used: intl.formatNumber(i.used, { notation: i.unit === "bytes" ? "compact" : "standard" }),
-                    limit: intl.formatNumber(i.limit, { notation: i.unit === "bytes" ? "compact" : "standard" }),
-                    status: intl.formatMessage(m[i.status]),
-                  })}
+      <section id="action-queue" aria-label={intl.formatMessage(cockpitMessages.queue)}>
+        <h2 className="home-section-title">
+          {intl.formatMessage(cockpit.needs)}
+          {needs > 0 && <span className="needs-count">{needs}</span>}
+        </h2>
+        {summary.isPending ? (
+          <p className="text-sm text-muted-foreground">{intl.formatMessage(cockpitMessages.loading)}</p>
+        ) : needs === 0 && !queueGaps ? (
+          <p className="text-sm text-muted-foreground">{intl.formatMessage(m.allClear)}</p>
+        ) : (
+          <ApplicantTextProvider records={help.data?.operatorText}>
+            {queueGaps && (
+              <p role="status" className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+                {intl.formatMessage(m.queueGaps)} · {intl.formatMessage(cockpitMessages.unavailable)}
+              </p>
+            )}
+            <div className="needs-grid">
+              {caseCards.map((c) => (
+                <NeedsCard
+                  key={c.quoteId}
+                  kind={c.kind}
+                  quote={c.quote}
+                  name={c.quote?.drawer.name ?? c.quoteId}
+                  href={`/quotes/${encodeURIComponent(c.quoteId)}${c.kind === "buyer" ? "#fraud-controls" : ""}`}
+                  summary={book}
                 />
-                {i.detail && (
-                  <details className="mt-1 text-[11px] text-muted-foreground">
-                    <summary>{intl.formatMessage(m.capacity)}</summary>
-                    <p>{i.detail}</p>
-                  </details>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-      {capacity.error && (
-        <p className="text-xs text-amber-800 dark:text-amber-300">
-          {intl.formatMessage(m.capacity)} · {intl.formatMessage(m.unavailable)}
-        </p>
-      )}
-      <BoundaryNotice summary={intl.formatMessage(m.boundary)}>{intl.formatMessage(m.boundaryFull)}</BoundaryNotice>
+              ))}
+              {helpCards.map(({ request, name }) => (
+                <HelpCard
+                  key={request.requestId}
+                  name={name}
+                  message={request.message}
+                  since={request.requestedAt}
+                  href={`/help-requests#help-${request.requestId}`}
+                />
+              ))}
+              {facilityCards.map((r) => (
+                <article key={r.id} className="needs-card">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="truncate text-base font-semibold tracking-tight">{r.applicantName}</h3>
+                    <span className="needs-tag needs-facility">{intl.formatMessage(m.facility)}</span>
+                  </div>
+                  <Link className="needs-action" to={`/facilities?application=${encodeURIComponent(r.id)}`}>
+                    {intl.formatMessage(m.open)}
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </ApplicantTextProvider>
+        )}
+      </section>
+      <div className="home-columns">
+        {book ? (
+          <PortfolioSnapshot summary={book} />
+        ) : (
+          <p role="status" className="text-sm text-muted-foreground">
+            {intl.formatMessage(summary.isPending ? cockpitMessages.loading : cockpitMessages.unavailable)}
+          </p>
+        )}
+        {book?.activity !== undefined && (
+          <section className="home-panel" aria-label={intl.formatMessage(m.activity)}>
+            <h2 className="home-panel-title">{intl.formatMessage(m.activity)}</h2>
+            <ActivityFeed activity={book.activity} />
+          </section>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground">{intl.formatMessage(m.footnote)}</p>
     </div>
   );
 }

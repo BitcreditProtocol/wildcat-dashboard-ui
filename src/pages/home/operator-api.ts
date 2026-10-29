@@ -49,7 +49,34 @@ export interface MintFinanceLock {
   expiresAt: number;
   delivered: boolean;
 }
+export const activityKinds = [
+  "application_received",
+  "interview_completed",
+  "case_assessed",
+  "buyer_confirmed",
+  "offer_made",
+  "offer_accepted",
+  "offer_denied",
+  "offer_rejected",
+  "help_requested",
+  "help_answered",
+  "finance_lock_elsewhere",
+] as const;
+export const activityActors = ["applicant", "agent", "policy", "operator", "buyer", "other_mint"] as const;
+/** One retained server record, newest first. Never invented on the client. */
+export interface ActivityItem {
+  at: string;
+  kind: (typeof activityKinds)[number];
+  actor: (typeof activityActors)[number];
+  quoteId: string | null;
+  caseId: string | null;
+  applicant: string | null;
+  buyer: string | null;
+  amountSat: string | null;
+}
 export interface MintSummary {
+  /** `null`: sources unavailable; `undefined`: an older API without the feed. */
+  activity?: ActivityItem[] | null;
   financeLocks?: MintFinanceLock[] | null;
   schema: "operator-mint-summary-v1";
   observedAt: string;
@@ -75,6 +102,31 @@ export function parseMintSummary(value: unknown): MintSummary {
   return {
     schema: v.schema,
     observedAt: string(v.observedAt),
+    ...(v.activity === undefined
+      ? {}
+      : {
+          activity:
+            v.activity === null
+              ? null
+              : array(v.activity)
+                  .slice(0, 40)
+                  .map((value) => {
+                    const a = object(value);
+                    const kind = activityKinds.find((k) => k === a.kind);
+                    const actor = activityActors.find((k) => k === a.actor);
+                    if (!kind || !actor || Number.isNaN(Date.parse(string(a.at)))) throw new Error("Invalid activity");
+                    return {
+                      at: string(a.at),
+                      kind,
+                      actor,
+                      quoteId: nullableText(a.quoteId),
+                      caseId: nullableText(a.caseId),
+                      applicant: nullableText(a.applicant),
+                      buyer: nullableText(a.buyer),
+                      amountSat: a.amountSat === null ? null : sat(a.amountSat),
+                    };
+                  }),
+        }),
     financeLocks:
       v.financeLocks == null
         ? null
@@ -161,6 +213,31 @@ export function parseCapacity(value: unknown): OperatorCapacity {
   return {
     schema: v.schema,
     observedAt: string(v.observedAt),
+    ...(v.activity === undefined
+      ? {}
+      : {
+          activity:
+            v.activity === null
+              ? null
+              : array(v.activity)
+                  .slice(0, 40)
+                  .map((value) => {
+                    const a = object(value);
+                    const kind = activityKinds.find((k) => k === a.kind);
+                    const actor = activityActors.find((k) => k === a.actor);
+                    if (!kind || !actor || Number.isNaN(Date.parse(string(a.at)))) throw new Error("Invalid activity");
+                    return {
+                      at: string(a.at),
+                      kind,
+                      actor,
+                      quoteId: nullableText(a.quoteId),
+                      caseId: nullableText(a.caseId),
+                      applicant: nullableText(a.applicant),
+                      buyer: nullableText(a.buyer),
+                      amountSat: a.amountSat === null ? null : sat(a.amountSat),
+                    };
+                  }),
+        }),
     items: array(v.items).map((value) => {
       const i = object(value);
       if ((i.unit !== "count" && i.unit !== "bytes") || (i.status !== "ok" && i.status !== "warning" && i.status !== "full"))

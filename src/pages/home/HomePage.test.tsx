@@ -1,11 +1,11 @@
 import { creditPolicyCatalogueSchema, fraudReasonCodes } from "@bitcredit/ai-credit-shared";
-import { fireEvent, getByRole, getAllByRole } from "@testing-library/dom";
+import { getByRole, getAllByRole, waitFor } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import HomePage, { PortfolioSnapshot } from "./HomePage";
 import { parseCapacity, parseMintSummary, type MintSummary } from "./operator-api";
 import { policyFixture } from "@/pages/mint-checks/mint-check-test-fixtures";
 import { exposureIdentities } from "./counterparty-exposure";
-import { maturityBuckets } from "./portfolio-maturity";
+import { maturityBuckets, monthlyMaturities } from "./portfolio-maturity";
 import { cleanup, json, renderWithProviders, routeFetch } from "@/pages/mint-checks/mint-check-test-render";
 vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: RequestInit) => fetch(path, init) }));
 vi.mock("@/generated/client/@tanstack/react-query.gen", () => ({
@@ -66,8 +66,14 @@ describe("Today cockpit", () => {
     book.portfolio.counterparties.push({ ...book.portfolio.counterparties[0], ref: "different-buyer", usedSat: "10" });
     expect(exposureIdentities(book)).toHaveLength(2);
     const { page } = await renderWithProviders(<PortfolioSnapshot summary={book} />);
-    expect(getAllByRole(page, "link", { name: "Same name, different identity — check Directory" })).toHaveLength(2);
-    expect(getByRole(page, "link", { name: "buyer" })).toHaveAttribute("href", "/directory?q=buyer");
+    // Every row of both same-name identities carries the short tag; the full signal is its title.
+    const tags = getAllByRole(page, "link", { name: "Look-alike name" });
+    expect(tags).toHaveLength(3);
+    for (const tag of tags) expect(tag).toHaveAttribute("title", "Same name, different identity — check Directory");
+    // Names open the Directory by identity ref, never by display name, so the two identities stay apart.
+    expect(new Set(getAllByRole(page, "link", { name: "Cooperativa Synthetic" }).map((a) => a.getAttribute("href")))).toEqual(
+      new Set(["/directory?q=buyer", "/directory?q=different-buyer"])
+    );
     cleanup();
     book.portfolio.quotes[1].drawee.name += " R.L.";
     book.portfolio.counterparties.pop();
@@ -108,13 +114,14 @@ describe("Today cockpit", () => {
     const book = summary();
     book.portfolio.counterparties.push({ ...book.portfolio.counterparties[0], role: "drawer", ref: "unmatched", capSat: "3000000" });
     const { page } = await renderWithProviders(<PortfolioSnapshot summary={book} />);
-    expect(getByRole(page, "link", { name: "synthetic-coffee-cap-v13" })).toHaveAttribute(
-      "href",
-      "/policy#policy-synthetic-coffee-cap-v13"
+    await waitFor(() => expect(page.querySelector('a[href="/policy#policy-synthetic-coffee-cap-v13"]')).not.toBeNull());
+    expect(page.querySelector('a[href="/policy#policy-synthetic-coffee-cap-v13"]')).toHaveAttribute(
+      "title",
+      "Lowest published policy cap · source: synthetic-coffee-cap-v13"
     );
-    expect(page).toHaveTextContent("not reported; check Policy");
+    expect(page.querySelector('[title$="not reported; check Policy"]')).not.toBeNull();
   });
-  it("links action cards to the action, shows ages, and renders generic capacity warnings", async () => {
+  it("puts each waiting case on one card that opens the needed step, and keeps storage internals off Home", async () => {
     vi.stubGlobal(
       "fetch",
       routeFetch({
@@ -128,28 +135,43 @@ describe("Today cockpit", () => {
       })
     );
     const { page } = await renderWithProviders(<HomePage />);
-    expect(getByRole(getByRole(page, "region", { name: "Action queue" }), "link", { name: /Quotes to review/ }).getAttribute("href")).toBe(
-      "/quotes/quote-one"
+    const queue = getByRole(page, "region", { name: "Action queue" });
+    await waitFor(() => expect(queue).toHaveTextContent("Cooperativa Synthetic"));
+    // One quote with an offer decision and a buyer confirmation due is one card, opened at the confirmation.
+    expect(getAllByRole(queue, "link", { name: /Open case/ })).toHaveLength(1);
+    expect(getByRole(queue, "link", { name: /Open case/ })).toHaveAttribute("href", "/quotes/quote-one#fraud-controls");
+    expect(queue).toHaveTextContent("Confirm buyer");
+    expect(queue).toHaveTextContent("900,000");
+    expect(queue).toHaveTextContent("Nov 1, 2026");
+    // Storage that does not block new applications is not an operator concern on Home.
+    expect(page.textContent).not.toContain("Synthetic storage");
+    expect(page.querySelector('[role="meter"]')).toBeNull();
+  });
+  it("warns in plain words only when storage would stop new applications", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routeFetch({
+        "/api/ai-credit/operator-mint-summary": () => json(summary()),
+        "/api/ai-credit/operator-capacity": () =>
+          json({
+            schema: "operator-capacity-v1",
+            observedAt: "2026-10-28T00:00:00Z",
+            items: [
+              { id: "case-cabinet-revisions", label: "Case cabinet revisions", used: 110, limit: 128, unit: "count", status: "warning" },
+            ],
+          }),
+      })
     );
-    expect(
-      getByRole(getByRole(page, "region", { name: "Action queue" }), "link", { name: /Buyer confirmations due/ }).getAttribute("href")
-    ).toBe("/quotes/quote-one#fraud-controls");
-    expect(page.textContent).toContain("Oldest");
-    expect(page.textContent).toContain("Capacity needs attention");
-    expect(getByRole(page, "meter", { name: "Synthetic storage" }).getAttribute("aria-valuenow")).toBe("90");
-    expect(page.textContent).toContain("Cooperativa Synthetic");
-    const actions = getByRole(page, "heading", { name: /Needs you/ }).closest("section");
-    expect(actions).toHaveTextContent("Decision needed");
-    expect(getByRole(page, "link", { name: /Buyer confirmations due/ })).toHaveAttribute("href", "/quotes/quote-one#fraud-controls");
-    expect(actions).toHaveTextContent("Cooperativa Synthetic");
-    expect(actions).toHaveTextContent("900,000");
-    expect(actions).toHaveTextContent("Nov 1, 2026");
+    const { page } = await renderWithProviders(<HomePage />);
+    await waitFor(() => expect(page.textContent).toContain("Case storage is nearly full"));
+    expect(page.textContent).not.toContain("110");
   });
   it("omits capacity on 404 and never interprets unavailable queues as empty", async () => {
     vi.stubGlobal("fetch", routeFetch({ "/api/ai-credit/operator-mint-summary": () => json(summary()) }));
     const { page } = await renderWithProviders(<HomePage />);
+    await waitFor(() => expect(page.textContent).toContain("Some queues could not be read"));
     expect(page.querySelector("#capacity")).toBeNull();
-    expect(getAllByRole(page, "link", { name: /Unavailable/ })).toHaveLength(2);
+    expect(page.textContent).not.toContain("Nothing waits for you");
   });
   it("keeps missing payment and partial portfolio coverage visibly unknown", async () => {
     const book = summary();
@@ -157,8 +179,7 @@ describe("Today cockpit", () => {
     book.portfolio.outstandingSat = null;
     book.portfolio.quotes[0].paid = null;
     const { page } = await renderWithProviders(<PortfolioSnapshot summary={book} />);
-    expect(page.textContent).toContain("Partial coverage");
-    expect(page.textContent).toContain("Not reported");
+    expect(page.textContent).toContain("totals may be incomplete");
     expect(page.textContent).toContain("ladder is unavailable");
   });
   it("lets operators inspect seasonal maturities beyond 90 days without counting paid or pending bills", async () => {
@@ -173,12 +194,11 @@ describe("Today cockpit", () => {
     book.portfolio.quotes.push({ ...base, paid: true }, { ...base, financed: false });
     expect(maturityBuckets(book, today, 365)).toEqual([1n, 2n, 2n]);
     expect(maturityBuckets(book, today, 90)).toEqual([0n, 0n, 1n]);
+    // On screen: unpaid accepted face value per calendar month, paid and merely offered bills excluded.
+    const months = monthlyMaturities(book, today, 14);
+    expect(months.reduce((n, r) => n + r.sat, 0n)).toBe(6n);
     const { page } = await renderWithProviders(<PortfolioSnapshot summary={book} />);
-    const selector = getByRole(page, "combobox", { name: "Maturity horizon" });
-    expect(selector).toHaveValue("365");
-    expect(page.textContent).toContain("Maturity ladder · next 365 days");
-    fireEvent.change(selector, { target: { value: "90" } });
-    expect(page.textContent).toContain("Maturity ladder · next 90 days");
+    expect(page.textContent).toContain("Due dates");
   });
   it("buckets only unpaid accepted maturities, including exact UTC day boundaries", () => {
     const book = summary();

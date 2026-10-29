@@ -106,7 +106,7 @@ describe("IntelligencePage", () => {
     const region = getByRole(page, "region", { name: "Region" });
     const guatemala = Array.from(region.querySelectorAll("li")).find((item) => item.textContent?.includes("Harvest season shifts"));
     act(() => {
-      fireEvent.click(getByRole(guatemala ?? region, "button", { name: "Update" }));
+      fireEvent.click(getByRole(guatemala ?? region, "button", { name: "Edit" }));
     });
     expect(getByLabelText(page, "Scope")).toBeDisabled();
     expect(getByLabelText(page, "Subject")).toHaveValue("Guatemala");

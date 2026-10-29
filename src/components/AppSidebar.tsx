@@ -61,7 +61,7 @@ const navMessages = defineMessages({
   facilities: { id: "nav.facilities", defaultMessage: "Facilities", description: "Pre-bill facility applications" },
   intelligence: {
     id: "nav.intelligenceAsk",
-    defaultMessage: "Intelligence + Ask the Mint",
+    defaultMessage: "Ask the Mint",
     description: "The Mint's own notes on its regions, industries and the macro economy",
   },
   policy: { id: "nav.policy", defaultMessage: "Policy", description: "The Mint's reviewed credit programmes and policy packs, read-only" },

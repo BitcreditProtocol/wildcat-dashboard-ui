@@ -444,9 +444,6 @@ function PageBody({ id }: { id: string }) {
           status={intl.formatMessage(getQuoteStatusMessage(effectiveQuoteStatus))}
           synthetic={decisionCase ? usesSyntheticData(decisionCase) : false}
         />
-        <div className="case-authority">
-          <BoundaryNotice summary={intl.formatMessage(cockpit.actors)}>{intl.formatMessage(cockpit.authority)}</BoundaryNotice>
-        </div>
         <div className="grid gap-4 @4xl:grid-cols-[minmax(0,1fr)_22rem] @4xl:items-start @6xl:grid-cols-[minmax(0,1fr)_24rem]">
           <section className="flex min-w-0 flex-col gap-4 @4xl:col-start-1 @4xl:row-start-1" id="minting-summary">
             <div className="hidden print:block">
@@ -518,10 +515,6 @@ function PageBody({ id }: { id: string }) {
           pinned controls stay visible. */}
 
           <div className="@4xl:sticky @4xl:top-2 @4xl:col-start-2 @4xl:row-span-2 @4xl:row-start-1 @4xl:max-h-[calc(100svh-4.5rem)] @4xl:self-start @4xl:overflow-y-auto @4xl:overscroll-contain">
-            <div className="decision-rail-label">
-              <span className="status-dot" />
-              {intl.formatMessage(cockpit.human)}
-            </div>
             <CaseDecisionPanel
               brief={panelBrief}
               recordedOffer={
@@ -539,6 +532,9 @@ function PageBody({ id }: { id: string }) {
               actions={quoteActions}
               footer={agentDiscussion}
             />
+            <div className="mt-3 print:hidden">
+              <BoundaryNotice summary={intl.formatMessage(cockpit.actors)}>{intl.formatMessage(cockpit.authority)}</BoundaryNotice>
+            </div>
           </div>
 
           <details className="case-deep-details min-w-0 rounded-xl border border-border bg-card @4xl:col-start-1 @4xl:row-start-2 print:hidden">

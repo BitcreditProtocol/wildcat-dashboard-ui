@@ -370,7 +370,7 @@ export function QuoteDetailCard({
     <Card className="overflow-hidden">
       <CardContent className="p-0">
         <details
-          className={compactSummary ? "case-overview" : "case-overview case-overview-expanded"}
+          className={compactSummary ? "case-overview hidden print:block" : "case-overview case-overview-expanded"}
           open={compactSummary ? undefined : true}
         >
           <summary className="px-4 py-2 text-xs text-muted-foreground">
@@ -622,7 +622,7 @@ export function QuoteDetailCard({
               assessedOn={decisionSummary.assessedOn}
             />
             {showBrief && brief.next.kind !== "closed" && (
-              <details className="px-4 py-2 text-xs text-muted-foreground">
+              <details className={cn("px-4 py-2 text-xs text-muted-foreground", compactSummary && "hidden")}>
                 <summary>{intl.formatMessage(cockpitCopy.agents)}</summary>
                 <CaseProgress work={brief.work} />
               </details>

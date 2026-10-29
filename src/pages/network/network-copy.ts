@@ -13,9 +13,9 @@ export const networkMessages = defineMessages({
     description: "No last-good federation observation available",
   },
   title: { id: "network.title", defaultMessage: "Network", description: "Operator dashboard network: title" },
-  healthy: { id: "network.healthy", defaultMessage: "Followed relays responding", description: "Operator dashboard network: healthy" },
-  degraded: { id: "network.degraded", defaultMessage: "Federation degraded", description: "Operator dashboard network: degraded" },
-  unknown: { id: "network.unknown", defaultMessage: "Federation health unknown", description: "Operator dashboard network: unknown" },
+  healthy: { id: "network.healthy", defaultMessage: "Connected to other Mints", description: "Operator dashboard network: healthy" },
+  degraded: { id: "network.degraded", defaultMessage: "Some Mints not reachable", description: "Operator dashboard network: degraded" },
+  unknown: { id: "network.unknown", defaultMessage: "Network status unknown", description: "Operator dashboard network: unknown" },
   scope: {
     id: "network.scope",
     defaultMessage: "Observed peers only. A healthy relay is not network-wide clearance.",
@@ -85,3 +85,29 @@ export function federationHealthy(status: FederationStatus) {
     })
   );
 }
+
+/** Plain words for what the network is for. */
+export const networkPlain = defineMessages({
+  subtitle: {
+    id: "agentic.network.subtitle",
+    defaultMessage: "Mints this Mint checks with before financing, so no bill is financed twice.",
+    description: "What the network page is for",
+  },
+  mints: { id: "agentic.network.mints", defaultMessage: "Mints we check with", description: "List of followed Mints" },
+  via: { id: "agentic.network.via", defaultMessage: "via {relays}", description: "The relay a Mint is reached through" },
+  connected: { id: "agentic.network.connected", defaultMessage: "Connected", description: "Every relay of this Mint answered" },
+  unreachable: { id: "agentic.network.unreachable", defaultMessage: "Not reachable", description: "A relay of this Mint did not answer" },
+  locks: { id: "agentic.network.locks", defaultMessage: "Bills this Mint is financing", description: "This Mint's finance locks" },
+  locksWhy: {
+    id: "agentic.network.locksWhy",
+    defaultMessage: "Each one is announced to the Mints above, so they can refuse the same bill.",
+    description: "What a finance lock is for",
+  },
+  earlier: {
+    id: "agentic.network.earlier",
+    defaultMessage: "Earlier case {id}",
+    description: "A lock whose case is not in the current portfolio",
+  },
+  more: { id: "agentic.network.more", defaultMessage: "+{count} more", description: "Hidden list items" },
+  shared: { id: "agentic.network.shared", defaultMessage: "Shared with other Mints", description: "The lock was published" },
+});

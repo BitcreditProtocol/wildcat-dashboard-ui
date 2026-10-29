@@ -74,7 +74,7 @@ describe("federation status through operator BFF", () => {
       })
     );
     await renderWithProviders(<DirectoryPage />, "/directory");
-    await waitFor(() => expect(screen.getByRole("link", { name: /Federation degraded/ })).toHaveAttribute("href", "/network"));
+    await waitFor(() => expect(screen.getByRole("link", { name: /Some Mints not reachable/ })).toHaveAttribute("href", "/network"));
     cleanup();
     await renderWithProviders(<NetworkPage />, "/network");
     expect(screen.getByRole("region", { name: "Federation status" })).toHaveTextContent("Synthetic Mint B");
