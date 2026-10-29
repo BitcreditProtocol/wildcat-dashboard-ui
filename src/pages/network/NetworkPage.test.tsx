@@ -1,4 +1,4 @@
-import { getByRole } from "@testing-library/dom";
+import { getByRole, waitFor } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import NetworkPage from "./NetworkPage";
 import { federationHealthy } from "./network-copy";
@@ -15,9 +15,10 @@ describe("Network overview", () => {
   it("maps this Mint, followed peers and relays, and does not invent a lock count when summary is absent", async () => {
     vi.stubGlobal("fetch", routeFetch({ "/api/ai-credit/operator-federation-status": () => json(federationStatusFixture()) }));
     const { page } = await renderWithProviders(<NetworkPage />);
+    await waitFor(() => expect(getByRole(page, "img")).toBeInTheDocument());
     expect(getByRole(page, "img").textContent).toContain("Synthetic Mint B");
     expect(getByRole(page, "img").textContent).toContain("ws://mint-b.test:8080");
-    expect(getByRole(page, "link", { name: "Federation degraded" }).getAttribute("href")).toBe("/network");
+    expect(getByRole(page, "link", { name: /Federation degraded/ }).getAttribute("href")).toBe("/network");
     expect(page.textContent).toContain("No lock count has been reported");
   });
   it("requires complete healthy observations for every configured relay", () => {

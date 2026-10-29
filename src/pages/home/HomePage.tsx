@@ -9,9 +9,11 @@ import { useApplicantHelp } from "@/pages/mint-checks/api";
 import { facilityQueryKey, readFacilityApplications, facilityRefetchInterval } from "@/pages/facilities/facility-api";
 import { useRevealAnchor } from "@/components/operator/use-reveal-anchor";
 import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
-import { HorizontalBars, MaturityChart, CapacityMeter } from "@/components/operator/Charts";
+import { MaturityChart, CapacityMeter } from "@/components/operator/Charts";
 import { FederationHealth } from "@/pages/network/FederationHealth";
 import { useMintSummary, useOperatorCapacity, type MintSummary } from "./operator-api";
+import { capacityLabels, capacityDetails } from "./capacity-copy";
+import { CounterpartyExposure } from "./CounterpartyExposure";
 import { maturityBuckets } from "./portfolio-maturity";
 import { cockpitMessages as m } from "./cockpit-copy";
 
@@ -21,6 +23,7 @@ interface QueueAction {
   href: string;
   since: string | null;
   name: string;
+  quote?: MintSummary["portfolio"]["quotes"][number];
 }
 export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
   const intl = useIntl();
@@ -79,28 +82,7 @@ export function PortfolioSnapshot({ summary }: { summary: MintSummary }) {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardContent className="p-5">
-            {summary.portfolio.counterparties.length ? (
-              <HorizontalBars
-                title={intl.formatMessage(m.exposure)}
-                maximum={100}
-                axisLabel={intl.formatMessage(m.capAxis)}
-                data={summary.portfolio.counterparties.map((p) => ({
-                  id: `${p.role}:${p.ref}`,
-                  label: `${p.name} · ${intl.formatMessage(m[p.role])}`,
-                  value: p.capSat === null ? 0 : Number((BigInt(p.usedSat) * 10000n) / (BigInt(p.capSat) || 1n)) / 100,
-                  display: intl.formatMessage(p.capSat === null ? m.noCap : m.cap, {
-                    used: sat(p.usedSat),
-                    cap: p.capSat === null ? "" : sat(p.capSat),
-                  }),
-                  attention: p.capSat !== null && BigInt(p.usedSat) * 10n >= BigInt(p.capSat) * 8n,
-                }))}
-              />
-            ) : (
-              <div>
-                <h3 className="text-sm font-medium">{intl.formatMessage(m.exposure)}</h3>
-                <p className="mt-6 text-sm text-muted-foreground">{intl.formatMessage(m.noExposure)}</p>
-              </div>
-            )}
+            <CounterpartyExposure summary={summary} />
           </CardContent>
         </Card>
         <Card>
@@ -165,6 +147,7 @@ export default function HomePage() {
         href: `/quotes/${encodeURIComponent(q.quoteId)}${q.kind === "buyer-confirmation" ? "#fraud-controls" : ""}`,
         since: q.since,
         name: book?.portfolio.quotes.find((p) => p.quoteId === q.quoteId)?.drawer.name ?? q.quoteId,
+        quote: book?.portfolio.quotes.find((p) => p.quoteId === q.quoteId),
       })
     ),
     ...(summary.data === null && !legacy.error
@@ -181,7 +164,8 @@ export default function HomePage() {
               id: r.requestId,
               href: `/help-requests#help-${r.requestId}`,
               since: r.requestedAt,
-              name: r.mintQuoteId ?? r.requestId,
+              name: book?.portfolio.quotes.find((p) => p.quoteId === r.mintQuoteId || p.billId === r.billId)?.drawer.name ?? r.holderRef,
+              quote: book?.portfolio.quotes.find((p) => p.quoteId === r.mintQuoteId || p.billId === r.billId),
             })
           )
       : []),
@@ -240,6 +224,11 @@ export default function HomePage() {
     void facilities.refetch();
     if (summary.data === null) void legacy.refetch();
   };
+  const capacityItems = (capacity.data?.items ?? []).map((item) => {
+    const label = Object.entries(capacityLabels).find(([id]) => id === item.id)?.[1];
+    const detail = Object.values(capacityDetails).find((message) => message.defaultMessage === item.detail);
+    return { ...item, label: label ? intl.formatMessage(label) : item.label, detail: detail ? intl.formatMessage(detail) : item.detail };
+  });
   return (
     <div className="space-y-6 p-4 md:p-6">
       <header className="flex flex-wrap justify-between items-start gap-3">
@@ -333,8 +322,28 @@ export default function HomePage() {
               <li key={a.id}>
                 <Link to={a.href} className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-accent">
                   <span className="min-w-0">
-                    <span className="mr-2 text-xs text-muted-foreground">{intl.formatMessage(m[a.kind])}</span>
+                    <span className="mr-2 text-xs font-medium text-sky-800 dark:text-sky-300">
+                      {intl.formatMessage(
+                        a.kind === "quote"
+                          ? m.decisionNeeded
+                          : a.kind === "buyer"
+                            ? m.buyerNeeded
+                            : a.kind === "help"
+                              ? m.helpNeeded
+                              : m.facilityNeeded
+                      )}
+                    </span>
                     <span className="break-words font-medium">{a.name}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {a.quote
+                        ? intl.formatMessage(m.actionContext, {
+                            buyer: a.quote.drawee.name,
+                            amount: intl.formatNumber(BigInt(a.quote.amountSat)),
+                            maturity: intl.formatDate(`${a.quote.maturity}T00:00:00Z`, { dateStyle: "medium", timeZone: "UTC" }),
+                          })
+                        : intl.formatMessage(m.contextUnknown)}
+                    </span>
+                    <span className="mt-1 block text-[11px] text-muted-foreground">{a.quote?.quoteId ?? a.id}</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
                     <Clock3 className="size-3" />
@@ -354,7 +363,7 @@ export default function HomePage() {
             <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">{intl.formatMessage(m.capacityFull)}</p>
           )}
           <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {capacity.data.items.map((i) => (
+            {capacityItems.map((i) => (
               <div key={i.id}>
                 <CapacityMeter
                   label={i.label}

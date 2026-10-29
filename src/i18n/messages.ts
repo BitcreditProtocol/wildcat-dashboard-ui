@@ -14,7 +14,7 @@ import zuZA from "./zu-ZA/translation.json";
 export const messagesByLocale: Record<string, Record<string, string>> = {
   "en-US": { ...source, ...enUS },
   "ach-UG": achUG,
-  "en-GB": enGB,
+  "en-GB": { ...source, ...enGB },
   "de-AT": deAT,
   "de-DE": deDE,
   "es-AR": { ...esAR, ...operatorSpanish },

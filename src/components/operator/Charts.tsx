@@ -1,11 +1,11 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 export interface BarDatum {
   id: string;
   label: string;
   value: number;
   display: string;
-  detail?: string;
+  detail?: ReactNode;
   attention?: boolean;
 }
 /** Label + number + bar: colour supplements the data, and zero remains visibly zero. */
@@ -41,7 +41,7 @@ export function HorizontalBars({
           </li>
         ))}
       </ul>
-      <p className="text-[11px] text-muted-foreground">{axisLabel}</p>
+      {axisLabel && <p className="text-[11px] text-muted-foreground">{axisLabel}</p>}
     </figure>
   );
 }
@@ -107,7 +107,7 @@ export function MaturityChart({
           </g>
         ))}
       </svg>
-      <p className="text-[11px] text-muted-foreground">{axisLabel}</p>
+      {axisLabel && <p className="text-[11px] text-muted-foreground">{axisLabel}</p>}
     </figure>
   );
 }

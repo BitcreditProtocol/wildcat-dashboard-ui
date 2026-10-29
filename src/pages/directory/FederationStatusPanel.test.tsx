@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/dom";
+import { fireEvent, screen, waitFor } from "@testing-library/dom";
 import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, flush, json, renderWithProviders, routeFetch } from "@/pages/mint-checks/mint-check-test-render";
@@ -74,7 +74,7 @@ describe("federation status through operator BFF", () => {
       })
     );
     await renderWithProviders(<DirectoryPage />, "/directory");
-    expect(screen.getByRole("link", { name: "Federation degraded" })).toHaveAttribute("href", "/network");
+    await waitFor(() => expect(screen.getByRole("link", { name: /Federation degraded/ })).toHaveAttribute("href", "/network"));
     cleanup();
     await renderWithProviders(<NetworkPage />, "/network");
     expect(screen.getByRole("region", { name: "Federation status" })).toHaveTextContent("Synthetic Mint B");

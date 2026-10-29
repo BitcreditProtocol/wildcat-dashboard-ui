@@ -1,6 +1,17 @@
 import { defineMessages } from "react-intl";
 import type { FederationStatus } from "@/pages/directory/federation-status";
 export const networkMessages = defineMessages({
+  checking: { id: "network.checking", defaultMessage: "Checking…", description: "Display-only quiet retry of relay reads" },
+  lastGood: {
+    id: "network.lastGood",
+    defaultMessage: "Last good: {time}",
+    description: "Time of last complete healthy display observation",
+  },
+  noLastGood: {
+    id: "network.noLastGood",
+    defaultMessage: "No complete read yet",
+    description: "No last-good federation observation available",
+  },
   title: { id: "network.title", defaultMessage: "Network", description: "Operator dashboard network: title" },
   healthy: { id: "network.healthy", defaultMessage: "Followed relays responding", description: "Operator dashboard network: healthy" },
   degraded: { id: "network.degraded", defaultMessage: "Federation degraded", description: "Operator dashboard network: degraded" },

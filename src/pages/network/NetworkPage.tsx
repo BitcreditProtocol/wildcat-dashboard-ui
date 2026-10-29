@@ -6,15 +6,15 @@ import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import { ClowderPeersCard } from "@/pages/home/components/clowder-peers/ClowderPeersCard";
 import { PendingOutagesCard } from "@/pages/home/components/PendingOutagesCard";
 import { FederationStatusPanel } from "@/pages/directory/FederationStatusPanel";
-import { useFederationStatus } from "@/pages/directory/federation-status";
+import { useFederationDisplay } from "./use-federation-display";
 import { FederationHealth } from "./FederationHealth";
 import { networkMessages as m } from "./network-copy";
 
 export default function NetworkPage() {
   const intl = useIntl();
-  const query = useFederationStatus();
+  const query = useFederationDisplay();
   const summary = useMintSummary();
-  const status = query.error ? undefined : query.data;
+  const status = query.observation;
   const nodes = status
     ? [
         { id: status.descriptor.pubkey, label: intl.formatMessage(m.own), relays: status.descriptor.relays },
@@ -92,7 +92,7 @@ export default function NetworkPage() {
                       health(relay) ? "fill-sky-700 dark:fill-sky-400 text-[11px]" : "fill-amber-700 dark:fill-amber-300 text-[11px]"
                     }
                   >
-                    {intl.formatMessage(health(relay) ? m.responding : m.unreachable)}
+                    {intl.formatMessage(query.phase === "checking" ? m.checking : health(relay) ? m.responding : m.unreachable)}
                   </text>
                 </g>
               ))}
@@ -105,7 +105,7 @@ export default function NetworkPage() {
               ))}
               {relays.map((relay) => (
                 <li key={relay}>
-                  {relay}: {intl.formatMessage(health(relay) ? m.responding : m.unreachable)}
+                  {relay}: {intl.formatMessage(query.phase === "checking" ? m.checking : health(relay) ? m.responding : m.unreachable)}
                 </li>
               ))}
             </ul>

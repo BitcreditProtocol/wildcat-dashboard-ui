@@ -1,7 +1,10 @@
+import { creditPolicyCatalogueSchema, fraudReasonCodes } from "@bitcredit/ai-credit-shared";
 import { fireEvent, getByRole, getAllByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import HomePage, { PortfolioSnapshot } from "./HomePage";
 import { parseCapacity, parseMintSummary, type MintSummary } from "./operator-api";
+import { policyFixture } from "@/pages/mint-checks/mint-check-test-fixtures";
+import { exposureIdentities } from "./counterparty-exposure";
 import { maturityBuckets } from "./portfolio-maturity";
 import { cleanup, json, renderWithProviders, routeFetch } from "@/pages/mint-checks/mint-check-test-render";
 vi.mock("@/lib/api-client", () => ({ authenticatedFetch: (path: string, init?: RequestInit) => fetch(path, init) }));
@@ -47,6 +50,70 @@ function summary(): MintSummary {
   };
 }
 describe("Today cockpit", () => {
+  it("groups only by identity, keeps role caps, and flags exact and look-alike names including pending buyers", async () => {
+    const book = summary();
+    book.portfolio.counterparties.push({ ...book.portfolio.counterparties[0], role: "drawer", usedSat: "20" });
+    book.portfolio.quotes.push({
+      ...book.portfolio.quotes[0],
+      quoteId: "other",
+      exposure: false,
+      drawee: { ref: "different-buyer", name: "Cooperativa Synthetic" },
+    });
+    const groups = exposureIdentities(book);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].roles.map((p) => p.usedSat)).toEqual(["900000", "20"]);
+    expect(groups[0].sameName).toBe(true);
+    book.portfolio.counterparties.push({ ...book.portfolio.counterparties[0], ref: "different-buyer", usedSat: "10" });
+    expect(exposureIdentities(book)).toHaveLength(2);
+    const { page } = await renderWithProviders(<PortfolioSnapshot summary={book} />);
+    expect(getAllByRole(page, "link", { name: "Same name, different identity — check Directory" })).toHaveLength(2);
+    expect(getByRole(page, "link", { name: "buyer" })).toHaveAttribute("href", "/directory?q=buyer");
+    cleanup();
+    book.portfolio.quotes[1].drawee.name += " R.L.";
+    book.portfolio.counterparties.pop();
+    expect(exposureIdentities(book)[0]).toMatchObject({ sameName: false, similarName: true });
+  });
+  it("links each identity's conservative cap to matching published policy sources, keeping missing provenance explicit", async () => {
+    const catalogue = policyFixture();
+    const base = catalogue.policyPacks[0];
+    const pack = {
+      ...base,
+      schemaVersion: "synthetic-credit-policy-pack-v13",
+      calculationVersion: "deterministic-credit-core-v11",
+      policyPackVersion: "synthetic-coffee-cap-v13",
+      reasonCodes: [...new Set([...base.reasonCodes, ...fraudReasonCodes])],
+      maximumRepaymentShareOfNetCashFlowBps: 8000,
+      maximumDraweeExposureSat: "1000000",
+      maximumDrawerExposureSat: "2000000",
+      buyerConfirmationRequiredAboveSat: "100",
+      invoiceToBillToleranceBps: 100,
+      maximumBillSumWithoutTaxDocumentSat: "1000000",
+      hardGatePrecedence: [
+        "bill_already_financed",
+        "finance_lock_held_elsewhere",
+        "bill_not_accepted",
+        "tenor_outside_policy",
+        "bill_sum_above_policy_cap",
+        "invoice_commercially_implausible",
+        "invoice_cancelled_at_tax_authority",
+        "counterparty_exposure_above_policy_cap",
+        "buyer_denied_obligation",
+        "bill_sum_without_tax_document_above_policy_cap",
+      ],
+    };
+    vi.stubGlobal(
+      "fetch",
+      routeFetch({ "/api/ai-credit/credit-policy": () => json(creditPolicyCatalogueSchema.parse({ ...catalogue, policyPacks: [pack] })) })
+    );
+    const book = summary();
+    book.portfolio.counterparties.push({ ...book.portfolio.counterparties[0], role: "drawer", ref: "unmatched", capSat: "3000000" });
+    const { page } = await renderWithProviders(<PortfolioSnapshot summary={book} />);
+    expect(getByRole(page, "link", { name: "synthetic-coffee-cap-v13" })).toHaveAttribute(
+      "href",
+      "/policy#policy-synthetic-coffee-cap-v13"
+    );
+    expect(page).toHaveTextContent("not reported; check Policy");
+  });
   it("links action cards to the action, shows ages, and renders generic capacity warnings", async () => {
     vi.stubGlobal(
       "fetch",
@@ -71,6 +138,10 @@ describe("Today cockpit", () => {
     expect(page.textContent).toContain("Capacity needs attention");
     expect(getByRole(page, "meter", { name: "Synthetic storage" }).getAttribute("aria-valuenow")).toBe("90");
     expect(page.textContent).toContain("Cooperativa Synthetic");
+    const actions = getByRole(page, "heading", { name: "Next actions" }).closest("section");
+    expect(actions).toHaveTextContent("Decision needed");
+    expect(actions).toHaveTextContent("Buyer confirmation needed");
+    expect(actions).toHaveTextContent("Buyer: Cooperativa Synthetic · 900,000 sat · Maturity: Nov 1, 2026");
   });
   it("omits capacity on 404 and never interprets unavailable queues as empty", async () => {
     vi.stubGlobal("fetch", routeFetch({ "/api/ai-credit/operator-mint-summary": () => json(summary()) }));

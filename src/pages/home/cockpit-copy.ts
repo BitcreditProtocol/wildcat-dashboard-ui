@@ -1,5 +1,48 @@
 import { defineMessages } from "react-intl";
 export const cockpitMessages = defineMessages({
+  similarName: {
+    id: "cockpit.similarName",
+    defaultMessage: "Similar name, different identity — check Directory",
+    description: "Look-alike company name review signal, never an identity merge",
+  },
+  sameName: {
+    id: "cockpit.sameName",
+    defaultMessage: "Same name, different identity — check Directory",
+    description: "Review signal; identities remain separate risks",
+  },
+  identityUsage: {
+    id: "cockpit.identityUsage",
+    defaultMessage: "Cap usage by role",
+    description: "Per-identity cap bars keep each policy role distinct",
+  },
+  capSource: {
+    id: "cockpit.capSource",
+    defaultMessage: "Lowest published policy cap · source:",
+    description: "Provenance of the conservative portfolio cap",
+  },
+  capSourceUnknown: {
+    id: "cockpit.capSourceUnknown",
+    defaultMessage: "not reported; check Policy",
+    description: "Cap source unavailable or changed since summary",
+  },
+  decisionNeeded: { id: "cockpit.decisionNeeded", defaultMessage: "Decision needed", description: "Next action on a quote" },
+  buyerNeeded: { id: "cockpit.buyerNeeded", defaultMessage: "Buyer confirmation needed", description: "Next action on buyer verification" },
+  helpNeeded: { id: "cockpit.helpNeeded", defaultMessage: "Help reply needed", description: "Next action on applicant help" },
+  facilityNeeded: {
+    id: "cockpit.facilityNeeded",
+    defaultMessage: "Facility review needed",
+    description: "Next action on a facility application",
+  },
+  actionContext: {
+    id: "cockpit.actionContext",
+    defaultMessage: "Buyer: {buyer} · {amount} sat · Maturity: {maturity}",
+    description: "Bill context for an actionable queue row",
+  },
+  contextUnknown: {
+    id: "cockpit.contextUnknown",
+    defaultMessage: "Buyer, amount and maturity not reported",
+    description: "No linked bill; do not invent portfolio facts",
+  },
   today: { id: "cockpit.today", defaultMessage: "Today", description: "Operator dashboard cockpit: today" },
   subtitle: {
     id: "cockpit.subtitle",

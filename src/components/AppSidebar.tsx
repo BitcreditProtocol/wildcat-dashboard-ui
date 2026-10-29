@@ -54,7 +54,7 @@ const navMessages = defineMessages({
     id: "nav.deniedMeltRequests",
     defaultMessage: "Melt requests",
   },
-  quotes: { id: "nav.quotes", defaultMessage: "Quotes" },
+  quotes: { id: "nav.quotes", defaultMessage: "Quotes", description: "Operator dashboard nav: quotes" },
   facilities: { id: "nav.facilities", defaultMessage: "Facilities", description: "Pre-bill facility applications" },
   intelligence: {
     id: "nav.intelligenceAsk",
@@ -67,6 +67,12 @@ const navMessages = defineMessages({
   outcomes: { id: "nav.outcomes", defaultMessage: "Outcomes", description: "PRD outcome measures over the current cases" },
   bills: { id: "nav.bills", defaultMessage: "Bills" },
   keysets: { id: "nav.keysets", defaultMessage: "Keysets" },
+});
+
+const decimalMessages = defineMessages({
+  comma: { id: "ui.decimalSeparator.comma", defaultMessage: "Comma", description: "Decimal separator" },
+  point: { id: "ui.decimalSeparator.point", defaultMessage: "Point", description: "Decimal separator" },
+  space: { id: "ui.decimalSeparator.space", defaultMessage: "Space", description: "Decimal separator" },
 });
 
 const localeMessages = defineMessages({
@@ -150,6 +156,7 @@ function LanguageSelector() {
 }
 
 function LiveTranslationsToggle() {
+  const intl = useIntl();
   const { setLocale } = useContext(LanguageContext);
   const [isActive, setIsActive] = useState(() => window.localStorage.getItem(LIVE_TRANSLATIONS_KEY) === "enabled");
 
@@ -162,7 +169,11 @@ function LiveTranslationsToggle() {
       <div className="flex items-center gap-3">
         <AppIcon icon={Wand2Icon} size="md" className="text-muted-foreground" />
         <Text variant="titleSm" as="span" className="text-text-300">
-          Live translations
+          {intl.formatMessage({
+            id: "settings.liveTranslations",
+            defaultMessage: "Live translations",
+            description: "Enable in-context translations",
+          })}
         </Text>
       </div>
       <Switch
@@ -179,6 +190,7 @@ function LiveTranslationsToggle() {
 }
 
 export function AppSidebar() {
+  const intl = useIntl();
   // const { user, isLoading } = useKeycloak()
   const { decimalFormat, setDecimalFormat } = usePreferences();
 
@@ -208,8 +220,12 @@ export function AppSidebar() {
           <DecimalSeparator value={decimalFormat} onChange={setDecimalFormat}>
             <MenuOption
               icon={<AppIcon icon={AlignVerticalJustifyCenterIcon} size="md" className="text-muted-foreground" />}
-              label="Decimals"
-              defaultValue={decimalFormat}
+              label={intl.formatMessage({
+                id: "settings.decimals",
+                defaultMessage: "Decimals",
+                description: "Sidebar number formatting setting",
+              })}
+              defaultValue={intl.formatMessage(decimalMessages[decimalFormat])}
             />
           </DecimalSeparator>
           <Separator className="bg-divider-75 w-auto" />
