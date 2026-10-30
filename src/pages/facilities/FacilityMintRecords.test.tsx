@@ -125,3 +125,43 @@ describe("this Mint's own record", () => {
     });
   });
 });
+
+describe("details and failures", () => {
+  it("shows a shared figure exactly, with its period and evidence state", async () => {
+    const withFigure: PriorMintRecords = {
+      ...shared,
+      issuers: shared.issuers.map((issuer) => ({
+        ...issuer,
+        latest: entry({
+          financialInformation: [
+            {
+              kind: "statement",
+              field: "revenue",
+              value: "100000000000000001",
+              currency: "GTQ",
+              minorUnitScale: 2,
+              evidenceState: "applicant_confirmed",
+              suppliedAt: at,
+              period: { startDate: "2025-01-01", endDate: "2025-12-31" },
+            },
+          ],
+        }),
+      })),
+    };
+    const { page } = await renderWithProviders(<PriorMintRecordsSection application={facilityFixture({ priorMintRecords: withFigure })} />);
+    expect(page.textContent).toContain("1,000,000,000,000,000.01 GTQ");
+    expect(page.textContent).toContain("2025-01-01 – 2025-12-31 · confirmed by the applicant");
+  });
+
+  it("says when this Mint's record status cannot be read, with a retry", async () => {
+    const request = vi.fn(routeFetch({ "/api/ai-credit/mint-record-operator-command": () => json({ error: "Unavailable" }, 503) }));
+    vi.stubGlobal("fetch", request);
+    const { page } = await renderWithProviders(<MintRecordStatusSection application={facilityFixture({ applicantRef: subject })} />);
+    expect(page.textContent).toContain("This Mint's record status could not be read.");
+    act(() => {
+      fireEvent.click(getByRole(page, "button", { name: "Try again" }));
+    });
+    await flush();
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+});

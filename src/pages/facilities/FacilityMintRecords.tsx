@@ -49,6 +49,14 @@ const reasons = defineMessages({
 
 type Issuer = PriorMintRecords["issuers"][number];
 
+/** Exact: amounts are decimal strings of up to 30 digits, which a float would round. */
+function exactAmount(value: string, scale = 0) {
+  const isNegative = value.startsWith("-");
+  const raw = (isNegative ? value.slice(1) : value).padStart(scale + 1, "0");
+  const whole = BigInt(raw.slice(0, raw.length - scale)).toLocaleString("en-US");
+  return `${isNegative ? "-" : ""}${whole}${scale > 0 ? `.${raw.slice(raw.length - scale)}` : ""}`;
+}
+
 function Collapsed({ label, count, children }: { label: React.ReactNode; count: number; children: React.ReactNode }) {
   if (count === 0) return null;
   return (
@@ -151,13 +159,24 @@ function IssuerRecord({ issuer }: { issuer: Issuer }) {
         count={record.financialInformation?.length ?? 0}
       >
         {record.financialInformation?.map((figure, index) => (
-          <p key={`${figure.field}-${String(index)}`} className="flex justify-between gap-3">
-            <span className="text-muted-foreground">{figure.field}</span>
-            <span>
-              {figure.value} {figure.unit ?? figure.currency ?? ""}
-              {figure.minorUnitScale ? ` (×10^-${String(figure.minorUnitScale)})` : ""}
-            </span>
-          </p>
+          <div key={`${figure.field}-${String(index)}`}>
+            <p className="flex justify-between gap-3">
+              <span className="text-muted-foreground">{figure.field}</span>
+              <span>
+                {figure.unit === undefined
+                  ? `${exactAmount(figure.value, figure.minorUnitScale)}${figure.currency ? ` ${figure.currency}` : ""}`
+                  : `${figure.value} ${figure.unit}`}
+              </span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {[
+                figure.period && `${figure.period.startDate} – ${figure.period.endDate}`,
+                intl.formatMessage(evidence[figure.evidenceState]),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </div>
         ))}
       </Collapsed>
       <Collapsed label={<FormattedMessage id="facilities.records.omitted" defaultMessage="Not in this record" />} count={omissions.length}>
@@ -260,6 +279,22 @@ export function MintRecordStatusSection({ application }: { application: Facility
       queryClient.setQueryData(queryKey, data);
     },
   });
+  // No record for this applicant yet is not an error; anything else must not look like an empty record.
+  if (status.error instanceof FacilityRequestError && status.error.status === 404) return null;
+  if (status.isError)
+    return (
+      <section className="rounded-lg border border-border bg-card p-5 md:p-6" role="alert">
+        <h3 className="font-medium">
+          <FormattedMessage id="facilities.records.own.title" defaultMessage="Your record in the applicant's profile" />
+        </h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          <FormattedMessage id="facilities.records.own.readFailed" defaultMessage="This Mint's record status could not be read." />
+        </p>
+        <Button size="sm" variant="outline" className="mt-3" onClick={() => void status.refetch()}>
+          <FormattedMessage id="facilities.records.own.retry" defaultMessage="Try again" />
+        </Button>
+      </section>
+    );
   if (!status.data) return null;
   const latest = latestEntry(status.data.entries);
   const bills = [
