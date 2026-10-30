@@ -62,6 +62,7 @@ describe("records shared from earlier Mints", () => {
     expect(text).toContain("Mint you follow · as of Oct 30, 2026 · 0 entries");
     expect(text).toContain("Coffee farm · applicant statement");
     expect(text).toContain("Paid 3 days late");
+    expect(text).toContain("Mint A checked “Key control” (Core-signed admission, signature valid) on Oct 30, 2026.");
     expect(text).toContain("accountability stays with this Mint");
     expect(text).toContain("Re-checked here: Applicant email control — signature valid");
     expect(text).toContain("The applicant disputes this record: Paid on the due date.");

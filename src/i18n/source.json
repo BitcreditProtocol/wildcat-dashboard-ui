@@ -1600,7 +1600,7 @@
   "facilities.records.evidence.statement": "applicant statement",
   "facilities.records.evidence.verified": "verified",
   "facilities.records.finances": "Financial figures",
-  "facilities.records.identityReuse": "{mint} checked identity key control on {date}. You may review it under your policy; accountability stays with this Mint.",
+  "facilities.records.identityReuse": "{mint} checked “{check}” ({method}, {outcome}) on {date}. You may review it under your policy; accountability stays with this Mint.",
   "facilities.records.omitted": "Not in this record",
   "facilities.records.outcome.late": "Paid {days, plural, one {# day} other {# days}} late",
   "facilities.records.outcome.onTime": "Paid on time",

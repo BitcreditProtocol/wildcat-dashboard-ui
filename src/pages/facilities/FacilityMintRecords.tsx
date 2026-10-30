@@ -120,8 +120,14 @@ function IssuerRecord({ issuer }: { issuer: Issuer }) {
         <p className="text-sm">
           <FormattedMessage
             id="facilities.records.identityReuse"
-            defaultMessage="{mint} checked identity key control on {date}. You may review it under your policy; accountability stays with this Mint."
-            values={{ mint: issuer.latest.issuer.name, date: intl.formatDate(reusableCheck.checkedAt, { dateStyle: "medium" }) }}
+            defaultMessage="{mint} checked “{check}” ({method}, {outcome}) on {date}. You may review it under your policy; accountability stays with this Mint."
+            values={{
+              mint: issuer.latest.issuer.name,
+              check: reusableCheck.check,
+              method: reusableCheck.method,
+              outcome: reusableCheck.outcome.replace(/_/gu, " "),
+              date: intl.formatDate(reusableCheck.checkedAt, { dateStyle: "medium" }),
+            }}
           />
         </p>
       )}
