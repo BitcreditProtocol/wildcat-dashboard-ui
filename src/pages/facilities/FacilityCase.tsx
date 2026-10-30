@@ -4,6 +4,7 @@ import { Button } from "@bitcredit/ui-library";
 import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
 import { FacilityActions } from "./FacilityActions";
 import { FacilityAllowance } from "./FacilityAllowance";
+import { MintRecordStatusSection, PriorMintRecordsSection } from "./FacilityMintRecords";
 import { FacilityOnboardingChecksSection, FacilityRequestSection } from "./FacilityOnboarding";
 import { RelevantIntelligence } from "@/pages/intelligence/RelevantIntelligence";
 import { CircleAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
@@ -568,7 +569,9 @@ export function FacilityCase({ application: app, live, busy, onCommand }: Facili
               </p>
             </section>
           )}
+          <PriorMintRecordsSection application={app} />
           <FacilityOnboardingChecksSection application={app} />
+          <MintRecordStatusSection application={app} />
           <section className="min-w-0 rounded-lg border border-border bg-card">
             <div
               className="flex gap-1 border-b border-border p-2"
