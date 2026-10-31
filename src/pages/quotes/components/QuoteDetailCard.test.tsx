@@ -8,6 +8,7 @@ import { PreferencesProvider } from "@/context/preferences/PreferencesContext";
 import type { BillIdentParticipant, BillParticipant, Id, InfoReply } from "@/generated/client/types.gen";
 import { messagesByLocale } from "@/i18n/messages";
 import type { CaseBrief } from "@/pages/credit/case-brief";
+import { serializeKeysetId } from "@/utils/keyset";
 import { QuoteDetailCard } from "./QuoteDetailCard";
 
 const participant: BillIdentParticipant = {
@@ -706,7 +707,7 @@ describe("QuoteDetailCard", () => {
           action: "request_to_mint",
         }}
         mintOperationStatus={{
-          kid: keysetId,
+          kid: serializeKeysetId(keysetId),
           quote_id: "quote-1",
           target: 80_000_000,
           current: 80_000_000,

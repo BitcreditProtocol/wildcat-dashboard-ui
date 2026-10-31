@@ -7,6 +7,7 @@ import { BaseDrawer, ConfirmDrawer } from "./Drawers";
 vi.mock("@bitcredit/ui-library", () => ({
   Button: (props: React.ComponentProps<"button">) => <button {...props} />,
   buttonVariants: () => "",
+  cn: (...classes: (string | undefined)[]) => classes.filter(Boolean).join(" "),
   Drawer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   DrawerClose: ({ children }: { children: ReactNode }) => <>{children}</>,
   DrawerContent: ({ children, className }: { children: ReactNode; className?: string }) => (

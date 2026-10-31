@@ -612,11 +612,9 @@ describe("StatusQuotePage", () => {
     const page = renderPage("Pending");
 
     expect(page.querySelector('[data-filter-option="status"]')).toBeNull();
-    expect(Array.from(page.querySelectorAll('[role="group"][aria-label="Sort by"] button')).map((chip) => chip.textContent)).toEqual([
-      "Amount",
-      "Maturity",
-      "Last status change",
-    ]);
+    expect(
+      Array.from(page.querySelectorAll('[data-filter-group="sort"] [data-filter-option]')).map((option) => option.textContent)
+    ).toEqual(["Amount", "Maturity", "Last status change"]);
   });
 
   it("keeps the backend order for priority on a single-status page, so it holds across pages", () => {

@@ -578,13 +578,13 @@ describe("BalancesPage", () => {
     expect(document.body.textContent).toContain("Next 30d");
     await closeDrawer();
 
-    await openBalanceCard("Credit token balance");
+    await openBalanceCard("Credit balance");
     expect(document.body.textContent).toContain("No keyset carries an outstanding balance.");
     // Credit looks ahead of today, so its range toggle offers future windows.
     expect(document.body.textContent).toContain("Next 30d");
     await closeDrawer();
 
-    await openBalanceCard("Debit token balance");
+    await openBalanceCard("Debit balance");
     // Debit looks back from today, so the same chart offers past windows instead.
     expect(document.body.textContent).toContain("Last 30d");
     expect(document.body.textContent).not.toContain("Next 30d");
@@ -603,12 +603,12 @@ describe("BalancesPage", () => {
     renderWithProviders(<BalancesPage />);
     await flush();
 
-    await openBalanceCard("Credit token balance");
+    await openBalanceCard("Credit balance");
     expect(document.body.textContent).not.toContain("No keyset carries an outstanding balance.");
     await closeDrawer();
 
     // The expired side is empty rather than borrowing the running keyset from credit.
-    await openBalanceCard("Debit token balance");
+    await openBalanceCard("Debit balance");
     expect(document.body.textContent).toContain("No keyset carries an outstanding balance.");
   });
 
