@@ -189,7 +189,10 @@ function BlockEvent({ block, maturityDate }: { block: BillHistoryBlock; maturity
         {block.block_type === "Issue" && maturityDate && <p>{intl.formatMessage(messages.due, { date: date(maturityDate) })}</p>}
         {block.payment_data && (
           <p className="flex flex-wrap items-baseline gap-x-1">
-            {intl.formatMessage(messages.amount, { amount: block.payment_data.sum, currency: displayCurrencyUnit(block.payment_data.currency) })}
+            {intl.formatMessage(messages.amount, {
+              amount: block.payment_data.sum,
+              currency: displayCurrencyUnit(block.payment_data.currency),
+            })}
             <TruncatedTextPopover text={block.payment_data.payment_address} maxLength={28} className="inline font-mono" />
           </p>
         )}
