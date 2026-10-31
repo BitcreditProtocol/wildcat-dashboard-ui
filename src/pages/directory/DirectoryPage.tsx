@@ -2,7 +2,8 @@ import type { DirectoryParticipant, ParticipantDirectoryResponse } from "@bitcre
 import { Search } from "@bitcredit/ui-library";
 import { Info } from "lucide-react";
 import { useState } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { useLocation, useSearchParams } from "react-router";
 import { DIRECTORY_QUERY_MAX_LENGTH, useParticipantDirectory } from "@/pages/mint-checks/api";
 import { formatDirectoryAddress } from "@/pages/mint-checks/mint-check-format";

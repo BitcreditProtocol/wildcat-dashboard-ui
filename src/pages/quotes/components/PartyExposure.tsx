@@ -1,7 +1,8 @@
 import { Button, NodeIdDisplay, Skeleton } from "@bitcredit/ui-library";
 import { AlertTriangle } from "lucide-react";
 import { useId } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { Link } from "react-router";
 import { Currency } from "@/components/Currency";
 import { usePartyQuotes, type PartyQuotesState } from "@/hooks/use-party-quotes";

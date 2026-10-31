@@ -1,5 +1,6 @@
 import type { CaseNextStep } from "@bitcredit/ai-credit-shared";
-import { defineMessages, type IntlShape } from "react-intl";
+import type { IntlShape } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import type { DecisionCase } from "./decision-types";
 
 type Preparation = NonNullable<DecisionCase["casePreparation"]>;

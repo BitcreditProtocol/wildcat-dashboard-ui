@@ -1,4 +1,4 @@
-import { defineMessages } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import type { FederationStatus } from "@/pages/directory/federation-status";
 export const networkMessages = defineMessages({
   checking: { id: "network.checking", defaultMessage: "Checking…", description: "Display-only quiet retry of relay reads" },

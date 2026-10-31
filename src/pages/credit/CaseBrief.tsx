@@ -2,7 +2,8 @@ import { cn } from "@bitcredit/ui-library";
 import { caseNextStepOwner, type CaseNextOwner } from "@bitcredit/ai-credit-shared";
 import { ChevronDown, CircleAlert, CircleCheck, CircleDashed, Clock3 } from "lucide-react";
 import { useId, type ReactNode } from "react";
-import { defineMessages, useIntl, type IntlShape } from "react-intl";
+import { useIntl, type IntlShape } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { operatorOwnsNextStep, type CaseBrief, type CaseNextStep, type CaseWorkItem } from "./case-brief";
 import { requestReason } from "./verification-reasons";
 

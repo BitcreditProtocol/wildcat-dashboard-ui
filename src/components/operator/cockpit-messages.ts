@@ -1,4 +1,4 @@
-import { defineMessages } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 export const cockpit = defineMessages({
   command: { id: "agentic.command", defaultMessage: "Ask the Mint…", description: "Persistent command bar" },
   doctrine: { id: "agentic.doctrine", defaultMessage: "The Mint’s agents work. You decide.", description: "Operator cockpit subtitle" },

@@ -15,7 +15,8 @@ import type {
 } from "./decision-types";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { InformationNeedsPanel } from "./InformationNeedsPanel";
 import { currentServerMessages, interviewMessageKey } from "./case-rounds";
 import type { OperatorCapability } from "./record-operator-decision";

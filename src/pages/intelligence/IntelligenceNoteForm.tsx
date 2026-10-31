@@ -1,7 +1,8 @@
 import { mintIntelligenceCommandSchema, type MintIntelligenceNote, type MintIntelligenceScope } from "@bitcredit/ai-credit-shared";
 import { Button } from "@bitcredit/ui-library";
 import { useId, useRef, useState, type FormEvent } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { MintCheckError, useAddMintIntelligenceNote } from "@/pages/mint-checks/api";
 import { intelligenceScopeMessages } from "@/pages/mint-checks/mint-checks-copy";
 

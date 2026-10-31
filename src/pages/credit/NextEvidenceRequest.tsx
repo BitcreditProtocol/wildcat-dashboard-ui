@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import type { VerificationRequest } from "./decision-types";
 import { requestReason } from "./verification-reasons";
 

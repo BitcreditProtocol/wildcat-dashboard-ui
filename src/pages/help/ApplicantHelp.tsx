@@ -4,7 +4,8 @@ import type { ApplicantHelpRequest, ApplicantHelpStep } from "@bitcredit/ai-cred
 import { Button } from "@bitcredit/ui-library";
 import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import { useState } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { Link } from "react-router";
 import { useApplicantHelp, useReplyToApplicantHelp } from "@/pages/mint-checks/api";
 import { CheckLoading, CheckUnavailable } from "@/pages/mint-checks/MintCheckParts";

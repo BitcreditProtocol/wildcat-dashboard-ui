@@ -1,6 +1,7 @@
 import { Button, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { ChevronDown, FileText } from "lucide-react";
-import { defineMessages, type IntlShape, useIntl } from "react-intl";
+import { type IntlShape, useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import {
   countCitedEvidenceClaims,
   displayEvidenceLabel,

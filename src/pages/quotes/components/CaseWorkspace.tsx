@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bitcredit/ui-library";
 import { useEffect, useState, type ReactNode } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 
 const panels = ["review", "history", "calculation", "record", "signers"] as const;
 type Panel = (typeof panels)[number];

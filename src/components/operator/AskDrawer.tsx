@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Sparkles } from "lucide-react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { cockpit as m } from "./cockpit-messages";
 
 const drawer = defineMessages({

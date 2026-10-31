@@ -1,5 +1,6 @@
 import type { ApplicantCapacity } from "@bitcredit/ai-credit-shared";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { financialMoney } from "./financial-display";
 
 const m = defineMessages({

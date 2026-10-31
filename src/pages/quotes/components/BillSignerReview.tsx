@@ -4,7 +4,8 @@ import type { BillSignerParty, BillSignerReview } from "@bitcredit/ai-credit-sha
 import { Button } from "@bitcredit/ui-library";
 import { CircleAlert, Info } from "lucide-react";
 import { useId } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { useBillSignerReview } from "@/pages/mint-checks/api";
 import {
   billRoleMessages,

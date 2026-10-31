@@ -1,4 +1,4 @@
-import { defineMessages } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 
 export const capacityMessages = defineMessages({
   checkUnavailable: {

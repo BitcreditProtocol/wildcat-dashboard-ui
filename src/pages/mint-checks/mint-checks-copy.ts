@@ -1,4 +1,4 @@
-import { defineMessages } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import type { BillSignerSignal, EmailVerification, MintIntelligenceScope, ParticipantMatchSignal } from "@bitcredit/ai-credit-shared";
 import { quoteStatusMessages } from "@/i18n/descriptors";
 import { facilityStatusMessages } from "@/pages/facilities/facility-copy";

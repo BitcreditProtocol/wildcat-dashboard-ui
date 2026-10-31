@@ -1,4 +1,4 @@
-import { defineMessages } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 export const mintChatMessages = defineMessages({
   title: { id: "mintChat.title", defaultMessage: "Ask the Mint", description: "Operator dashboard mintChat: title" },
   subtitle: {

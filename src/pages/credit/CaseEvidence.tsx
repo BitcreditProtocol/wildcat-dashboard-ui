@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import {
   displayEvidenceLabel,
   words,

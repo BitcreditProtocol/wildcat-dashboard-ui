@@ -1,5 +1,5 @@
 import type { MintIntelligenceNote } from "@bitcredit/ai-credit-shared";
-import { defineMessages } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 
 export const intelligenceMessages = defineMessages({
   boundary: {

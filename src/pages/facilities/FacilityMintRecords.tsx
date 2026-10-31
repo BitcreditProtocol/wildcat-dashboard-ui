@@ -8,7 +8,8 @@ import {
 } from "@bitcredit/ai-credit-shared";
 import { Button } from "@bitcredit/ui-library";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { defineMessages, FormattedDate, FormattedMessage, useIntl } from "react-intl";
+import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { authenticatedFetch } from "@/lib/api-client";
 import { FacilityRequestError } from "./facility-api";
 

@@ -1,5 +1,6 @@
 import type { OutcomeReport } from "@bitcredit/ai-credit-shared";
-import { useIntl, defineMessages } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { useId } from "react";
 import { Card, CardContent } from "@bitcredit/ui-library";
 const m = defineMessages({

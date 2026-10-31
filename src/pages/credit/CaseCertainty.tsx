@@ -2,7 +2,8 @@ import { ApplicantText } from "@/components/operator/ApplicantText";
 import { cockpit } from "@/components/operator/cockpit-messages";
 import { CircleAlert, CircleCheck, FileCheck2, MessageSquareQuote } from "lucide-react";
 import type { ReactNode } from "react";
-import { defineMessages, useIntl, type MessageDescriptor } from "react-intl";
+import { useIntl, type MessageDescriptor } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import type { CaseBrief } from "./case-brief";
 import { calendarDate } from "./case-brief-copy";
 

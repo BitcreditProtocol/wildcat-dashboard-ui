@@ -3,7 +3,8 @@ import { TriangleAlert } from "lucide-react";
 import { OutcomeFunnel } from "./OutcomeFunnel";
 import { BoundaryNotice } from "@/components/operator/BoundaryNotice";
 import type { ReactNode } from "react";
-import { defineMessages, type IntlShape, type MessageDescriptor, useIntl } from "react-intl";
+import { type IntlShape, type MessageDescriptor, useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { useOutcomeReport } from "@/pages/mint-checks/api";
 import { CheckLoading, CheckUnavailable } from "@/pages/mint-checks/MintCheckParts";
 

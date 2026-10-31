@@ -17,7 +17,8 @@ import { SubmittedDocuments } from "@/pages/credit/SubmittedDocuments";
 import { AppIcon, Button, Card, CardContent, CardHeader, CardTitle, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import type { QuoteDocument } from "@/hooks/use-quote-detail";
 
 export type CreditEvidenceState =

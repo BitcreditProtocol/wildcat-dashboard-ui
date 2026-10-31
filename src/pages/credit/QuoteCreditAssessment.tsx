@@ -1,7 +1,8 @@
 import { AppIcon, Card, CardContent, CardHeader, CardTitle, Skeleton } from "@bitcredit/ui-library";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { Link } from "react-router";
 import type { OperatorSubmittedCaseIssue } from "@bitcredit/ai-credit-shared";
 import { CreditAssessmentCard } from "./CreditAssessmentCard";

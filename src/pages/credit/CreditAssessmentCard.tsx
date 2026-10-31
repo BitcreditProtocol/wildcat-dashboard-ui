@@ -1,7 +1,8 @@
 import { fraudReason } from "./fraud-controls-copy";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { AssessmentPanel, PricingTrace } from "./AssessmentPanel";
 import { ApplicantClaims, InvoiceEvidence } from "./CaseEvidence";
 import { percentFromBps, words, type DecisionCase } from "./decision-types";

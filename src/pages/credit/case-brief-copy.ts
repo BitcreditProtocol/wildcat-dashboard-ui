@@ -1,4 +1,5 @@
-import { defineMessages, type IntlShape } from "react-intl";
+import type { IntlShape } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import type { CaseBrief, CaseNextStep } from "./case-brief";
 import { requestReason } from "./verification-reasons";
 

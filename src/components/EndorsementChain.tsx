@@ -3,7 +3,8 @@ import { Skeleton, TruncatedTextPopover } from "@bitcredit/ui-library";
 import { ArrowUpDown, CheckCircle2, Coins, DollarSign, HelpCircle, PencilLine, Send, Repeat2, XCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { BillHistoryBlock, BillParticipant } from "@/generated/client/types.gen";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { statedAddress } from "@/utils/bill-participants";
 import { displayCurrencyUnit } from "@/lib/currency";
 

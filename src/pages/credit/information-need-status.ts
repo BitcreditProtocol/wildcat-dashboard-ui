@@ -1,5 +1,5 @@
 import type { InformationNeed, InterviewInformationNeed } from "@bitcredit/ai-credit-shared";
-import { defineMessages } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 
 /** One status vocabulary for the Review form and the read-only Case history. */
 export const informationNeedStatusMessages = defineMessages({

@@ -9,7 +9,8 @@ import type {
 import { Button } from "@bitcredit/ui-library";
 import { Info } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { useFacilityOnboardingChecks } from "@/pages/mint-checks/api";
 import { formatDirectoryAddress, sourceKey } from "@/pages/mint-checks/mint-check-format";
 import {

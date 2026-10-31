@@ -1,4 +1,5 @@
-import { defineMessages, type IntlShape, useIntl } from "react-intl";
+import { type IntlShape, useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { fraudReason } from "./fraud-controls-copy";
 import { axisLabels, operatorVisibleAxes, percentFromBps, traceLine, words, type DecisionCase } from "./decision-types";
 

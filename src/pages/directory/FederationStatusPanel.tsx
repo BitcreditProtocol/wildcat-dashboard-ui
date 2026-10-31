@@ -1,5 +1,6 @@
 import { Button } from "@bitcredit/ui-library";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { RelayCoverageList } from "@/pages/credit/NetworkControlsPanels";
 import { DirectoryCoveragePanel } from "./PublicDirectoryPanels";
 import { useFederationStatus, type FederationStatus } from "./federation-status";

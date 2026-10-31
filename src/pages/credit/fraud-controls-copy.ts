@@ -1,4 +1,5 @@
-import { defineMessages, type IntlShape } from "react-intl";
+import type { IntlShape } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 
 export const fraudMessages = defineMessages({
   invoice: { id: "credit.fraud.invoice", defaultMessage: "Invoice and tax authority", description: "Invoice fraud controls heading" },

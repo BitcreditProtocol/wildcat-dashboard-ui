@@ -1,6 +1,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@bitcredit/ui-library";
 import { Building2, ChevronDown, Globe, Search, ShieldAlert } from "lucide-react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { countryName } from "@/utils/bill-participants";
 
 /**

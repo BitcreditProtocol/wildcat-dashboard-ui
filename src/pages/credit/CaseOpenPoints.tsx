@@ -1,6 +1,7 @@
 import { ApplicantText } from "@/components/operator/ApplicantText";
 import { CircleAlert } from "lucide-react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { preparationReason } from "./case-preparation-copy";
 import type { DecisionCase } from "./decision-types";
 import { investigationNeedKindMessages } from "./information-need-status";

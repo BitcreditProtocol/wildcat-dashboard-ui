@@ -1,6 +1,7 @@
 import { NodeIdDisplay } from "@bitcredit/ui-library";
 import { useId } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import type { BillIdentParticipant, BillInfo, BillParticipant } from "@/generated/client/types.gen";
 import { participantRoleMessages } from "@/i18n/descriptors";
 import {

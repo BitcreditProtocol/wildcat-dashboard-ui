@@ -1,7 +1,8 @@
 import { cn } from "@bitcredit/ui-library";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type MouseEvent, type RefObject } from "react";
-import { defineMessages, FormattedDate, useIntl, type MessageDescriptor } from "react-intl";
+import { FormattedDate, useIntl, type MessageDescriptor } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Currency } from "@/components/Currency";

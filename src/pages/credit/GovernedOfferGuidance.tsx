@@ -1,4 +1,5 @@
-import { defineMessages, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
+import { defineMessages } from "@/i18n/define-messages";
 import { percentFromBps, type DecisionCase, type DecisionTerms } from "./decision-types";
 
 const messages = defineMessages({
