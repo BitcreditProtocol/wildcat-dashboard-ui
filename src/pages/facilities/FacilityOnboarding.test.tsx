@@ -86,7 +86,10 @@ describe("facility onboarding", () => {
     expect(page.textContent).toContain("Signature (person)");
     expect(page.textContent).toContain("Email confirmed by this Mint");
     expect(page.textContent).toContain("Seal (company)");
-    expect(page.textContent).toContain("Missing: Email, Registration date, and Proof of registration");
+    // only details nobody answered for count as missing; an exception says who follows up
+    expect(page.textContent).toContain("Missing: Email and Registration date");
+    expect(page.textContent).toContain("Proof of registration: not available to the applicant · for your review");
+    expect(page.textContent).toContain("Applicant's reason: Registry office closed until January");
     expect(page.textContent).toContain("Email not confirmed");
     expect(page.textContent).toContain("FN-2020/17");
     expect(page.textContent).toContain("1 recorded signatory");
@@ -94,6 +97,27 @@ describe("facility onboarding", () => {
       "/directory?q=Finca+Verde+S.A."
     );
     expect(page.textContent).toContain("Informational only: nothing here changes the application or its decision.");
+  });
+
+  it("shows complete with exceptions and the assistant's follow-up", async () => {
+    stubChecks(
+      onboardingChecksFixture({
+        masterData: {
+          schemaVersion: "master-data-completeness-v2",
+          signer: {
+            status: "complete_with_exceptions",
+            missing: ["identity_document"],
+            exceptions: [{ field: "identity_document", kind: "assistance", route: "assistant", reason: null }],
+            emailVerification: "unconfirmed",
+          },
+          company: null,
+        },
+      })
+    );
+    const { page } = await renderCase();
+    expect(page.textContent).toContain("Complete with exceptions");
+    expect(page.textContent).toContain("Identity document: applicant asked for help · the assistant follows up in the conversation");
+    expect(page.textContent).not.toContain("Applicant's reason");
   });
 
   it("links the history at this Mint to quotes and other applications, not to itself", async () => {

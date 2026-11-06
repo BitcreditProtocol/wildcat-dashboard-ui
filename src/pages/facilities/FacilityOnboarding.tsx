@@ -74,6 +74,26 @@ const messages = defineMessages({
     description: "Applications before consent v3 carry no master data",
   },
   complete: { id: "facilities.checks.complete", defaultMessage: "Complete", description: "All declared master data fields are present" },
+  completeWithExceptions: {
+    id: "facilities.checks.completeWithExceptions",
+    defaultMessage: "Complete with exceptions",
+    description: "Every missing optional master data field carries the applicant's exception",
+  },
+  exceptionUnavailable: {
+    id: "facilities.checks.exceptionUnavailable",
+    defaultMessage: "{field}: not available to the applicant · for your review",
+    description: "The applicant does not have an optional master data field; the reviewer decides a proportionate alternative",
+  },
+  exceptionAssistance: {
+    id: "facilities.checks.exceptionAssistance",
+    defaultMessage: "{field}: applicant asked for help · the assistant follows up in the conversation",
+    description: "The applicant asked for help with an optional master data field; computer-assisted follow-up",
+  },
+  exceptionReason: {
+    id: "facilities.checks.exceptionReason",
+    defaultMessage: "Applicant's reason: {reason}",
+    description: "The applicant's own words on why a detail is not available; unverified",
+  },
   missing: { id: "facilities.checks.missing", defaultMessage: "Missing: {fields}", description: "Master data fields not declared" },
   dateOfBirth: { id: "facilities.checks.dateOfBirth", defaultMessage: "Date of birth", description: "Declared value label" },
   placeOfBirth: { id: "facilities.checks.placeOfBirth", defaultMessage: "Place of birth", description: "Declared value label" },
@@ -211,27 +231,57 @@ function MaskedValue({ value }: { value: string }) {
   );
 }
 
-function CompletenessLine({ status, missing, email }: { status: "complete" | "incomplete"; missing: string[]; email: EmailVerification }) {
+type PartyChecks = NonNullable<FacilityOnboardingChecks["masterData"]>["signer"];
+
+/**
+ * Where the declared master data stands: complete, complete with the applicant's exceptions, or
+ * incomplete with the fields nobody answered for. Each exception says who follows up; a missing
+ * detail is never a finding against the applicant.
+ */
+function CompletenessLine({
+  checks,
+}: {
+  checks: PartyChecks | NonNullable<NonNullable<FacilityOnboardingChecks["masterData"]>["company"]>;
+}) {
   const intl = useIntl();
+  const excepted = new Set<string>(checks.exceptions.map((exception) => exception.field));
+  const unanswered = checks.missing
+    .filter((field) => !excepted.has(field))
+    .map((field) => intl.formatMessage(masterDataFieldMessages[field]));
   return (
     <div className="space-y-1 text-xs">
-      <p className={status === "incomplete" ? "text-signal-alert" : "text-muted-foreground"}>
-        {status === "complete"
+      <p className={checks.status === "incomplete" ? "text-signal-alert" : "text-muted-foreground"}>
+        {checks.status === "complete"
           ? intl.formatMessage(messages.complete)
-          : intl.formatMessage(messages.missing, { fields: intl.formatList(missing, { type: "conjunction" }) })}
+          : checks.status === "complete_with_exceptions"
+            ? intl.formatMessage(messages.completeWithExceptions)
+            : intl.formatMessage(messages.missing, { fields: intl.formatList(unanswered, { type: "conjunction" }) })}
       </p>
-      <p className={emailTone[email]}>{intl.formatMessage(emailVerificationMessages[email])}</p>
+      {checks.exceptions.length > 0 && (
+        <ul className="space-y-1">
+          {checks.exceptions.map((exception) => {
+            const field = intl.formatMessage(masterDataFieldMessages[exception.field]);
+            return (
+              <li key={exception.field} className="text-foreground">
+                {intl.formatMessage(exception.route === "reviewer" ? messages.exceptionUnavailable : messages.exceptionAssistance, {
+                  field,
+                })}
+                {exception.reason && (
+                  <span className="block text-muted-foreground">
+                    {intl.formatMessage(messages.exceptionReason, { reason: exception.reason })}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <p className={emailTone[checks.emailVerification]}>{intl.formatMessage(emailVerificationMessages[checks.emailVerification])}</p>
     </div>
   );
 }
 
-function SignerCard({
-  signer,
-  checks,
-}: {
-  signer: SignerMasterData;
-  checks: NonNullable<FacilityOnboardingChecks["masterData"]>["signer"];
-}) {
+function SignerCard({ signer, checks }: { signer: SignerMasterData; checks: PartyChecks }) {
   const intl = useIntl();
   const dash = intl.formatMessage(messages.notDeclared);
   return (
@@ -240,11 +290,7 @@ function SignerCard({
         <h5 className="text-sm font-medium">{intl.formatMessage(applicantIdentityMessages.signer)}</h5>
         <span className="text-sm">{signer.name}</span>
       </div>
-      <CompletenessLine
-        status={checks.status}
-        missing={checks.missing.map((field) => intl.formatMessage(masterDataFieldMessages[field]))}
-        email={checks.emailVerification}
-      />
+      <CompletenessLine checks={checks} />
       <dl className="grid gap-3 @lg:grid-cols-2">
         <Field label={intl.formatMessage(messages.email)}>{signer.email ?? dash}</Field>
         <Field label={intl.formatMessage(messages.address)}>
@@ -282,11 +328,7 @@ function CompanyCard({
         <h5 className="text-sm font-medium">{intl.formatMessage(applicantIdentityMessages.company)}</h5>
         <span className="text-sm">{company.name}</span>
       </div>
-      <CompletenessLine
-        status={checks.status}
-        missing={checks.missing.map((field) => intl.formatMessage(masterDataFieldMessages[field]))}
-        email={checks.emailVerification}
-      />
+      <CompletenessLine checks={checks} />
       <dl className="grid gap-3 @lg:grid-cols-2">
         <Field label={intl.formatMessage(messages.email)}>{company.email ?? dash}</Field>
         <Field label={intl.formatMessage(messages.address)}>

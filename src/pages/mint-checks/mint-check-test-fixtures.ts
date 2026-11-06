@@ -125,11 +125,14 @@ export function onboardingChecksFixture(overrides: Partial<FacilityOnboardingChe
     applicationId: fixtureApplicationId,
     checkedAt: "2026-10-27T10:00:00.000Z",
     masterData: {
-      schemaVersion: "master-data-completeness-v1",
-      signer: { status: "complete", missing: [], emailVerification: "confirmed_by_this_mint" },
+      schemaVersion: "master-data-completeness-v2",
+      signer: { status: "complete", missing: [], exceptions: [], emailVerification: "confirmed_by_this_mint" },
       company: {
         status: "incomplete",
         missing: ["email", "registration_date", "proof_of_registration"],
+        exceptions: [
+          { field: "proof_of_registration", kind: "unavailable", route: "reviewer", reason: "Registry office closed until January" },
+        ],
         emailVerification: "unconfirmed",
       },
     },
