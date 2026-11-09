@@ -39,6 +39,7 @@ Tests are colocated `*.test.ts(x)` under jsdom (`vitest-setup.ts`). The
 `justfile` only wraps Docker (`just build`, `just run`); it is not a gate.
 
 Non-negotiables:
+
 - NEVER push `v*` tags or push directly to `master`: `.github/workflows/deploy.yml`
   deploys them to Cloudflare Pages and `release.yml` publishes a GHCR image.
 - Never commit `.env` or tokens. `.env` is gitignored for that reason;
