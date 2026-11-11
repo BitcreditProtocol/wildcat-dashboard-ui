@@ -94,8 +94,8 @@ const mintA = issuer(
   {
     disputes: [{ entryBlockId: 4, entryDigest: `sha256:${"2".repeat(64)}`, statement: "Paid on the due date.", createdAt: 1 }],
     sourceChecks: [
-      { check: "Email identity proof", result: "valid" },
-      { check: "Tax registration", result: "unsupported" },
+      { itemId: "proof:1", check: "Email identity proof", result: "valid", email: "ana@finca.example" },
+      { itemId: "verification:1", check: "Tax registration", result: "unsupported" },
     ],
     identityReuse: { policyVersion: "portable-identity-review-v1", eligibleForReview: true, accountability: "receiving_mint" },
   }
@@ -124,7 +124,7 @@ describe("records shared from earlier Mints", () => {
     expect(text).toContain("Shared from earlier Mints");
     expect(text).toContain("Mint A");
     expect(text).toContain("Mint you follow · as of Nov 5, 2026 · 2 entries");
-    expect(text).toContain("Email confirmed by Mint A · Oct 30, 2026 · proof valid");
+    expect(text).toContain("ana@finca.example confirmed by Mint A · Oct 30, 2026 · proof valid");
     expect(text).toContain("Phone number not available, as the applicant stated · Oct 30, 2026");
     expect(text).toContain("You may review Mint A's recent identity checks under your policy; accountability stays with this Mint.");
     // The folded record: the corrected claim replaces the first, the recorded outcome replaces "unknown".
@@ -160,11 +160,11 @@ describe("records shared from earlier Mints", () => {
     expect(page.textContent).toContain("Cattle ranch");
     expect(page.textContent).toContain("Listed in the public directory · as of Oct 30, 2026 · 1 entry");
     expect(page.textContent).not.toContain("Coffee and cacao farm");
-    expect(page.textContent).not.toContain("Email confirmed by");
+    expect(page.textContent).not.toContain("confirmed by Mint A");
   });
 
-  it("does not attach a recheck result to email proofs when the results cannot be matched to them", async () => {
-    const unmatched = { ...mintA, sourceChecks: [] };
+  it("does not attach a recheck result to an email proof when no result names it", async () => {
+    const unmatched = { ...mintA, sourceChecks: [{ itemId: "proof:other", check: "Email identity proof", result: "valid" as const }] };
     const { page } = await renderWithProviders(
       <PriorMintRecordsSection application={facilityFixture({ priorMintRecords: { ...shared, issuers: [unmatched] } })} />
     );

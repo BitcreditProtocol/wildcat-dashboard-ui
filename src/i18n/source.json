@@ -1600,6 +1600,7 @@
   "facilities.records.corrected": "The applicant corrected: {corrections}",
   "facilities.records.dispute": "The applicant disputes this record: {statement}",
   "facilities.records.emailProof": "Email confirmed by {mint} · {date}",
+  "facilities.records.emailProofAddress": "{email} confirmed by {mint} · {date}",
   "facilities.records.emailProofCheck": "{result, select, valid {proof valid} invalid {proof invalid} other {cannot be checked here}}",
   "facilities.records.evidence.confirmed": "confirmed by the applicant",
   "facilities.records.evidence.contradicted": "contradicted",

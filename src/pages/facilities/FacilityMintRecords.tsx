@@ -83,16 +83,14 @@ function issuerName(issuer: Issuer): string | null {
   }
 }
 
-const EMAIL_PROOF_CHECK = "Email identity proof";
-
 function IssuerRecord({ issuer, name }: { issuer: Issuer; name: string }) {
   const intl = useIntl();
   const { record, omissions, asOf, sequence } = issuer.current;
   const proofs = record.identityProofs ?? [];
-  // AI-Credit rechecks each referenced email proof from the shared IdentityProof block, in order, before any other source.
-  const proofChecks = issuer.sourceChecks.filter((check) => check.check === EMAIL_PROOF_CHECK);
-  const otherChecks = issuer.sourceChecks.filter((check) => check.check !== EMAIL_PROOF_CHECK);
-  const proofResult = (index: number) => (proofChecks.length === proofs.length ? proofChecks[index]?.result : undefined);
+  // AI-Credit rechecks each referenced email proof from the shared IdentityProof block; each result names its item.
+  const proofIds = new Set(proofs.map((proof) => proof.id));
+  const proofCheck = (id: string) => issuer.sourceChecks.find((check) => check.itemId === id);
+  const otherChecks = issuer.sourceChecks.filter((check) => !proofIds.has(check.itemId));
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -106,15 +104,24 @@ function IssuerRecord({ issuer, name }: { issuer: Issuer; name: string }) {
           />
         </p>
       </div>
-      {proofs.map((proof, index) => {
-        const result = proofResult(index);
+      {proofs.map((proof) => {
+        const check = proofCheck(proof.id);
+        const result = check?.result;
         return (
           <p key={proof.id} className={`text-sm ${result === "invalid" ? "text-signal-error" : ""}`}>
-            <FormattedMessage
-              id="facilities.records.emailProof"
-              defaultMessage="Email confirmed by {mint} · {date}"
-              values={{ mint: name, date: intl.formatDate(proof.issuedAt, { dateStyle: "medium" }) }}
-            />
+            {check?.email === undefined ? (
+              <FormattedMessage
+                id="facilities.records.emailProof"
+                defaultMessage="Email confirmed by {mint} · {date}"
+                values={{ mint: name, date: intl.formatDate(proof.issuedAt, { dateStyle: "medium" }) }}
+              />
+            ) : (
+              <FormattedMessage
+                id="facilities.records.emailProofAddress"
+                defaultMessage="{email} confirmed by {mint} · {date}"
+                values={{ email: check.email, mint: name, date: intl.formatDate(proof.issuedAt, { dateStyle: "medium" }) }}
+              />
+            )}
             {result && (
               <span className={`text-xs ${result === "invalid" ? "" : "text-muted-foreground"}`}>
                 {" "}
