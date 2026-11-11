@@ -123,3 +123,9 @@ window.getComputedStyle = (elt: Element, pseudoElt?: string | null) => {
   }
   return style;
 };
+
+// jsdom cascades animation-name from stylesheets but never fires animationend, so Radix Presence
+// (vaul drawers) would wait forever to unmount on close.
+const disableAnimations = document.createElement("style");
+disableAnimations.textContent = "*, *::before, *::after { animation-name: none !important; }";
+document.head.append(disableAnimations);
