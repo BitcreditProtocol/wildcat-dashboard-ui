@@ -231,6 +231,7 @@ function IssuerRecord({ issuer, name }: { issuer: Issuer; name: string }) {
             </p>
             <p className="text-xs text-muted-foreground">
               {[
+                figure.crop,
                 figure.period && `${figure.period.startDate} – ${figure.period.endDate}`,
                 intl.formatMessage(evidence[figure.evidenceState]),
               ]
