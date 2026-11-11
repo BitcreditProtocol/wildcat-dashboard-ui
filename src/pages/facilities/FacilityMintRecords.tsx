@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   type FacilityApplication,
+  foldMintRecordEntries,
   type MintRecordEntry,
   mintRecordEntrySchema,
   mintRecordStatusSchema,
@@ -70,27 +71,82 @@ function Collapsed({ label, count, children }: { label: React.ReactNode; count: 
   );
 }
 
-function IssuerRecord({ issuer }: { issuer: Issuer }) {
+/** The name the issuing key gives itself in its last entry; the current record does not repeat it. */
+function issuerName(issuer: Issuer): string | null {
+  const last = issuer.history[issuer.history.length - 1];
+  if (!last) return null;
+  try {
+    const parsed = mintRecordEntrySchema.safeParse(JSON.parse(last.entry));
+    return parsed.success ? parsed.data.issuer.name : null;
+  } catch {
+    return null;
+  }
+}
+
+const EMAIL_PROOF_CHECK = "Email identity proof";
+
+function IssuerRecord({ issuer, name }: { issuer: Issuer; name: string }) {
   const intl = useIntl();
-  const { record, omissions } = issuer.latest;
-  const reusableCheck = issuer.identityReuse.eligibleForReview ? record.identityCheck?.[record.identityCheck.length - 1] : undefined;
+  const { record, omissions, asOf, sequence } = issuer.current;
+  const proofs = record.identityProofs ?? [];
+  // AI-Credit rechecks each referenced email proof from the shared IdentityProof block, in order, before any other source.
+  const proofChecks = issuer.sourceChecks.filter((check) => check.check === EMAIL_PROOF_CHECK);
+  const otherChecks = issuer.sourceChecks.filter((check) => check.check !== EMAIL_PROOF_CHECK);
+  const proofResult = (index: number) => (proofChecks.length === proofs.length ? proofChecks[index]?.result : undefined);
   return (
-    <div className="space-y-3 border-t border-border pt-4 first:border-t-0 first:pt-0">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-medium">{issuer.latest.issuer.name}</p>
+        <p className="font-medium">{name}</p>
         <p className="text-xs text-muted-foreground">
           {intl.formatMessage(recognition[issuer.recognition])} ·{" "}
           <FormattedMessage
             id="facilities.records.asOf"
             defaultMessage="as of {date} · {count, plural, one {# entry} other {# entries}}"
-            values={{ date: intl.formatDate(issuer.latest.createdAt, { dateStyle: "medium" }), count: issuer.history.length }}
+            values={{ date: intl.formatDate(asOf, { dateStyle: "medium" }), count: sequence }}
           />
         </p>
       </div>
+      {proofs.map((proof, index) => {
+        const result = proofResult(index);
+        return (
+          <p key={proof.id} className={`text-sm ${result === "invalid" ? "text-signal-error" : ""}`}>
+            <FormattedMessage
+              id="facilities.records.emailProof"
+              defaultMessage="Email confirmed by {mint} · {date}"
+              values={{ mint: name, date: intl.formatDate(proof.issuedAt, { dateStyle: "medium" }) }}
+            />
+            {result && (
+              <span className={`text-xs ${result === "invalid" ? "" : "text-muted-foreground"}`}>
+                {" "}
+                ·{" "}
+                <FormattedMessage
+                  id="facilities.records.emailProofCheck"
+                  defaultMessage="{result, select, valid {proof valid} invalid {proof invalid} other {cannot be checked here}}"
+                  values={{ result }}
+                />
+              </span>
+            )}
+          </p>
+        );
+      })}
+      {record.identityCheck?.map((check) => (
+        <p key={check.id} className="text-sm">
+          {check.check} <span className="text-xs text-muted-foreground">· {intl.formatDate(check.checkedAt, { dateStyle: "medium" })}</span>
+        </p>
+      ))}
+      {issuer.identityReuse.eligibleForReview && (
+        <p className="text-sm text-muted-foreground">
+          <FormattedMessage
+            id="facilities.records.identityReview"
+            defaultMessage="You may review {mint}'s recent identity checks under your policy; accountability stays with this Mint."
+            values={{ mint: name }}
+          />
+        </p>
+      )}
       {(record.claims?.length ?? 0) > 0 && (
         <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[9rem_minmax(0,1fr)]">
-          {record.claims?.map((claim, index) => (
-            <div key={`${String(index)}-${claim.topic ?? "other"}`} className="contents">
+          {record.claims?.map((claim) => (
+            <div key={claim.id} className="contents">
               <dt className="text-muted-foreground">{intl.formatMessage(topics[claim.topic ?? "other"])}</dt>
               <dd>
                 {claim.claim} <span className="text-xs text-muted-foreground">· {intl.formatMessage(evidence[claim.evidenceState])}</span>
@@ -99,8 +155,8 @@ function IssuerRecord({ issuer }: { issuer: Issuer }) {
           ))}
         </dl>
       )}
-      {record.facilityAgreement?.map((agreement, index) => (
-        <p key={`agreement-${String(index)}`} className="text-sm">
+      {record.facilityAgreement?.map((agreement) => (
+        <p key={agreement.id} className="text-sm">
           <FormattedMessage
             id="facilities.records.agreement"
             defaultMessage="Facility agreement: {status}{limit, select, none {} other {, limit {limit} sat}}"
@@ -112,27 +168,18 @@ function IssuerRecord({ issuer }: { issuer: Issuer }) {
         </p>
       ))}
       {record.instruments?.map((bill) => (
-        <p key={bill.billId} className="flex justify-between gap-3 text-sm">
-          <span className="truncate font-mono text-xs text-muted-foreground">{bill.billId}</span>
-          <span className="shrink-0">{intl.formatMessage(outcomes[bill.outcome], { days: bill.daysLate ?? 0 })}</span>
+        <p key={bill.id} className="text-sm">
+          <FormattedMessage
+            id="facilities.records.bill"
+            defaultMessage="Bill: {outcome}"
+            values={{ outcome: intl.formatMessage(outcomes[bill.outcome], { days: bill.daysLate ?? 0 }) }}
+          />
+          {bill.recordedAt && (
+            <span className="text-xs text-muted-foreground"> · {intl.formatDate(bill.recordedAt, { dateStyle: "medium" })}</span>
+          )}
         </p>
       ))}
-      {reusableCheck && (
-        <p className="text-sm">
-          <FormattedMessage
-            id="facilities.records.identityReuse"
-            defaultMessage="{mint} checked “{check}” ({method}, {outcome}) on {date}. You may review it under your policy; accountability stays with this Mint."
-            values={{
-              mint: issuer.latest.issuer.name,
-              check: reusableCheck.check,
-              method: reusableCheck.method,
-              outcome: reusableCheck.outcome.replace(/_/gu, " "),
-              date: intl.formatDate(reusableCheck.checkedAt, { dateStyle: "medium" }),
-            }}
-          />
-        </p>
-      )}
-      {issuer.sourceChecks.map((check, index) => (
+      {otherChecks.map((check, index) => (
         <p key={`${check.check}-${String(index)}`} className={`text-sm ${check.result === "invalid" ? "text-signal-error" : ""}`}>
           <FormattedMessage
             id="facilities.records.sourceCheck"
@@ -154,8 +201,8 @@ function IssuerRecord({ issuer }: { issuer: Issuer }) {
         label={<FormattedMessage id="facilities.records.answers" defaultMessage="Answers" />}
         count={record.interview?.length ?? 0}
       >
-        {record.interview?.map((pair, index) => (
-          <div key={`${String(index)}-${pair.submittedAt}`}>
+        {record.interview?.map((pair) => (
+          <div key={pair.id}>
             <p className="text-xs text-muted-foreground">{pair.question}</p>
             <p className="whitespace-pre-wrap">{pair.answer}</p>
           </div>
@@ -165,8 +212,8 @@ function IssuerRecord({ issuer }: { issuer: Issuer }) {
         label={<FormattedMessage id="facilities.records.finances" defaultMessage="Financial figures" />}
         count={record.financialInformation?.length ?? 0}
       >
-        {record.financialInformation?.map((figure, index) => (
-          <div key={`${figure.field}-${String(index)}`}>
+        {record.financialInformation?.map((figure) => (
+          <div key={figure.id}>
             <p className="flex justify-between gap-3">
               <span className="text-muted-foreground">{figure.field}</span>
               <span>
@@ -197,13 +244,28 @@ function IssuerRecord({ issuer }: { issuer: Issuer }) {
   );
 }
 
-/** Records an applicant shared from earlier Mints: statements by each Mint as of its date, never this Mint's findings. */
+/** Records an applicant shared from earlier Mints: statements by each Mint as of its date, never this Mint's findings.
+ * One issuing Mint at a time: each record is that Mint's own due diligence and is never merged with or set against another's. */
 export function PriorMintRecordsSection({ application }: { application: FacilityApplication }) {
   const intl = useIntl();
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const prior = application.priorMintRecords;
   // Starting from scratch is not shown: it must never read as a signal.
   if (prior?.choice !== "shared") return null;
   const reply = prior.confirmation?.reply;
+  const unnamed = intl.formatMessage({ id: "facilities.records.unnamedMint", defaultMessage: "Unnamed Mint" });
+  const names = prior.issuers.map((issuer) => issuerName(issuer) ?? unnamed);
+  // Two Mints may give themselves the same name; number them so the selector stays usable without showing keys.
+  const labels = names.map((name, index) =>
+    names.filter((other) => other === name).length > 1
+      ? `${name} (${String(names.slice(0, index + 1).filter((other) => other === name).length)})`
+      : name
+  );
+  const selectedIndex = Math.max(
+    0,
+    prior.issuers.findIndex((issuer) => issuer.signingKey === selectedKey)
+  );
+  const selected = prior.issuers[selectedIndex];
   return (
     <section className="rounded-lg border border-border bg-card p-5 md:p-6">
       <h3 className="font-medium">
@@ -233,11 +295,30 @@ export function PriorMintRecordsSection({ application }: { application: Facility
           )}
         </p>
       )}
-      <div className="mt-4 space-y-4">
-        {prior.issuers.map((issuer) => (
-          <IssuerRecord key={issuer.signingKey} issuer={issuer} />
-        ))}
-      </div>
+      {prior.issuers.length > 1 && (
+        <div
+          className="mt-4 flex flex-wrap gap-1"
+          role="group"
+          aria-label={intl.formatMessage({ id: "facilities.records.mints", defaultMessage: "Shared records by Mint" })}
+        >
+          {prior.issuers.map((issuer, index) => (
+            <Button
+              key={issuer.signingKey}
+              size="sm"
+              variant={index === selectedIndex ? "outline" : "ghost"}
+              aria-pressed={index === selectedIndex}
+              onClick={() => setSelectedKey(issuer.signingKey)}
+            >
+              {labels[index]}
+            </Button>
+          ))}
+        </div>
+      )}
+      {selected && (
+        <div className="mt-4">
+          <IssuerRecord key={selected.signingKey} issuer={selected} name={labels[selectedIndex] ?? unnamed} />
+        </div>
+      )}
     </section>
   );
 }
@@ -252,11 +333,24 @@ async function mintRecordCommand(body: unknown) {
   return mintRecordStatusSchema.parse(await response.json());
 }
 
-function latestEntry(entries: { entry: string }[]): MintRecordEntry | null {
-  const last = entries[entries.length - 1];
-  if (!last) return null;
-  const parsed = mintRecordEntrySchema.safeParse(JSON.parse(last.entry));
-  return parsed.success ? parsed.data : null;
+function parseEntry(signed: { entry: string }): MintRecordEntry | null {
+  try {
+    const parsed = mintRecordEntrySchema.safeParse(JSON.parse(signed.entry));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The bills in this Mint's current record: entries carry only new or corrected items, so all of them are folded. */
+function recordedBills(entries: { entry: string }[]): string[] {
+  const parsed = entries.map(parseEntry);
+  if (parsed.length === 0 || parsed.some((entry) => entry === null)) return [];
+  try {
+    return (foldMintRecordEntries(parsed as MintRecordEntry[]).record.instruments ?? []).map((bill) => bill.billId);
+  } catch {
+    return [];
+  }
 }
 
 type Outcome = "paid_on_time" | "paid_late" | "unpaid" | "recourse_used";
@@ -303,13 +397,9 @@ export function MintRecordStatusSection({ application }: { application: Facility
       </section>
     );
   if (!status.data) return null;
-  const latest = latestEntry(status.data.entries);
-  const bills = [
-    ...new Set([
-      ...(latest?.record.chainReferences?.bills.map((bill) => bill.billId) ?? []),
-      ...(latest?.record.instruments?.map((bill) => bill.billId) ?? []),
-    ]),
-  ];
+  const lastIssued = status.data.entries[status.data.entries.length - 1];
+  const latest = lastIssued ? parseEntry(lastIssued) : null;
+  const bills = recordedBills(status.data.entries);
   const selected = billId || bills[0] || "";
   return (
     <section className="rounded-lg border border-border bg-card p-5 md:p-6">
