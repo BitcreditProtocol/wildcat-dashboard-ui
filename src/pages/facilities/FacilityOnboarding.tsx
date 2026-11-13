@@ -1,10 +1,11 @@
-import type {
-  CompanyMasterData,
-  EmailVerification,
-  FacilityApplication,
-  FacilityOnboardingChecks,
-  FacilityRequest,
-  SignerMasterData,
+import {
+  type CompanyMasterData,
+  currentFacilityRequest,
+  type EmailVerification,
+  type FacilityApplication,
+  type FacilityOnboardingChecks,
+  type FacilityRequest,
+  type SignerMasterData,
 } from "@bitcredit/ai-credit-shared";
 import { Button } from "@bitcredit/ui-library";
 import { Info } from "lucide-react";
@@ -35,15 +36,30 @@ const messages = defineMessages({
     description: "A facility request is never an allowance or agreed term",
   },
   product: { id: "facilities.request.product", defaultMessage: "Product", description: "Requested Mint product" },
+  maxAmount: {
+    id: "facilities.request.maxAmount",
+    defaultMessage: "Most at one time",
+    description: "All the applicant's eBills with the Mint together at their busiest, in sat",
+  },
   amount: {
     id: "facilities.request.amount",
-    defaultMessage: "Typical eBill amount",
-    description: "The applicant's typical eBill size in sat",
+    defaultMessage: "Usual eBill",
+    description: "The applicant's usual eBill size in sat",
+  },
+  maxTenor: {
+    id: "facilities.request.maxTenor",
+    defaultMessage: "Longest time until payment",
+    description: "The applicant's longest days from issue to payment",
   },
   tenor: {
     id: "facilities.request.tenor",
     defaultMessage: "Usual time until payment",
     description: "The applicant's usual days from issue to maturity",
+  },
+  backing: {
+    id: "facilities.request.backing",
+    defaultMessage: "Backing",
+    description: "What could back the facility, in the applicant's words",
   },
   days: { id: "facilities.request.days", defaultMessage: "{days, plural, one {# day} other {# days}}", description: "Days until payment" },
   purpose: { id: "facilities.request.purpose", defaultMessage: "Purpose", description: "Stated purpose of the facility" },
@@ -163,40 +179,35 @@ const emailTone: Record<EmailVerification, string> = {
   proof_invalid: "text-signal-alert",
 };
 
+/** The applicant's request, either version: a v1 request's one amount and maturity are the usual ones. */
 export function FacilityRequestSection({ request }: { request: FacilityRequest }) {
   const intl = useIntl();
   const titleId = useId();
+  const current = currentFacilityRequest(request);
+  const sat = (value: string | null) =>
+    value === null ? intl.formatMessage(messages.unknown) : `${new Intl.NumberFormat(intl.locale).format(BigInt(value))} sat`;
+  const days = (value: number | null) =>
+    value === null ? intl.formatMessage(messages.unknown) : intl.formatMessage(messages.days, { days: value });
+  const cell = (label: string, value: ReactNode, wide = false, numeric = false) => (
+    <div className={`bg-card p-4 ${wide ? "@xl:col-span-2" : ""}`}>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className={`mt-1.5 text-sm ${numeric ? "tabular-nums" : "whitespace-pre-wrap"}`}>{value}</dd>
+    </div>
+  );
   return (
     <section aria-labelledby={titleId}>
       <h3 id={titleId} className="text-sm font-medium">
         {intl.formatMessage(messages.requestTitle)}
       </h3>
       <p className="mt-1 text-xs text-muted-foreground">{intl.formatMessage(messages.requestProvenance)}</p>
-      <dl className="mt-3 grid gap-px overflow-hidden rounded-lg border border-border bg-border @xl:grid-cols-3">
-        <div className="bg-card p-4">
-          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.product)}</dt>
-          <dd className="mt-1.5 text-sm">{intl.formatMessage(messages[request.product])}</dd>
-        </div>
-        <div className="bg-card p-4">
-          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.amount)}</dt>
-          <dd className="mt-1.5 text-sm tabular-nums">
-            {request.amountSat === null
-              ? intl.formatMessage(messages.unknown)
-              : `${new Intl.NumberFormat(intl.locale).format(BigInt(request.amountSat))} sat`}
-          </dd>
-        </div>
-        <div className="bg-card p-4">
-          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.tenor)}</dt>
-          <dd className="mt-1.5 text-sm">
-            {request.tenorDays === null
-              ? intl.formatMessage(messages.unknown)
-              : intl.formatMessage(messages.days, { days: request.tenorDays })}
-          </dd>
-        </div>
-        <div className="bg-card p-4 @xl:col-span-3">
-          <dt className="text-xs text-muted-foreground">{intl.formatMessage(messages.purpose)}</dt>
-          <dd className="mt-1.5 whitespace-pre-wrap text-sm">{request.purpose}</dd>
-        </div>
+      <dl className="mt-3 grid gap-px overflow-hidden rounded-lg border border-border bg-border @xl:grid-cols-2">
+        {cell(intl.formatMessage(messages.product), intl.formatMessage(messages[current.product]), true)}
+        {cell(intl.formatMessage(messages.maxAmount), sat(current.maxAmountSat), false, true)}
+        {cell(intl.formatMessage(messages.amount), sat(current.typicalAmountSat), false, true)}
+        {cell(intl.formatMessage(messages.maxTenor), days(current.maxTenorDays))}
+        {cell(intl.formatMessage(messages.tenor), days(current.typicalTenorDays))}
+        {cell(intl.formatMessage(messages.purpose), current.purpose, true)}
+        {current.backing !== null && cell(intl.formatMessage(messages.backing), current.backing, true)}
       </dl>
     </section>
   );

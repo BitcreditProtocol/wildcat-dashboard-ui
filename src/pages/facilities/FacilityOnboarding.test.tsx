@@ -57,6 +57,32 @@ describe("facility onboarding", () => {
     expect(page.textContent).toContain("2,500,000 sat");
     expect(page.textContent).toContain("90 days");
     expect(page.textContent).toContain("Pay pickers before the cooperative settles");
+    // a v1 request's one amount and maturity are the usual ones; the most is not known
+    expect(page.textContent).toContain("Usual eBill2,500,000 sat");
+    expect(page.textContent).toContain("Most at one timeNot known yet");
+    expect(page.textContent).not.toContain("Backing");
+  });
+
+  it("shows the most and the usual amount and time and the backing of a v2 request", async () => {
+    stubChecks();
+    const { page } = await renderCase({
+      ...application,
+      request: {
+        schemaVersion: "facility-request-v2",
+        product: "minting",
+        maxAmountSat: "20000000",
+        typicalAmountSat: "2500000",
+        maxTenorDays: 180,
+        typicalTenorDays: 90,
+        purpose: "Pay pickers before the cooperative settles",
+        backing: "Two hectares of coffee land",
+      },
+    });
+    expect(page.textContent).toContain("Most at one time20,000,000 sat");
+    expect(page.textContent).toContain("Usual eBill2,500,000 sat");
+    expect(page.textContent).toContain("Longest time until payment180 days");
+    expect(page.textContent).toContain("Usual time until payment90 days");
+    expect(page.textContent).toContain("BackingTwo hectares of coffee land");
   });
 
   it("masks the identification number until the operator reveals it", async () => {
